@@ -1,0 +1,19 @@
+# Dev server with hot reload, for developing against this repo without a
+# local Bun install. Run from the repo root:
+#
+#   docker compose -f deployments/docker-compose.dev.yml up
+#
+# Vite loads .env directly from the mounted repo, so no --env-file is needed
+# here (unlike docker-compose.yml, which needs env vars for Docker build args).
+services:
+  tipsarr-dev:
+    image: oven/bun:1
+    container_name: tipsarr-dev
+    working_dir: /app
+    command: sh -c "bun install && bun dev --host 0.0.0.0"
+    volumes:
+      - ..:/app
+      - /app/node_modules
+      - /app/.svelte-kit
+    ports:
+      - '5173:5173'

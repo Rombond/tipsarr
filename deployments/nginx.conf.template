@@ -1,0 +1,27 @@
+# Templated by nginx's docker-entrypoint (envsubst) at container start.
+# Only ${SEERR_UPSTREAM} is substituted — nginx's own $variables (like $uri)
+# are left untouched since they aren't shell environment variables.
+server {
+    listen 80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Same-origin proxy to Seerr — mirrors vite.config.ts's dev-server proxy.
+    # Seerr sends no CORS headers, so the browser must call this same-origin
+    # path instead of the real Seerr URL directly.
+    location /seerr-api/ {
+        proxy_pass ${SEERR_UPSTREAM}/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cookie_path / /;
+    }
+
+    # SPA fallback — SvelteKit's client router handles all app routes.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

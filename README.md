@@ -94,6 +94,25 @@ Known limitation: SuggestArr's refresh cookie is `SameSite=Strict` and called cr
 proxied like Seerr), so that session doesn't survive a full page reload — a fresh login re-links it
 each time.
 
+## Deploying
+
+See `deployments/` for a production Docker setup (nginx serving a static `adapter-static` build,
+with `/seerr-api` reverse-proxied at runtime) and a dev-server Compose file for developing without
+a local Bun install.
+
+```bash
+# Production — run from the repo root:
+docker compose -f deployments/docker-compose.yml --env-file .env up --build -d
+
+# Dev server with hot reload — run from the repo root:
+docker compose -f deployments/docker-compose.dev.yml up
+```
+
+Only `VITE_SEERR_URL` is a true runtime setting (read by nginx as `SEERR_UPSTREAM`, no rebuild
+needed to change it). Every other `VITE_*` variable is baked into the static bundle at build
+time — changing one means rebuilding the image. See `deployments/Dockerfile` and
+`deployments/nginx.conf.template` for details.
+
 ## Architecture
 
 ```
