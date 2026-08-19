@@ -96,16 +96,16 @@ each time.
 
 ## Deploying
 
-See `deployments/` for a production Docker setup (nginx serving a static `adapter-static` build,
-with `/seerr-api` reverse-proxied at runtime) and a dev-server Compose file for developing without
-a local Bun install.
+See `deployments/` for the Docker setup: nginx serving a static `adapter-static` build, with
+`/seerr-api` reverse-proxied at runtime.
 
 ```bash
-# Production — run from the repo root:
-docker compose -f deployments/docker-compose.yml --env-file .env up --build -d
+# Local build/test — builds the Dockerfile yourself. Run from the repo root:
+docker compose -f deployments/docker-compose.dev.yml --env-file .env up --build -d
 
-# Dev server with hot reload — run from the repo root:
-docker compose -f deployments/docker-compose.dev.yml up
+# Production — runs the image published by CI (not set up yet; see
+# deployments/docker-compose.yml for the expected image tag). Run from the repo root:
+docker compose -f deployments/docker-compose.yml up -d
 ```
 
 Only `VITE_SEERR_URL` is a true runtime setting (read by nginx as `SEERR_UPSTREAM`, no rebuild

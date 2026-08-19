@@ -1,26 +1,19 @@
-# Production deployment. Run from the repo root:
+# Production deployment — runs the image built and published by CI (a GitHub
+# Actions pipeline, not set up yet), rather than building locally. Once that
+# pipeline exists it should push to GHCR as ghcr.io/rombond/tipsarr:latest;
+# until then, either build/push that tag manually or point `image:` below at
+# whatever tag you're using.
 #
-#   docker compose -f deployments/docker-compose.yml --env-file .env up --build -d
+# Run from the repo root:
+#   docker compose -f deployments/docker-compose.yml up -d
 #
-# `--env-file .env` is required so Compose can substitute the ${...} values
-# below from your repo-root .env when building. VITE_* build args (all but
-# VITE_SEERR_URL) are baked into the static bundle — changing them requires
-# `--build` again. SEERR_UPSTREAM is read by nginx at container *start*, so it
-# can be changed with a plain restart, no rebuild needed.
+# SEERR_UPSTREAM is read by nginx at container *start*, so it can be changed
+# with a plain restart, no rebuild needed. Every other VITE_* setting is baked
+# into the image at build time (see deployments/Dockerfile) — changing one
+# means publishing a new image.
 services:
   tipsarr:
-    build:
-      context: ..
-      dockerfile: deployments/Dockerfile
-      args:
-        VITE_BOXARR_URL: ${VITE_BOXARR_URL}
-        VITE_SUGGESTARR_URL: ${VITE_SUGGESTARR_URL}
-        VITE_RADARR_URL: ${VITE_RADARR_URL}
-        VITE_RADARR_API_KEY: ${VITE_RADARR_API_KEY}
-        VITE_TMDB_API_URL: ${VITE_TMDB_API_URL}
-        VITE_TMDB_IMAGE_BASE: ${VITE_TMDB_IMAGE_BASE}
-        VITE_TMDB_API_KEY: ${VITE_TMDB_API_KEY}
-    image: tipsarr:latest
+    image: ghcr.io/rombond/tipsarr:latest
     container_name: tipsarr
     restart: unless-stopped
     ports:

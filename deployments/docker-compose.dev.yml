@@ -1,19 +1,31 @@
-# Dev server with hot reload, for developing against this repo without a
-# local Bun install. Run from the repo root:
+# Local dev/testing — builds the production Dockerfile locally, so you can
+# test the real nginx+static build without waiting on CI. Run from the repo
+# root:
 #
-#   docker compose -f deployments/docker-compose.dev.yml up
+#   docker compose -f deployments/docker-compose.dev.yml --env-file .env up --build -d
 #
-# Vite loads .env directly from the mounted repo, so no --env-file is needed
-# here (unlike docker-compose.yml, which needs env vars for Docker build args).
+# `--env-file .env` is required so Compose can substitute the ${...} values
+# below from your repo-root .env when building. VITE_* build args (all but
+# VITE_SEERR_URL) are baked into the static bundle — changing them requires
+# `--build` again. SEERR_UPSTREAM is read by nginx at container *start*, so it
+# can be changed with a plain restart, no rebuild needed.
 services:
-  tipsarr-dev:
-    image: oven/bun:1
+  tipsarr:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile
+      args:
+        VITE_BOXARR_URL: ${VITE_BOXARR_URL}
+        VITE_SUGGESTARR_URL: ${VITE_SUGGESTARR_URL}
+        VITE_RADARR_URL: ${VITE_RADARR_URL}
+        VITE_RADARR_API_KEY: ${VITE_RADARR_API_KEY}
+        VITE_TMDB_API_URL: ${VITE_TMDB_API_URL}
+        VITE_TMDB_IMAGE_BASE: ${VITE_TMDB_IMAGE_BASE}
+        VITE_TMDB_API_KEY: ${VITE_TMDB_API_KEY}
+    image: tipsarr:dev
     container_name: tipsarr-dev
-    working_dir: /app
-    command: sh -c "bun install && bun dev --host 0.0.0.0"
-    volumes:
-      - ..:/app
-      - /app/node_modules
-      - /app/.svelte-kit
+    restart: unless-stopped
     ports:
-      - '5173:5173'
+      - '3000:80'
+    environment:
+      SEERR_UPSTREAM: ${VITE_SEERR_URL}
