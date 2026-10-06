@@ -19,7 +19,7 @@
 		<header class="sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/85 px-4 py-2 backdrop-blur">
 			<SearchBox />
 		</header>
-		<div class="p-4 pb-24 md:p-6 md:pb-6">
+		<div class="animate-in fade-in p-4 pb-24 duration-300 md:p-6 md:pb-6">
 			{@render children()}
 		</div>
 		<MobileNav pending={auth.isAdmin ? counts.pending : 0} />

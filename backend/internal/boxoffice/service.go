@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/servarr"
 	"github.com/Rombond/tipsarr/backend/internal/media"
@@ -245,11 +246,20 @@ func (s *Service) match(ctx context.Context, title string) *media.Item {
 	return recentAny
 }
 
+// truncate shortens s to at most n bytes at a word boundary, adding an ellipsis.
 func truncate(s string, n int) string {
 	if len(s) <= n {
 		return s
 	}
-	return s[:n]
+	cut := s[:n]
+	if i := strings.LastIndexAny(cut, " \t\n"); i > n/2 {
+		cut = cut[:i]
+	}
+	// never split a multi-byte character
+	for len(cut) > 0 && !utf8.ValidString(cut) {
+		cut = cut[:len(cut)-1]
+	}
+	return strings.TrimRight(cut, " ,.;:-") + "…"
 }
 
 // ---- reading -------------------------------------------------------------------------------

@@ -20,7 +20,7 @@
 	});
 
 	$effect(() => {
-		if (slides.length < 2 || paused) return;
+		if (slides.length < 2 || paused || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 		const t = setInterval(() => (index = (index + 1) % slides.length), 8000);
 		return () => clearInterval(t);
 	});

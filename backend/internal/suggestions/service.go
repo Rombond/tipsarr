@@ -13,8 +13,10 @@ import (
 	"errors"
 	"log/slog"
 	"sort"
+	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/media"
@@ -185,10 +187,7 @@ func itemFromSnapshot(it store.SuggestionItem) media.Item {
 }
 
 func snapshot(rowID string, pos int, it media.Item) store.SuggestionItem {
-	ov := it.Overview
-	if len(ov) > 400 {
-		ov = ov[:400]
-	}
+	ov := shorten(it.Overview, 400)
 	return store.SuggestionItem{
 		RowID: rowID, Pos: pos, MediaType: it.Type, TMDBID: int64(it.TMDBID), Title: it.Title, PosterPath: it.PosterPath,
 		ReleaseDate: it.ReleaseDate, VoteTenths: int(it.VoteAverage * 10), Overview: ov,
@@ -451,4 +450,19 @@ func filterItems(in []media.Item, watched map[string]bool, seen map[string]bool)
 		out = append(out, it)
 	}
 	return out
+}
+
+// shorten cuts text at a word boundary (never mid-character) and adds an ellipsis.
+func shorten(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	cut := s[:n]
+	if i := strings.LastIndexAny(cut, " \t\n"); i > n/2 {
+		cut = cut[:i]
+	}
+	for len(cut) > 0 && !utf8.ValidString(cut) {
+		cut = cut[:len(cut)-1]
+	}
+	return strings.TrimRight(cut, " ,.;:-") + "…"
 }
