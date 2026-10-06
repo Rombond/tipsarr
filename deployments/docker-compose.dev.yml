@@ -1,31 +1,27 @@
-# Local dev/testing — builds the production Dockerfile locally, so you can
-# test the real nginx+static build without waiting on CI. Run from the repo
-# root:
+# Local build and run of the single Tipsarr image (frontend embedded in the Go binary).
+# From the repo root:
 #
-#   docker compose -f deployments/docker-compose.dev.yml --env-file .env up --build -d
+#   docker compose -f deployments/docker-compose.dev.yml up --build
 #
-# `--env-file .env` is required so Compose can substitute the ${...} values
-# below from your repo-root .env when building. VITE_* build args (all but
-# VITE_SEERR_URL) are baked into the static bundle — changing them requires
-# `--build` again. SEERR_UPSTREAM is read by nginx at container *start*, so it
-# can be changed with a plain restart, no rebuild needed.
+# Then open http://localhost:8080. Data (SQLite, caches) lives in the `tipsarr-data` volume.
+# Dry-run is ON by default: nothing is ever sent to Radarr/Sonarr until you set
+# TIPSARR_DRY_RUN=false (restart required).
 services:
   tipsarr:
     build:
       context: ..
-      dockerfile: deployments/Dockerfile
-      args:
-        VITE_BOXARR_URL: ${VITE_BOXARR_URL}
-        VITE_SUGGESTARR_URL: ${VITE_SUGGESTARR_URL}
-        VITE_RADARR_URL: ${VITE_RADARR_URL}
-        VITE_RADARR_API_KEY: ${VITE_RADARR_API_KEY}
-        VITE_TMDB_API_URL: ${VITE_TMDB_API_URL}
-        VITE_TMDB_IMAGE_BASE: ${VITE_TMDB_IMAGE_BASE}
-        VITE_TMDB_API_KEY: ${VITE_TMDB_API_KEY}
+      dockerfile: Dockerfile
     image: tipsarr:dev
     container_name: tipsarr-dev
     restart: unless-stopped
     ports:
-      - '3000:80'
+      - '8080:8080'
     environment:
-      SEERR_UPSTREAM: ${VITE_SEERR_URL}
+      TIPSARR_DRY_RUN: ${TIPSARR_DRY_RUN:-true}
+      # TIPSARR_JELLYFIN_URL: http://jellyfin:8096   # optional: skips the Jellyfin step of the setup page
+      # TIPSARR_DB_URL: postgres://user:pass@host:5432/tipsarr?sslmode=disable   # default: SQLite in /config
+    volumes:
+      - tipsarr-data:/config
+
+volumes:
+  tipsarr-data:

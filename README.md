@@ -2,7 +2,7 @@
 
 Self-hosted media discovery and requests for your [Jellyfin](https://jellyfin.org) library: one Go backend, one Svelte frontend, one login (your Jellyfin account). MIT licensed.
 
-> Work in progress (rewrite). Currently implemented: Jellyfin login, first-run setup, discover / search / details / person / collection pages (TMDB), image cache. Requests, suggestions and box office come next. **Dry-run is on by default: nothing is ever sent to Radarr/Sonarr.**
+> Work in progress (rewrite). Implemented: Jellyfin login, discover / search / details, library and watch-history sync with availability badges, requests with approval (Radarr/Sonarr, anime folder), live updates (SSE), outgoing webhooks, Netflix-style suggestions per user, weekend box office, watchlist and blocklist, users admin. **Dry-run is on by default: nothing is ever sent to Radarr/Sonarr until you set `TIPSARR_DRY_RUN=false`.**
 
 ## Run locally
 
@@ -19,6 +19,14 @@ cd frontend && npm ci && npm run dev
 Open http://localhost:5173. On first run the setup page asks for your Jellyfin URL (and optionally a TMDB API key / read token); then sign in with a Jellyfin account. The first Jellyfin administrator to sign in becomes the Tipsarr admin and can set the TMDB key under Settings.
 
 Backend environment (all optional): `TIPSARR_PORT` (8080), `TIPSARR_CONFIG_DIR` (`./config`), `TIPSARR_DB_URL` (default `sqlite:<config>/tipsarr.db`; also `postgres://…` or `mysql://user:pass@host:3306/db`), `TIPSARR_JELLYFIN_URL`, `TIPSARR_DRY_RUN` (default `true`), `TIPSARR_LOG_LEVEL`.
+
+## Docker (single image)
+
+```bash
+docker compose -f deployments/docker-compose.dev.yml up --build     # http://localhost:8080
+```
+
+The image contains the Go binary with the built frontend embedded; data lives in the `/config` volume.
 
 ## Develop
 

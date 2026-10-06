@@ -10,6 +10,8 @@
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
+	import BookmarkIcon from '@lucide/svelte/icons/bookmark';
+	import UserIcon from '@lucide/svelte/icons/user';
 	import TicketIcon from '@lucide/svelte/icons/ticket';
 	import ServerIcon from '@lucide/svelte/icons/server';
 	import BellIcon from '@lucide/svelte/icons/bell';
@@ -19,6 +21,7 @@
 			{ href: '/discover', label: 'Discover', icon: CompassIcon },
 			{ href: '/boxoffice', label: 'Box office', icon: TicketIcon },
 			{ href: '/requests', label: 'Requests', icon: ListIcon },
+			{ href: '/watchlist', label: 'Watchlist', icon: BookmarkIcon },
 			...(auth.isAdmin
 				? [
 						{ href: '/admin/users', label: 'Users', icon: UsersIcon },
@@ -72,6 +75,10 @@
 				<span class="truncate">{auth.username || 'Account'}</span>
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content side="top" align="start" class="w-48">
+				<DropdownMenu.Item onclick={() => goto('/profile')}>
+					<UserIcon />
+					Profile
+				</DropdownMenu.Item>
 				<DropdownMenu.Item onclick={handleLogout}>
 					<LogOutIcon />
 					Log out

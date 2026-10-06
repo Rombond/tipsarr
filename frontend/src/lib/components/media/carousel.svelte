@@ -15,6 +15,7 @@
 		onLoadMore,
 		onSelect,
 		onRetry,
+		onDismiss,
 	}: {
 		title: string;
 		items?: MediaItem[];
@@ -24,6 +25,7 @@
 		onLoadMore?: () => void;
 		onSelect?: (item: MediaItem) => void;
 		onRetry?: () => void;
+		onDismiss?: (item: MediaItem) => void;
 	} = $props();
 
 	let scrollEl: HTMLDivElement | undefined = $state();
@@ -61,7 +63,7 @@
 	{:else}
 		<div bind:this={scrollEl} class="no-scrollbar flex gap-3 overflow-x-auto pb-2 snap-x" onscroll={handleScroll}>
 			{#each items as item (`${item.type}:${item.tmdbId}`)}
-				<MediaCard {item} {onSelect} />
+				<MediaCard {item} {onSelect} {onDismiss} />
 			{/each}
 			{#if loading}
 				{#each { length: 6 } as _, i (i)}

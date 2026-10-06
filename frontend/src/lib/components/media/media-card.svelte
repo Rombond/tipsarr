@@ -3,6 +3,7 @@
 	import { imageUrl, type MediaItem } from '$lib/api/client';
 	import { Badge } from '$lib/components/ui/badge';
 	import InfoIcon from '@lucide/svelte/icons/info';
+	import XIcon from '@lucide/svelte/icons/x';
 
 	let {
 		item,
@@ -10,6 +11,7 @@
 		rank,
 		note,
 		inRadarr = false,
+		onDismiss,
 	}: {
 		item: MediaItem;
 		onSelect?: (item: MediaItem) => void;
@@ -19,6 +21,8 @@
 		note?: string;
 		/** Radarr already tracks this movie. */
 		inRadarr?: boolean;
+		/** Shows a "not interested" button on hover (used by suggestion rows). */
+		onDismiss?: (item: MediaItem) => void;
 	} = $props();
 
 	const poster = $derived(imageUrl(item.posterPath, 'w342'));
@@ -55,6 +59,17 @@
 		{/if}
 		{#if rank}
 			<span class="pointer-events-none absolute bottom-1 left-2 font-black text-4xl text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{rank}</span>
+		{/if}
+		{#if onDismiss}
+			<button
+				type="button"
+				aria-label="Not interested"
+				title="Not interested: hide from my suggestions"
+				class="absolute right-1.5 bottom-1.5 flex size-7 cursor-pointer items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 shadow transition-opacity group-hover:opacity-100 hover:bg-background"
+				onclick={() => onDismiss(item)}
+			>
+				<XIcon class="size-4" />
+			</button>
 		{/if}
 		<button
 			type="button"

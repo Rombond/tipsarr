@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { api, unwrap, type Schemas } from '$lib/api/client';
+	import { api, unwrap, expectOk, type Schemas } from '$lib/api/client';
 	import { onEvent, stream } from '$lib/events.svelte';
 	import Carousel from '$lib/components/media/carousel.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -41,6 +41,17 @@
 		}),
 	);
 
+	async function dismiss(item: Schemas['Item']) {
+		// optimistic: remove it everywhere right away, restore on failure
+		const before = rows;
+		rows = rows.map((r) => ({ ...r, items: r.items.filter((i) => !(i.type === item.type && i.tmdbId === item.tmdbId)) }));
+		try {
+			await expectOk(api.POST('/blocklist', { body: { type: item.type, tmdbId: item.tmdbId } }));
+		} catch {
+			rows = before;
+		}
+	}
+
 	async function refresh() {
 		refreshing = true;
 		refreshMessage = null;
@@ -67,7 +78,7 @@
 {:else}
 	<div class="grid gap-6">
 		{#each rows as row (row.id)}
-			<Carousel title={row.title} items={row.items} {onSelect} />
+			<Carousel title={row.title} items={row.items} {onSelect} onDismiss={dismiss} />
 		{/each}
 		<div class="flex items-center gap-3 text-xs text-muted-foreground">
 			<Button size="sm" variant="ghost" disabled={refreshing || generating} onclick={refresh}>

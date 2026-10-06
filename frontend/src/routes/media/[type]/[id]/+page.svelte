@@ -7,6 +7,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Carousel from '$lib/components/media/carousel.svelte';
 	import RequestButton from '$lib/components/requests/request-button.svelte';
+	import MarkButtons from '$lib/components/media/mark-buttons.svelte';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 
@@ -147,6 +148,7 @@
 						<ExternalLinkIcon data-icon="inline-end" />
 					</Button>
 				</div>
+				<MarkButtons type={mediaType} {tmdbId} />
 			</div>
 
 			<!-- 2. info sidebar: right column on desktop, before Cast on mobile -->

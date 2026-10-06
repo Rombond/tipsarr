@@ -1,22 +1,24 @@
-# Production deployment — runs the image built and published by CI (a GitHub
-# Actions pipeline, not set up yet), rather than building locally. Once that
-# pipeline exists it should push to GHCR as ghcr.io/rombond/tipsarr:latest;
-# until then, either build/push that tag manually or point `image:` below at
-# whatever tag you're using.
+# Production: runs the published image instead of building locally. There is no CI pipeline
+# yet, so build and tag the image yourself first (`docker build -t ghcr.io/rombond/tipsarr:latest .`)
+# or point `image:` at whatever tag you use.
 #
-# Run from the repo root:
 #   docker compose -f deployments/docker-compose.yml up -d
 #
-# SEERR_UPSTREAM is read by nginx at container *start*, so it can be changed
-# with a plain restart, no rebuild needed. Every other VITE_* setting is baked
-# into the image at build time (see deployments/Dockerfile) — changing one
-# means publishing a new image.
+# Dry-run is ON by default (nothing is sent to Radarr/Sonarr). Turn it off deliberately with
+# TIPSARR_DRY_RUN=false, only after trying one real request.
 services:
   tipsarr:
     image: ghcr.io/rombond/tipsarr:latest
     container_name: tipsarr
     restart: unless-stopped
     ports:
-      - '3000:80'
+      - '8080:8080'
     environment:
-      SEERR_UPSTREAM: ${VITE_SEERR_URL}
+      TIPSARR_DRY_RUN: ${TIPSARR_DRY_RUN:-true}
+      # TIPSARR_JELLYFIN_URL: http://jellyfin:8096
+      # TIPSARR_DB_URL: postgres://user:pass@host:5432/tipsarr?sslmode=disable
+    volumes:
+      - tipsarr-data:/config
+
+volumes:
+  tipsarr-data:
