@@ -5,16 +5,9 @@ import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd(), '');
-	const seerrProxy = env.VITE_SEERR_URL
-		? {
-				'/seerr-api': {
-					target: env.VITE_SEERR_URL,
-					changeOrigin: true,
-					cookieDomainRewrite: '',
-					rewrite: (path: string) => path.replace(/^\/seerr-api/, '')
-				}
-			}
-		: undefined;
+	// Dev: the SPA and the Go backend look like one origin, so the session cookie stays first-party.
+	const backend = env.TIPSARR_BACKEND_URL || 'http://localhost:8080';
+	const proxy = { '/api': { target: backend, changeOrigin: false } };
 
 	return {
 		plugins: [
@@ -25,9 +18,8 @@ export default defineConfig(({ mode }) => {
 					runes: ({ filename }) => filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 				},
 
-				// This is a client-only SPA (ssr = false everywhere, see src/routes/+layout.ts) —
-				// adapter-static with a fallback builds a static bundle served behind any web
-				// server (see deployments/), with SvelteKit's client router handling all routes.
+				// Client-only SPA (ssr = false, see src/routes/+layout.ts). The Go backend embeds the
+				// built `build/` folder and serves it, falling back to index.html for client routes.
 				adapter: adapter({
 					pages: 'build',
 					assets: 'build',
@@ -37,12 +29,7 @@ export default defineConfig(({ mode }) => {
 				})
 			})
 		],
-		server: {
-			allowedHosts: ['server.brebond'],
-			proxy: seerrProxy
-		},
-		preview: {
-			proxy: seerrProxy
-		}
+		server: { proxy },
+		preview: { proxy }
 	};
 });

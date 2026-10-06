@@ -1,18 +1,20 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { posterUrl } from '$lib/api/seerr';
+	import { imageUrl } from '$lib/api/client';
 
-	let { person }: { person: { id: number; name: string; profilePath?: string | null } } = $props();
+	let { person }: { person: { id: number; name: string; profilePath?: string } } = $props();
+
+	const photo = $derived(imageUrl(person.profilePath, 'w185'));
 </script>
 
 <button
 	type="button"
-	class="w-40 shrink-0 snap-start text-left"
+	class="w-40 shrink-0 cursor-pointer snap-start text-left"
 	onclick={() => goto(`/person/${person.id}`)}
 >
 	<div class="aspect-[2/3] w-full overflow-hidden rounded-lg bg-muted shadow-sm transition-shadow hover:shadow-md">
-		{#if person.profilePath}
-			<img src={posterUrl(person.profilePath)} alt={person.name} class="h-full w-full object-cover" loading="lazy" />
+		{#if photo}
+			<img src={photo} alt={person.name} class="h-full w-full object-cover" loading="lazy" />
 		{:else}
 			<div class="flex h-full w-full items-center justify-center text-muted-foreground text-xs">No image</div>
 		{/if}

@@ -1,38 +1,30 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { search } from '$lib/api/seerr';
-	import { fromSeerrResult, type MediaItem } from '$lib/api/media';
+	import { api, unwrap, type Schemas } from '$lib/api/client';
 	import MediaCard from '$lib/components/media/media-card.svelte';
 	import PersonCard from '$lib/components/media/person-card.svelte';
-	import MediaDetailModal from '$lib/components/media/media-detail-modal.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
 	let query = $derived(page.url.searchParams.get('q') || '');
 
 	let loading = $state(true);
-	let error: Error | null = $state(null);
-	let movies: MediaItem[] = $state([]);
-	let tv: MediaItem[] = $state([]);
-	let people: any[] = $state([]);
+	let error = $state<Error | null>(null);
+	let result = $state<Schemas['SearchResult'] | null>(null);
 
-	let selected: MediaItem | null = $state(null);
+	const movies = $derived(result?.items.filter((i) => i.type === 'movie') ?? []);
+	const shows = $derived(result?.items.filter((i) => i.type === 'tv') ?? []);
+	const people = $derived(result?.people ?? []);
 
 	async function load() {
 		if (!query) {
-			movies = [];
-			tv = [];
-			people = [];
+			result = null;
 			loading = false;
 			return;
 		}
 		loading = true;
 		error = null;
 		try {
-			const data = await search(query);
-			const results = data.results || [];
-			movies = results.filter((r: any) => r.mediaType === 'movie').map(fromSeerrResult);
-			tv = results.filter((r: any) => r.mediaType === 'tv').map(fromSeerrResult);
-			people = results.filter((r: any) => r.mediaType === 'person');
+			result = await unwrap(api.GET('/search', { params: { query: { q: query } } }));
 		} catch (e) {
 			error = e as Error;
 		} finally {
@@ -41,12 +33,13 @@
 	}
 
 	$effect(() => {
-		if (query) load();
+		query;
+		load();
 	});
 </script>
 
 <svelte:head>
-	<meta name="description" content="TipsArr search" />
+	<title>Search · Tipsarr</title>
 </svelte:head>
 
 <div class="grid gap-8">
@@ -63,25 +56,25 @@
 			Error: {error.message}
 			<button class="ml-2 underline" onclick={load}>Retry</button>
 		</div>
-	{:else if !movies.length && !tv.length && !people.length}
+	{:else if !movies.length && !shows.length && !people.length}
 		<p class="text-muted-foreground text-sm">No results found.</p>
 	{:else}
 		{#if movies.length}
 			<section class="grid gap-2">
 				<h2 class="font-semibold text-lg">Movies</h2>
 				<div class="flex flex-wrap gap-4">
-					{#each movies as item (item.key)}
-						<MediaCard {item} onSelect={(i) => (selected = i)} />
+					{#each movies as item (item.tmdbId)}
+						<MediaCard {item} />
 					{/each}
 				</div>
 			</section>
 		{/if}
-		{#if tv.length}
+		{#if shows.length}
 			<section class="grid gap-2">
 				<h2 class="font-semibold text-lg">TV Shows</h2>
 				<div class="flex flex-wrap gap-4">
-					{#each tv as item (item.key)}
-						<MediaCard {item} onSelect={(i) => (selected = i)} />
+					{#each shows as item (item.tmdbId)}
+						<MediaCard {item} />
 					{/each}
 				</div>
 			</section>
@@ -98,5 +91,3 @@
 		{/if}
 	{/if}
 </div>
-
-<MediaDetailModal open={selected !== null} item={selected} onclose={() => (selected = null)} />

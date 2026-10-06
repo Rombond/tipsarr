@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { MediaItem } from '$lib/api/media';
+	import type { MediaItem } from '$lib/api/client';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Button } from '$lib/components/ui/button';
 	import MediaCard from './media-card.svelte';
@@ -60,7 +60,7 @@
 		</div>
 	{:else}
 		<div bind:this={scrollEl} class="no-scrollbar flex gap-3 overflow-x-auto pb-2 snap-x" onscroll={handleScroll}>
-			{#each items as item (item.key)}
+			{#each items as item (`${item.type}:${item.tmdbId}`)}
 				<MediaCard {item} {onSelect} />
 			{/each}
 			{#if loading}

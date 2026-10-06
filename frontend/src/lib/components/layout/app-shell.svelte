@@ -3,6 +3,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import { Input } from '$lib/components/ui/input';
 	import AppSidebar from './app-sidebar.svelte';
+	import DryRunBanner from './dry-run-banner.svelte';
 	import SearchIcon from '@lucide/svelte/icons/search';
 
 	let { children } = $props();
@@ -19,6 +20,7 @@
 <Sidebar.Provider>
 	<AppSidebar />
 	<Sidebar.Inset>
+		<DryRunBanner />
 		<div class="flex items-center gap-2 border-b border-border px-4 py-2">
 			<Sidebar.Trigger class="md:hidden" />
 			<div class="relative w-full max-w-md">

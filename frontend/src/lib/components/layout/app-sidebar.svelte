@@ -37,7 +37,7 @@
 
 <Sidebar.Root>
 	<Sidebar.Header>
-		<span class="px-2 py-1.5 font-bold text-lg">TipsArr</span>
+		<span class="px-2 py-1.5 font-bold text-lg">Tipsarr</span>
 	</Sidebar.Header>
 	<Sidebar.Content>
 		<Sidebar.Group>

@@ -1,15 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import {
-		getMovieDetails,
-		getTvDetails,
-		getMovieRecommendations,
-		getTvRecommendations,
-		createRequest,
-		posterUrl,
-	} from '$lib/api/seerr';
-	import { fromSeerrResult, type MediaItem } from '$lib/api/media';
+	import { api, unwrap, imageUrl, type MediaDetail } from '$lib/api/client';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -17,53 +9,24 @@
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 
-	const AVAILABILITY_LABELS: Record<number, string> = {
-		1: 'Unknown',
-		2: 'Pending',
-		3: 'Processing',
-		4: 'Partially Available',
-		5: 'Available',
-		6: 'Deleted',
-	};
-
 	let mediaType: 'movie' | 'tv' = $derived(page.params.type === 'tv' ? 'tv' : 'movie');
 	let tmdbId = $derived(Number(page.params.id));
 
-	let details: any = $state(null);
+	let details = $state<MediaDetail | null>(null);
 	let loading = $state(true);
-	let error: Error | null = $state(null);
-
-	let recommendations: MediaItem[] = $state([]);
-	let recsLoading = $state(true);
-
-	let requesting = $state(false);
-	let requestError: string | null = $state(null);
-	let requested = $state(false);
+	let error = $state<Error | null>(null);
 
 	async function load() {
 		loading = true;
 		error = null;
-		requested = false;
-		requestError = null;
 		try {
-			details = mediaType === 'tv' ? await getTvDetails(tmdbId) : await getMovieDetails(tmdbId);
+			details = await unwrap(
+				api.GET('/media/{type}/{id}', { params: { path: { type: mediaType, id: tmdbId } } }),
+			);
 		} catch (e) {
 			error = e as Error;
 		} finally {
 			loading = false;
-		}
-
-		recsLoading = true;
-		try {
-			const data =
-				mediaType === 'tv' ? await getTvRecommendations(tmdbId) : await getMovieRecommendations(tmdbId);
-			recommendations = (data.results || []).map((r: any) =>
-				fromSeerrResult({ ...r, mediaType: r.mediaType || mediaType }),
-			);
-		} catch {
-			recommendations = [];
-		} finally {
-			recsLoading = false;
 		}
 	}
 
@@ -71,42 +34,24 @@
 		if (mediaType && tmdbId) load();
 	});
 
-	function goToRecommendation(item: MediaItem) {
-		goto(`/media/${item.mediaType}/${item.tmdbId}`);
-	}
-
-	async function handleRequest() {
-		requesting = true;
-		requestError = null;
-		try {
-			await createRequest({ mediaType, mediaId: tmdbId, ...(mediaType === 'tv' ? { seasons: 'all' } : {}) });
-			requested = true;
-		} catch (e) {
-			requestError = (e as Error).message;
-		} finally {
-			requesting = false;
-		}
-	}
-
-	let alreadyAvailable = $derived(
-		details?.mediaInfo?.status === 5 || details?.mediaInfo?.status === 4,
+	const runtimeLabel = $derived(
+		details?.runtimeMinutes
+			? mediaType === 'tv'
+				? `${details.runtimeMinutes}m/ep`
+				: `${Math.floor(details.runtimeMinutes / 60)}h ${details.runtimeMinutes % 60}m`
+			: null,
 	);
-	let runtimeLabel = $derived(
-		details?.runtime
-			? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}m`
-			: details?.episodeRunTime?.[0]
-				? `${details.episodeRunTime[0]}m/ep`
-				: null,
+	const year = $derived((details?.releaseDate || '').slice(0, 4));
+	const language = $derived(
+		details?.originalLanguage
+			? (new Intl.DisplayNames(['en'], { type: 'language' }).of(details.originalLanguage) ?? details.originalLanguage)
+			: null,
 	);
-	let year = $derived((details?.releaseDate || details?.firstAirDate || '').slice(0, 4));
-	let cast = $derived((details?.credits?.cast || []).slice(0, 12));
-	let studios = $derived(
-		mediaType === 'tv' ? details?.networks : details?.productionCompanies,
-	);
+	const seasons = $derived((details?.seasons ?? []).filter((s) => s.number > 0));
 </script>
 
 <svelte:head>
-	<meta name="description" content="TipsArr media details" />
+	<title>{details?.title ?? 'Details'} · Tipsarr</title>
 </svelte:head>
 
 {#if loading}
@@ -125,7 +70,7 @@
 		<div class="relative">
 			<div class="h-56 w-full overflow-hidden md:h-80">
 				{#if details.backdropPath}
-					<img src={posterUrl(details.backdropPath)} alt="" class="h-full w-full object-cover" />
+					<img src={imageUrl(details.backdropPath, 'w1280')} alt="" class="h-full w-full object-cover" />
 					<div class="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
 				{:else}
 					<div class="h-full w-full bg-muted"></div>
@@ -133,7 +78,7 @@
 			</div>
 			<button
 				type="button"
-				class="absolute top-4 left-4 z-10 flex items-center gap-1.5 rounded-full bg-background/80 px-3 py-1.5 text-sm shadow hover:bg-background"
+				class="absolute top-4 left-4 z-10 flex cursor-pointer items-center gap-1.5 rounded-full bg-background/80 px-3 py-1.5 text-sm shadow hover:bg-background"
 				onclick={() => history.back()}
 			>
 				<ArrowLeftIcon class="size-4" />
@@ -141,15 +86,20 @@
 			</button>
 
 			<div class="relative z-10 -mt-16 flex flex-col gap-4 px-4 sm:flex-row sm:items-end md:-mt-24 md:px-6">
-				<img
-					src={posterUrl(details.posterPath)}
-					alt={details.title || details.name}
-					class="w-32 shrink-0 rounded-lg shadow-lg sm:w-44"
-				/>
-				<div class="grid gap-2 pb-1">
-					<h1 class="font-bold text-2xl text-foreground drop-shadow md:text-3xl">{details.title || details.name}</h1>
+				{#if details.posterPath}
+					<img
+						src={imageUrl(details.posterPath, 'w342')}
+						alt={details.title}
+						class="w-32 shrink-0 rounded-lg shadow-lg sm:w-44"
+					/>
+				{/if}
+				<div class="grid gap-3 pb-1 sm:pl-2">
+					<h1 class="font-bold text-2xl text-foreground drop-shadow md:text-3xl">{details.title}</h1>
 					<div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
 						<Badge variant="secondary">{mediaType === 'tv' ? 'TV' : 'Movie'}</Badge>
+						{#if details.availability !== 'none'}
+							<Badge>{details.availability === 'available' ? 'Available' : 'Partially available'}</Badge>
+						{/if}
 						{#if year}<span>{year}</span>{/if}
 						{#if runtimeLabel}<span>· {runtimeLabel}</span>{/if}
 						{#if details.voteAverage}<span>· ★ {details.voteAverage.toFixed(1)}</span>{/if}
@@ -158,18 +108,15 @@
 			</div>
 		</div>
 
-		<div class="grid gap-6 px-4 pb-6 md:grid-cols-3 md:px-6">
-			<div class="grid gap-6 md:col-span-2">
-				{#if details.genres?.length}
+		<div class="grid gap-x-6 gap-y-6 px-4 pt-6 pb-6 md:grid-cols-3 md:px-6">
+			<!-- 1. overview + actions -->
+			<div class="grid content-start gap-6 md:col-span-2">
+				{#if details.genres.length}
 					<div class="flex flex-wrap gap-1.5">
 						{#each details.genres as genre (genre.id)}
 							<Badge variant="outline">{genre.name}</Badge>
 						{/each}
 					</div>
-				{/if}
-
-				{#if details.mediaInfo?.status}
-					<Badge variant="outline" class="w-fit">{AVAILABILITY_LABELS[details.mediaInfo.status] || 'Unknown'}</Badge>
 				{/if}
 
 				{#if details.tagline}
@@ -180,95 +127,32 @@
 					<p class="max-w-3xl text-sm leading-relaxed">{details.overview}</p>
 				{/if}
 
-				{#if requestError}
-					<p class="text-sm text-destructive">{requestError}</p>
-				{/if}
-
 				<div class="flex flex-wrap gap-2">
-					<Button onclick={handleRequest} disabled={requesting || requested || alreadyAvailable}>
-						{#if alreadyAvailable}
-							Already available
-						{:else if requested}
-							Requested
-						{:else if requesting}
-							Requesting…
-						{:else}
-							Request
-						{/if}
-					</Button>
-					{#if details.externalIds?.imdbId}
-						<Button
-							variant="outline"
-							href="https://www.imdb.com/title/{details.externalIds.imdbId}"
-							target="_blank"
-							rel="noreferrer"
-						>
+					<Button disabled title="Requests arrive in a later phase">Request</Button>
+					{#if details.imdbId}
+						<Button variant="outline" href="https://www.imdb.com/title/{details.imdbId}" target="_blank" rel="noreferrer">
 							IMDb
 							<ExternalLinkIcon data-icon="inline-end" />
 						</Button>
 					{/if}
-					<Button
-						variant="outline"
-						href="https://www.themoviedb.org/{mediaType}/{tmdbId}"
-						target="_blank"
-						rel="noreferrer"
-					>
+					<Button variant="outline" href="https://www.themoviedb.org/{mediaType}/{tmdbId}" target="_blank" rel="noreferrer">
 						TMDB
 						<ExternalLinkIcon data-icon="inline-end" />
 					</Button>
 				</div>
-
-				{#if cast.length}
-					<section class="grid gap-2">
-						<h2 class="font-semibold text-lg">Cast</h2>
-						<div class="no-scrollbar flex gap-3 overflow-x-auto pb-2">
-							{#each cast as member (member.id)}
-								<button
-									type="button"
-									class="w-24 shrink-0 text-center"
-									onclick={() => goto(`/person/${member.id}`)}
-								>
-									<div class="aspect-square w-full overflow-hidden rounded-full bg-muted">
-										{#if member.profilePath}
-											<img src={posterUrl(member.profilePath)} alt={member.name} class="h-full w-full object-cover" loading="lazy" />
-										{/if}
-									</div>
-									<p class="mt-1 truncate text-xs font-medium">{member.name}</p>
-									<p class="truncate text-[10px] text-muted-foreground">{member.character}</p>
-								</button>
-							{/each}
-						</div>
-					</section>
-				{/if}
-
-				<Carousel
-					title="More like this"
-					items={recommendations}
-					loading={recsLoading}
-					hasMore={false}
-					onSelect={goToRecommendation}
-				/>
 			</div>
 
-			<div class="grid content-start gap-4">
-				{#if details.collection}
+			<!-- 2. info sidebar: right column on desktop, before Cast on mobile -->
+			<div class="grid content-start gap-4 md:col-start-3 md:row-span-2 md:row-start-1">
+				{#if details.collectionId}
 					<button
 						type="button"
-						class="group relative block h-28 w-full overflow-hidden rounded-lg text-left shadow-sm"
-						onclick={() => goto(`/collection/${details.collection.id}`)}
+						class="group relative block h-28 w-full cursor-pointer overflow-hidden rounded-lg bg-muted text-left shadow-sm"
+						onclick={() => goto(`/collection/${details!.collectionId}`)}
 					>
-						{#if details.collection.backdropPath}
-							<img
-								src={posterUrl(details.collection.backdropPath)}
-								alt={details.collection.name}
-								class="h-full w-full object-cover transition-transform group-hover:scale-105"
-							/>
-						{:else}
-							<div class="h-full w-full bg-muted"></div>
-						{/if}
 						<div class="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 to-transparent p-3">
 							<span class="text-[10px] tracking-wide text-white/70 uppercase">Part of the collection</span>
-							<span class="truncate font-semibold text-sm text-white">{details.collection.name}</span>
+							<span class="truncate font-semibold text-sm text-white">{details.collectionName}</span>
 						</div>
 					</button>
 				{/if}
@@ -281,40 +165,26 @@
 							<span>{details.status}</span>
 						</div>
 					{/if}
-					{#if details.originalLanguage}
+					{#if language}
 						<div class="grid gap-0.5">
-							<span class="text-xs text-muted-foreground">Original Language</span>
-							<span>{new Intl.DisplayNames(['en'], { type: 'language' }).of(details.originalLanguage) || details.originalLanguage}</span>
+							<span class="text-xs text-muted-foreground">Original language</span>
+							<span>{language}</span>
 						</div>
 					{/if}
-					{#if (details.originalTitle || details.originalName) && (details.originalTitle || details.originalName) !== (details.title || details.name)}
+					{#if details.directors.length}
 						<div class="grid gap-0.5">
-							<span class="text-xs text-muted-foreground">Original Title</span>
-							<span>{details.originalTitle || details.originalName}</span>
+							<span class="text-xs text-muted-foreground">Director</span>
+							<span class="flex flex-wrap gap-x-2">
+								{#each details.directors as d (d.id)}
+									<a class="underline-offset-2 hover:underline" href="/person/{d.id}">{d.name}</a>
+								{/each}
+							</span>
 						</div>
 					{/if}
-					{#if studios?.length}
-						<div class="grid gap-0.5">
-							<span class="text-xs text-muted-foreground">{mediaType === 'tv' ? 'Network' : 'Studio'}</span>
-							<span>{studios.map((s: any) => s.name).join(', ')}</span>
-						</div>
-					{/if}
-					{#if mediaType === 'movie' && details.budget}
-						<div class="grid gap-0.5">
-							<span class="text-xs text-muted-foreground">Budget</span>
-							<span>${details.budget.toLocaleString()}</span>
-						</div>
-					{/if}
-					{#if mediaType === 'movie' && details.revenue}
-						<div class="grid gap-0.5">
-							<span class="text-xs text-muted-foreground">Revenue</span>
-							<span>${details.revenue.toLocaleString()}</span>
-						</div>
-					{/if}
-					{#if mediaType === 'tv' && details.numberOfSeason}
+					{#if mediaType === 'tv' && details.numberOfSeasons}
 						<div class="grid gap-0.5">
 							<span class="text-xs text-muted-foreground">Seasons</span>
-							<span>{details.numberOfSeason}</span>
+							<span>{details.numberOfSeasons}</span>
 						</div>
 					{/if}
 					{#if mediaType === 'tv' && details.numberOfEpisodes}
@@ -324,6 +194,55 @@
 						</div>
 					{/if}
 				</div>
+			</div>
+
+			<!-- 3. seasons + cast -->
+			<div class="grid content-start gap-6 md:col-span-2">
+				{#if mediaType === 'tv' && seasons.length}
+					<section class="grid gap-2">
+						<h2 class="font-semibold text-lg">Seasons</h2>
+						<ul class="grid gap-1.5 text-sm">
+							{#each seasons as s (s.number)}
+								<li class="flex items-center justify-between rounded-md border border-border px-3 py-2">
+									<span class="font-medium">{s.name || `Season ${s.number}`}</span>
+									<span class="text-muted-foreground">
+										{s.episodeCount} episodes{#if s.airDate} · {s.airDate.slice(0, 4)}{/if}
+									</span>
+								</li>
+							{/each}
+						</ul>
+					</section>
+				{/if}
+
+				{#if details.cast.length}
+					<section class="grid gap-2">
+						<h2 class="font-semibold text-lg">Cast</h2>
+						<div class="no-scrollbar flex gap-3 overflow-x-auto pb-2">
+							{#each details.cast as member (member.id)}
+								<button
+									type="button"
+									class="w-24 shrink-0 cursor-pointer text-center"
+									onclick={() => goto(`/person/${member.id}`)}
+								>
+									<div class="aspect-square w-full overflow-hidden rounded-full bg-muted">
+										{#if member.profilePath}
+											<img src={imageUrl(member.profilePath, 'w185')} alt={member.name} class="h-full w-full object-cover" loading="lazy" />
+										{/if}
+									</div>
+									<p class="mt-1 truncate text-xs font-medium">{member.name}</p>
+									<p class="truncate text-[10px] text-muted-foreground">{member.character}</p>
+								</button>
+							{/each}
+						</div>
+					</section>
+				{/if}
+			</div>
+
+			<!-- 4. full-width recommendations -->
+			<div class="md:col-span-3">
+				{#if details.recommendations.length}
+					<Carousel title="More like this" items={details.recommendations} />
+				{/if}
 			</div>
 		</div>
 	</div>
