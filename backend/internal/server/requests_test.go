@@ -513,3 +513,102 @@ func TestRequestOptionsAndOverrides(t *testing.T) {
 		t.Fatalf("radarr body = %v", radarr.posted)
 	}
 }
+
+func TestUserProfile(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	_, body := call(t, e.app, "GET", "/api/v1/me", "", bob)
+	var me struct{ ID string }
+	_ = json.Unmarshal([]byte(body), &me)
+	if me.ID == "" {
+		t.Fatalf("me = %s", body)
+	}
+	call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5}`, bob)
+
+	resp, body := call(t, e.app, "GET", "/api/v1/users/"+me.ID, "", bob)
+	if resp.StatusCode != 200 || !strings.Contains(body, `"requests":1`) || !strings.Contains(body, `"pending":1`) || !strings.Contains(body, `"movies":1`) {
+		t.Fatalf("own profile = %d %s", resp.StatusCode, body)
+	}
+	if resp, _ := call(t, e.app, "GET", "/api/v1/users/"+me.ID, "", admin); resp.StatusCode != 200 {
+		t.Fatalf("admin reading a profile = %d", resp.StatusCode)
+	}
+	_, ab := call(t, e.app, "GET", "/api/v1/me", "", admin)
+	var am struct{ ID string }
+	_ = json.Unmarshal([]byte(ab), &am)
+	if resp, _ := call(t, e.app, "GET", "/api/v1/users/"+am.ID, "", bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("user reading another profile = %d", resp.StatusCode)
+	}
+	if resp, _ := call(t, e.app, "GET", "/api/v1/users/nobody", "", admin); resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("unknown user = %d", resp.StatusCode)
+	}
+	// admins can filter the request list by user
+	_, body = call(t, e.app, "GET", "/api/v1/requests?user="+am.ID, "", admin)
+	if !strings.Contains(body, `"total":0`) {
+		t.Fatalf("filtered list = %s", body)
+	}
+	_, body = call(t, e.app, "GET", "/api/v1/requests?user="+me.ID, "", admin)
+	if !strings.Contains(body, `"total":1`) {
+		t.Fatalf("filtered list = %s", body)
+	}
+}
+
+func TestIssues(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	hook := make(chan string, 4)
+	sink := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		hook <- r.Header.Get("X-Tipsarr-Event") + " " + string(b)
+	}))
+	defer sink.Close()
+	call(t, e.app, "POST", "/api/v1/admin/webhooks", `{"name":"h","url":"`+sink.URL+`","events":["issue.created","issue.resolved"],"enabled":true}`, admin)
+
+	if resp, _ := call(t, e.app, "POST", "/api/v1/issues", `{"type":"movie","tmdbId":5,"kind":"video","message":""}`, bob); resp.StatusCode != 422 {
+		t.Fatalf("empty message = %d", resp.StatusCode)
+	}
+	resp, body := call(t, e.app, "POST", "/api/v1/issues", `{"type":"movie","tmdbId":5,"kind":"subtitles","message":"French subtitles are out of sync"}`, bob)
+	if resp.StatusCode != http.StatusCreated || !strings.Contains(body, `"status":"open"`) || !strings.Contains(body, "out of sync") {
+		t.Fatalf("create = %d %s", resp.StatusCode, body)
+	}
+	var iss struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &iss)
+	select {
+	case got := <-hook:
+		if !strings.HasPrefix(got, "issue.created ") || !strings.Contains(got, "Request Me") {
+			t.Fatalf("webhook = %s", got)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("no issue.created webhook")
+	}
+
+	// visibility: the reporter and admins only (bob cannot see an issue he did not file)
+	_, body = call(t, e.app, "GET", "/api/v1/issues", "", bob)
+	if !strings.Contains(body, `"total":1`) {
+		t.Fatalf("reporter list = %s", body)
+	}
+	if _, b := call(t, e.app, "GET", "/api/v1/issues/counts", "", admin); !strings.Contains(b, `"open":1`) {
+		t.Fatalf("counts = %s", b)
+	}
+	resp, body = call(t, e.app, "POST", "/api/v1/issues/"+iss.ID+"/comments", `{"message":"Looking into it"}`, admin)
+	if resp.StatusCode != 200 || !strings.Contains(body, "Looking into it") || !strings.Contains(body, `"commentCount":2`) {
+		t.Fatalf("comment = %d %s", resp.StatusCode, body)
+	}
+	resp, body = call(t, e.app, "POST", "/api/v1/issues/"+iss.ID+"/resolve", ``, admin)
+	if resp.StatusCode != 200 || !strings.Contains(body, `"status":"resolved"`) {
+		t.Fatalf("resolve = %d %s", resp.StatusCode, body)
+	}
+	if got := <-hook; !strings.HasPrefix(got, "issue.resolved ") {
+		t.Fatalf("webhook = %s", got)
+	}
+	if resp, _ := call(t, e.app, "POST", "/api/v1/issues/"+iss.ID+"/reopen", ``, bob); resp.StatusCode != 200 {
+		t.Fatalf("reporter reopen = %d", resp.StatusCode)
+	}
+	if resp, _ := call(t, e.app, "DELETE", "/api/v1/issues/"+iss.ID, "", bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("user delete = %d", resp.StatusCode)
+	}
+	if resp, _ := call(t, e.app, "DELETE", "/api/v1/issues/"+iss.ID, "", admin); resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("admin delete = %d", resp.StatusCode)
+	}
+}

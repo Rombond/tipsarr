@@ -158,6 +158,7 @@ func (s *Service) view(ctx context.Context, r *store.Request) (*View, error) {
 
 type ListParams struct {
 	Filter     string // all | mine | pending | approved | available | declined | failed
+	User       string // admins only: list this user's requests
 	Take, Skip int
 }
 
@@ -174,6 +175,8 @@ func (s *Service) List(ctx context.Context, u *store.User, p ListParams) (*ListR
 	f := store.RequestFilter{Take: p.Take, Skip: p.Skip}
 	if u.Role != store.RoleAdmin || p.Filter == "mine" {
 		f.RequestedBy = u.ID
+	} else if p.User != "" {
+		f.RequestedBy = p.User
 	}
 	switch p.Filter {
 	case "pending", "approved", "available", "declined", "failed":

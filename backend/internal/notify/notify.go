@@ -28,9 +28,12 @@ const (
 	RequestDeclined = "request.declined"
 	RequestFailed   = "request.failed"
 	MediaAvailable  = "media.available"
+	IssueCreated    = "issue.created"
+	IssueCommented  = "issue.commented"
+	IssueResolved   = "issue.resolved"
 )
 
-var AllEvents = []string{RequestCreated, RequestApproved, RequestDeclined, RequestFailed, MediaAvailable}
+var AllEvents = []string{RequestCreated, RequestApproved, RequestDeclined, RequestFailed, MediaAvailable, IssueCreated, IssueCommented, IssueResolved}
 
 type Service struct {
 	store  *store.Store

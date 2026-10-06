@@ -3,7 +3,7 @@
 	import { api, unwrap, errorText, type Schemas } from '$lib/api/client';
 	import { toast } from '$lib/toast.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import SeasonPicker from './season-picker.svelte';
 
 	let {
 		type,
@@ -27,7 +27,6 @@
 	let busy = $state(false);
 	let error = $state<string | null>(null);
 	let pickerOpen = $state(false);
-	let picked = $state<number[]>([]);
 
 	const regular = $derived(seasons.filter((s) => s.number > 0));
 	const status = $derived(created ?? requestStatus ?? null);
@@ -64,15 +63,10 @@
 
 	function click() {
 		if (type === 'tv' && regular.length > 1) {
-			picked = regular.map((s) => s.number);
 			pickerOpen = true;
 		} else {
 			submit(regular.map((s) => s.number));
 		}
-	}
-
-	function toggle(n: number) {
-		picked = picked.includes(n) ? picked.filter((x) => x !== n) : [...picked, n].sort((a, b) => a - b);
 	}
 </script>
 
@@ -83,33 +77,4 @@
 	{#if error && !pickerOpen}<p class="text-sm text-destructive">{error}</p>{/if}
 </div>
 
-<Dialog.Root bind:open={pickerOpen}>
-	<Dialog.Content>
-		<Dialog.Header>
-			<Dialog.Title>{t('req.which_seasons')}</Dialog.Title>
-		</Dialog.Header>
-		<div class="grid max-h-72 gap-1.5 overflow-y-auto text-sm">
-			<button
-				type="button"
-				class="w-fit cursor-pointer text-xs underline"
-				onclick={() => (picked = picked.length === regular.length ? [] : regular.map((s) => s.number))}
-			>
-				{picked.length === regular.length ? t('req.select_none') : t('req.select_all')}
-			</button>
-			{#each regular as s (s.number)}
-				<label class="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2">
-					<input type="checkbox" checked={picked.includes(s.number)} onchange={() => toggle(s.number)} />
-					<span class="font-medium">{s.name || t('seasons.season', { n: s.number })}</span>
-					<span class="ml-auto text-muted-foreground">{t('seasons.episodes', { count: s.episodeCount })}</span>
-				</label>
-			{/each}
-		</div>
-		{#if error}<p class="text-sm text-destructive">{error}</p>{/if}
-		<Dialog.Footer>
-			<Button variant="outline" onclick={() => (pickerOpen = false)}>{t('common.cancel')}</Button>
-			<Button disabled={busy || picked.length === 0} onclick={() => submit(picked)}>
-				{busy ? t('media.requesting') : t('req.request_seasons', { count: picked.length })}
-			</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>
+<SeasonPicker bind:open={pickerOpen} seasons={regular} {busy} {error} onsubmit={submit} />

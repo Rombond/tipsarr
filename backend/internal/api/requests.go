@@ -52,6 +52,7 @@ func registerRequests(api huma.API, d Deps) {
 		Errors: []int{http.StatusUnauthorized},
 	}, func(ctx context.Context, in *struct {
 		Filter string `query:"filter" enum:"all,mine,pending,approved,available,declined,failed" default:"all"`
+		User   string `query:"user" maxLength:"64" doc:"Admins only: only this user's requests"`
 		Take   int    `query:"take" minimum:"1" maximum:"100" default:"20"`
 		Skip   int    `query:"skip" minimum:"0" default:"0"`
 	}) (*struct{ Body requestList }, error) {
@@ -59,7 +60,7 @@ func registerRequests(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
-		res, err := d.Requests.List(ctx, u, requests.ListParams{Filter: in.Filter, Take: in.Take, Skip: in.Skip})
+		res, err := d.Requests.List(ctx, u, requests.ListParams{Filter: in.Filter, User: in.User, Take: in.Take, Skip: in.Skip})
 		if err != nil {
 			return nil, err
 		}
