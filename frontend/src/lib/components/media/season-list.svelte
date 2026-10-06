@@ -53,17 +53,25 @@
 					{:else if error}
 						<p class="py-2 text-destructive">{error}</p>
 					{:else}
-						<ol class="grid gap-2">
+						<ol class="grid gap-3">
 							{#each episodes[s.number] ?? [] as e (e.number)}
+								{@const still = imageUrl(e.stillPath, 'w300')}
 								<li class="flex gap-3">
-									<span class="w-6 shrink-0 text-right text-muted-foreground">{e.number}</span>
-									<span class="min-w-0">
-										<span class="block font-medium">{e.name}</span>
-										<span class="block text-xs text-muted-foreground">
-											{date(e.airDate)}{#if e.runtimeMinutes} · {e.runtimeMinutes} min{/if}
-										</span>
-										{#if e.overview}<span class="mt-0.5 line-clamp-2 block text-xs text-muted-foreground">{e.overview}</span>{/if}
-									</span>
+									<div class="relative aspect-video w-36 shrink-0 overflow-hidden rounded-md bg-muted sm:w-48">
+										{#if still}
+											<img src={still} alt="" class="h-full w-full object-cover" loading="lazy" />
+										{:else}
+											<div class="flex h-full w-full items-center justify-center text-xs text-muted-foreground">No preview</div>
+										{/if}
+										<span class="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-semibold text-white">E{e.number}</span>
+									</div>
+									<div class="min-w-0 py-0.5">
+										<p class="font-medium leading-snug">{e.name}</p>
+										<p class="text-xs text-muted-foreground">
+											{date(e.airDate)}{#if e.runtimeMinutes} · {e.runtimeMinutes} min{/if}{#if e.voteAverage} · ★ {e.voteAverage.toFixed(1)}{/if}
+										</p>
+										{#if e.overview}<p class="mt-1 line-clamp-3 text-xs text-muted-foreground">{e.overview}</p>{/if}
+									</div>
 								</li>
 							{/each}
 						</ol>

@@ -24,7 +24,7 @@ const (
 	DefaultRegion  = "US" // US & Canada domestic chart (no area parameter)
 	defaultBase    = "https://www.boxofficemojo.com"
 	topN           = 10
-	backfillWeeks  = 4
+	keepWeeks      = 8 // weekends of history kept per region
 	userAgent      = "Mozilla/5.0 (compatible; Tipsarr; self-hosted media dashboard)"
 	radarrCacheTTL = time.Minute
 )
@@ -132,25 +132,33 @@ func (s *Service) fetch(ctx context.Context, region, weekKey string) (string, []
 	return label, entries, err
 }
 
-// Refresh fetches the latest chart(s) of every configured region and stores them. A region
-// with no stored history is backfilled with the last few weeks; otherwise the latest two weeks
-// are re-read (the Monday update replaces Sunday's estimates).
+// Refresh fetches the latest chart(s) of every configured region and stores them. The latest
+// two weekends are always re-read (Monday's actuals replace Sunday's estimates); older weekends
+// are filled in until `keepWeeks` are stored, so the page can show a short history.
 func (s *Service) Refresh(ctx context.Context) (string, error) {
 	var saved, failed int
 	var firstErr error
 	for _, region := range s.Regions(ctx) {
-		weeks, err := s.store.BoxOfficeWeeks(ctx, region)
+		stored, err := s.store.BoxOfficeWeeks(ctx, region)
 		if err != nil {
 			return "", err
 		}
-		count := 2
-		if len(weeks) == 0 {
-			count = backfillWeeks
+		have := map[string]bool{}
+		for _, w := range stored {
+			have[w.WeekKey] = true
 		}
-		got := 0
-		for back := 0; back < count+2 && got < count; back++ { // allow skipping weeks without a chart
+		count := len(stored)
+		fetched := 0
+		for back := 0; back < keepWeeks+4; back++ { // a few extra tries for weekends without a chart
 			key := WeekKey(s.now(), back)
-			if back > 0 || got > 0 {
+			refresh := back < 2
+			if !refresh && (have[key] || count >= keepWeeks) {
+				if count >= keepWeeks {
+					break
+				}
+				continue
+			}
+			if fetched > 0 {
 				select {
 				case <-time.After(s.pause):
 				case <-ctx.Done():
@@ -168,11 +176,15 @@ func (s *Service) Refresh(ctx context.Context) (string, error) {
 				}
 				break
 			}
+			fetched++
+			if !have[key] {
+				have[key] = true
+				count++
+			}
 			if err := s.saveWeek(ctx, region, key, label, entries); err != nil {
 				return "", err
 			}
 			saved++
-			got++
 		}
 	}
 	msg := fmt.Sprintf("%d charts stored", saved)

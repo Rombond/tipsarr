@@ -68,7 +68,7 @@ func TestBoxOffice(t *testing.T) {
 	}
 
 	ch, code := getChart(t, e, bob, "")
-	if code != 200 || ch.Region != "US" || ch.Week != "2026W40" || ch.Label != "October 2-4, 2026" || len(ch.Entries) != 5 || len(ch.Weeks) != 2 {
+	if code != 200 || ch.Region != "US" || ch.Week != "2026W40" || ch.Label != "October 2-4, 2026" || len(ch.Entries) != 5 || len(ch.Weeks) != 8 { // history is filled up to 8 weekends
 		t.Fatalf("chart = %d region=%s week=%s label=%q entries=%d weeks=%d", code, ch.Region, ch.Week, ch.Label, len(ch.Entries), len(ch.Weeks))
 	}
 	if len(ch.Regions) != 2 {

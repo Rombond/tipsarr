@@ -191,7 +191,7 @@
 						<a href="/person/{member.id}" class="w-28 shrink-0 snap-start text-center sm:w-32">
 							<div class="aspect-square w-full overflow-hidden rounded-full bg-muted ring-1 ring-border/60">
 								{#if member.profilePath}
-									<img src={imageUrl(member.profilePath, 'w185')} alt="" class="h-full w-full object-cover object-top" loading="lazy" />
+									<img src={imageUrl(member.profilePath, 'w185')} alt="" class="h-full w-full object-cover object-[50%_18%]" loading="lazy" />
 								{/if}
 							</div>
 							<p class="mt-2 line-clamp-2 text-sm font-medium leading-tight">{member.name}</p>

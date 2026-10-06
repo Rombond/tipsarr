@@ -214,7 +214,11 @@ func fakeBOM(t *testing.T) *httptest.Server {
 		bomHits.Lock()
 		bomHits.urls = append(bomHits.urls, r.URL.RequestURI())
 		bomHits.Unlock()
-		if strings.HasPrefix(r.URL.Path, "/weekend/2026W40/") || strings.HasPrefix(r.URL.Path, "/weekend/2026W39/") {
+		served := false
+		for _, wk := range []string{"W40", "W39", "W38", "W37", "W36", "W35", "W34", "W33", "W32"} {
+			served = served || strings.HasPrefix(r.URL.Path, "/weekend/2026"+wk+"/")
+		}
+		if served {
 			_, _ = w.Write(fixture)
 			return
 		}
