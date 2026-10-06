@@ -67,6 +67,14 @@ type CrewMember struct {
 	ProfilePath string `json:"profilePath,omitempty"`
 }
 
+type Review struct {
+	Author    string  `json:"author"`
+	Rating    float64 `json:"rating,omitempty" doc:"The reviewer's own score out of 10, when given"`
+	Content   string  `json:"content" doc:"Shortened to a few hundred characters"`
+	URL       string  `json:"url,omitempty"`
+	CreatedAt string  `json:"createdAt,omitempty"`
+}
+
 type Season struct {
 	Number       int    `json:"number"`
 	Name         string `json:"name"`
@@ -88,6 +96,7 @@ type Detail struct {
 	Cast                   []CastMember `json:"cast"`
 	Directors              []Person     `json:"directors"`
 	Crew                   []CrewMember `json:"crew" doc:"Key crew (writers, editor, producers, composer...); creators for TV"`
+	Reviews                []Review     `json:"reviews" doc:"A few TMDB user reviews"`
 	Keywords               []Keyword    `json:"keywords" doc:"TMDB tags such as \"superhero\"; searchable"`
 	VoteCount              int          `json:"voteCount,omitempty"`
 	Languages              []string     `json:"languages,omitempty" doc:"Spoken languages, English names"`

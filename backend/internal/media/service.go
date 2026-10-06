@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/tmdb"
 	"github.com/Rombond/tipsarr/backend/internal/store"
@@ -382,6 +383,17 @@ type rawDetail struct {
 		Keywords []Keyword `json:"keywords"` // movies
 		Results  []Keyword `json:"results"`  // shows
 	} `json:"keywords"`
+	Reviews struct {
+		Results []struct {
+			Author        string `json:"author"`
+			Content       string `json:"content"`
+			URL           string `json:"url"`
+			CreatedAt     string `json:"created_at"`
+			AuthorDetails struct {
+				Rating *float64 `json:"rating"`
+			} `json:"author_details"`
+		} `json:"results"`
+	} `json:"reviews"`
 	CreatedBy []struct {
 		ID          int    `json:"id"`
 		Name        string `json:"name"`
@@ -420,7 +432,7 @@ type rawDetail struct {
 }
 
 func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) (*Detail, error) {
-	q := url.Values{"language": {o.lang()}, "append_to_response": {"credits,recommendations,similar,external_ids,videos,keywords"}, "include_video_language": {"en,null"}}
+	q := url.Values{"language": {o.lang()}, "append_to_response": {"credits,recommendations,similar,external_ids,videos,keywords,reviews"}, "include_video_language": {"en,null"}}
 	var raw rawDetail
 	if err := s.get(ctx, "/"+mediaType+"/"+strconv.Itoa(id), q, ttlDetail, &raw); err != nil {
 		return nil, err
@@ -462,6 +474,19 @@ func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) 
 	d.Keywords = append(raw.Keywords.Keywords, raw.Keywords.Results...)
 	if d.Keywords == nil {
 		d.Keywords = []Keyword{}
+	}
+	d.Reviews = []Review{}
+	for _, r := range raw.Reviews.Results {
+		if len(d.Reviews) == 3 {
+			break
+		}
+		rev := Review{Author: r.Author, Content: shorten(r.Content, 700), URL: r.URL, CreatedAt: r.CreatedAt}
+		if r.AuthorDetails.Rating != nil {
+			rev.Rating = *r.AuthorDetails.Rating
+		}
+		if rev.Content != "" {
+			d.Reviews = append(d.Reviews, rev)
+		}
 	}
 	d.VoteCount = raw.VoteCount
 	for _, l := range raw.SpokenLanguages {
@@ -716,4 +741,17 @@ func keyCrew(raw rawDetail, mediaType string) []CrewMember {
 		}
 	}
 	return out
+}
+
+// shorten cuts review text at a word boundary and strips markdown-ish line noise.
+func shorten(s string, n int) string {
+	s = strings.Join(strings.Fields(strings.ReplaceAll(s, "\r", " ")), " ")
+	if utf8.RuneCountInString(s) <= n {
+		return s
+	}
+	cut := []rune(s)[:n]
+	if i := strings.LastIndex(string(cut), " "); i > n/2 {
+		return strings.TrimRight(string(cut)[:i], " ,.;:-") + "…"
+	}
+	return string(cut) + "…"
 }

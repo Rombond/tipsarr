@@ -1150,6 +1150,8 @@ export interface components {
             requestStatus?: "pending" | "approved";
             /** Format: int64 */
             revenue?: number;
+            /** @description A few TMDB user reviews */
+            reviews: components["schemas"]["Review"][];
             /** Format: int64 */
             runtimeMinutes?: number;
             seasons?: components["schemas"]["Season"][];
@@ -1505,6 +1507,18 @@ export interface components {
             /** @description A refresh is running in the background; a suggestions.updated event follows */
             generating: boolean;
             rows: components["schemas"]["Row"][];
+        };
+        Review: {
+            author: string;
+            /** @description Shortened to a few hundred characters */
+            content: string;
+            createdAt?: string;
+            /**
+             * Format: double
+             * @description The reviewer's own score out of 10, when given
+             */
+            rating?: number;
+            url?: string;
         };
         RootFolder: {
             /** Format: int64 */

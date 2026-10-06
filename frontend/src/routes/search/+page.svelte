@@ -17,6 +17,8 @@
 	const movies = $derived(result?.items.filter((i) => i.type === 'movie') ?? []);
 	const shows = $derived(result?.items.filter((i) => i.type === 'tv') ?? []);
 	const people = $derived(result?.people ?? []);
+	const keywords = $derived(result?.keywords ?? []);
+	const tagged = $derived(result?.tagged ?? []);
 
 	async function load() {
 		if (!query) {
@@ -27,7 +29,7 @@
 		loading = true;
 		error = null;
 		try {
-			result = await unwrap(api.GET('/search', { params: { query: { q: query } } }));
+			result = await unwrap(api.GET('/search', { params: { query: { q: query, tags: true } } }));
 		} catch (e) {
 			error = e as Error;
 		} finally {
@@ -53,6 +55,15 @@
 			<p class="text-sm text-muted-foreground">{t('search.counts', { movies: movies.length, shows: shows.length, people: people.length })}</p>
 		{/if}
 	</div>
+
+	{#if keywords.length && !loading}
+		<div class="flex flex-wrap items-center gap-1.5">
+			<span class="text-sm text-muted-foreground">{t('search.tags')}</span>
+			{#each keywords as k (k.id)}
+				<a href="/browse?keyword={k.id}&name={encodeURIComponent(k.name)}" class="rounded-md bg-muted px-2 py-1 text-xs hover:bg-primary hover:text-primary-foreground">{k.name}</a>
+			{/each}
+		</div>
+	{/if}
 
 	{#if result && !loading && movies.length + shows.length + people.length > 0}
 		<div class="flex gap-1 overflow-x-auto" role="tablist" aria-label={t('search.page_title')}>
@@ -81,7 +92,7 @@
 			{t('common.error_prefix', { message: errorText(error) })}
 			<button class="ml-2 underline" onclick={load}>{t('common.retry')}</button>
 		</div>
-	{:else if !movies.length && !shows.length && !people.length}
+	{:else if !movies.length && !shows.length && !people.length && !tagged.length}
 		<div class="rounded-xl border border-dashed border-border p-8 text-center">
 			<p class="font-medium">{t('search.nothing', { query })}</p>
 			<p class="mt-1 text-sm text-muted-foreground">{t('search.nothing_hint')}</p>
@@ -102,6 +113,16 @@
 				<h2 class="font-semibold text-lg">{t('type.shows')}</h2>
 				<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 					{#each shows as item (item.tmdbId)}
+						<MediaCard {item} fluid />
+					{/each}
+				</div>
+			</section>
+		{/if}
+		{#if tagged.length && tab === 'all'}
+			<section class="grid gap-2">
+				<h2 class="font-semibold text-lg">{t('search.tagged', { tags: keywords.map((k) => k.name).join(', ') })}</h2>
+				<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
+					{#each tagged as item (item.type + item.tmdbId)}
 						<MediaCard {item} fluid />
 					{/each}
 				</div>

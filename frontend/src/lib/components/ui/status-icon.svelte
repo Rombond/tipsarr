@@ -4,7 +4,7 @@
 
 	let { status, class: className = '' }: { status: StatusKey; class?: string } = $props();
 	const s = $derived(STATUS[status]);
-	const label = $derived(t(`status.${status}` as 'status.available'));
+	const label = $derived(t(`state.${status}` as 'state.available'));
 </script>
 
 <!-- a round icon; hovering (or focusing) it unfolds the state's name -->

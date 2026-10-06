@@ -11,6 +11,8 @@
 	import Scroller from '$lib/components/ui/scroller.svelte';
 	import DetailActions from '$lib/components/media/detail-actions.svelte';
 	import SeasonList from '$lib/components/media/season-list.svelte';
+	import StatusIcon from '$lib/components/ui/status-icon.svelte';
+	import { itemStatus } from '$lib/status';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import StarIcon from '@lucide/svelte/icons/star';
 
@@ -50,10 +52,22 @@
 			? languageName(details.originalLanguage)
 			: null,
 	);
+	const shown = $derived(details ? itemStatus(details) : null);
 	const seasons = $derived((details?.seasons ?? []).filter((s) => s.number > 0));
 	const money = (n?: number) => (n ? fmtMoney(n) : null);
 	const fullDate = (d?: string) => fmtLongDate(d) || null;
 	const statusLabel = (s?: string) => (s && hasKey(`status.${s}`) ? t(`status.${s}` as 'status.Released') : (s ?? null));
+
+	// who made it: directors first, then the key crew grouped by job
+	const people = $derived.by(() => {
+		if (!details) return [] as { job: string; people: { id: number; name: string }[] }[];
+		const groups = new Map<string, { id: number; name: string }[]>();
+		for (const d of details.directors) groups.set('Director', [...(groups.get('Director') ?? []), d]);
+		for (const c of details.crew) groups.set(c.job, [...(groups.get(c.job) ?? []), c]);
+		const order = ['Director', 'Creator', 'Writer', 'Producer', 'Editor', 'Composer', 'Cinematography'];
+		return order.filter((j) => groups.has(j)).map((job) => ({ job, people: groups.get(job)! }));
+	});
+	const jobLabel = (job: string) => (hasKey(`job.${job}`) ? t(`job.${job}` as 'job.Director') : job);
 
 	// label/value rows of the info panel; empty values are skipped
 	const facts = $derived(
@@ -123,11 +137,20 @@
 					</h1>
 					<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
 						<Badge variant="secondary">{mediaType === 'tv' ? t('type.tv_short') : t('type.movie')}</Badge>
-						{#if details.availability !== 'none'}<Badge>{details.availability === 'available' ? t('media.available') : t('media.partially_available')}</Badge>{/if}
+						{#if shown}<StatusIcon status={shown} />{/if}
 						{#if runtimeLabel}<span>{runtimeLabel}</span>{/if}
 						{#if details.voteAverage}<span class="inline-flex items-center gap-1"><StarIcon class="size-4 fill-amber-400 text-amber-400" />{details.voteAverage.toFixed(1)}</span>{/if}
-						{#if details.genres.length}<span>{details.genres.map((g) => g.name).join(' · ')}</span>{/if}
 					</div>
+					{#if details.genres.length}
+						<div class="flex flex-wrap gap-1.5">
+							{#each details.genres as g (g.id)}
+								<a
+									href="/browse?type={mediaType}&genre={g.id}&name={encodeURIComponent(g.name)}"
+									class="rounded-full border border-border bg-background/60 px-2.5 py-0.5 text-xs backdrop-blur transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
+								>{g.name}</a>
+							{/each}
+						</div>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -143,6 +166,52 @@
 					</div>
 				{/if}
 				<DetailActions {details} type={mediaType} {tmdbId} />
+				{#if people.length}
+					<section class="grid gap-2">
+						<h2 class="font-semibold text-lg">{t('detail.crew')}</h2>
+						<div class="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+							{#each people as g (g.job)}
+								<div class="min-w-0">
+									<p class="text-xs text-muted-foreground">{jobLabel(g.job)}</p>
+									<p class="text-sm font-medium">
+										{#each g.people as p, i (p.id)}<a class="hover:underline" href="/person/{p.id}">{p.name}</a>{i < g.people.length - 1 ? ', ' : ''}{/each}
+									</p>
+								</div>
+							{/each}
+						</div>
+					</section>
+				{/if}
+				{#if details.keywords.length}
+					<section class="grid gap-2">
+						<h2 class="font-semibold text-lg">{t('detail.tags')}</h2>
+						<div class="flex flex-wrap gap-1.5">
+							{#each details.keywords as k (k.id)}
+								<a
+									href="/browse?keyword={k.id}&name={encodeURIComponent(k.name)}"
+									class="rounded-md bg-muted px-2 py-1 text-xs text-foreground/80 transition-colors hover:bg-primary hover:text-primary-foreground"
+								>{k.name}</a>
+							{/each}
+						</div>
+					</section>
+				{/if}
+				{#if details.reviews.length}
+					<section class="grid gap-2">
+						<h2 class="font-semibold text-lg">{t('detail.reviews')}</h2>
+						<div class="grid gap-3">
+							{#each details.reviews as r (r.url || r.author + r.content.slice(0, 20))}
+								<figure class="rounded-xl border border-border p-4 text-sm">
+									<figcaption class="mb-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+										<span class="font-medium text-foreground">{r.author}</span>
+										{#if r.rating}<span class="inline-flex items-center gap-0.5"><StarIcon class="size-3 fill-amber-400 text-amber-400" />{r.rating}/10</span>{/if}
+										{#if r.createdAt}<span>{fmtLongDate(r.createdAt.slice(0, 10))}</span>{/if}
+									</figcaption>
+									<blockquote class="leading-6 text-foreground/90">{r.content}</blockquote>
+									{#if r.url}<a href={r.url} target="_blank" rel="noreferrer" class="mt-2 inline-block text-xs underline">{t('detail.read_review')}</a>{/if}
+								</figure>
+							{/each}
+						</div>
+					</section>
+				{/if}
 				{#if mediaType === 'tv' && seasons.length}
 					<section class="grid gap-2">
 						<h2 class="font-semibold text-lg">{t('seasons.title')}</h2>
@@ -176,14 +245,6 @@
 							<dd class="text-right font-medium">{value}</dd>
 						</div>
 					{/each}
-					{#if details.directors.length}
-						<div class="flex items-start justify-between gap-4 px-4 py-2.5">
-							<dt class="shrink-0 text-muted-foreground">{t('fact.director')}</dt>
-							<dd class="text-right font-medium">
-								{#each details.directors as d, i (d.id)}<a class="hover:underline" href="/person/{d.id}">{d.name}</a>{i < details.directors.length - 1 ? ', ' : ''}{/each}
-							</dd>
-						</div>
-					{/if}
 				</dl>
 			</aside>
 		</div>
