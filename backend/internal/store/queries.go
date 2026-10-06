@@ -125,3 +125,18 @@ func (s *Store) PurgeExpiredCache(ctx context.Context) error {
 	_, err := s.DB.NewDelete().Model((*TMDBCache)(nil)).Where("expires_at <= ?", time.Now().Unix()).Exec(ctx)
 	return err
 }
+
+// SetSettingIfAbsent stores the value only if the key does not exist yet and reports whether
+// it did (the primary key makes the claim atomic).
+func (s *Store) SetSettingIfAbsent(ctx context.Context, key, value string) (bool, error) {
+	if cur, err := s.GetSetting(ctx, key); err != nil || cur != "" {
+		return false, err
+	}
+	if _, err := s.DB.NewInsert().Model(&Setting{Key: key, Value: value}).Exec(ctx); err != nil {
+		if cur, gerr := s.GetSetting(ctx, key); gerr == nil && cur != "" {
+			return false, nil // lost the race
+		}
+		return false, err
+	}
+	return true, nil
+}

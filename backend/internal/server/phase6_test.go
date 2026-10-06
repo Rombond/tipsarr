@@ -207,8 +207,8 @@ func TestUsersAdminAndProfile(t *testing.T) {
 		t.Fatalf("bad language = %d", resp.StatusCode)
 	}
 	// a user cannot touch admin endpoints even after editing their profile
-	if resp, _ := call(t, e.app, "PATCH", "/api/v1/admin/users/"+aliceID, `{"role":"user"}`, bob); resp.StatusCode != http.StatusForbidden && resp.StatusCode != http.StatusOK {
-		t.Fatalf("unexpected = %d", resp.StatusCode)
+	if resp, _ := call(t, e.app, "PATCH", "/api/v1/admin/users/"+aliceID, `{"role":"user"}`, bob); resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("bob's session ended when he was promoted, got %d", resp.StatusCode)
 	}
 }
 

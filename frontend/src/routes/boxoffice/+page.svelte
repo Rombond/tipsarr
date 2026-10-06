@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { api, unwrap, imageUrl, type Schemas } from '$lib/api/client';
+	import { api, unwrap, expectOk, imageUrl, type Schemas } from '$lib/api/client';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
@@ -8,6 +12,13 @@
 	let chart = $state<Schemas['Chart'] | null>(null);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+
+	// admin: fix a wrong or missing TMDB match
+	let fixing = $state<Schemas['ChartEntry'] | null>(null);
+	let query = $state('');
+	let results = $state<Schemas['Item'][]>([]);
+	let searching = $state(false);
+	let fixError = $state<string | null>(null);
 
 	async function load() {
 		loading = true;
@@ -30,6 +41,39 @@
 		week;
 		load();
 	});
+
+	function startFix(e: Schemas['ChartEntry']) {
+		fixing = e;
+		query = e.title;
+		results = [];
+		fixError = null;
+		search();
+	}
+
+	async function search() {
+		if (!query.trim()) return;
+		searching = true;
+		fixError = null;
+		try {
+			const r = await unwrap(api.GET('/search', { params: { query: { q: query.trim() } } }));
+			results = r.items.filter((i) => i.type === 'movie');
+		} catch (e) {
+			fixError = (e as Error).message;
+		} finally {
+			searching = false;
+		}
+	}
+
+	async function pick(item: Schemas['Item']) {
+		if (!fixing) return;
+		try {
+			await expectOk(api.PUT('/admin/boxoffice/alias', { body: { title: fixing.title, tmdbId: item.tmdbId } }));
+			fixing = null;
+			await load();
+		} catch (e) {
+			fixError = (e as Error).message;
+		}
+	}
 
 	const money = (n: number) => (n > 0 ? `$${n.toLocaleString()}` : '-');
 	const selectClass = 'h-9 rounded-md border border-input bg-transparent px-3 text-sm';
@@ -97,6 +141,13 @@
 							{:else if e.hasFile}<Badge variant="secondary">In Radarr (file present)</Badge>
 							{:else if e.inRadarr}<Badge variant="secondary">In Radarr</Badge>{/if}
 						</div>
+						{#if auth.isAdmin}
+							<div>
+								<button type="button" class="cursor-pointer text-xs underline-offset-2 hover:underline" onclick={() => startFix(e)}>
+									{e.item ? 'Wrong movie? Fix match' : 'Pick the right movie'}
+								</button>
+							</div>
+						{/if}
 						<p class="text-xs text-muted-foreground">
 							Weekend {money(e.weekendGross)} · Total {money(e.totalGross)} · week {e.weeksInRelease || '-'}
 							{#if e.item?.releaseDate}· released {e.item.releaseDate}{/if}
@@ -110,3 +161,39 @@
 		{/if}
 	{/if}
 </div>
+
+<Dialog.Root open={fixing !== null} onOpenChange={(o) => !o && (fixing = null)}>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>Match "{fixing?.title}" to a TMDB movie</Dialog.Title>
+		</Dialog.Header>
+		<form
+			class="flex gap-2"
+			onsubmit={(e) => {
+				e.preventDefault();
+				search();
+			}}
+		>
+			<Input bind:value={query} placeholder="Search TMDB" />
+			<Button type="submit" variant="outline" disabled={searching}>Search</Button>
+		</form>
+		{#if fixError}<p class="text-sm text-destructive">{fixError}</p>{/if}
+		<div class="grid max-h-80 gap-1.5 overflow-y-auto">
+			{#each results as r (r.tmdbId)}
+				<button
+					type="button"
+					class="flex cursor-pointer items-center gap-3 rounded-md border border-border p-2 text-left hover:bg-accent"
+					onclick={() => pick(r)}
+				>
+					{#if r.posterPath}<img src={imageUrl(r.posterPath, 'w92')} alt="" class="h-14 w-10 rounded object-cover" />{/if}
+					<span class="min-w-0">
+						<span class="block truncate text-sm font-medium">{r.title}</span>
+						<span class="text-xs text-muted-foreground">{r.releaseDate?.slice(0, 4)} · TMDB {r.tmdbId}</span>
+					</span>
+				</button>
+			{:else}
+				{#if !searching}<p class="text-sm text-muted-foreground">No results.</p>{/if}
+			{/each}
+		</div>
+	</Dialog.Content>
+</Dialog.Root>

@@ -187,6 +187,7 @@ func fakeImages(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/w185/AbCdEf123456.jpg" {
+			w.Header().Set("Content-Type", "image/jpeg")
 			_, _ = w.Write([]byte("JPEGDATA"))
 			return
 		}
@@ -244,6 +245,10 @@ func newAppFull(t *testing.T) (*httptest.Server, *store.Store, *library.Service)
 }
 
 func newEnv(t *testing.T, dryRun bool) *env {
+	return newEnvWith(t, dryRun, "")
+}
+
+func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	t.Helper()
 	tm, im := fakeTMDB(t), fakeImages(t)
 	st, err := store.Open(context.Background(), "sqlite:"+filepath.Join(t.TempDir(), "t.db"))
@@ -275,7 +280,7 @@ func newEnv(t *testing.T, dryRun bool) *env {
 	sugg.SetQueueDelay(20 * time.Millisecond)
 	lib.OnHistoryChanged = sugg.QueueRefresh
 	h, _ := server.New(api.Deps{
-		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), Hub: hub, Notify: notifier,
+		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier,
 		DryRun: dryRun, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)

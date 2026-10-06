@@ -55,7 +55,7 @@ func registerUsers(api huma.API, d Deps) {
 			return nil, err
 		}
 		in.Body.apply(u)
-		if err := d.Store.UpdateUser(ctx, u); err != nil {
+		if err := d.Store.UpdatePrefs(ctx, u); err != nil {
 			return nil, err
 		}
 		return &meOutput{Body: u}, nil
@@ -99,6 +99,7 @@ func registerUsers(api huma.API, d Deps) {
 		if err != nil {
 			return nil, huma.Error404NotFound("not found")
 		}
+		roleChanged := false
 		if in.Body.Role != nil && *in.Body.Role != u.Role {
 			if u.ID == me.ID {
 				return nil, huma.Error409Conflict("you cannot change your own role")
@@ -111,10 +112,16 @@ func registerUsers(api huma.API, d Deps) {
 				}
 			}
 			u.Role = *in.Body.Role
+			roleChanged = true
 		}
 		prefs.apply(u)
 		if err := d.Store.UpdateUser(ctx, u); err != nil {
 			return nil, err
+		}
+		if roleChanged { // a demoted (or promoted) user signs in again with their new rights
+			if err := d.Store.DeleteUserSessions(ctx, u.ID); err != nil {
+				return nil, err
+			}
 		}
 		return &meOutput{Body: u}, nil
 	})

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/Rombond/tipsarr/backend/internal/media"
@@ -10,7 +11,7 @@ import (
 )
 
 type PageParam struct {
-	Page int `query:"page" minimum:"1" default:"1" doc:"Page number"`
+	Page int `query:"page" minimum:"1" maximum:"500" default:"1" doc:"Page number"`
 }
 
 type listOutput struct{ Body *media.List }
@@ -33,7 +34,8 @@ func mediaErr(err error) error {
 	case errors.Is(err, media.ErrNotFound):
 		return huma.Error404NotFound("not found")
 	default:
-		return huma.Error502BadGateway("TMDB request failed: " + err.Error())
+		slog.Warn("TMDB request failed", "err", err)
+		return huma.Error502BadGateway("TMDB request failed")
 	}
 }
 
@@ -55,7 +57,7 @@ func registerDiscover(api huma.API, d Deps) {
 
 	type discoverIn struct {
 		PageParam
-		Genre int `query:"genre" minimum:"0" doc:"TMDB genre id"`
+		Genre int `query:"genre" minimum:"0" maximum:"1000000" doc:"TMDB genre id"`
 	}
 	for t, path := range map[string]string{"movie": "/discover/movies", "tv": "/discover/tv"} {
 		t, path := t, path

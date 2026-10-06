@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -107,8 +109,20 @@ func run(cfg config.Config) error {
 	}})
 	jm.Start(ctx)
 
+	// A fresh install must be claimed with a one-time token that only appears in this log, so a
+	// stranger who reaches the port first cannot point Tipsarr at their own "Jellyfin".
+	setupToken := ""
+	if cur, _ := st.GetSetting(ctx, auth.SettingJellyfinURL); cur == "" {
+		raw := make([]byte, 12)
+		if _, err := rand.Read(raw); err != nil {
+			return err
+		}
+		setupToken = hex.EncodeToString(raw)
+		slog.Warn("first run: open Tipsarr in a browser and enter this setup token", "token", setupToken)
+	}
+
 	handler, _ := server.New(api.Deps{
-		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), Hub: hub, Notify: notifier,
+		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier,
 		DryRun: cfg.DryRun, ConfigDir: cfg.ConfigDir,
 	})
 	if cfg.DryRun {

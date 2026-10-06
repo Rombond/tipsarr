@@ -14,6 +14,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -37,7 +38,11 @@ type Client struct {
 func New(kind, baseURL, apiKey string, dryRun bool) *Client {
 	return &Client{
 		Kind: kind, baseURL: strings.TrimRight(baseURL, "/"), apiKey: apiKey, dryRun: dryRun,
-		http: &http.Client{Timeout: 20 * time.Second},
+		http: &http.Client{
+			Timeout: 20 * time.Second,
+			// never follow redirects: the API key header must not travel to another host
+			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+		},
 	}
 }
 
@@ -84,6 +89,10 @@ func (c *Client) send(ctx context.Context, method, path string, body, out any) e
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
+		var ue *url.Error
+		if errors.As(err, &ue) {
+			err = ue.Err
+		}
 		return fmt.Errorf("%s unreachable: %w", c.Kind, err)
 	}
 	defer resp.Body.Close()

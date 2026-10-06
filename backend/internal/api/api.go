@@ -26,20 +26,22 @@ import (
 const Version = "0.1.0"
 
 type Deps struct {
-	Store        *store.Store
-	Auth         *auth.Service
-	Media        *media.Service
-	Library      *library.Service
-	Requests     *requests.Service
-	Suggestions  *suggestions.Service
-	BoxOffice    *boxoffice.Service
-	Marks        *marks.Service
-	LoginLimiter *auth.Limiter // optional
-	Hub          *events.Hub
-	Notify       *notify.Service
-	Jobs         *jobs.Manager
-	DryRun       bool   // global: nothing is ever sent to Radarr/Sonarr
-	ConfigDir    string // image cache lives under here
+	Store         *store.Store
+	Auth          *auth.Service
+	Media         *media.Service
+	Library       *library.Service
+	Requests      *requests.Service
+	Suggestions   *suggestions.Service
+	BoxOffice     *boxoffice.Service
+	Marks         *marks.Service
+	LoginLimiter  *auth.Limiter // optional
+	SetupToken    string        // required by POST /setup when non-empty (set by main on a fresh install)
+	SecureCookies bool          // always mark the session cookie Secure (otherwise only behind X-Forwarded-Proto: https)
+	Hub           *events.Hub
+	Notify        *notify.Service
+	Jobs          *jobs.Manager
+	DryRun        bool   // global: nothing is ever sent to Radarr/Sonarr
+	ConfigDir     string // image cache lives under here
 	// ImageBaseURL overrides the TMDB image host (tests).
 	ImageBaseURL string
 }

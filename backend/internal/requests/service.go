@@ -184,6 +184,9 @@ func (s *Service) List(ctx context.Context, u *store.User, p ListParams) (*ListR
 		return nil, err
 	}
 	items, err := s.views(ctx, rows)
+	for i := range items {
+		redact(&items[i], u)
+	}
 	return &ListResult{Total: total, Items: items}, err
 }
 
@@ -195,7 +198,19 @@ func (s *Service) Get(ctx context.Context, u *store.User, id string) (*View, err
 	if !canSee(u, r) {
 		return nil, store.ErrNotFound // do not reveal other users' requests
 	}
-	return s.view(ctx, r)
+	v, err := s.view(ctx, r)
+	if v != nil {
+		redact(v, u)
+	}
+	return v, err
+}
+
+// redact hides technical failure details (internal URLs, upstream response bodies) from
+// everyone but admins; webhooks pass a nil user and never carry them either.
+func redact(v *View, u *store.User) {
+	if v.Error != "" && (u == nil || u.Role != store.RoleAdmin) {
+		v.Error = "Sending to the download manager failed; an admin can see the details."
+	}
 }
 
 func (s *Service) Counts(ctx context.Context, u *store.User) (map[string]int, error) {
@@ -481,6 +496,7 @@ func (s *Service) payload(ctx context.Context, r *store.Request) any {
 	if err != nil {
 		return map[string]any{"id": r.ID}
 	}
+	redact(v, nil)
 	return payload{Request: *v}
 }
 

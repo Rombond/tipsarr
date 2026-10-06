@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"crypto/subtle"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -18,6 +20,7 @@ type setupStatusOutput struct {
 
 type setupInput struct {
 	Body struct {
+		SetupToken  string `json:"setupToken,omitempty" doc:"One-time token printed in the server log at startup (required on a fresh install)"`
 		JellyfinURL string `json:"jellyfinUrl" format:"uri" doc:"Base URL of the Jellyfin server"`
 		TMDBKey     string `json:"tmdbApiKey,omitempty" doc:"TMDB API key or read token (can be added later)"`
 	}
@@ -46,8 +49,8 @@ func registerSetup(api huma.API, d Deps) {
 	huma.Register(api, huma.Operation{
 		OperationID: "setup", Method: http.MethodPost, Path: "/setup",
 		Summary:     "First-run setup: point Tipsarr at Jellyfin",
-		Description: "Only allowed until a Jellyfin URL is saved. Afterwards the first Jellyfin administrator to log in becomes the Tipsarr admin.",
-		Tags:        []string{"setup"}, Errors: []int{http.StatusConflict, http.StatusUnprocessableEntity},
+		Description: "Only allowed until a Jellyfin URL is saved, and only with the setup token printed in the server log. Afterwards the first Jellyfin administrator to log in becomes the Tipsarr admin.",
+		Tags:        []string{"setup"}, Errors: []int{http.StatusUnauthorized, http.StatusConflict, http.StatusUnprocessableEntity},
 	}, func(ctx context.Context, in *setupInput) (*setupOutput, error) {
 		current, err := d.Store.GetSetting(ctx, auth.SettingJellyfinURL)
 		if err != nil {
@@ -56,13 +59,22 @@ func registerSetup(api huma.API, d Deps) {
 		if current != "" {
 			return nil, huma.Error409Conflict("setup already completed")
 		}
+		// Without the token anyone who reaches the port first could point Tipsarr at their own
+		// "Jellyfin" and become admin. The token is generated at startup and only printed to the log.
+		if d.SetupToken != "" && subtle.ConstantTimeCompare([]byte(in.Body.SetupToken), []byte(d.SetupToken)) != 1 {
+			return nil, huma.Error401Unauthorized("setup token required: see the Tipsarr server log")
+		}
 		url := strings.TrimRight(in.Body.JellyfinURL, "/")
 		info, err := jellyfin.New(url).PublicInfo(ctx)
 		if err != nil {
-			return nil, huma.Error422UnprocessableEntity("cannot reach Jellyfin: " + err.Error())
+			slog.Warn("setup: cannot reach Jellyfin", "err", err)
+			return nil, huma.Error422UnprocessableEntity("cannot reach a Jellyfin server at that URL")
 		}
-		if err := d.Store.SetSetting(ctx, auth.SettingJellyfinURL, url); err != nil {
+		// claim atomically: of two concurrent setups only one wins
+		if ok, err := d.Store.SetSettingIfAbsent(ctx, auth.SettingJellyfinURL, url); err != nil {
 			return nil, err
+		} else if !ok {
+			return nil, huma.Error409Conflict("setup already completed")
 		}
 		if in.Body.TMDBKey != "" {
 			if err := d.Store.SetSetting(ctx, auth.SettingTMDBKey, in.Body.TMDBKey); err != nil {

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/Rombond/tipsarr/backend/internal/auth"
@@ -15,8 +16,8 @@ type loginInput struct {
 	UserAgent string `header:"User-Agent" hidden:"true"`
 	Proto     string `header:"X-Forwarded-Proto" hidden:"true"`
 	Body      struct {
-		Username string `json:"username" minLength:"1"`
-		Password string `json:"password"`
+		Username string `json:"username" minLength:"1" maxLength:"256"`
+		Password string `json:"password" maxLength:"512"`
 	}
 }
 
@@ -61,7 +62,8 @@ func registerAuth(api huma.API, d Deps) {
 		case errors.Is(err, auth.ErrNotConfigured):
 			return nil, huma.Error503ServiceUnavailable("Tipsarr is not set up yet")
 		case err != nil:
-			return nil, huma.Error503ServiceUnavailable("login failed: " + err.Error())
+			slog.Warn("login failed", "err", err)
+			return nil, huma.Error503ServiceUnavailable("sign-in is temporarily unavailable")
 		}
 		return &loginOutput{
 			SetCookie: http.Cookie{

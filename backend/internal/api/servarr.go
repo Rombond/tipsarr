@@ -210,7 +210,12 @@ func registerServarr(api huma.API, d Deps) {
 		key := strings.TrimSpace(in.Body.APIKey)
 		if key == "" && in.Body.ID != "" {
 			if cur, err := d.Store.GetServarr(ctx, in.Body.ID); err == nil {
-				key = cur.APIKey
+				// the saved key may only be sent to the saved instance, never to a URL typed in later
+				if sameHost(cur.URL, in.Body.URL) {
+					key = cur.APIKey
+				} else {
+					return nil, huma.Error422UnprocessableEntity("enter the API key again when you change the URL")
+				}
 			}
 		}
 		if key == "" {
@@ -231,4 +236,11 @@ func registerServarr(api huma.API, d Deps) {
 		}
 		return &struct{ Body probeResult }{probeResult{AppName: st.AppName, Version: st.Version, Profiles: profiles, RootFolders: folders}}, nil
 	})
+}
+
+// sameHost reports whether two URLs point at the same host:port.
+func sameHost(a, b string) bool {
+	ua, errA := url.Parse(a)
+	ub, errB := url.Parse(b)
+	return errA == nil && errB == nil && strings.EqualFold(ua.Host, ub.Host)
 }

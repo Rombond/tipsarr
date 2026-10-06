@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -22,6 +23,11 @@ func eventsHandler(d Deps) http.HandlerFunc {
 			http.Error(w, "streaming unsupported", http.StatusInternalServerError)
 			return
 		}
+		if !acquireStream(u.ID) {
+			http.Error(w, "too many open event streams", http.StatusTooManyRequests)
+			return
+		}
+		defer releaseStream(u.ID)
 		var last int64
 		if v := r.Header.Get("Last-Event-ID"); v != "" {
 			last, _ = strconv.ParseInt(v, 10, 64)
@@ -68,4 +74,31 @@ func eventsHandler(d Deps) http.HandlerFunc {
 			}
 		}
 	}
+}
+
+const maxStreamsPerUser = 6
+
+var (
+	streamMu sync.Mutex
+	streams  = map[string]int{}
+)
+
+func acquireStream(userID string) bool {
+	streamMu.Lock()
+	defer streamMu.Unlock()
+	if streams[userID] >= maxStreamsPerUser {
+		return false
+	}
+	streams[userID]++
+	return true
+}
+
+func releaseStream(userID string) {
+	streamMu.Lock()
+	defer streamMu.Unlock()
+	if streams[userID] <= 1 {
+		delete(streams, userID)
+		return
+	}
+	streams[userID]--
 }

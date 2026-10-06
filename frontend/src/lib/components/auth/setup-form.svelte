@@ -5,6 +5,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 
+	let setupToken = $state('');
 	let jellyfinUrl = $state('');
 	let tmdbApiKey = $state('');
 	let error: string | null = $state(null);
@@ -17,7 +18,7 @@
 		try {
 			await unwrap(
 				api.POST('/setup', {
-					body: { jellyfinUrl: jellyfinUrl.trim(), ...(tmdbApiKey.trim() ? { tmdbApiKey: tmdbApiKey.trim() } : {}) },
+					body: { setupToken: setupToken.trim(), jellyfinUrl: jellyfinUrl.trim(), ...(tmdbApiKey.trim() ? { tmdbApiKey: tmdbApiKey.trim() } : {}) },
 				}),
 			);
 			auth.markConfigured();
@@ -38,6 +39,7 @@
 	</CardHeader>
 	<CardContent>
 		<form class="grid gap-3" onsubmit={handleSubmit}>
+			<Input placeholder="Setup token (printed in the Tipsarr server log)" bind:value={setupToken} autocomplete="off" required />
 			<Input placeholder="Jellyfin URL (http://host:8096)" type="url" bind:value={jellyfinUrl} required />
 			<Input placeholder="TMDB API key or read token (optional now)" bind:value={tmdbApiKey} autocomplete="off" />
 			{#if error}

@@ -4,6 +4,27 @@
  */
 
 export interface paths {
+    "/admin/boxoffice/alias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Pin a box-office title to a TMDB movie (admin)
+         * @description Fixes titles the automatic search matched wrongly or not at all. Applies to every stored week and to future charts.
+         */
+        put: operations["setBoxOfficeAlias"];
+        post?: never;
+        /** Remove a manual match and match automatically again (admin) */
+        delete: operations["deleteBoxOfficeAlias"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/servarr": {
         parameters: {
             query?: never;
@@ -685,7 +706,7 @@ export interface paths {
         put?: never;
         /**
          * First-run setup: point Tipsarr at Jellyfin
-         * @description Only allowed until a Jellyfin URL is saved. Afterwards the first Jellyfin administrator to log in becomes the Tipsarr admin.
+         * @description Only allowed until a Jellyfin URL is saved, and only with the setup token printed in the server log. Afterwards the first Jellyfin administrator to log in becomes the Tipsarr admin.
          */
         post: operations["setup"];
         delete?: never;
@@ -1203,6 +1224,11 @@ export interface components {
             /** @enum {string} */
             type: "movie" | "tv";
         };
+        SetBoxOfficeAliasRequest: {
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+        };
         SettingsBody: {
             /** @description Comma-separated box-office region codes, e.g. US,GB,FR */
             boxofficeRegions: string;
@@ -1222,6 +1248,8 @@ export interface components {
              * @description Base URL of the Jellyfin server
              */
             jellyfinUrl: string;
+            /** @description One-time token printed in the server log at startup (required on a fresh install) */
+            setupToken?: string;
             /** @description TMDB API key or read token (can be added later) */
             tmdbApiKey?: string;
         };
@@ -1365,6 +1393,129 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    setBoxOfficeAlias: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetBoxOfficeAliasRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    deleteBoxOfficeAlias: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     listServarr: {
         parameters: {
             query?: never;
@@ -2412,6 +2563,15 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4206,6 +4366,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SetupOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
                 };
             };
             /** @description Conflict */

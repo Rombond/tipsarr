@@ -68,6 +68,18 @@ func (s *Store) CountAdmins(ctx context.Context) (int, error) {
 	return int(n), err
 }
 
+// UpdatePrefs changes only region and language (never the role, which a stale copy could revert).
+func (s *Store) UpdatePrefs(ctx context.Context, u *User) error {
+	_, err := s.DB.NewUpdate().Model(u).Column("region", "language").WherePK().Exec(ctx)
+	return err
+}
+
+// DeleteUserSessions signs a user out everywhere (used when their role changes).
+func (s *Store) DeleteUserSessions(ctx context.Context, userID string) error {
+	_, err := s.DB.NewDelete().Model((*Session)(nil)).Where("user_id = ?", userID).Exec(ctx)
+	return err
+}
+
 // UpdateUser changes the editable fields of a user.
 func (s *Store) UpdateUser(ctx context.Context, u *User) error {
 	_, err := s.DB.NewUpdate().Model(u).Column("role", "region", "language").WherePK().Exec(ctx)

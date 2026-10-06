@@ -51,6 +51,11 @@ func (c *Client) Get(ctx context.Context, path string, q url.Values) ([]byte, er
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
+		// *url.Error embeds the full request URL, which carries the API key for v3 keys: unwrap it
+		var ue *url.Error
+		if errors.As(err, &ue) {
+			err = ue.Err
+		}
 		return nil, fmt.Errorf("tmdb unreachable: %w", err)
 	}
 	defer resp.Body.Close()

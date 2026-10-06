@@ -8,10 +8,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -108,8 +110,30 @@ func (s *Service) deliverWithRetry(ctx context.Context, h store.Webhook, event s
 	slog.Warn("webhook delivery failed", "webhook", h.Name, "event", event, "err", err)
 }
 
+// targetsServarr reports whether rawURL's host:port is one of the configured Radarr/Sonarr instances.
+func (s *Service) targetsServarr(ctx context.Context, rawURL string) bool {
+	target, err := url.Parse(rawURL)
+	if err != nil {
+		return true
+	}
+	instances, err := s.store.ListServarr(ctx)
+	if err != nil {
+		return true // fail closed
+	}
+	for _, in := range instances {
+		if u, err := url.Parse(in.URL); err == nil && strings.EqualFold(u.Host, target.Host) {
+			return true
+		}
+	}
+	return false
+}
+
 // Deliver performs one POST. It returns an error for transport failures and non-2xx answers.
 func (s *Service) Deliver(ctx context.Context, h store.Webhook, event string, data any) error {
+	if s.targetsServarr(ctx, h.URL) {
+		// a webhook pointed at Radarr/Sonarr could write to them outside the dry-run choke point
+		return errors.New("webhook URL points at a configured Radarr/Sonarr instance; refused")
+	}
 	body, err := json.Marshal(envelope{Event: event, Timestamp: time.Now().UTC().Format(time.RFC3339), DryRun: s.dryRun, Data: data})
 	if err != nil {
 		return err
