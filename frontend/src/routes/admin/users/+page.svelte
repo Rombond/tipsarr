@@ -78,7 +78,7 @@
 		{#each users as u (u.id)}
 			<div class="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3 text-sm">
 				<div class="min-w-32 flex-1">
-					<div class="font-medium">{u.name}{#if u.id === auth.user?.id} <span class="text-xs text-muted-foreground">{t('common.you')}</span>{/if}</div>
+					<div class="font-medium"><a href="/users/{u.id}" class="hover:underline">{u.name}</a>{#if u.id === auth.user?.id} <span class="text-xs text-muted-foreground">{t('common.you')}</span>{/if}</div>
 					<div class="text-xs text-muted-foreground">{t('users.last_signin', { when: when(u.lastLoginAt) })}</div>
 				</div>
 				<SimpleSelect

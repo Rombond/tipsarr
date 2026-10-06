@@ -86,6 +86,16 @@
 		}
 	}
 
+	async function toggleImport(on: boolean) {
+		try {
+			settings = await unwrap(api.PUT('/admin/settings', { body: { servarrAutoImport: on } }));
+			toast.success(t('common.saved'));
+		} catch (err) {
+			toast.error(errorText(err));
+			settings = await unwrap(api.GET('/admin/settings'));
+		}
+	}
+
 	async function savePublicUrl(e: SubmitEvent) {
 		e.preventDefault();
 		error = message = null;
@@ -99,7 +109,7 @@
 		}
 	}
 
-	type JobName = 'library-sync' | 'history-sync' | 'boxoffice-refresh';
+	type JobName = 'library-sync' | 'history-sync' | 'boxoffice-refresh' | 'servarr-import';
 
 	async function runJob(job: JobName) {
 		error = message = null;
@@ -183,6 +193,19 @@
 
 		<Card>
 			<CardHeader>
+				<CardTitle>{t('settings.import_title')}</CardTitle>
+				<CardDescription>{t('settings.import_desc')}</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<label class="flex cursor-pointer items-center gap-2 text-sm">
+					<input type="checkbox" checked={settings.servarrAutoImport} onchange={(e) => toggleImport(e.currentTarget.checked)} />
+					{t('settings.import_toggle')}
+				</label>
+			</CardContent>
+		</Card>
+
+		<Card>
+			<CardHeader>
 				<CardTitle>{t('settings.regions_title')}</CardTitle>
 				<CardDescription>
 					{t('settings.regions_desc')}
@@ -220,7 +243,7 @@
 						<Button
 							variant="outline"
 							size="sm"
-							disabled={(job.name !== 'boxoffice-refresh' && !sync.canSync) || job.running}
+							disabled={(job.name !== 'boxoffice-refresh' && job.name !== 'servarr-import' && !sync.canSync) || job.running}
 							onclick={() => runJob(job.name as JobName)}
 						>
 							{t('settings.job_run')}

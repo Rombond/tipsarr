@@ -61,7 +61,7 @@ type IssueComment struct {
 	CreatedAt int64     `json:"createdAt"`
 }
 
-type Thread struct {
+type IssueThread struct {
 	IssueView
 	Comments []IssueComment `json:"comments"`
 }
@@ -79,7 +79,7 @@ type CreateParams struct {
 	Message string
 }
 
-func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*Thread, error) {
+func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*IssueThread, error) {
 	msg := strings.TrimSpace(p.Message)
 	valid := false
 	for _, k := range Kinds {
@@ -154,7 +154,7 @@ func (s *Service) views(ctx context.Context, rows []store.Issue) ([]IssueView, m
 	return out, byIssue, nil
 }
 
-func (s *Service) detail(ctx context.Context, i *store.Issue) (*Thread, error) {
+func (s *Service) detail(ctx context.Context, i *store.Issue) (*IssueThread, error) {
 	vs, comments, err := s.views(ctx, []store.Issue{*i})
 	if err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func (s *Service) detail(ctx context.Context, i *store.Issue) (*Thread, error) {
 	if err != nil {
 		return nil, err
 	}
-	d := &Thread{IssueView: vs[0], Comments: []IssueComment{}}
+	d := &IssueThread{IssueView: vs[0], Comments: []IssueComment{}}
 	for _, c := range comments[i.ID] {
 		d.Comments = append(d.Comments, IssueComment{ID: c.ID, User: IssueUser{ID: c.UserID, Name: names[c.UserID]}, Message: c.Message, CreatedAt: c.CreatedAt})
 	}
@@ -218,7 +218,7 @@ func (s *Service) Counts(ctx context.Context, u *store.User) (open, resolved int
 	return s.store.IssueCounts(ctx, by)
 }
 
-func (s *Service) Get(ctx context.Context, u *store.User, id string) (*Thread, error) {
+func (s *Service) Get(ctx context.Context, u *store.User, id string) (*IssueThread, error) {
 	i, err := s.store.GetIssue(ctx, id)
 	if err != nil {
 		return nil, err
@@ -229,7 +229,7 @@ func (s *Service) Get(ctx context.Context, u *store.User, id string) (*Thread, e
 	return s.detail(ctx, i)
 }
 
-func (s *Service) Comment(ctx context.Context, u *store.User, id, message string) (*Thread, error) {
+func (s *Service) Comment(ctx context.Context, u *store.User, id, message string) (*IssueThread, error) {
 	msg := strings.TrimSpace(message)
 	if msg == "" || utf8.RuneCountInString(msg) > 2000 {
 		return nil, ErrInvalid
@@ -254,7 +254,7 @@ func (s *Service) Comment(ctx context.Context, u *store.User, id, message string
 }
 
 // SetResolved resolves or reopens an issue. Admins and the reporter may do either.
-func (s *Service) SetResolved(ctx context.Context, u *store.User, id string, resolved bool) (*Thread, error) {
+func (s *Service) SetResolved(ctx context.Context, u *store.User, id string, resolved bool) (*IssueThread, error) {
 	i, err := s.store.GetIssue(ctx, id)
 	if err != nil {
 		return nil, err

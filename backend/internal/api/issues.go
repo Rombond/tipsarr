@@ -52,14 +52,14 @@ func registerIssues(api huma.API, d Deps) {
 			Episode int    `json:"episode,omitempty" minimum:"0" doc:"TV only, 0 = whole season"`
 			Message string `json:"message" minLength:"1" maxLength:"2000"`
 		}
-	}) (*struct{ Body *issues.Thread }, error) {
+	}) (*struct{ Body *issues.IssueThread }, error) {
 		u, err := requireUser(ctx)
 		if err != nil {
 			return nil, err
 		}
 		b := in.Body
 		v, err := d.Issues.Create(ctx, u, issues.CreateParams{Type: b.Type, TMDBID: b.TMDBID, Kind: b.Kind, Season: b.Season, Episode: b.Episode, Message: b.Message})
-		return &struct{ Body *issues.Thread }{v}, issueErr(err)
+		return &struct{ Body *issues.IssueThread }{v}, issueErr(err)
 	})
 
 	huma.Register(api, huma.Operation{
@@ -119,13 +119,13 @@ func registerIssues(api huma.API, d Deps) {
 	huma.Register(api, huma.Operation{
 		OperationID: "getIssue", Method: http.MethodGet, Path: "/issues/{id}",
 		Summary: "One issue with its comments", Tags: []string{"issues"}, Security: sec, Errors: errs,
-	}, func(ctx context.Context, in *idIn) (*struct{ Body *issues.Thread }, error) {
+	}, func(ctx context.Context, in *idIn) (*struct{ Body *issues.IssueThread }, error) {
 		u, err := requireUser(ctx)
 		if err != nil {
 			return nil, err
 		}
 		v, err := d.Issues.Get(ctx, u, in.ID)
-		return &struct{ Body *issues.Thread }{v}, issueErr(err)
+		return &struct{ Body *issues.IssueThread }{v}, issueErr(err)
 	})
 
 	huma.Register(api, huma.Operation{
@@ -137,13 +137,13 @@ func registerIssues(api huma.API, d Deps) {
 		Body struct {
 			Message string `json:"message" minLength:"1" maxLength:"2000"`
 		}
-	}) (*struct{ Body *issues.Thread }, error) {
+	}) (*struct{ Body *issues.IssueThread }, error) {
 		u, err := requireUser(ctx)
 		if err != nil {
 			return nil, err
 		}
 		v, err := d.Issues.Comment(ctx, u, in.ID, in.Body.Message)
-		return &struct{ Body *issues.Thread }{v}, issueErr(err)
+		return &struct{ Body *issues.IssueThread }{v}, issueErr(err)
 	})
 
 	for op, resolved := range map[string]bool{"resolve": true, "reopen": false} {
@@ -151,13 +151,13 @@ func registerIssues(api huma.API, d Deps) {
 		huma.Register(api, huma.Operation{
 			OperationID: op + "Issue", Method: http.MethodPost, Path: "/issues/{id}/" + op,
 			Summary: strings.ToUpper(op[:1]) + op[1:] + " an issue (reporter or admin)", Tags: []string{"issues"}, Security: sec, Errors: errs,
-		}, func(ctx context.Context, in *idIn) (*struct{ Body *issues.Thread }, error) {
+		}, func(ctx context.Context, in *idIn) (*struct{ Body *issues.IssueThread }, error) {
 			u, err := requireUser(ctx)
 			if err != nil {
 				return nil, err
 			}
 			v, err := d.Issues.SetResolved(ctx, u, in.ID, resolved)
-			return &struct{ Body *issues.Thread }{v}, issueErr(err)
+			return &struct{ Body *issues.IssueThread }{v}, issueErr(err)
 		})
 	}
 

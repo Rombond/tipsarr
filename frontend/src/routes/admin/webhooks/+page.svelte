@@ -9,7 +9,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 
-	const ALL_EVENTS = ['request.created', 'request.approved', 'request.declined', 'request.failed', 'media.available'];
+	const ALL_EVENTS = ['request.created', 'request.approved', 'request.declined', 'request.failed', 'media.available', 'issue.created', 'issue.commented', 'issue.resolved'];
 
 	let hooks = $state<Schemas['WebhookView'][]>([]);
 	let error = $state<string | null>(null);

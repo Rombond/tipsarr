@@ -1300,6 +1300,32 @@ export interface components {
             /** Format: int64 */
             resolved: number;
         };
+        IssueThread: {
+            /** Format: int64 */
+            commentCount: number;
+            comments: components["schemas"]["IssueComment"][];
+            /** Format: int64 */
+            createdAt: number;
+            createdBy: components["schemas"]["IssueUser"];
+            /** Format: int64 */
+            episode?: number;
+            id: string;
+            /** @enum {string} */
+            kind: "video" | "audio" | "subtitles" | "other";
+            posterPath?: string;
+            resolvedBy?: components["schemas"]["IssueUser"];
+            /** Format: int64 */
+            season?: number;
+            /** @enum {string} */
+            status: "open" | "resolved";
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+            /** @enum {string} */
+            type: "movie" | "tv";
+            /** Format: int64 */
+            updatedAt: number;
+        };
         IssueUser: {
             id: string;
             name: string;
@@ -1657,32 +1683,6 @@ export interface components {
              * @description Shows currently known in the Jellyfin library
              */
             shows: number;
-        };
-        Thread: {
-            /** Format: int64 */
-            commentCount: number;
-            comments: components["schemas"]["IssueComment"][];
-            /** Format: int64 */
-            createdAt: number;
-            createdBy: components["schemas"]["IssueUser"];
-            /** Format: int64 */
-            episode?: number;
-            id: string;
-            /** @enum {string} */
-            kind: "video" | "audio" | "subtitles" | "other";
-            posterPath?: string;
-            resolvedBy?: components["schemas"]["IssueUser"];
-            /** Format: int64 */
-            season?: number;
-            /** @enum {string} */
-            status: "open" | "resolved";
-            title: string;
-            /** Format: int64 */
-            tmdbId: number;
-            /** @enum {string} */
-            type: "movie" | "tv";
-            /** Format: int64 */
-            updatedAt: number;
         };
         UpdateSettingsInputBody: {
             /** @description Comma-separated region codes; empty resets to US */
@@ -2371,7 +2371,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                job: "library-sync" | "history-sync" | "boxoffice-refresh";
+                job: "library-sync" | "history-sync" | "boxoffice-refresh" | "servarr-import";
             };
             cookie?: never;
         };
@@ -3890,7 +3890,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Thread"];
+                    "application/json": components["schemas"]["IssueThread"];
                 };
             };
             /** @description Unauthorized */
@@ -3986,7 +3986,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Thread"];
+                    "application/json": components["schemas"]["IssueThread"];
                 };
             };
             /** @description Unauthorized */
@@ -4113,7 +4113,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Thread"];
+                    "application/json": components["schemas"]["IssueThread"];
                 };
             };
             /** @description Unauthorized */
@@ -4171,7 +4171,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Thread"];
+                    "application/json": components["schemas"]["IssueThread"];
                 };
             };
             /** @description Unauthorized */
@@ -4229,7 +4229,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Thread"];
+                    "application/json": components["schemas"]["IssueThread"];
                 };
             };
             /** @description Unauthorized */

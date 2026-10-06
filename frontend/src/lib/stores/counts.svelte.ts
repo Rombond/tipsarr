@@ -1,13 +1,16 @@
-// Pending-request counter for the navigation badge (admins), kept fresh by SSE.
+// Pending-request and open-issue counters for the navigation badge (admins), kept fresh by SSE.
 import { api, unwrap } from '$lib/api/client';
 import { onEvent, stream } from '$lib/events.svelte';
 
 class Counts {
 	pending = $state(0);
+	issues = $state(0); // open issues
 
 	async refresh() {
 		try {
-			this.pending = (await unwrap(api.GET('/requests/counts'))).pending;
+			const [r, i] = await Promise.all([unwrap(api.GET('/requests/counts')), unwrap(api.GET('/issues/counts'))]);
+			this.pending = r.pending;
+			this.issues = i.open;
 		} catch {
 			/* not critical */
 		}
@@ -17,7 +20,12 @@ class Counts {
 	track(): () => void {
 		this.refresh();
 		void stream.reconnects;
-		return onEvent('request.updated', () => this.refresh());
+		const offRequests = onEvent('request.updated', () => this.refresh());
+		const offIssues = onEvent('issue.updated', () => this.refresh());
+		return () => {
+			offRequests();
+			offIssues();
+		};
 	}
 }
 

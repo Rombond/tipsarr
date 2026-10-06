@@ -4,6 +4,8 @@
 	import { toast } from '$lib/toast.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import ReportIssueDialog from '$lib/components/issues/report-issue-dialog.svelte';
+	import FlagIcon from '@lucide/svelte/icons/flag';
 	import RequestButton from '$lib/components/requests/request-button.svelte';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import ClapperboardIcon from '@lucide/svelte/icons/clapperboard';
@@ -19,6 +21,7 @@
 	let watchlisted = $state(false);
 	let blocklisted = $state(false);
 	let busy = $state(false);
+	let reporting = $state(false);
 
 	$effect(() => {
 		const t = type;
@@ -92,6 +95,9 @@
 			<DropdownMenu.Item onclick={() => toggle('blocklist')}>
 				{#if blocklisted}<EyeIcon /> {t('actions.show_again')}{:else}<EyeOffIcon /> {t('actions.hide')}{/if}
 			</DropdownMenu.Item>
+			<DropdownMenu.Item onclick={() => (reporting = true)}>
+				<FlagIcon /> {t('actions.report')}
+			</DropdownMenu.Item>
 			<DropdownMenu.Separator />
 			{#if details.imdbId}
 				<DropdownMenu.Item onclick={() => window.open(`https://www.imdb.com/title/${details.imdbId}`, '_blank', 'noreferrer')}>
@@ -104,3 +110,5 @@
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>
 </div>
+
+<ReportIssueDialog bind:open={reporting} {type} {tmdbId} title={details.title} seasons={details.seasons ?? []} />

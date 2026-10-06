@@ -7,7 +7,8 @@
 	import { theme } from '$lib/theme.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
+	import UserAvatar from '$lib/components/users/user-avatar.svelte';
+	import FlagIcon from '@lucide/svelte/icons/flag';
 	import CompassIcon from '@lucide/svelte/icons/compass';
 	import ListIcon from '@lucide/svelte/icons/list';
 	import UsersIcon from '@lucide/svelte/icons/users';
@@ -28,6 +29,7 @@
 		{ href: '/boxoffice', key: 'nav.boxoffice', icon: TicketIcon },
 		{ href: '/requests', key: 'nav.requests', icon: ListIcon },
 		{ href: '/watchlist', key: 'nav.watchlist', icon: BookmarkIcon },
+		{ href: '/issues', key: 'nav.issues', icon: FlagIcon },
 	];
 	const admin: NavItem[] = [
 		{ href: '/admin/users', key: 'nav.users', icon: UsersIcon },
@@ -37,10 +39,6 @@
 	];
 
 	const sidebar = Sidebar.useSidebar();
-
-	function initials(name: string | null) {
-		return name ? name.slice(0, 2).toUpperCase() : '?';
-	}
 
 	function navigate(href: string) {
 		sidebar.setOpenMobile(false);
@@ -65,6 +63,8 @@
 		</Sidebar.MenuButton>
 		{#if it.href === '/requests' && auth.isAdmin && counts.pending > 0}
 			<Sidebar.MenuBadge>{counts.pending}</Sidebar.MenuBadge>
+		{:else if it.href === '/issues' && auth.isAdmin && counts.issues > 0}
+			<Sidebar.MenuBadge>{counts.issues}</Sidebar.MenuBadge>
 		{/if}
 	</Sidebar.MenuItem>
 {/snippet}
@@ -95,9 +95,7 @@
 	<Sidebar.Footer>
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger class="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-sidebar-accent">
-				<Avatar class="size-9">
-					<AvatarFallback>{initials(auth.username)}</AvatarFallback>
-				</Avatar>
+				{#if auth.user}<UserAvatar id={auth.user.id} name={auth.user.name} class="size-9" />{/if}
 				<span class="grid min-w-0 text-left leading-tight">
 					<span class="truncate">{auth.username || t('nav.account')}</span>
 					<span class="text-[11px] text-muted-foreground">{auth.isAdmin ? t('nav.administrator') : t('nav.member')}</span>
