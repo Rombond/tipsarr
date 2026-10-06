@@ -235,11 +235,14 @@ func (s *Service) Trending(ctx context.Context, o Opts, page int) (*List, error)
 }
 
 // DiscoverMovies / DiscoverTV list by popularity, optionally filtered by genre id.
-func (s *Service) Discover(ctx context.Context, o Opts, mediaType string, genre, page int) (*List, error) {
+func (s *Service) Discover(ctx context.Context, o Opts, mediaType string, genre, keyword, page int) (*List, error) {
 	q := pageQ(o, page)
 	q.Set("sort_by", "popularity.desc")
 	if genre > 0 {
 		q.Set("with_genres", strconv.Itoa(genre))
+	}
+	if keyword > 0 {
+		q.Set("with_keywords", strconv.Itoa(keyword))
 	}
 	return s.list(ctx, "/discover/"+mediaType, q, mediaType)
 }
@@ -263,7 +266,7 @@ func (s *Service) Genres(ctx context.Context, o Opts, mediaType string) ([]Genre
 
 // ---- search --------------------------------------------------------------------
 
-func (s *Service) Search(ctx context.Context, o Opts, query string, page int) (*SearchResult, error) {
+func (s *Service) Search(ctx context.Context, o Opts, query string, page int, tags bool) (*SearchResult, error) {
 	q := pageQ(o, page)
 	q.Set("query", query)
 	q.Set("include_adult", "false")
@@ -271,7 +274,7 @@ func (s *Service) Search(ctx context.Context, o Opts, query string, page int) (*
 	if err := s.get(ctx, "/search/multi", q, ttlList, &raw); err != nil {
 		return nil, err
 	}
-	out := &SearchResult{Page: raw.Page, TotalPages: raw.TotalPages, Items: []Item{}, People: []Person{}}
+	out := &SearchResult{Page: raw.Page, TotalPages: raw.TotalPages, Items: []Item{}, People: []Person{}, Keywords: []Keyword{}, Tagged: []Item{}}
 	for _, r := range raw.Results {
 		switch r.MediaType {
 		case "movie", "tv":
@@ -280,8 +283,60 @@ func (s *Service) Search(ctx context.Context, o Opts, query string, page int) (*
 			out.People = append(out.People, Person{ID: r.ID, Name: r.Name, ProfilePath: r.ProfilePath, Department: r.Department})
 		}
 	}
+	if tags && page <= 1 {
+		s.tagged(ctx, o, query, out)
+	}
 	s.annotate(ctx, out.Items)
 	return out, nil
+}
+
+// tagged adds the titles carrying a TMDB tag that matches the query ("shark" finds every
+// movie/show tagged "shark"), minus the ones the text search already returned.
+func (s *Service) tagged(ctx context.Context, o Opts, query string, out *SearchResult) {
+	var kw struct {
+		Results []Keyword `json:"results"`
+	}
+	if err := s.get(ctx, "/search/keyword", url.Values{"query": {query}}, ttlList, &kw); err != nil || len(kw.Results) == 0 {
+		return
+	}
+	if len(kw.Results) > 3 {
+		kw.Results = kw.Results[:3]
+	}
+	out.Keywords = kw.Results
+	ids := make([]string, len(kw.Results))
+	for i, k := range kw.Results {
+		ids[i] = strconv.Itoa(k.ID)
+	}
+	have := map[string]bool{}
+	for _, it := range out.Items {
+		have[it.Type+strconv.Itoa(it.TMDBID)] = true
+	}
+	for _, mt := range []string{"movie", "tv"} {
+		q := pageQ(o, 1)
+		q.Set("sort_by", "popularity.desc")
+		q.Set("with_keywords", strings.Join(ids, "|")) // any of the tags
+		var raw rawList
+		if err := s.get(ctx, "/discover/"+mt, q, ttlList, &raw); err != nil {
+			continue
+		}
+		for _, r := range raw.Results {
+			it := r.toItem(mt)
+			if !have[it.Type+strconv.Itoa(it.TMDBID)] {
+				have[it.Type+strconv.Itoa(it.TMDBID)] = true
+				out.Tagged = append(out.Tagged, it)
+			}
+		}
+	}
+	s.annotate(ctx, out.Tagged)
+}
+
+// Keyword returns one tag by id (to title a tag page).
+func (s *Service) Keyword(ctx context.Context, id int) (*Keyword, error) {
+	var k Keyword
+	if err := s.get(ctx, "/keyword/"+strconv.Itoa(id), nil, 7*24*time.Hour, &k); err != nil {
+		return nil, err
+	}
+	return &k, nil
 }
 
 // ---- details ---------------------------------------------------------------------
@@ -320,9 +375,25 @@ type rawDetail struct {
 	Networks []struct {
 		Name string `json:"name"`
 	} `json:"networks"`
-	Budget  int64 `json:"budget"`
-	Revenue int64 `json:"revenue"`
-	Videos  struct {
+	Budget    int64 `json:"budget"`
+	Revenue   int64 `json:"revenue"`
+	VoteCount int   `json:"vote_count"`
+	Keywords  struct {
+		Keywords []Keyword `json:"keywords"` // movies
+		Results  []Keyword `json:"results"`  // shows
+	} `json:"keywords"`
+	CreatedBy []struct {
+		ID          int    `json:"id"`
+		Name        string `json:"name"`
+		ProfilePath string `json:"profile_path"`
+	} `json:"created_by"`
+	SpokenLanguages []struct {
+		EnglishName string `json:"english_name"`
+	} `json:"spoken_languages"`
+	ProductionCountries []struct {
+		Name string `json:"name"`
+	} `json:"production_countries"`
+	Videos struct {
 		Results []struct {
 			Key      string `json:"key"`
 			Site     string `json:"site"`
@@ -349,7 +420,7 @@ type rawDetail struct {
 }
 
 func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) (*Detail, error) {
-	q := url.Values{"language": {o.lang()}, "append_to_response": {"credits,recommendations,similar,external_ids,videos"}, "include_video_language": {"en,null"}}
+	q := url.Values{"language": {o.lang()}, "append_to_response": {"credits,recommendations,similar,external_ids,videos,keywords"}, "include_video_language": {"en,null"}}
 	var raw rawDetail
 	if err := s.get(ctx, "/"+mediaType+"/"+strconv.Itoa(id), q, ttlDetail, &raw); err != nil {
 		return nil, err
@@ -386,6 +457,18 @@ func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) 
 		if c.Job == "Director" {
 			d.Directors = append(d.Directors, Person{ID: c.ID, Name: c.Name, ProfilePath: c.ProfilePath, Department: "Directing"})
 		}
+	}
+	d.Crew = keyCrew(raw, mediaType)
+	d.Keywords = append(raw.Keywords.Keywords, raw.Keywords.Results...)
+	if d.Keywords == nil {
+		d.Keywords = []Keyword{}
+	}
+	d.VoteCount = raw.VoteCount
+	for _, l := range raw.SpokenLanguages {
+		d.Languages = append(d.Languages, l.EnglishName)
+	}
+	for _, c := range raw.ProductionCountries {
+		d.Countries = append(d.Countries, c.Name)
 	}
 	d.TrailerKey = pickTrailer(raw)
 	d.Budget, d.Revenue = raw.Budget, raw.Revenue
@@ -594,4 +677,43 @@ func (s *Service) watchURL(ctx context.Context, mediaType string, tmdbID int) st
 		return ""
 	}
 	return strings.TrimRight(base, "/") + "/web/#/details?id=" + id
+}
+
+// keyCrew picks the crew worth showing: writers, editor, producers, composer, cinematographer
+// (the director has its own field) and, for shows, the creators.
+func keyCrew(raw rawDetail, mediaType string) []CrewMember {
+	out := []CrewMember{}
+	seen := map[string]bool{}
+	add := func(id int, name, job, profile string) {
+		k := strconv.Itoa(id) + "/" + job
+		if id == 0 || seen[k] {
+			return
+		}
+		seen[k] = true
+		out = append(out, CrewMember{ID: id, Name: name, Job: job, ProfilePath: profile})
+	}
+	if mediaType == "tv" {
+		for _, c := range raw.CreatedBy {
+			add(c.ID, c.Name, "Creator", c.ProfilePath)
+		}
+	}
+	// TMDB job -> the label we expose (several jobs fold into "Writer")
+	label := map[string]string{
+		"Writer": "Writer", "Screenplay": "Writer", "Story": "Writer", "Novel": "Writer", "Characters": "Writer",
+		"Editor": "Editor", "Producer": "Producer", "Original Music Composer": "Composer", "Director of Photography": "Cinematography",
+	}
+	limit := map[string]int{"Writer": 4, "Editor": 2, "Producer": 3, "Composer": 2, "Cinematography": 2}
+	count := map[string]int{}
+	for _, c := range raw.Credits.Crew {
+		l, ok := label[c.Job]
+		if !ok || count[l] >= limit[l] {
+			continue
+		}
+		before := len(out)
+		add(c.ID, c.Name, l, c.ProfilePath)
+		if len(out) > before {
+			count[l]++
+		}
+	}
+	return out
 }

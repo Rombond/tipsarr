@@ -57,7 +57,8 @@ func registerDiscover(api huma.API, d Deps) {
 
 	type discoverIn struct {
 		PageParam
-		Genre int `query:"genre" minimum:"0" maximum:"1000000" doc:"TMDB genre id"`
+		Genre   int `query:"genre" minimum:"0" maximum:"1000000" doc:"TMDB genre id"`
+		Keyword int `query:"keyword" minimum:"0" maximum:"100000000" doc:"TMDB keyword (tag) id"`
 	}
 	for t, path := range map[string]string{"movie": "/discover/movies", "tv": "/discover/tv"} {
 		t, path := t, path
@@ -69,7 +70,7 @@ func registerDiscover(api huma.API, d Deps) {
 			if err != nil {
 				return nil, err
 			}
-			l, err := d.Media.Discover(ctx, o, t, in.Genre, in.Page)
+			l, err := d.Media.Discover(ctx, o, t, in.Genre, in.Keyword, in.Page)
 			return &listOutput{Body: l}, mediaErr(err)
 		})
 	}
@@ -102,17 +103,28 @@ func registerDiscover(api huma.API, d Deps) {
 	})
 
 	huma.Register(api, huma.Operation{
+		OperationID: "keyword", Method: http.MethodGet, Path: "/discover/keywords/{id}",
+		Summary: "One tag (keyword) by id", Tags: []string{"discover"}, Security: sec, Errors: append(errs, http.StatusNotFound),
+	}, func(ctx context.Context, in *struct {
+		ID int `path:"id" minimum:"1"`
+	}) (*struct{ Body *media.Keyword }, error) {
+		k, err := d.Media.Keyword(ctx, in.ID)
+		return &struct{ Body *media.Keyword }{k}, mediaErr(err)
+	})
+
+	huma.Register(api, huma.Operation{
 		OperationID: "search", Method: http.MethodGet, Path: "/search",
 		Summary: "Search movies, shows and people", Tags: []string{"discover"}, Security: sec, Errors: errs,
 	}, func(ctx context.Context, in *struct {
 		PageParam
 		Query string `query:"q" required:"true" minLength:"1" maxLength:"200"`
+		Tags  bool   `query:"tags" doc:"Also look for titles carrying a matching tag (slower; for the results page)"`
 	}) (*struct{ Body *media.SearchResult }, error) {
 		o, err := prefs(ctx)
 		if err != nil {
 			return nil, err
 		}
-		r, err := d.Media.Search(ctx, o, in.Query, in.Page)
+		r, err := d.Media.Search(ctx, o, in.Query, in.Page, in.Tags)
 		return &struct{ Body *media.SearchResult }{r}, mediaErr(err)
 	})
 

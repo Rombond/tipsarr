@@ -35,10 +35,12 @@ type List struct {
 }
 
 type SearchResult struct {
-	Page       int      `json:"page"`
-	TotalPages int      `json:"totalPages"`
-	Items      []Item   `json:"items"`
-	People     []Person `json:"people"`
+	Page       int       `json:"page"`
+	TotalPages int       `json:"totalPages"`
+	Items      []Item    `json:"items"`
+	People     []Person  `json:"people"`
+	Keywords   []Keyword `json:"keywords" doc:"Tags matching the query (only when tags=true)"`
+	Tagged     []Item    `json:"tagged" doc:"Titles carrying one of those tags that the text search did not return"`
 }
 
 type Genre struct {
@@ -50,6 +52,18 @@ type CastMember struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
 	Character   string `json:"character,omitempty"`
+	ProfilePath string `json:"profilePath,omitempty"`
+}
+
+type Keyword struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type CrewMember struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Job         string `json:"job" doc:"Director, Writer, Screenplay, Story, Novel, Editor, Producer, Composer, Cinematography, Creator"`
 	ProfilePath string `json:"profilePath,omitempty"`
 }
 
@@ -73,6 +87,11 @@ type Detail struct {
 	TVDBID                 int          `json:"tvdbId,omitempty"`
 	Cast                   []CastMember `json:"cast"`
 	Directors              []Person     `json:"directors"`
+	Crew                   []CrewMember `json:"crew" doc:"Key crew (writers, editor, producers, composer...); creators for TV"`
+	Keywords               []Keyword    `json:"keywords" doc:"TMDB tags such as \"superhero\"; searchable"`
+	VoteCount              int          `json:"voteCount,omitempty"`
+	Languages              []string     `json:"languages,omitempty" doc:"Spoken languages, English names"`
+	Countries              []string     `json:"countries,omitempty" doc:"Production countries"`
 	NumberOfSeasons        int          `json:"numberOfSeasons,omitempty"`
 	NumberOfEpisodes       int          `json:"numberOfEpisodes,omitempty"`
 	Seasons                []Season     `json:"seasons,omitempty"`
