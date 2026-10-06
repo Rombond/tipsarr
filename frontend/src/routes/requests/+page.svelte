@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api, unwrap, expectOk, type Schemas } from '$lib/api/client';
+	import { toast } from '$lib/toast.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { onEvent, stream } from '$lib/events.svelte';
 	import RequestRow from '$lib/components/requests/request-row.svelte';
@@ -12,6 +13,8 @@
 	const filters: Filter[] = ['all', 'pending', 'approved', 'available', 'declined', 'failed'];
 
 	let filter = $state<Filter>('all');
+	let tabCounts = $state<Schemas['RequestCountsResponse'] | null>(null);
+	let approvingAll = $state(false);
 	let items = $state<Schemas['View'][]>([]);
 	let total = $state(0);
 	let loading = $state(true);
@@ -23,9 +26,13 @@
 	async function load(showSpinner = true) {
 		if (showSpinner) loading = true;
 		try {
-			const res = await unwrap(api.GET('/requests', { params: { query: { filter, take: 50 } } }));
+			const [res, c] = await Promise.all([
+				unwrap(api.GET('/requests', { params: { query: { filter, take: 50 } } })),
+				unwrap(api.GET('/requests/counts')),
+			]);
 			items = res.items;
 			total = res.total;
+			tabCounts = c;
 			error = null;
 		} catch (e) {
 			error = (e as Error).message;
@@ -67,6 +74,7 @@
 			await load(false);
 		} catch (e) {
 			error = (e as Error).message;
+			toast.error(error);
 		} finally {
 			busyId = null;
 		}
@@ -78,6 +86,26 @@
 				? unwrap(api.POST('/requests/{id}/retry', { params: { path: { id: r.id } } }))
 				: unwrap(api.POST('/requests/{id}/approve', { params: { path: { id: r.id } }, body: {} })),
 		);
+
+	async function approveAll() {
+		const pending = items.filter((r) => r.status === 'pending');
+		if (!pending.length) return;
+		const note = auth.dryRun ? ' Dry-run is on: nothing will be sent to Radarr/Sonarr.' : ' They will be sent to Radarr/Sonarr now.';
+		if (!confirm(`Approve ${pending.length} pending request${pending.length === 1 ? '' : 's'}?${note}`)) return;
+		approvingAll = true;
+		let ok = 0;
+		for (const r of pending) {
+			try {
+				await unwrap(api.POST('/requests/{id}/approve', { params: { path: { id: r.id } }, body: {} }));
+				ok++;
+			} catch (e) {
+				toast.error(`${r.title}: ${(e as Error).message}`);
+			}
+		}
+		approvingAll = false;
+		toast.success(`Approved ${ok} of ${pending.length}`);
+		await load(false);
+	}
 
 	async function confirmDecline() {
 		const r = declining;
@@ -97,15 +125,25 @@
 <div class="grid max-w-3xl gap-4">
 	<div class="flex flex-wrap items-center justify-between gap-2">
 		<h1 class="font-bold text-2xl">Requests</h1>
-		{#if auth.isAdmin}
-			<div class="flex flex-wrap gap-1">
-				{#each filters as f (f)}
-					<Button size="sm" variant={filter === f ? 'default' : 'outline'} onclick={() => (filter = f)}>{f}</Button>
-				{/each}
-			</div>
-		{:else}
-			<p class="text-xs text-muted-foreground">Your requests</p>
+		{#if auth.isAdmin && filter === 'pending' && items.length > 1}
+			<Button size="sm" disabled={approvingAll} onclick={approveAll}>{approvingAll ? 'Approving…' : `Approve all ${items.length} pending`}</Button>
 		{/if}
+	</div>
+
+	<div class="flex gap-1 overflow-x-auto pb-1" role="tablist" aria-label="Request status">
+		{#each filters as f (f)}
+			{@const n = f === 'all' ? Object.values(tabCounts ?? {}).reduce((a, b) => a + b, 0) : ((tabCounts as Record<string, number> | null)?.[f] ?? 0)}
+			<button
+				type="button"
+				role="tab"
+				aria-selected={filter === f}
+				class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-sm capitalize transition-colors {filter === f ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'}"
+				onclick={() => (filter = f)}
+			>
+				{f}
+				{#if n > 0}<span class="rounded-full bg-black/10 px-1.5 text-[11px] dark:bg-white/15 {f === 'pending' && filter !== f ? 'bg-primary text-primary-foreground dark:bg-primary' : ''}">{n}</span>{/if}
+			</button>
+		{/each}
 	</div>
 
 	{#if error}<p class="text-sm text-destructive">{error}</p>{/if}
@@ -114,7 +152,10 @@
 		<Skeleton class="h-24 w-full" />
 		<Skeleton class="h-24 w-full" />
 	{:else if items.length === 0}
-		<p class="text-sm text-muted-foreground">No requests yet. Open a movie or show and press Request.</p>
+		<div class="rounded-xl border border-dashed border-border p-8 text-center">
+			<p class="font-medium">{filter === 'all' ? 'No requests yet' : `No ${filter} requests`}</p>
+			<p class="mt-1 text-sm text-muted-foreground">Find something on <a class="underline" href="/discover">Discover</a> or the <a class="underline" href="/boxoffice">box office</a> and press Request.</p>
+		</div>
 	{:else}
 		<div class="grid gap-3">
 			{#each items as r (r.id)}

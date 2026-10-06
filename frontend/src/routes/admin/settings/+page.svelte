@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { api, unwrap, type Schemas } from '$lib/api/client';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { toast } from '$lib/toast.svelte';
 	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
@@ -13,6 +14,7 @@
 	let tmdbKey = $state('');
 	let jellyfinKey = $state('');
 	let regions = $state('');
+	let publicUrl = $state('');
 	let message = $state<string | null>(null);
 	let error = $state<string | null>(null);
 	let saving = $state(false);
@@ -36,6 +38,7 @@
 			.then((s) => {
 				settings = s;
 				regions = s.boxofficeRegions;
+				publicUrl = s.jellyfinPublicUrl;
 			})
 			.catch((e) => (error = (e as Error).message));
 		refreshSync();
@@ -77,6 +80,19 @@
 			message = 'Box office regions saved. Run boxoffice-refresh below to fetch them.';
 		} catch (err) {
 			error = (err as Error).message;
+		}
+	}
+
+	async function savePublicUrl(e: SubmitEvent) {
+		e.preventDefault();
+		error = message = null;
+		try {
+			settings = await unwrap(api.PUT('/admin/settings', { body: { jellyfinPublicUrl: publicUrl.trim() } }));
+			publicUrl = settings.jellyfinPublicUrl;
+			toast.success('Saved');
+		} catch (err) {
+			error = (err as Error).message;
+			toast.error(error);
 		}
 	}
 
@@ -145,6 +161,22 @@
 	{/if}
 
 	{#if settings}
+		<Card>
+			<CardHeader>
+				<CardTitle>Jellyfin links</CardTitle>
+				<CardDescription>
+					Address your browser (or your family's phones) can reach Jellyfin at, used by the “Play on Jellyfin” buttons. Leave empty to use
+					<span class="font-mono">{settings.jellyfinUrl}</span>.
+				</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<form class="flex gap-2" onsubmit={savePublicUrl}>
+					<Input bind:value={publicUrl} placeholder="https://jellyfin.example.org" type="url" autocomplete="off" />
+					<Button type="submit" variant="outline">Save</Button>
+				</form>
+			</CardContent>
+		</Card>
+
 		<Card>
 			<CardHeader>
 				<CardTitle>Box office regions</CardTitle>

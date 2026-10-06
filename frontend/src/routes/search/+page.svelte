@@ -7,6 +7,8 @@
 
 	let query = $derived(page.url.searchParams.get('q') || '');
 
+	type Tab = 'all' | 'movies' | 'tv' | 'people';
+	let tab = $state<Tab>('all');
 	let loading = $state(true);
 	let error = $state<Error | null>(null);
 	let result = $state<Schemas['SearchResult'] | null>(null);
@@ -34,6 +36,7 @@
 
 	$effect(() => {
 		query;
+		tab = 'all';
 		load();
 	});
 </script>
@@ -43,7 +46,28 @@
 </svelte:head>
 
 <div class="grid gap-8">
-	<h1 class="font-bold text-2xl">Search results for "{query}"</h1>
+	<div>
+		<h1 class="font-bold text-2xl">Results for “{query}”</h1>
+		{#if result && !loading}
+			<p class="text-sm text-muted-foreground">{movies.length} movies · {shows.length} TV shows · {people.length} people</p>
+		{/if}
+	</div>
+
+	{#if result && !loading && movies.length + shows.length + people.length > 0}
+		<div class="flex gap-1 overflow-x-auto" role="tablist" aria-label="Result type">
+			{#each [['all', 'All', movies.length + shows.length + people.length], ['movies', 'Movies', movies.length], ['tv', 'TV shows', shows.length], ['people', 'People', people.length]] as [id, label, n] (id)}
+				<button
+					type="button"
+					role="tab"
+					aria-selected={tab === id}
+					class="shrink-0 cursor-pointer rounded-full border px-3 py-1 text-sm transition-colors {tab === id ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'}"
+					onclick={() => (tab = id as Tab)}
+				>
+					{label} <span class="opacity-70">{n}</span>
+				</button>
+			{/each}
+		</div>
+	{/if}
 
 	{#if loading}
 		<div class="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
@@ -57,9 +81,12 @@
 			<button class="ml-2 underline" onclick={load}>Retry</button>
 		</div>
 	{:else if !movies.length && !shows.length && !people.length}
-		<p class="text-muted-foreground text-sm">No results found.</p>
+		<div class="rounded-xl border border-dashed border-border p-8 text-center">
+			<p class="font-medium">Nothing found for “{query}”</p>
+			<p class="mt-1 text-sm text-muted-foreground">Check the spelling, or try the original title or fewer words.</p>
+		</div>
 	{:else}
-		{#if movies.length}
+		{#if movies.length && (tab === 'all' || tab === 'movies')}
 			<section class="grid gap-2">
 				<h2 class="font-semibold text-lg">Movies</h2>
 				<div class="flex flex-wrap gap-4">
@@ -69,7 +96,7 @@
 				</div>
 			</section>
 		{/if}
-		{#if shows.length}
+		{#if shows.length && (tab === 'all' || tab === 'tv')}
 			<section class="grid gap-2">
 				<h2 class="font-semibold text-lg">TV Shows</h2>
 				<div class="flex flex-wrap gap-4">
@@ -79,7 +106,7 @@
 				</div>
 			</section>
 		{/if}
-		{#if people.length}
+		{#if people.length && (tab === 'all' || tab === 'people')}
 			<section class="grid gap-2">
 				<h2 class="font-semibold text-lg">People</h2>
 				<div class="flex flex-wrap gap-4">
