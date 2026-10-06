@@ -202,3 +202,57 @@ func TestGenreRootFolder(t *testing.T) {
 }
 
 func parseDay(s string) (time.Time, error) { return time.Parse("2006-01-02", s) }
+
+func TestBoxOfficeAlias(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	call(t, e.app, "POST", "/api/v1/admin/sync/boxoffice-refresh", "", admin)
+	waitFor(t, "refresh", func() bool {
+		ch, code := getChart(t, e, bob, "")
+		return code == 200 && len(ch.Entries) == 5
+	})
+	entry := func(week, title string) boxoffice.ChartEntry {
+		ch, _ := getChart(t, e, bob, "?week="+week)
+		for _, en := range ch.Entries {
+			if en.Title == title {
+				return en
+			}
+		}
+		t.Fatalf("%s not in %s", title, week)
+		return boxoffice.ChartEntry{}
+	}
+	if entry("2026W40", "Digger").Item != nil {
+		t.Fatal("Digger should start unmatched")
+	}
+
+	// only admins may pin matches
+	if resp, _ := call(t, e.app, "PUT", "/api/v1/admin/boxoffice/alias", `{"title":"Digger","tmdbId":904}`, bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("user alias = %d", resp.StatusCode)
+	}
+	if resp, _ := call(t, e.app, "PUT", "/api/v1/admin/boxoffice/alias", `{"title":"Digger","tmdbId":999999}`, admin); resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("unknown movie = %d", resp.StatusCode)
+	}
+	if resp, _ := call(t, e.app, "PUT", "/api/v1/admin/boxoffice/alias", `{"title":"digger","tmdbId":904}`, admin); resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("alias = %d", resp.StatusCode) // case-insensitive title
+	}
+	// applied to every stored week at once
+	for _, wk := range []string{"2026W40", "2026W39"} {
+		if it := entry(wk, "Digger").Item; it == nil || it.TMDBID != 904 || it.Overview != "Pinned by hand." {
+			t.Fatalf("%s Digger = %+v", wk, it)
+		}
+	}
+	// ... and survives the next refresh (the alias wins over the search)
+	call(t, e.app, "POST", "/api/v1/admin/sync/boxoffice-refresh", "", admin)
+	time.Sleep(300 * time.Millisecond)
+	if it := entry("2026W40", "Digger").Item; it == nil || it.TMDBID != 904 {
+		t.Fatalf("alias lost after refresh: %+v", it)
+	}
+
+	// removing it goes back to the automatic result (no match for this title)
+	if resp, _ := call(t, e.app, "DELETE", "/api/v1/admin/boxoffice/alias?title=Digger", "", admin); resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("delete alias = %d", resp.StatusCode)
+	}
+	if entry("2026W40", "Digger").Item != nil {
+		t.Fatal("Digger should be unmatched again")
+	}
+}

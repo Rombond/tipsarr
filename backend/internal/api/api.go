@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	"net"
 	"net/http"
 
 	"github.com/Rombond/tipsarr/backend/internal/auth"
@@ -25,24 +26,26 @@ import (
 const Version = "0.1.0"
 
 type Deps struct {
-	Store       *store.Store
-	Auth        *auth.Service
-	Media       *media.Service
-	Library     *library.Service
-	Requests    *requests.Service
-	Suggestions *suggestions.Service
-	BoxOffice   *boxoffice.Service
-	Marks       *marks.Service
-	Hub         *events.Hub
-	Notify      *notify.Service
-	Jobs        *jobs.Manager
-	DryRun      bool   // global: nothing is ever sent to Radarr/Sonarr
-	ConfigDir   string // image cache lives under here
+	Store        *store.Store
+	Auth         *auth.Service
+	Media        *media.Service
+	Library      *library.Service
+	Requests     *requests.Service
+	Suggestions  *suggestions.Service
+	BoxOffice    *boxoffice.Service
+	Marks        *marks.Service
+	LoginLimiter *auth.Limiter // optional
+	Hub          *events.Hub
+	Notify       *notify.Service
+	Jobs         *jobs.Manager
+	DryRun       bool   // global: nothing is ever sent to Radarr/Sonarr
+	ConfigDir    string // image cache lives under here
 	// ImageBaseURL overrides the TMDB image host (tests).
 	ImageBaseURL string
 }
 
 type userCtxKey struct{}
+type ipCtxKey struct{}
 
 // NewHuma mounts the API on r under /api/v1 and returns the huma API (used to export the spec).
 func NewHuma(r chi.Router, d Deps) huma.API {
@@ -82,6 +85,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 func sessionMiddleware(a *auth.Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r = r.WithContext(context.WithValue(r.Context(), ipCtxKey{}, remoteIP(r)))
 			if c, err := r.Cookie(auth.CookieName); err == nil {
 				if u, err := a.Authenticate(r.Context(), c.Value); err == nil {
 					r = r.WithContext(context.WithValue(r.Context(), userCtxKey{}, u))
@@ -118,3 +122,18 @@ func requireAdmin(ctx context.Context) (*store.User, error) {
 }
 
 func chiParam(r *http.Request, name string) string { return chi.URLParam(r, name) }
+
+// remoteIP is the client address as seen by the router (chi's RealIP middleware has already
+// applied X-Forwarded-For / X-Real-IP, which is right behind a reverse proxy).
+func remoteIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
+}
+
+func clientIP(ctx context.Context) string {
+	ip, _ := ctx.Value(ipCtxKey{}).(string)
+	return ip
+}

@@ -230,3 +230,12 @@ type UserMark struct {
 	VoteTenths  int    `bun:"vote_tenths"`
 	CreatedAt   int64  `bun:"created_at"`
 }
+
+// BoxOfficeAlias pins a chart title (lower-cased) to a TMDB movie.
+type BoxOfficeAlias struct {
+	bun.BaseModel `bun:"table:boxoffice_aliases"`
+
+	TitleKey  string `bun:"title_key,pk"`
+	TMDBID    int64  `bun:"tmdb_id"`
+	CreatedAt int64  `bun:"created_at"`
+}

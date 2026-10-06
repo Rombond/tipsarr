@@ -173,6 +173,10 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 			_, _ = w.Write([]byte(`{"id":` + id + `,"title":"R` + id + `","poster_path":"/r` + id + `.jpg","genres":[],"credits":{"cast":[],"crew":[]},"recommendations":{"results":[]},"similar":{"results":[]}}`))
 		}))
 	}
+	mux.HandleFunc("/movie/904", hit(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"id":904,"title":"Digger (2026)","release_date":"2026-10-02","poster_path":"/dg.jpg","vote_average":6.4,"overview":"Pinned by hand.",
+			"genres":[],"credits":{"cast":[],"crew":[]},"recommendations":{"results":[]},"similar":{"results":[]}}`))
+	}))
 	mux.HandleFunc("/movie/404", hit(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotFound) }))
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -271,7 +275,7 @@ func newEnv(t *testing.T, dryRun bool) *env {
 	sugg.SetQueueDelay(20 * time.Millisecond)
 	lib.OnHistoryChanged = sugg.QueueRefresh
 	h, _ := server.New(api.Deps{
-		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), Hub: hub, Notify: notifier,
+		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), Hub: hub, Notify: notifier,
 		DryRun: dryRun, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)

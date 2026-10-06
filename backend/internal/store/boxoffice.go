@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
+	"time"
 
 	"github.com/uptrace/bun"
 )
@@ -46,4 +48,44 @@ func (s *Store) BoxOffice(ctx context.Context, region, weekKey string) (*BoxOffi
 	var entries []BoxOfficeEntry
 	err = s.DB.NewSelect().Model(&entries).Where("region = ?", region).Where("week_key = ?", weekKey).Order("pos").Scan(ctx)
 	return w, entries, err
+}
+
+// AliasKey normalises a chart title for alias lookups.
+func AliasKey(title string) string { return strings.ToLower(strings.TrimSpace(title)) }
+
+// BoxOfficeAlias returns the pinned TMDB id for a title, or 0.
+func (s *Store) BoxOfficeAlias(ctx context.Context, title string) (int64, error) {
+	a := new(BoxOfficeAlias)
+	err := s.DB.NewSelect().Model(a).Where("title_key = ?", AliasKey(title)).Scan(ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	return a.TMDBID, err
+}
+
+func (s *Store) SetBoxOfficeAlias(ctx context.Context, title string, tmdbID int64) error {
+	a := &BoxOfficeAlias{TitleKey: AliasKey(title), TMDBID: tmdbID, CreatedAt: time.Now().Unix()}
+	res, err := s.DB.NewUpdate().Model(a).Column("tmdb_id").WherePK().Exec(ctx)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		return nil
+	}
+	_, err = s.DB.NewInsert().Model(a).Exec(ctx)
+	return err
+}
+
+func (s *Store) DeleteBoxOfficeAlias(ctx context.Context, title string) error {
+	_, err := s.DB.NewDelete().Model((*BoxOfficeAlias)(nil)).Where("title_key = ?", AliasKey(title)).Exec(ctx)
+	return err
+}
+
+// SetBoxOfficeMatch updates the TMDB match (and snapshot) of every stored entry with this title.
+func (s *Store) SetBoxOfficeMatch(ctx context.Context, title string, e BoxOfficeEntry) error {
+	_, err := s.DB.NewUpdate().Model((*BoxOfficeEntry)(nil)).
+		Set("tmdb_id = ?", e.TMDBID).Set("poster_path = ?", e.PosterPath).Set("release_date = ?", e.ReleaseDate).
+		Set("vote_tenths = ?", e.VoteTenths).Set("overview = ?", e.Overview).
+		Where("LOWER(title) = ?", AliasKey(title)).Exec(ctx)
+	return err
 }

@@ -211,3 +211,22 @@ func TestUsersAdminAndProfile(t *testing.T) {
 		t.Fatalf("unexpected = %d", resp.StatusCode)
 	}
 }
+
+func TestLoginRateLimit(t *testing.T) {
+	e := newEnv(t, true)
+	jf := fakeJellyfin(t)
+	call(t, e.app, "POST", "/api/v1/setup", `{"jellyfinUrl":"`+jf.URL+`"}`)
+
+	for i := 0; i < 8; i++ {
+		if resp, _ := call(t, e.app, "POST", "/api/v1/auth/login", `{"username":"mallory","password":"guess`+itoa(i)+`"}`); resp.StatusCode != http.StatusUnauthorized {
+			t.Fatalf("attempt %d = %d", i, resp.StatusCode)
+		}
+	}
+	// blocked now, even with the right password for a real account from the same address
+	if resp, _ := call(t, e.app, "POST", "/api/v1/auth/login", `{"username":"mallory","password":"guess"}`); resp.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("expected 429, got %d", resp.StatusCode)
+	}
+	if resp, _ := call(t, e.app, "POST", "/api/v1/auth/login", `{"username":"alice","password":"secret"}`); resp.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("the address is blocked too: %d", resp.StatusCode)
+	}
+}

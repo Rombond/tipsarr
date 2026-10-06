@@ -41,9 +41,20 @@ func registerAuth(api huma.API, d Deps) {
 	huma.Register(api, huma.Operation{
 		OperationID: "login", Method: http.MethodPost, Path: "/auth/login",
 		Summary: "Log in with a Jellyfin account", Tags: []string{"auth"},
-		Errors: []int{http.StatusUnauthorized, http.StatusServiceUnavailable},
+		Errors: []int{http.StatusUnauthorized, http.StatusTooManyRequests, http.StatusServiceUnavailable},
 	}, func(ctx context.Context, in *loginInput) (*loginOutput, error) {
+		ukey, ikey := auth.UserKey(in.Body.Username), auth.IPKey(clientIP(ctx))
+		if d.LoginLimiter != nil && d.LoginLimiter.Blocked(ukey, ikey) {
+			return nil, huma.Error429TooManyRequests("too many failed sign-in attempts, try again in a few minutes")
+		}
 		token, user, err := d.Auth.Login(ctx, in.Body.Username, in.Body.Password, in.UserAgent)
+		if d.LoginLimiter != nil {
+			if errors.Is(err, jellyfin.ErrInvalidCredentials) {
+				d.LoginLimiter.Fail(ukey, ikey)
+			} else if err == nil {
+				d.LoginLimiter.Reset(ukey)
+			}
+		}
 		switch {
 		case errors.Is(err, jellyfin.ErrInvalidCredentials):
 			return nil, huma.Error401Unauthorized("invalid username or password")

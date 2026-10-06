@@ -201,6 +201,11 @@ func (s *Service) saveWeek(ctx context.Context, region, key, label string, entri
 // recent releases, else the first recent result. Returns nil when TMDB is unconfigured/unreachable
 // or nothing fits.
 func (s *Service) match(ctx context.Context, title string) *media.Item {
+	if id, err := s.store.BoxOfficeAlias(ctx, title); err == nil && id > 0 { // a manual match always wins
+		if d, err := s.media.Detail(ctx, media.Opts{}, "movie", int(id)); err == nil {
+			return &d.Item
+		}
+	}
 	results, err := s.media.SearchMovies(ctx, media.Opts{}, title)
 	if err != nil {
 		if !errors.Is(err, media.ErrNotConfigured) {
@@ -364,4 +369,40 @@ func (s *Service) radarrMovies(ctx context.Context) map[int]servarr.Movie {
 	s.radarr[inst.ID] = radarrCache{at: time.Now(), movies: m}
 	s.mu.Unlock()
 	return m
+}
+
+var ErrBadTitle = errors.New("title is required")
+
+// SetAlias pins a chart title to a TMDB movie and applies it to every stored week.
+func (s *Service) SetAlias(ctx context.Context, title string, tmdbID int) error {
+	if strings.TrimSpace(title) == "" {
+		return ErrBadTitle
+	}
+	d, err := s.media.Detail(ctx, media.Opts{}, "movie", tmdbID)
+	if err != nil {
+		return err // media.ErrNotFound for an unknown id
+	}
+	if err := s.store.SetBoxOfficeAlias(ctx, title, int64(tmdbID)); err != nil {
+		return err
+	}
+	return s.store.SetBoxOfficeMatch(ctx, title, entrySnapshot(&d.Item))
+}
+
+// RemoveAlias forgets a manual match and re-runs the automatic matching for that title.
+func (s *Service) RemoveAlias(ctx context.Context, title string) error {
+	if err := s.store.DeleteBoxOfficeAlias(ctx, title); err != nil {
+		return err
+	}
+	var snap store.BoxOfficeEntry
+	if m := s.match(ctx, title); m != nil {
+		snap = entrySnapshot(m)
+	}
+	return s.store.SetBoxOfficeMatch(ctx, title, snap)
+}
+
+func entrySnapshot(m *media.Item) store.BoxOfficeEntry {
+	return store.BoxOfficeEntry{
+		TMDBID: int64(m.TMDBID), PosterPath: m.PosterPath, ReleaseDate: m.ReleaseDate,
+		VoteTenths: int(m.VoteAverage * 10), Overview: truncate(m.Overview, 400),
+	}
 }
