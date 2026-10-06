@@ -14,6 +14,8 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/api"
 	"github.com/Rombond/tipsarr/backend/internal/auth"
 	"github.com/Rombond/tipsarr/backend/internal/config"
+	"github.com/Rombond/tipsarr/backend/internal/jobs"
+	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/server"
 	"github.com/Rombond/tipsarr/backend/internal/store"
@@ -59,8 +61,26 @@ func run(cfg config.Config) error {
 		}
 	}
 
+	lib := library.New(st)
+	jm := jobs.New(st)
+	jm.Register(jobs.Job{Name: "library-sync", Every: 6 * time.Hour, InitialDelay: 10 * time.Second, Run: func(ctx context.Context) (string, error) {
+		if !lib.Configured(ctx) {
+			return "no Jellyfin API key saved", jobs.ErrSkipped
+		}
+		r, err := lib.SyncLibrary(ctx)
+		return r.String(), err
+	}})
+	jm.Register(jobs.Job{Name: "history-sync", Every: time.Hour, InitialDelay: 40 * time.Second, Run: func(ctx context.Context) (string, error) {
+		if !lib.Configured(ctx) {
+			return "no Jellyfin API key saved", jobs.ErrSkipped
+		}
+		r, err := lib.SyncHistory(ctx, "")
+		return r.String(), err
+	}})
+	jm.Start(ctx)
+
 	handler, _ := server.New(api.Deps{
-		Store: st, Auth: auth.New(st), Media: media.New(st, ""),
+		Store: st, Auth: auth.New(st), Media: media.New(st, ""), Library: lib, Jobs: jm,
 		DryRun: cfg.DryRun, ConfigDir: cfg.ConfigDir,
 	})
 	if cfg.DryRun {

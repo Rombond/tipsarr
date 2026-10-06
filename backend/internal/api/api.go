@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	"github.com/Rombond/tipsarr/backend/internal/auth"
+	"github.com/Rombond/tipsarr/backend/internal/jobs"
+	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
@@ -20,6 +22,8 @@ type Deps struct {
 	Store     *store.Store
 	Auth      *auth.Service
 	Media     *media.Service
+	Library   *library.Service
+	Jobs      *jobs.Manager
 	DryRun    bool   // global: nothing is ever sent to Radarr/Sonarr
 	ConfigDir string // image cache lives under here
 	// ImageBaseURL overrides the TMDB image host (tests).
@@ -48,6 +52,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerAuth(api, d)
 		registerDiscover(api, d)
 		registerAdmin(api, d)
+		registerSync(api, d)
 		r.Get("/images/tmdb/{size}/{file}", imageHandler(d))
 	})
 	return api

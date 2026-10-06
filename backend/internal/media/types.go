@@ -1,7 +1,11 @@
 package media
 
 // Availability / request state are filled in by later phases (library sync, requests).
-const AvailabilityNone = "none"
+const (
+	AvailabilityNone      = "none"
+	AvailabilityPartial   = "partial"
+	AvailabilityAvailable = "available"
+)
 
 type Item struct {
 	Type         string  `json:"type" enum:"movie,tv" doc:"movie or tv"`

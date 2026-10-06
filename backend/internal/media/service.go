@@ -93,6 +93,62 @@ func (s *Service) get(ctx context.Context, path string, q url.Values, ttl time.D
 	return json.Unmarshal(body, out)
 }
 
+// annotate fills Availability from the synced Jellyfin library. In lists a show that is in
+// the library is reported "available"; the detail page refines that to "partial" using
+// per-season episode counts. Library failures never break metadata requests.
+func (s *Service) annotate(ctx context.Context, items []Item) {
+	for _, mt := range []string{"movie", "tv"} {
+		var ids []int
+		for _, it := range items {
+			if it.Type == mt {
+				ids = append(ids, it.TMDBID)
+			}
+		}
+		if len(ids) == 0 {
+			continue
+		}
+		have, err := s.store.LibraryIDs(ctx, mt, ids)
+		if err != nil {
+			continue
+		}
+		for i := range items {
+			if items[i].Type == mt && have[items[i].TMDBID] {
+				items[i].Availability = AvailabilityAvailable
+			}
+		}
+	}
+}
+
+// showAvailability compares TMDB season sizes with what the library holds.
+func (s *Service) showAvailability(ctx context.Context, d *Detail) {
+	have, err := s.store.LibraryIDs(ctx, "tv", []int{d.TMDBID})
+	if err != nil || !have[d.TMDBID] {
+		return
+	}
+	lib, err := s.store.LibrarySeasons(ctx, d.TMDBID)
+	if err != nil {
+		return
+	}
+	complete, anyEpisode := true, false
+	for _, sn := range d.Seasons {
+		if sn.Number == 0 || sn.EpisodeCount == 0 {
+			continue // specials and announced-but-empty seasons don't count
+		}
+		if lib[sn.Number] > 0 {
+			anyEpisode = true
+		}
+		if lib[sn.Number] < sn.EpisodeCount {
+			complete = false
+		}
+	}
+	switch {
+	case complete && anyEpisode:
+		d.Availability = AvailabilityAvailable
+	default:
+		d.Availability = AvailabilityPartial
+	}
+}
+
 // ---- raw TMDB shapes ------------------------------------------------------
 
 type rawItem struct {
@@ -165,6 +221,7 @@ func (s *Service) list(ctx context.Context, path string, q url.Values, fallbackT
 		return nil, err
 	}
 	l := raw.toList(fallbackType)
+	s.annotate(ctx, l.Items)
 	return &l, nil
 }
 
@@ -218,6 +275,7 @@ func (s *Service) Search(ctx context.Context, o Opts, query string, page int) (*
 			out.People = append(out.People, Person{ID: r.ID, Name: r.Name, ProfilePath: r.ProfilePath, Department: r.Department})
 		}
 	}
+	s.annotate(ctx, out.Items)
 	return out, nil
 }
 
@@ -306,6 +364,14 @@ func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) 
 			d.Directors = append(d.Directors, Person{ID: c.ID, Name: c.Name, ProfilePath: c.ProfilePath, Department: "Directing"})
 		}
 	}
+	s.annotate(ctx, d.Recommendations)
+	s.annotate(ctx, d.Similar)
+	one := []Item{d.Item}
+	s.annotate(ctx, one)
+	d.Availability = one[0].Availability
+	if mediaType == "tv" {
+		s.showAvailability(ctx, d)
+	}
 	return d, nil
 }
 
@@ -380,6 +446,7 @@ func (s *Service) PersonDetail(ctx context.Context, o Opts, id int) (*PersonDeta
 			break
 		}
 	}
+	s.annotate(ctx, out.Credits)
 	return out, nil
 }
 
@@ -400,6 +467,7 @@ func (s *Service) Collection(ctx context.Context, o Opts, id int) (*CollectionDe
 		out.Parts = append(out.Parts, p.toItem("movie"))
 	}
 	sort.SliceStable(out.Parts, func(i, j int) bool { return out.Parts[i].ReleaseDate < out.Parts[j].ReleaseDate })
+	s.annotate(ctx, out.Parts)
 	return out, nil
 }
 

@@ -44,3 +44,49 @@ type TMDBCache struct {
 	FetchedAt int64  `bun:"fetched_at"`
 	ExpiresAt int64  `bun:"expires_at"`
 }
+
+type LibraryItem struct {
+	bun.BaseModel `bun:"table:library_items"`
+
+	MediaType  string `bun:"media_type,pk"`
+	TMDBID     int64  `bun:"tmdb_id,pk"`
+	JellyfinID string `bun:"jellyfin_id"`
+	Title      string `bun:"title"`
+}
+
+type LibrarySeason struct {
+	bun.BaseModel `bun:"table:library_seasons"`
+
+	TMDBID       int64 `bun:"tmdb_id,pk"`
+	SeasonNumber int   `bun:"season_number,pk"`
+	EpisodeCount int   `bun:"episode_count"`
+}
+
+type WatchHistory struct {
+	bun.BaseModel `bun:"table:watch_history"`
+
+	UserID       string `bun:"user_id,pk"`
+	MediaType    string `bun:"media_type,pk"`
+	TMDBID       int64  `bun:"tmdb_id,pk"`
+	LastPlayedAt int64  `bun:"last_played_at"`
+	PlayCount    int    `bun:"play_count"`
+}
+
+type UserHistoryState struct {
+	bun.BaseModel `bun:"table:user_history_state"`
+
+	UserID    string `bun:"user_id,pk"`
+	Version   int64  `bun:"version"`
+	Hash      string `bun:"hash"`
+	UpdatedAt int64  `bun:"updated_at"`
+}
+
+type JobRun struct {
+	bun.BaseModel `bun:"table:job_runs"`
+
+	Name           string `bun:"name,pk" json:"name"`
+	LastStartedAt  int64  `bun:"last_started_at" json:"lastStartedAt"`
+	LastFinishedAt int64  `bun:"last_finished_at" json:"lastFinishedAt"`
+	Status         string `bun:"status" json:"status"` // running | ok | error
+	Message        string `bun:"message" json:"message"`
+}

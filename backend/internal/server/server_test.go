@@ -6,12 +6,16 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/Rombond/tipsarr/backend/internal/api"
 	"github.com/Rombond/tipsarr/backend/internal/auth"
+	"github.com/Rombond/tipsarr/backend/internal/jobs"
+	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/server"
 	"github.com/Rombond/tipsarr/backend/internal/store"
@@ -29,13 +33,53 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 		_ = json.NewDecoder(r.Body).Decode(&in)
 		switch {
 		case in.Username == "alice" && in.Pw == "secret":
-			_, _ = w.Write([]byte(`{"AccessToken":"t","User":{"Id":"u-alice","Name":"alice","Policy":{"IsAdministrator":true}}}`))
+			_, _ = w.Write([]byte(`{"AccessToken":"t","User":{"Id":"aaaaaaaabbbbccccddddeeeeeeeeeeee","Name":"alice","Policy":{"IsAdministrator":true}}}`))
 		case in.Username == "bob" && in.Pw == "hunter2":
-			_, _ = w.Write([]byte(`{"AccessToken":"t","User":{"Id":"u-bob","Name":"bob","Policy":{"IsAdministrator":false}}}`))
+			_, _ = w.Write([]byte(`{"AccessToken":"t","User":{"Id":"bbbbbbbbbbbbccccddddeeeeeeeeeeee","Name":"bob","Policy":{"IsAdministrator":false}}}`))
 		default:
 			w.WriteHeader(http.StatusUnauthorized)
 		}
 	})
+	// ---- library / history (need the API key) ----
+	const aliceID, bobID = "aaaaaaaabbbbccccddddeeeeeeeeeeee", "bbbbbbbbbbbbccccddddeeeeeeeeeeee"
+	keyed := func(h http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if r.Header.Get("X-Emby-Token") != "jfkey" {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			h(w, r)
+		}
+	}
+	writeItems := func(w http.ResponseWriter, items string) {
+		_, _ = w.Write([]byte(`{"Items":[` + items + `],"TotalRecordCount":0}`))
+	}
+	mux.HandleFunc("/Users", keyed(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`[{"Id":"` + aliceID + `","Name":"alice"},{"Id":"` + bobID + `","Name":"bob"}]`))
+	}))
+	mux.HandleFunc("/Items", keyed(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Query().Get("IncludeItemTypes") {
+		case "Movie,Series":
+			writeItems(w, `{"Id":"jm1","Name":"Movie One","Type":"Movie","ProviderIds":{"Tmdb":"1"}},
+				{"Id":"jm9","Name":"No Tmdb","Type":"Movie","ProviderIds":{}},
+				{"Id":"js1","Name":"Show Two","Type":"Series","ProviderIds":{"Tmdb":"2"}}`)
+		case "Episode":
+			var eps []string
+			for i := 1; i <= 10; i++ { // season 1 complete, season 2 absent
+				eps = append(eps, `{"Id":"e`+strconv.Itoa(i)+`","Type":"Episode","SeriesId":"js1","ParentIndexNumber":1,"IndexNumber":`+strconv.Itoa(i)+`}`)
+			}
+			writeItems(w, strings.Join(eps, ","))
+		default:
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}))
+	mux.HandleFunc("/Users/"+aliceID+"/Items", keyed(func(w http.ResponseWriter, r *http.Request) {
+		writeItems(w, `{"Id":"jm1","Type":"Movie","ProviderIds":{"Tmdb":"1"},"UserData":{"Played":true,"PlayCount":2,"LastPlayedDate":"2026-09-01T10:00:00Z"}},
+			{"Id":"e1","Type":"Episode","SeriesId":"js1","UserData":{"Played":true,"PlayCount":1,"LastPlayedDate":"2026-09-02T10:00:00Z"}},
+			{"Id":"e2","Type":"Episode","SeriesId":"js1","UserData":{"Played":true,"PlayCount":1,"LastPlayedDate":"2026-09-03T10:00:00Z"}},
+			{"Id":"eX","Type":"Episode","SeriesId":"unknown-series","UserData":{"Played":true,"PlayCount":1,"LastPlayedDate":"2026-09-03T10:00:00Z"}}`)
+	}))
+	mux.HandleFunc("/Users/"+bobID+"/Items", keyed(func(w http.ResponseWriter, r *http.Request) { writeItems(w, "") }))
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 	return srv
@@ -98,6 +142,11 @@ func fakeImages(t *testing.T) *httptest.Server {
 }
 
 func newApp(t *testing.T) *httptest.Server {
+	app, _, _ := newAppFull(t)
+	return app
+}
+
+func newAppFull(t *testing.T) (*httptest.Server, *store.Store, *library.Service) {
 	t.Helper()
 	tm, im := fakeTMDB(t), fakeImages(t)
 	st, err := store.Open(context.Background(), "sqlite:"+filepath.Join(t.TempDir(), "t.db"))
@@ -105,13 +154,24 @@ func newApp(t *testing.T) *httptest.Server {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = st.Close() })
+	lib := library.New(st)
+	lib.SetDebounce(20 * time.Millisecond)
+	jm := jobs.New(st)
+	jm.Register(jobs.Job{Name: "library-sync", Every: time.Hour, InitialDelay: time.Hour, Run: func(ctx context.Context) (string, error) {
+		r, err := lib.SyncLibrary(ctx)
+		return r.String(), err
+	}})
+	jm.Register(jobs.Job{Name: "history-sync", Every: time.Hour, InitialDelay: time.Hour, Run: func(ctx context.Context) (string, error) {
+		r, err := lib.SyncHistory(ctx, "")
+		return r.String(), err
+	}})
 	h, _ := server.New(api.Deps{
-		Store: st, Auth: auth.New(st), Media: media.New(st, tm.URL),
+		Store: st, Auth: auth.New(st), Media: media.New(st, tm.URL), Library: lib, Jobs: jm,
 		DryRun: true, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)
 	t.Cleanup(app.Close)
-	return app
+	return app, st, lib
 }
 
 func call(t *testing.T, app *httptest.Server, method, path, body string, cookies ...*http.Cookie) (*http.Response, string) {
@@ -336,5 +396,127 @@ func TestImageProxy(t *testing.T) {
 		if resp, _ := call(t, app, "GET", bad, "", bob); resp.StatusCode != http.StatusNotFound {
 			t.Fatalf("%s = %d", bad, resp.StatusCode)
 		}
+	}
+}
+
+// waitFor polls cond for up to 3s.
+func waitFor(t *testing.T, what string, cond func() bool) {
+	t.Helper()
+	for i := 0; i < 150; i++ {
+		if cond() {
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for %s", what)
+}
+
+func TestLibrarySyncAndAvailability(t *testing.T) {
+	jf := fakeJellyfin(t)
+	app, st, _ := newAppFull(t)
+	admin := loginAs(t, app, jf.URL, "alice", "secret")
+	bob := loginAs(t, app, jf.URL, "bob", "hunter2")
+	call(t, app, "PUT", "/api/v1/admin/settings", `{"tmdbApiKey":"k123"}`, admin)
+
+	// before any sync nothing is available
+	_, body := call(t, app, "GET", "/api/v1/discover/trending", "", bob)
+	if strings.Contains(body, `"availability":"available"`) {
+		t.Fatalf("unexpected availability before sync: %s", body)
+	}
+
+	// sync needs the API key and an admin
+	if resp, _ := call(t, app, "POST", "/api/v1/admin/sync/library-sync", "", admin); resp.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("sync without key = %d", resp.StatusCode)
+	}
+	if resp, _ := call(t, app, "POST", "/api/v1/admin/sync/library-sync", "", bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("user sync = %d", resp.StatusCode)
+	}
+	resp, body := call(t, app, "PUT", "/api/v1/admin/settings", `{"jellyfinApiKey":"jfkey"}`, admin)
+	if resp.StatusCode != 200 || !strings.Contains(body, `"jellyfinApiKeyConfigured":true`) || strings.Contains(body, "jfkey") ||
+		!strings.Contains(body, "/api/v1/hooks/jellyfin?token=") {
+		t.Fatalf("settings = %d %s", resp.StatusCode, body)
+	}
+
+	if resp, _ := call(t, app, "POST", "/api/v1/admin/sync/library-sync", "", admin); resp.StatusCode != http.StatusAccepted {
+		t.Fatalf("sync = %d", resp.StatusCode)
+	}
+	waitFor(t, "library sync", func() bool {
+		_, b := call(t, app, "GET", "/api/v1/admin/sync", "", admin)
+		return strings.Contains(b, `"name":"library-sync"`) && strings.Contains(b, `"status":"ok"`)
+	})
+	_, body = call(t, app, "GET", "/api/v1/admin/sync", "", admin)
+	if !strings.Contains(body, `"movies":1`) || !strings.Contains(body, `"shows":1`) || !strings.Contains(body, "1 without a TMDB id") || !strings.Contains(body, "10 episodes") {
+		t.Fatalf("sync status = %s", body)
+	}
+	_ = st
+
+	// lists: movie One (tmdb 1) and show Two (tmdb 2) are available
+	_, body = call(t, app, "GET", "/api/v1/discover/trending", "", bob)
+	var l media.List
+	_ = json.Unmarshal([]byte(body), &l)
+	if len(l.Items) != 2 || l.Items[0].Availability != "available" || l.Items[1].Availability != "available" {
+		t.Fatalf("trending availability = %s", body)
+	}
+	// detail: movie available, show partial (season 1 of 2 present)
+	_, body = call(t, app, "GET", "/api/v1/media/movie/1", "", bob)
+	var md media.Detail
+	_ = json.Unmarshal([]byte(body), &md)
+	if md.Availability != "available" || md.Recommendations[0].Availability != "none" {
+		t.Fatalf("movie detail availability = %s", md.Availability)
+	}
+	_, body = call(t, app, "GET", "/api/v1/media/tv/2", "", bob)
+	var td media.Detail
+	_ = json.Unmarshal([]byte(body), &td)
+	if td.Availability != "partial" {
+		t.Fatalf("tv detail availability = %q", td.Availability)
+	}
+}
+
+func TestHistorySyncAndWebhook(t *testing.T) {
+	jf := fakeJellyfin(t)
+	app, st, _ := newAppFull(t)
+	admin := loginAs(t, app, jf.URL, "alice", "secret")
+	_, body := call(t, app, "PUT", "/api/v1/admin/settings", `{"jellyfinApiKey":"jfkey"}`, admin)
+	var settings struct {
+		WebhookPath string `json:"webhookPath"`
+	}
+	_ = json.Unmarshal([]byte(body), &settings)
+	const alice = "aaaaaaaabbbbccccddddeeeeeeeeeeee"
+	ctx := context.Background()
+
+	// history sync (also pulls the library first since it is empty)
+	call(t, app, "POST", "/api/v1/admin/sync/history-sync", "", admin)
+	waitFor(t, "history sync", func() bool {
+		v, _ := st.HistoryVersion(ctx, alice)
+		return v == 1
+	})
+	rows, _ := st.UserHistory(ctx, alice, 0)
+	if len(rows) != 2 {
+		t.Fatalf("history rows = %+v", rows)
+	}
+	byKey := map[string]store.WatchHistory{}
+	for _, r := range rows {
+		byKey[r.MediaType] = r
+	}
+	if m := byKey["movie"]; m.TMDBID != 1 || m.PlayCount != 2 {
+		t.Fatalf("movie history = %+v", m)
+	}
+	if tv := byKey["tv"]; tv.TMDBID != 2 || tv.PlayCount != 2 || tv.LastPlayedAt != time.Date(2026, 9, 3, 10, 0, 0, 0, time.UTC).Unix() {
+		t.Fatalf("tv history = %+v", tv) // 2 episodes aggregated to the show, unknown series skipped
+	}
+
+	// webhook: bad token rejected
+	if resp, _ := call(t, app, "POST", "/api/v1/hooks/jellyfin?token=nope", `{"NotificationType":"PlaybackStop"}`); resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("bad token = %d", resp.StatusCode)
+	}
+	// unchanged history: re-sync must NOT bump the version
+	call(t, app, "POST", settings.WebhookPath, `{"NotificationType":"PlaybackStop","UserId":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}`)
+	time.Sleep(300 * time.Millisecond)
+	if v, _ := st.HistoryVersion(ctx, alice); v != 1 {
+		t.Fatalf("version bumped without change: %d", v)
+	}
+	// a library event refreshes the library (debounced)
+	if resp, _ := call(t, app, "POST", settings.WebhookPath, `{"NotificationType":"ItemAdded"}`); resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("webhook = %d", resp.StatusCode)
 	}
 }
