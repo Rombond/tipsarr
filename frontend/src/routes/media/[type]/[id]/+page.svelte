@@ -3,13 +3,11 @@
 	import { goto } from '$app/navigation';
 	import { api, unwrap, imageUrl, type MediaDetail } from '$lib/api/client';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Carousel from '$lib/components/media/carousel.svelte';
-	import RequestButton from '$lib/components/requests/request-button.svelte';
-	import MarkButtons from '$lib/components/media/mark-buttons.svelte';
+	import DetailActions from '$lib/components/media/detail-actions.svelte';
+	import SeasonList from '$lib/components/media/season-list.svelte';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
-	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 
 	let mediaType: 'movie' | 'tv' = $derived(page.params.type === 'tv' ? 'tv' : 'movie');
 	let tmdbId = $derived(Number(page.params.id));
@@ -129,26 +127,7 @@
 					<p class="max-w-3xl text-sm leading-relaxed">{details.overview}</p>
 				{/if}
 
-				<div class="flex flex-wrap gap-2">
-					<RequestButton
-						type={mediaType}
-						{tmdbId}
-						seasons={details.seasons}
-						availability={details.availability}
-						requestStatus={details.requestStatus}
-					/>
-					{#if details.imdbId}
-						<Button variant="outline" href="https://www.imdb.com/title/{details.imdbId}" target="_blank" rel="noreferrer">
-							IMDb
-							<ExternalLinkIcon data-icon="inline-end" />
-						</Button>
-					{/if}
-					<Button variant="outline" href="https://www.themoviedb.org/{mediaType}/{tmdbId}" target="_blank" rel="noreferrer">
-						TMDB
-						<ExternalLinkIcon data-icon="inline-end" />
-					</Button>
-				</div>
-				<MarkButtons type={mediaType} {tmdbId} />
+				<DetailActions {details} type={mediaType} {tmdbId} />
 			</div>
 
 			<!-- 2. info sidebar: right column on desktop, before Cast on mobile -->
@@ -159,6 +138,9 @@
 						class="group relative block h-28 w-full cursor-pointer overflow-hidden rounded-lg bg-muted text-left shadow-sm"
 						onclick={() => goto(`/collection/${details!.collectionId}`)}
 					>
+						{#if details.collectionBackdropPath}
+							<img src={imageUrl(details.collectionBackdropPath, 'w780')} alt="" class="h-full w-full object-cover transition-transform group-hover:scale-105" />
+						{/if}
 						<div class="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 to-transparent p-3">
 							<span class="text-[10px] tracking-wide text-white/70 uppercase">Part of the collection</span>
 							<span class="truncate font-semibold text-sm text-white">{details.collectionName}</span>
@@ -210,16 +192,7 @@
 				{#if mediaType === 'tv' && seasons.length}
 					<section class="grid gap-2">
 						<h2 class="font-semibold text-lg">Seasons</h2>
-						<ul class="grid gap-1.5 text-sm">
-							{#each seasons as s (s.number)}
-								<li class="flex items-center justify-between rounded-md border border-border px-3 py-2">
-									<span class="font-medium">{s.name || `Season ${s.number}`}</span>
-									<span class="text-muted-foreground">
-										{s.episodeCount} episodes{#if s.airDate} · {s.airDate.slice(0, 4)}{/if}
-									</span>
-								</li>
-							{/each}
-						</ul>
+						<SeasonList {tmdbId} seasons={seasons} />
 					</section>
 				{/if}
 

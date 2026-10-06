@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { MediaItem } from '$lib/api/client';
 	import Carousel from '$lib/components/media/carousel.svelte';
 
@@ -33,8 +34,10 @@
 		}
 	}
 
+	// first page only: loadNext reads/writes `loading`, which would re-trigger this effect and
+	// page through the whole catalogue endlessly if it were tracked
 	$effect(() => {
-		loadNext();
+		untrack(loadNext);
 	});
 </script>
 

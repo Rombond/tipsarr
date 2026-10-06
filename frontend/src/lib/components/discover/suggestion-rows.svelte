@@ -36,6 +36,8 @@
 
 	$effect(() =>
 		onEvent('suggestions.updated', () => {
+			// only react to updates we are waiting for (never reload on unsolicited events)
+			if (!generating && !refreshing) return;
 			refreshing = false;
 			load(false);
 		}),

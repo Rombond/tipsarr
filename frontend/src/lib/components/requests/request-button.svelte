@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api, unwrap, type Schemas } from '$lib/api/client';
+	import { toast } from '$lib/toast.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 
@@ -10,6 +11,7 @@
 		availability,
 		requestStatus,
 		onRequested,
+		title = '',
 	}: {
 		type: 'movie' | 'tv';
 		tmdbId: number;
@@ -17,6 +19,7 @@
 		availability: string;
 		requestStatus?: string;
 		onRequested?: (r: Schemas['View']) => void;
+		title?: string;
 	} = $props();
 
 	let created = $state<string | null>(null);
@@ -48,9 +51,11 @@
 			);
 			created = r.status;
 			pickerOpen = false;
+			toast.success(r.status === 'approved' ? `${title ? `"${title}"` : 'Request'} approved${r.dryRun ? ' (dry-run: nothing sent)' : ''}` : `Requested${title ? ` "${title}"` : ''}`);
 			onRequested?.(r);
 		} catch (e) {
 			error = (e as Error).message;
+			toast.error(error);
 		} finally {
 			busy = false;
 		}

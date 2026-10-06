@@ -48,7 +48,7 @@
 		try {
 			const r = await unwrap(api.POST('/requests', { body: { type: item.type, tmdbId: item.tmdbId } }));
 			requested = r.status;
-			toast.success(r.status === 'approved' ? `"${item.title}" approved` : `Requested "${item.title}"`);
+			toast.success(r.status === 'approved' ? `"${item.title}" approved${r.dryRun ? ' (dry-run: nothing sent)' : ''}` : `Requested "${item.title}"`);
 		} catch (err) {
 			toast.error((err as Error).message);
 		} finally {

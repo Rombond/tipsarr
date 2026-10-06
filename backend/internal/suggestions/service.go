@@ -22,20 +22,21 @@ import (
 )
 
 const (
-	maxBecauseRows   = 6
-	itemsPerRow      = 20
-	accountItems     = 40
-	accountSeeds     = 15
-	minRowItems      = 4
-	staleNoHistory   = 7 * 24 * time.Hour
-	refreshCooldown  = time.Minute
-	queueDelay       = 5 * time.Second
-	fetchConcurrency = 6
-	KindAccount      = "account"
-	KindBecause      = "because"
-	labelPersonal    = "Recommended for you"
-	labelServer      = "Popular on this server"
-	labelTrending    = "Trending now"
+	maxBecauseRows     = 6
+	itemsPerRow        = 20
+	accountItems       = 40
+	accountSeeds       = 15
+	minRowItems        = 4
+	staleNoHistory     = 7 * 24 * time.Hour
+	refreshCooldown    = time.Minute
+	backgroundCooldown = 30 * time.Second
+	queueDelay         = 5 * time.Second
+	fetchConcurrency   = 6
+	KindAccount        = "account"
+	KindBecause        = "because"
+	labelPersonal      = "Recommended for you"
+	labelServer        = "Popular on this server"
+	labelTrending      = "Trending now"
 )
 
 var ErrTooSoon = errors.New("recommendations were refreshed a moment ago")
@@ -45,15 +46,16 @@ type Service struct {
 	media *media.Service
 	hub   *events.Hub // optional
 
-	mu         sync.Mutex
-	userLocks  map[string]*sync.Mutex
-	lastForced map[string]time.Time
-	timers     map[string]*time.Timer
-	delay      time.Duration
+	mu             sync.Mutex
+	userLocks      map[string]*sync.Mutex
+	lastForced     map[string]time.Time
+	lastBackground map[string]time.Time
+	timers         map[string]*time.Timer
+	delay          time.Duration
 }
 
 func New(s *store.Store, m *media.Service, h *events.Hub) *Service {
-	return &Service{store: s, media: m, hub: h, userLocks: map[string]*sync.Mutex{}, lastForced: map[string]time.Time{}, timers: map[string]*time.Timer{}, delay: queueDelay}
+	return &Service{store: s, media: m, hub: h, userLocks: map[string]*sync.Mutex{}, lastForced: map[string]time.Time{}, lastBackground: map[string]time.Time{}, timers: map[string]*time.Timer{}, delay: queueDelay}
 }
 
 // SetQueueDelay changes the debounce used by QueueRefresh (tests).
@@ -113,7 +115,9 @@ func (s *Service) Get(ctx context.Context, u *store.User) (*Result, error) {
 	hasHistory, _ := s.store.HasHistory(ctx, u.ID)
 	if stale(rows[0:1], cur, hasHistory) {
 		res.Generating = true
-		go s.refreshInBackground(u.ID)
+		if s.claimBackground(u.ID) {
+			go s.refreshInBackground(u.ID)
+		}
 	}
 
 	watched, err := s.hiddenSet(ctx, u.ID)
@@ -192,6 +196,19 @@ func snapshot(rowID string, pos int, it media.Item) store.SuggestionItem {
 }
 
 // ---- refreshing --------------------------------------------------------------------------
+
+// claimBackground allows one background refresh per user every 30 seconds, so a refresh that
+// cannot fix the staleness (TMDB down, nothing to recommend) never turns into a loop with
+// clients that reload when the refresh finishes.
+func (s *Service) claimBackground(userID string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if t, ok := s.lastBackground[userID]; ok && time.Since(t) < backgroundCooldown {
+		return false
+	}
+	s.lastBackground[userID] = time.Now()
+	return true
+}
 
 // Force starts a background regeneration of a user's rows, at most once per minute; a
 // suggestions.updated event follows.
