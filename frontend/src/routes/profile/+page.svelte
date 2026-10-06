@@ -9,9 +9,7 @@
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 
 	// the stored value is a TMDB language tag (fr-FR) or '' for "follow the browser"
-	// svelte-ignore state_referenced_locally
 	let language = $state(auth.user?.language ? LOCALES.find((l) => l.code === auth.user!.language.slice(0, 2))?.tag ?? '' : '');
-	// svelte-ignore state_referenced_locally
 	let region = $state(auth.user?.region ?? '');
 	let error = $state<string | null>(null);
 	let saving = $state(false);
