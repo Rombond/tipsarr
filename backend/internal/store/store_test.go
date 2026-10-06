@@ -330,3 +330,163 @@ func TestSuggestionsBoxOfficeAllEngines(t *testing.T) {
 		})
 	}
 }
+
+// Marks, users admin and the anime_root column on every engine.
+func TestMarksUsersAllEngines(t *testing.T) {
+	urls := map[string]string{"sqlite": "sqlite:" + filepath.Join(t.TempDir(), "mk.db")}
+	if v := os.Getenv("TIPSARR_TEST_PG_URL"); v != "" {
+		urls["postgres"] = v
+	}
+	if v := os.Getenv("TIPSARR_TEST_MYSQL_URL"); v != "" {
+		urls["mysql"] = v
+	}
+	for name, url := range urls {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
+			s, err := Open(ctx, url)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer s.Close()
+			tag := fmt.Sprintf("%d", time.Now().UnixNano())
+			uid := "mk" + tag
+
+			m := &UserMark{UserID: uid, Kind: MarkWatchlist, MediaType: "movie", TMDBID: 5, Title: "Old", VoteTenths: 70}
+			for i := 0; i < 2; i++ { // idempotent add refreshes the snapshot
+				m.Title = fmt.Sprintf("T%d", i)
+				if err := s.AddMark(ctx, m); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := s.AddMark(ctx, &UserMark{UserID: uid, Kind: MarkBlocklist, MediaType: "movie", TMDBID: 5, Title: "x"}); err != nil {
+				t.Fatal(err)
+			}
+			list, _ := s.Marks(ctx, uid, MarkWatchlist)
+			if len(list) != 1 || list[0].Title != "T1" {
+				t.Fatalf("watchlist = %+v", list)
+			}
+			if w, b, _ := s.HasMark(ctx, uid, "movie", 5); !w || !b {
+				t.Fatalf("flags = %v %v", w, b)
+			}
+			if set, _ := s.MarkSet(ctx, uid, MarkBlocklist); !set[WatchKey("movie", 5)] {
+				t.Fatalf("set = %v", set)
+			}
+			_ = s.RemoveMark(ctx, uid, MarkWatchlist, "movie", 5)
+			if w, b, _ := s.HasMark(ctx, uid, "movie", 5); w || !b {
+				t.Fatalf("after remove = %v %v", w, b)
+			}
+
+			created, err := s.EnsureUser(ctx, uid, "dave", false)
+			if err != nil || !created {
+				t.Fatalf("ensure = %v %v", created, err)
+			}
+			if created, _ := s.EnsureUser(ctx, uid, "dave2", true); created {
+				t.Fatal("second ensure must not create")
+			}
+			u, _ := s.GetUser(ctx, uid)
+			if u.Name != "dave2" || u.Role != RoleUser {
+				t.Fatalf("user = %+v (name refreshed, role untouched)", u)
+			}
+			u.Role, u.Region, u.Language = RoleAdmin, "FR", "fr-FR"
+			if err := s.UpdateUser(ctx, u); err != nil {
+				t.Fatal(err)
+			}
+			if got, _ := s.GetUser(ctx, uid); got.Role != RoleAdmin || got.Region != "FR" {
+				t.Fatalf("updated = %+v", got)
+			}
+			if n, err := s.CountAdmins(ctx); err != nil || n < 1 {
+				t.Fatalf("admins = %d %v", n, err)
+			}
+
+			inst := &ServarrInstance{ID: "an" + tag, Kind: "sonarr", Name: "S", URL: "http://s", APIKey: "k", QualityProfileID: 1, RootFolder: "/t", AnimeRoot: "/anime"}
+			if err := s.SaveServarr(ctx, inst); err != nil {
+				t.Fatal(err)
+			}
+			if got, _ := s.GetServarr(ctx, inst.ID); got.AnimeRoot != "/anime" {
+				t.Fatalf("anime root = %q", got.AnimeRoot)
+			}
+			_ = s.DeleteServarr(ctx, inst.ID)
+		})
+	}
+}
+
+// Marks, users admin helpers and the anime_root column on every engine.
+func TestMarksAndUsersAllEngines(t *testing.T) {
+	urls := map[string]string{"sqlite": "sqlite:" + filepath.Join(t.TempDir(), "m.db")}
+	if v := os.Getenv("TIPSARR_TEST_PG_URL"); v != "" {
+		urls["postgres"] = v
+	}
+	if v := os.Getenv("TIPSARR_TEST_MYSQL_URL"); v != "" {
+		urls["mysql"] = v
+	}
+	for name, url := range urls {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
+			s, err := Open(ctx, url)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer s.Close()
+			tag := fmt.Sprintf("%d", time.Now().UnixNano())
+			uid := "mu" + tag
+
+			m := &UserMark{UserID: uid, Kind: MarkWatchlist, MediaType: "movie", TMDBID: 5, Title: "Old"}
+			if err := s.AddMark(ctx, m); err != nil {
+				t.Fatal(err)
+			}
+			m2 := &UserMark{UserID: uid, Kind: MarkWatchlist, MediaType: "movie", TMDBID: 5, Title: "New"} // upsert path
+			if err := s.AddMark(ctx, m2); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.AddMark(ctx, &UserMark{UserID: uid, Kind: MarkBlocklist, MediaType: "tv", TMDBID: 9, Title: "B"}); err != nil {
+				t.Fatal(err)
+			}
+			rows, _ := s.Marks(ctx, uid, MarkWatchlist)
+			if len(rows) != 1 || rows[0].Title != "New" {
+				t.Fatalf("watchlist = %+v", rows)
+			}
+			w, b, _ := s.HasMark(ctx, uid, "movie", 5)
+			if !w || b {
+				t.Fatalf("flags = %v %v", w, b)
+			}
+			if set, _ := s.MarkSet(ctx, uid, MarkBlocklist); !set["tv:9"] {
+				t.Fatalf("blocklist set = %v", set)
+			}
+			if err := s.RemoveMark(ctx, uid, MarkWatchlist, "movie", 5); err != nil {
+				t.Fatal(err)
+			}
+			if rows, _ := s.Marks(ctx, uid, MarkWatchlist); len(rows) != 0 {
+				t.Fatalf("not removed: %+v", rows)
+			}
+
+			created, err := s.EnsureUser(ctx, uid, "dave", false)
+			if err != nil || !created {
+				t.Fatalf("ensure new = %v %v", created, err)
+			}
+			created, err = s.EnsureUser(ctx, uid, "dave2", true) // existing: name refreshed, role untouched
+			if err != nil || created {
+				t.Fatalf("ensure existing = %v %v", created, err)
+			}
+			u, _ := s.GetUser(ctx, uid)
+			if u.Name != "dave2" || u.Role != RoleUser {
+				t.Fatalf("user = %+v", u)
+			}
+			u.Role, u.Region, u.Language = RoleAdmin, "FR", "fr-FR"
+			if err := s.UpdateUser(ctx, u); err != nil {
+				t.Fatal(err)
+			}
+			if n, _ := s.CountAdmins(ctx); n < 1 {
+				t.Fatalf("admins = %d", n)
+			}
+
+			inst := &ServarrInstance{ID: "an" + tag, Kind: "sonarr", Name: "S", URL: "http://s", APIKey: "k", QualityProfileID: 1, RootFolder: "/tv", AnimeRoot: "/anime"}
+			if err := s.SaveServarr(ctx, inst); err != nil {
+				t.Fatal(err)
+			}
+			if got, _ := s.GetServarr(ctx, inst.ID); got.AnimeRoot != "/anime" {
+				t.Fatalf("anime root = %+v", got)
+			}
+			_ = s.DeleteServarr(ctx, inst.ID)
+		})
+	}
+}

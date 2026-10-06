@@ -23,6 +23,7 @@ type instanceView struct {
 	QualityProfileID int               `json:"qualityProfileId"`
 	RootFolder       string            `json:"rootFolder"`
 	IsDefault        bool              `json:"isDefault"`
+	AnimeRoot        string            `json:"animeRoot" doc:"Sonarr only: root folder for anime (Animation + Japanese original language); such shows are also added with series type anime"`
 	GenreRoots       map[string]string `json:"genreRoots" doc:"Radarr only: TMDB genre id -> root folder; the first matching genre of a movie wins"`
 }
 
@@ -30,7 +31,7 @@ func toInstanceView(in store.ServarrInstance) instanceView {
 	roots := map[string]string{}
 	_ = json.Unmarshal([]byte(in.GenreRoots), &roots)
 	return instanceView{ID: in.ID, Kind: in.Kind, Name: in.Name, URL: in.URL, APIKeyConfigured: in.APIKey != "",
-		QualityProfileID: in.QualityProfileID, RootFolder: in.RootFolder, IsDefault: in.IsDefault == 1, GenreRoots: roots}
+		QualityProfileID: in.QualityProfileID, RootFolder: in.RootFolder, IsDefault: in.IsDefault == 1, GenreRoots: roots, AnimeRoot: in.AnimeRoot}
 }
 
 type instanceBody struct {
@@ -41,6 +42,7 @@ type instanceBody struct {
 	QualityProfileID int               `json:"qualityProfileId" minimum:"1"`
 	RootFolder       string            `json:"rootFolder" minLength:"1"`
 	IsDefault        bool              `json:"isDefault"`
+	AnimeRoot        *string           `json:"animeRoot,omitempty" doc:"Sonarr only. Omit to keep, empty string to clear"`
 	GenreRoots       map[string]string `json:"genreRoots,omitempty" doc:"Radarr only. Omit to keep the saved map, send {} to clear it"`
 }
 
@@ -125,6 +127,9 @@ func registerServarr(api huma.API, d Deps) {
 			}
 			inst.GenreRoots = g
 		}
+		if in.Body.AnimeRoot != nil {
+			inst.AnimeRoot = strings.TrimSpace(*in.Body.AnimeRoot)
+		}
 		if err := d.Store.SaveServarr(ctx, inst); err != nil {
 			return nil, err
 		}
@@ -170,6 +175,9 @@ func registerServarr(api huma.API, d Deps) {
 				return nil, err
 			}
 			cur.GenreRoots = g
+		}
+		if in.Body.AnimeRoot != nil {
+			cur.AnimeRoot = strings.TrimSpace(*in.Body.AnimeRoot)
 		}
 		if err := d.Store.SaveServarr(ctx, cur); err != nil {
 			return nil, err

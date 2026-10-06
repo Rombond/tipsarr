@@ -261,3 +261,26 @@ func (s *Service) queue(key string, fn func(context.Context) error) {
 func NormalizeID(id string) string {
 	return strings.ToLower(strings.ReplaceAll(strings.TrimSpace(id), "-", ""))
 }
+
+// ImportUsers adds Jellyfin users that Tipsarr has not seen yet (read-only on the Jellyfin side).
+// It returns how many were created and the Jellyfin total.
+func (s *Service) ImportUsers(ctx context.Context) (created, total int, err error) {
+	jf, err := s.client(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	users, err := jf.Users(ctx)
+	if err != nil {
+		return 0, 0, fmt.Errorf("list users: %w", err)
+	}
+	for _, u := range users {
+		isNew, err := s.store.EnsureUser(ctx, NormalizeID(u.ID), u.Name, u.Policy.IsAdministrator)
+		if err != nil {
+			return created, len(users), err
+		}
+		if isNew {
+			created++
+		}
+	}
+	return created, len(users), nil
+}

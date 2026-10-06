@@ -40,9 +40,10 @@ func (c *Client) Series(ctx context.Context, id int) (*Series, error) {
 	return &out, c.get(ctx, fmt.Sprintf("/series/%d", id), &out)
 }
 
-// AddSeries adds the series with only the given seasons monitored and starts a search.
+// AddSeries adds the series with only the given seasons monitored and starts a search; a non-empty
+// seriesType ("anime") overrides the type Sonarr suggested.
 // Idempotent: an existing series is returned untouched. In dry-run mode the POST is blocked.
-func (c *Client) AddSeries(ctx context.Context, tvdbID, qualityProfileID int, rootFolder string, seasons []int) (int, error) {
+func (c *Client) AddSeries(ctx context.Context, tvdbID, qualityProfileID int, rootFolder string, seasons []int, seriesType string) (int, error) {
 	if existing, err := c.SeriesByTVDB(ctx, tvdbID); err != nil {
 		return 0, err
 	} else if existing != nil {
@@ -73,6 +74,9 @@ func (c *Client) AddSeries(ctx context.Context, tvdbID, qualityProfileID int, ro
 	series["rootFolderPath"] = rootFolder
 	series["monitored"] = true
 	series["seasonFolder"] = true
+	if seriesType != "" { // standard | daily | anime; empty keeps what Sonarr's lookup suggested
+		series["seriesType"] = seriesType
+	}
 	series["addOptions"] = map[string]any{"ignoreEpisodesWithFiles": true, "searchForMissingEpisodes": true}
 	// Sonarr v3 still needs a language profile; v4 has none (404 here means v4).
 	var langs []struct {

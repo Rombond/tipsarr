@@ -114,7 +114,7 @@ func (s *Service) Get(ctx context.Context, u *store.User) (*Result, error) {
 		go s.refreshInBackground(u.ID)
 	}
 
-	watched, err := s.store.WatchedSet(ctx, u.ID)
+	watched, err := s.hiddenSet(ctx, u.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +152,23 @@ func stale(rows []store.SuggestionRow, currentVersion int64) bool {
 	// built from server-wide history or trending: refresh when the user gains history of their
 	// own, or weekly
 	return currentVersion > 0 || time.Since(time.Unix(r.GeneratedAt, 0)) > staleNoHistory
+}
+
+// hiddenSet is everything that must not appear in a user's suggestions: titles they watched
+// and titles they put on their blocklist.
+func (s *Service) hiddenSet(ctx context.Context, userID string) (map[string]bool, error) {
+	watched, err := s.store.WatchedSet(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	blocked, err := s.store.MarkSet(ctx, userID, store.MarkBlocklist)
+	if err != nil {
+		return nil, err
+	}
+	for k := range blocked {
+		watched[k] = true
+	}
+	return watched, nil
 }
 
 func itemFromSnapshot(it store.SuggestionItem) media.Item {
@@ -235,9 +252,9 @@ func (s *Service) Generate(ctx context.Context, userID string) error {
 	if err != nil {
 		return err
 	}
-	watched := make(map[string]bool, len(hist))
-	for _, h := range hist {
-		watched[store.WatchKey(h.MediaType, h.TMDBID)] = true
+	watched, err := s.hiddenSet(ctx, userID) // watched + blocklisted
+	if err != nil {
+		return err
 	}
 
 	personal := len(hist) > 0

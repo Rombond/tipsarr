@@ -18,6 +18,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
 	"github.com/Rombond/tipsarr/backend/internal/library"
+	"github.com/Rombond/tipsarr/backend/internal/marks"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
@@ -101,7 +102,7 @@ func run(cfg config.Config) error {
 	jm.Start(ctx)
 
 	handler, _ := server.New(api.Deps{
-		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Suggestions: sugg, BoxOffice: box, Hub: hub, Notify: notifier,
+		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), Hub: hub, Notify: notifier,
 		DryRun: cfg.DryRun, ConfigDir: cfg.ConfigDir,
 	})
 	if cfg.DryRun {

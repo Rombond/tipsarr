@@ -83,7 +83,7 @@ func TestDryRunNeverWrites(t *testing.T) {
 		t.Fatalf("AddMovie dry-run err = %v", err)
 	}
 	sonarr := New(KindSonarr, srv.URL, "key", true)
-	if _, err := sonarr.AddSeries(ctx, 81189, 1, "/tv", []int{1}); !errors.Is(err, ErrDryRun) {
+	if _, err := sonarr.AddSeries(ctx, 81189, 1, "/tv", []int{1}, ""); !errors.Is(err, ErrDryRun) {
 		t.Fatalf("AddSeries dry-run err = %v", err)
 	}
 	// every other write verb is blocked at the choke point too
@@ -118,7 +118,7 @@ func TestAddMovieAndSeriesWhenLive(t *testing.T) {
 		t.Fatalf("addOptions = %v", f.last["addOptions"])
 	}
 
-	id, err = New(KindSonarr, srv.URL, "key", false).AddSeries(ctx, 81189, 5, "/tv", []int{2})
+	id, err = New(KindSonarr, srv.URL, "key", false).AddSeries(ctx, 81189, 5, "/tv", []int{2}, "anime")
 	if err != nil || id != 77 {
 		t.Fatalf("AddSeries = %d %v", id, err)
 	}
@@ -129,6 +129,9 @@ func TestAddMovieAndSeriesWhenLive(t *testing.T) {
 	}
 	if monitored[0] || monitored[1] || !monitored[2] {
 		t.Fatalf("only season 2 should be monitored: %v", monitored)
+	}
+	if f.last["seriesType"] != "anime" {
+		t.Fatalf("seriesType = %v", f.last["seriesType"])
 	}
 }
 

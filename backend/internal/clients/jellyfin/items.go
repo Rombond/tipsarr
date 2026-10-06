@@ -35,8 +35,11 @@ func (i Item) TMDBID() int {
 }
 
 type User struct {
-	ID   string `json:"Id"`
-	Name string `json:"Name"`
+	ID     string `json:"Id"`
+	Name   string `json:"Name"`
+	Policy struct {
+		IsAdministrator bool `json:"IsAdministrator"`
+	} `json:"Policy"`
 }
 
 // Users lists all Jellyfin users (needs an API key).

@@ -341,9 +341,16 @@ func (s *Service) Approve(ctx context.Context, by *store.User, id string, ov *Ov
 		}
 	}
 
+	seriesType := ""
+	if !explicitRoot && r.MediaType == "tv" && inst.AnimeRoot != "" {
+		if d, err := s.media.Detail(ctx, media.Opts{}, "tv", int(r.TMDBID)); err == nil && IsAnime(d) {
+			root, seriesType = inst.AnimeRoot, "anime"
+		}
+	}
+
 	r.DecidedBy, r.InstanceID, r.DeclineReason, r.Error = by.ID, inst.ID, "", ""
 	client := s.newServarr(inst)
-	servarrID, sendErr := s.send(ctx, client, r, profile, root)
+	servarrID, sendErr := s.send(ctx, client, r, profile, root, seriesType)
 	switch {
 	case errors.Is(sendErr, servarr.ErrDryRun):
 		r.Status, r.DryRun, r.SentAt, r.ServarrID = store.StatusApproved, 1, 0, 0
@@ -365,6 +372,20 @@ func (s *Service) Approve(ctx context.Context, by *store.User, id string, ov *Ov
 	return s.view(ctx, r)
 }
 
+// IsAnime reports whether a show looks like anime: TMDB has no anime genre, so the rule is
+// "Animation" (genre 16) with Japanese as the original language.
+func IsAnime(d *media.Detail) bool {
+	if d.OriginalLanguage != "ja" {
+		return false
+	}
+	for _, g := range d.Genres {
+		if g.ID == 16 {
+			return true
+		}
+	}
+	return false
+}
+
 // GenreRoot picks the root folder for a movie from the instance's genre map (JSON
 // {"<tmdb genre id>": "<folder>"}): the first of the movie's genres that has a mapping wins.
 func GenreRoot(genreRootsJSON string, genres []media.Genre) string {
@@ -380,7 +401,7 @@ func GenreRoot(genreRootsJSON string, genres []media.Genre) string {
 	return ""
 }
 
-func (s *Service) send(ctx context.Context, c *servarr.Client, r *store.Request, profile int, root string) (int, error) {
+func (s *Service) send(ctx context.Context, c *servarr.Client, r *store.Request, profile int, root, seriesType string) (int, error) {
 	if r.MediaType == "movie" {
 		return c.AddMovie(ctx, int(r.TMDBID), profile, root)
 	}
@@ -395,7 +416,7 @@ func (s *Service) send(ctx context.Context, c *servarr.Client, r *store.Request,
 	if err != nil {
 		return 0, err
 	}
-	return c.AddSeries(ctx, d.TVDBID, profile, root, seasons[r.ID])
+	return c.AddSeries(ctx, d.TVDBID, profile, root, seasons[r.ID], seriesType)
 }
 
 func (s *Service) Decline(ctx context.Context, by *store.User, id, reason string) (*View, error) {

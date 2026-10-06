@@ -104,6 +104,7 @@ type ServarrInstance struct {
 	IsDefault        int    `bun:"is_default" json:"-"`
 	CreatedAt        int64  `bun:"created_at" json:"-"`
 	GenreRoots       string `bun:"genre_roots" json:"-"` // JSON {"<genre id>": "<root folder>"}
+	AnimeRoot        string `bun:"anime_root" json:"-"`  // Sonarr: root folder (and series type) for anime
 }
 
 const (
@@ -208,4 +209,24 @@ type BoxOfficeEntry struct {
 	ReleaseDate    string `bun:"release_date"`
 	VoteTenths     int    `bun:"vote_tenths"`
 	Overview       string `bun:"overview"`
+}
+
+const (
+	MarkWatchlist = "watchlist"
+	MarkBlocklist = "blocklist"
+)
+
+// UserMark is a title a user put on their watchlist or blocklist (with a display snapshot).
+type UserMark struct {
+	bun.BaseModel `bun:"table:user_marks"`
+
+	UserID      string `bun:"user_id,pk"`
+	Kind        string `bun:"kind,pk"`
+	MediaType   string `bun:"media_type,pk"`
+	TMDBID      int64  `bun:"tmdb_id,pk"`
+	Title       string `bun:"title"`
+	PosterPath  string `bun:"poster_path"`
+	ReleaseDate string `bun:"release_date"`
+	VoteTenths  int    `bun:"vote_tenths"`
+	CreatedAt   int64  `bun:"created_at"`
 }

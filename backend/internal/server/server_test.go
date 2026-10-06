@@ -20,6 +20,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
 	"github.com/Rombond/tipsarr/backend/internal/library"
+	"github.com/Rombond/tipsarr/backend/internal/marks"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
@@ -62,7 +63,7 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 		_, _ = w.Write([]byte(`{"Items":[` + items + `],"TotalRecordCount":0}`))
 	}
 	mux.HandleFunc("/Users", keyed(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`[{"Id":"` + aliceID + `","Name":"alice"},{"Id":"` + bobID + `","Name":"bob"}]`))
+		_, _ = w.Write([]byte(`[{"Id":"` + aliceID + `","Name":"alice","Policy":{"IsAdministrator":true}},{"Id":"` + bobID + `","Name":"bob","Policy":{"IsAdministrator":false}},{"Id":"cccccccccccccccccccccccccccccccc","Name":"carol","Policy":{"IsAdministrator":false}}]`))
 	}))
 	mux.HandleFunc("/Items", keyed(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Query().Get("IncludeItemTypes") {
@@ -86,6 +87,7 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 			{"Id":"e2","Type":"Episode","SeriesId":"js1","UserData":{"Played":true,"PlayCount":1,"LastPlayedDate":"2026-09-03T10:00:00Z"}},
 			{"Id":"eX","Type":"Episode","SeriesId":"unknown-series","UserData":{"Played":true,"PlayCount":1,"LastPlayedDate":"2026-09-03T10:00:00Z"}}`)
 	}))
+	mux.HandleFunc("/Users/cccccccccccccccccccccccccccccccc/Items", keyed(func(w http.ResponseWriter, r *http.Request) { writeItems(w, "") }))
 	mux.HandleFunc("/Users/"+bobID+"/Items", keyed(func(w http.ResponseWriter, r *http.Request) { writeItems(w, "") }))
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -160,6 +162,17 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 			_, _ = w.Write([]byte(`{"results":[]}`))
 		}
 	}))
+	mux.HandleFunc("/tv/30", hit(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"id":30,"name":"Anime Show","original_language":"ja","genres":[{"id":16,"name":"Animation"}],
+			"number_of_seasons":1,"number_of_episodes":12,"seasons":[{"season_number":1,"name":"Season 1","episode_count":12}],
+			"external_ids":{"tvdb_id":555},"recommendations":{"results":[]},"similar":{"results":[]}}`))
+	}))
+	for _, id := range []string{"10", "11", "12", "13", "15", "16"} {
+		id := id
+		mux.HandleFunc("/movie/"+id, hit(func(w http.ResponseWriter, r *http.Request) {
+			_, _ = w.Write([]byte(`{"id":` + id + `,"title":"R` + id + `","poster_path":"/r` + id + `.jpg","genres":[],"credits":{"cast":[],"crew":[]},"recommendations":{"results":[]},"similar":{"results":[]}}`))
+		}))
+	}
 	mux.HandleFunc("/movie/404", hit(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotFound) }))
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -258,7 +271,7 @@ func newEnv(t *testing.T, dryRun bool) *env {
 	sugg.SetQueueDelay(20 * time.Millisecond)
 	lib.OnHistoryChanged = sugg.QueueRefresh
 	h, _ := server.New(api.Deps{
-		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Suggestions: sugg, BoxOffice: box, Hub: hub, Notify: notifier,
+		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), Hub: hub, Notify: notifier,
 		DryRun: dryRun, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)
