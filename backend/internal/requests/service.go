@@ -236,12 +236,17 @@ type CreateParams struct {
 	Type    string
 	TMDBID  int
 	Seasons []int // TV only; empty = every regular season
+	// Admin only: send with this quality profile / root folder instead of the instance defaults.
+	Overrides *Overrides
 }
 
 // Create records a request from a user. Admin requests are approved right away.
 func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*View, error) {
 	if p.Type != "movie" && p.Type != "tv" || p.TMDBID <= 0 {
 		return nil, ErrInvalid
+	}
+	if p.Overrides != nil && u.Role != store.RoleAdmin {
+		return nil, ErrForbidden
 	}
 	d, err := s.media.Detail(ctx, media.Opts{Language: u.Language, Region: u.Region}, p.Type, p.TMDBID)
 	if err != nil {
@@ -299,7 +304,7 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 	s.notify.Dispatch(notify.RequestCreated, s.payload(ctx, r))
 
 	if u.Role == store.RoleAdmin {
-		v, err := s.Approve(ctx, u, r.ID, nil)
+		v, err := s.Approve(ctx, u, r.ID, p.Overrides)
 		if errors.Is(err, ErrNoInstance) {
 			return s.view(ctx, r) // stays pending until a Radarr/Sonarr instance is configured
 		}
@@ -505,4 +510,39 @@ func truncate(s string, n int) string {
 		return s
 	}
 	return s[:n]
+}
+
+// ---- options ------------------------------------------------------------------------------------
+
+type Options struct {
+	InstanceName string                   `json:"instanceName"`
+	ProfileID    int                      `json:"qualityProfileId" doc:"The instance default"`
+	RootFolder   string                   `json:"rootFolder" doc:"The instance default"`
+	Profiles     []servarr.QualityProfile `json:"profiles"`
+	RootFolders  []servarr.RootFolder     `json:"rootFolders"`
+}
+
+// Options lists what an admin may pick when requesting: the default instance's quality profiles
+// and root folders (read-only calls). ErrNoInstance when none is configured.
+func (s *Service) Options(ctx context.Context, mediaType string) (*Options, error) {
+	kind := servarr.KindRadarr
+	if mediaType == "tv" {
+		kind = servarr.KindSonarr
+	}
+	inst, err := s.store.DefaultServarr(ctx, kind)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil, ErrNoInstance
+	}
+	if err != nil {
+		return nil, err
+	}
+	c := s.newServarr(inst)
+	out := &Options{InstanceName: inst.Name, ProfileID: inst.QualityProfileID, RootFolder: inst.RootFolder}
+	if out.Profiles, err = c.QualityProfiles(ctx); err != nil {
+		return nil, fmt.Errorf("%s: %w", inst.Name, err)
+	}
+	if out.RootFolders, err = c.RootFolders(ctx); err != nil {
+		return nil, fmt.Errorf("%s: %w", inst.Name, err)
+	}
+	return out, nil
 }

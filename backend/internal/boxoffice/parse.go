@@ -8,6 +8,7 @@ package boxoffice
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -160,4 +161,40 @@ func firstElement(n *html.Node, tag string) *html.Node {
 		}
 	}
 	return nil
+}
+
+var labelPartsRe = regexp.MustCompile(`^([A-Z][a-z]+) (\d{1,2})\s*-\s*(?:([A-Z][a-z]+) )?(\d{1,2}), (\d{4})$`)
+
+// LabelDates turns "September 30-October 4, 2026" (or "October 2-4, 2026") into ISO dates.
+// Both are empty when the label is not in that shape.
+func LabelDates(label string) (start, end string) {
+	m := labelPartsRe.FindStringSubmatch(strings.TrimSpace(label))
+	if m == nil {
+		return "", ""
+	}
+	endMonth := m[3]
+	if endMonth == "" {
+		endMonth = m[1]
+	}
+	year, _ := strconv.Atoi(m[5])
+	sm, em := monthNum(m[1]), monthNum(endMonth)
+	if sm == 0 || em == 0 {
+		return "", ""
+	}
+	sd, _ := strconv.Atoi(m[2])
+	ed, _ := strconv.Atoi(m[4])
+	sy := year
+	if sm > em {
+		sy-- // the range crosses New Year
+	}
+	return fmt.Sprintf("%04d-%02d-%02d", sy, sm, sd), fmt.Sprintf("%04d-%02d-%02d", year, em, ed)
+}
+
+func monthNum(name string) int {
+	for i, m := range []string{"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"} {
+		if m == name {
+			return i + 1
+		}
+	}
+	return 0
 }

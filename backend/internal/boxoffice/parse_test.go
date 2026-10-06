@@ -47,3 +47,17 @@ func TestMoney(t *testing.T) {
 		}
 	}
 }
+
+func TestLabelDates(t *testing.T) {
+	for label, want := range map[string][2]string{
+		"October 2-4, 2026":            {"2026-10-02", "2026-10-04"},
+		"September 30-October 4, 2026": {"2026-09-30", "2026-10-04"},
+		"December 29-January 4, 2027":  {"2026-12-29", "2027-01-04"},
+		"not a label":                  {"", ""},
+	} {
+		s, e := LabelDates(label)
+		if s != want[0] || e != want[1] {
+			t.Errorf("%q: got %s..%s, want %v", label, s, e, want)
+		}
+	}
+}

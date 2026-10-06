@@ -49,19 +49,20 @@ func registerBoxOffice(api huma.API, d Deps) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "boxOffice", Method: http.MethodGet, Path: "/boxoffice",
-		Summary:     "Weekend box-office chart (top 10) with availability and Radarr status",
+		Summary:     "Box-office chart (top 10): weekend or full week with availability and Radarr status",
 		Description: "Global, not personalised: one chart per region and week. Defaults to your region (if configured) and the latest stored week. Display only: nothing is added automatically.",
 		Tags:        []string{"boxoffice"}, Security: []map[string][]string{{"session": {}}},
 		Errors: []int{http.StatusUnauthorized, http.StatusNotFound},
 	}, func(ctx context.Context, in *struct {
 		Region string `query:"region" maxLength:"3" doc:"Region code, e.g. US, GB, FR"`
-		Week   string `query:"week" maxLength:"12" doc:"Week key, e.g. 2026W40"`
+		Week   string `query:"week" maxLength:"12" doc:"Week key, e.g. 2026W40 (a trailing w means the full week)"`
+		Weekly bool   `query:"weekly" doc:"List full Monday-Sunday weeks instead of weekends"`
 	}) (*struct{ Body *boxoffice.Chart }, error) {
 		u, err := requireUser(ctx)
 		if err != nil {
 			return nil, err
 		}
-		c, err := d.BoxOffice.Chart(ctx, u.Region, in.Region, in.Week)
+		c, err := d.BoxOffice.Chart(ctx, u.Region, in.Region, in.Week, in.Weekly)
 		if errors.Is(err, store.ErrNotFound) {
 			return nil, fail(404, "chart_not_found", "no chart stored for that week")
 		}

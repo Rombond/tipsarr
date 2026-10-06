@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -24,7 +25,8 @@ const (
 	DefaultRegion  = "US" // US & Canada domestic chart (no area parameter)
 	defaultBase    = "https://www.boxofficemojo.com"
 	topN           = 10
-	keepWeeks      = 8 // weekends of history kept per region
+	keepWeeks      = 8   // charts of history kept per region and period
+	weeklySuffix   = "w" // stored weekly charts use the week key plus this suffix (no schema change)
 	userAgent      = "Mozilla/5.0 (compatible; Tipsarr; self-hosted media dashboard)"
 	radarrCacheTTL = time.Minute
 )
@@ -99,16 +101,20 @@ func WeekKey(t time.Time, back int) string {
 	return fmt.Sprintf("%04dW%02d", y, w)
 }
 
-func (s *Service) pageURL(region, weekKey string) string {
-	u := s.baseURL + "/weekend/" + weekKey + "/"
+func (s *Service) pageURL(region, weekKey string, weekly bool) string {
+	kind := "/weekend/"
+	if weekly {
+		kind = "/weekly/"
+	}
+	u := s.baseURL + kind + weekKey + "/"
 	if region != "" && region != DefaultRegion {
 		u += "?area=" + url.QueryEscape(region)
 	}
 	return u
 }
 
-func (s *Service) fetch(ctx context.Context, region, weekKey string) (string, []Entry, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.pageURL(region, weekKey), nil)
+func (s *Service) fetch(ctx context.Context, region, weekKey string, weekly bool) (string, []Entry, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.pageURL(region, weekKey, weekly), nil)
 	if err != nil {
 		return "", nil, err
 	}
@@ -143,48 +149,60 @@ func (s *Service) Refresh(ctx context.Context) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		have := map[string]bool{}
-		for _, w := range stored {
-			have[w.WeekKey] = true
-		}
-		count := len(stored)
-		fetched := 0
-		for back := 0; back < keepWeeks+4; back++ { // a few extra tries for weekends without a chart
-			key := WeekKey(s.now(), back)
-			refresh := back < 2
-			if !refresh && (have[key] || count >= keepWeeks) {
-				if count >= keepWeeks {
+		for _, weekly := range []bool{false, true} {
+			suffix := ""
+			if weekly {
+				suffix = weeklySuffix
+			}
+			have := map[string]bool{}
+			for _, w := range stored {
+				if strings.HasSuffix(w.WeekKey, weeklySuffix) == weekly {
+					have[w.WeekKey] = true
+				}
+			}
+			count := len(have)
+			fetched, missing := 0, 0
+			for back := 0; back < keepWeeks+4; back++ { // a few extra tries for weeks without a chart
+				key := WeekKey(s.now(), back)
+				refresh := back < 2
+				if !refresh && (have[key+suffix] || count >= keepWeeks) {
+					if count >= keepWeeks {
+						break
+					}
+					continue
+				}
+				if weekly && missing >= 3 {
+					break // this region has no weekly charts
+				}
+				if fetched > 0 {
+					select {
+					case <-time.After(s.pause):
+					case <-ctx.Done():
+						return "", ctx.Err()
+					}
+				}
+				label, entries, err := s.fetch(ctx, region, key, weekly)
+				if err != nil {
+					if errors.Is(err, ErrNoChart) {
+						missing++
+						continue // that period has no data (yet)
+					}
+					failed++
+					if firstErr == nil {
+						firstErr = fmt.Errorf("%s %s%s: %w", region, key, suffix, err)
+					}
 					break
 				}
-				continue
-			}
-			if fetched > 0 {
-				select {
-				case <-time.After(s.pause):
-				case <-ctx.Done():
-					return "", ctx.Err()
+				fetched++
+				if !have[key+suffix] {
+					have[key+suffix] = true
+					count++
 				}
-			}
-			label, entries, err := s.fetch(ctx, region, key)
-			if err != nil {
-				if errors.Is(err, ErrNoChart) {
-					continue // that weekend has no data (yet)
+				if err := s.saveWeek(ctx, region, key+suffix, label, entries); err != nil {
+					return "", err
 				}
-				failed++
-				if firstErr == nil {
-					firstErr = fmt.Errorf("%s %s: %w", region, key, err)
-				}
-				break
+				saved++
 			}
-			fetched++
-			if !have[key] {
-				have[key] = true
-				count++
-			}
-			if err := s.saveWeek(ctx, region, key, label, entries); err != nil {
-				return "", err
-			}
-			saved++
 		}
 	}
 	msg := fmt.Sprintf("%d charts stored", saved)
@@ -288,8 +306,11 @@ type ChartEntry struct {
 }
 
 type WeekRef struct {
-	Key   string `json:"key"`
-	Label string `json:"label"`
+	Key    string `json:"key" doc:"Week key; weekly charts end with a \"w\""`
+	Label  string `json:"label"`
+	Start  string `json:"start,omitempty" doc:"First day covered, YYYY-MM-DD"`
+	End    string `json:"end,omitempty" doc:"Last day covered, YYYY-MM-DD"`
+	Weekly bool   `json:"weekly" doc:"Full Monday-Sunday week instead of the Friday-Sunday weekend"`
 }
 
 type Chart struct {
@@ -297,6 +318,10 @@ type Chart struct {
 	Regions   []string     `json:"regions"`
 	Week      string       `json:"week" doc:"Week key, e.g. 2026W40; empty when nothing is stored yet"`
 	Label     string       `json:"label,omitempty"`
+	Start     string       `json:"start,omitempty"`
+	End       string       `json:"end,omitempty"`
+	Weekly    bool         `json:"weekly"`
+	HasWeekly bool         `json:"hasWeekly" doc:"Weekly charts are stored for this region"`
 	FetchedAt int64        `json:"fetchedAt"`
 	Weeks     []WeekRef    `json:"weeks"`
 	Entries   []ChartEntry `json:"entries"`
@@ -304,7 +329,7 @@ type Chart struct {
 
 // Chart returns a stored chart. region/week may be empty: the first configured region (or the
 // user's preferred one if configured) and the latest stored week are used.
-func (s *Service) Chart(ctx context.Context, preferred, region, week string) (*Chart, error) {
+func (s *Service) Chart(ctx context.Context, preferred, region, week string, weekly bool) (*Chart, error) {
 	regions := s.Regions(ctx)
 	if region == "" {
 		region = regions[0]
@@ -319,11 +344,33 @@ func (s *Service) Chart(ctx context.Context, preferred, region, week string) (*C
 	if err != nil {
 		return nil, err
 	}
-	for _, w := range weeks {
-		out.Weeks = append(out.Weeks, WeekRef{Key: w.WeekKey, Label: w.Label})
+	if week != "" {
+		weekly = strings.HasSuffix(week, weeklySuffix)
 	}
-	if week == "" && len(weeks) > 0 {
-		week = weeks[0].WeekKey
+	out.Weekly = weekly
+	var listed []store.BoxOfficeWeek
+	for _, w := range weeks {
+		isWeekly := strings.HasSuffix(w.WeekKey, weeklySuffix)
+		out.HasWeekly = out.HasWeekly || isWeekly
+		if isWeekly == weekly {
+			listed = append(listed, w)
+		}
+	}
+	// newest first by the dates the chart covers (week numbers are not comparable across regions)
+	sort.SliceStable(listed, func(i, j int) bool {
+		si, _ := LabelDates(listed[i].Label)
+		sj, _ := LabelDates(listed[j].Label)
+		if si != sj {
+			return si > sj
+		}
+		return listed[i].WeekKey > listed[j].WeekKey
+	})
+	for _, w := range listed {
+		st, en := LabelDates(w.Label)
+		out.Weeks = append(out.Weeks, WeekRef{Key: w.WeekKey, Label: w.Label, Start: st, End: en, Weekly: weekly})
+	}
+	if week == "" && len(listed) > 0 {
+		week = listed[0].WeekKey
 	}
 	if week == "" {
 		return out, nil
@@ -336,6 +383,7 @@ func (s *Service) Chart(ctx context.Context, preferred, region, week string) (*C
 		return nil, err
 	}
 	out.Week, out.Label, out.FetchedAt = w.WeekKey, w.Label, w.FetchedAt
+	out.Start, out.End = LabelDates(w.Label)
 
 	items := make([]media.Item, 0, len(entries))
 	idx := map[int]int{} // entry index -> item index

@@ -483,3 +483,33 @@ func TestEventStream(t *testing.T) {
 		}
 	}
 }
+
+func TestRequestOptionsAndOverrides(t *testing.T) {
+	e := newEnv(t, false)
+	_, admin, bob := setupUsers(t, e)
+	radarr := newFakeArr(t, "radarr")
+
+	if resp, _ := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", admin); resp.StatusCode != http.StatusConflict {
+		t.Fatalf("options without an instance = %d", resp.StatusCode)
+	}
+	addInstance(t, e, admin, "radarr", radarr)
+	if resp, _ := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("user options = %d", resp.StatusCode)
+	}
+	resp, body := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", admin)
+	if resp.StatusCode != 200 || !strings.Contains(body, `"HD-1080p"`) || !strings.Contains(body, `"/data/media"`) || !strings.Contains(body, `"qualityProfileId":4`) {
+		t.Fatalf("options = %d %s", resp.StatusCode, body)
+	}
+	// users cannot pick a profile
+	if resp, _ := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"qualityProfileId":9}`, bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("user override = %d", resp.StatusCode)
+	}
+	// an admin's choice reaches Radarr
+	resp, body = call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"qualityProfileId":9,"rootFolder":"/data/other"}`, admin)
+	if a := decodeReq(t, body); resp.StatusCode != http.StatusCreated || a.Status != "approved" {
+		t.Fatalf("admin create = %d %s", resp.StatusCode, body)
+	}
+	if radarr.posted["qualityProfileId"] != float64(9) || radarr.posted["rootFolderPath"] != "/data/other" {
+		t.Fatalf("radarr body = %v", radarr.posted)
+	}
+}

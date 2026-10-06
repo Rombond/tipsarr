@@ -111,14 +111,40 @@ func registerRequests(api huma.API, d Deps) {
 			Type    string `json:"type" enum:"movie,tv"`
 			TMDBID  int    `json:"tmdbId" minimum:"1"`
 			Seasons []int  `json:"seasons,omitempty" doc:"TV only; empty means every season"`
+			// Admin only; ignored by the defaults when omitted.
+			QualityProfileID *int   `json:"qualityProfileId,omitempty" doc:"Admin only: Radarr/Sonarr quality profile to use"`
+			RootFolder       string `json:"rootFolder,omitempty" doc:"Admin only: root folder to use"`
 		}
 	}) (*requestOutput, error) {
 		u, err := requireUser(ctx)
 		if err != nil {
 			return nil, err
 		}
-		v, err := d.Requests.Create(ctx, u, requests.CreateParams{Type: in.Body.Type, TMDBID: in.Body.TMDBID, Seasons: in.Body.Seasons})
+		p := requests.CreateParams{Type: in.Body.Type, TMDBID: in.Body.TMDBID, Seasons: in.Body.Seasons}
+		if in.Body.QualityProfileID != nil || in.Body.RootFolder != "" {
+			p.Overrides = &requests.Overrides{ProfileID: in.Body.QualityProfileID, RootFolder: in.Body.RootFolder}
+		}
+		v, err := d.Requests.Create(ctx, u, p)
 		return &requestOutput{Body: v}, reqErr(err)
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "requestOptions", Method: http.MethodGet, Path: "/requests/options",
+		Summary:     "Quality profiles and root folders an admin can pick when requesting",
+		Description: "Read-only calls to the default Radarr (movie) or Sonarr (tv) instance.",
+		Tags:        []string{"requests"}, Security: sec,
+		Errors: []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusConflict, http.StatusBadGateway},
+	}, func(ctx context.Context, in *struct {
+		Type string `query:"type" enum:"movie,tv" required:"true"`
+	}) (*struct{ Body *requests.Options }, error) {
+		if _, err := requireAdmin(ctx); err != nil {
+			return nil, err
+		}
+		o, err := d.Requests.Options(ctx, in.Type)
+		if err != nil && !errors.Is(err, requests.ErrNoInstance) {
+			return nil, fail(502, "servarr_error", err.Error())
+		}
+		return &struct{ Body *requests.Options }{o}, reqErr(err)
 	})
 
 	type idIn struct {
