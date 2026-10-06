@@ -16,16 +16,21 @@ func reqErr(err error) error {
 	case err == nil:
 		return nil
 	case errors.Is(err, store.ErrNotFound), errors.Is(err, media.ErrNotFound):
-		return huma.Error404NotFound("not found")
+		return fail(404, "not_found", "not found")
 	case errors.Is(err, media.ErrNotConfigured):
-		return huma.Error503ServiceUnavailable("TMDB API key is not configured")
-	case errors.Is(err, requests.ErrAlreadyAvailable), errors.Is(err, requests.ErrDuplicate),
-		errors.Is(err, requests.ErrBadState), errors.Is(err, requests.ErrNoInstance):
-		return huma.Error409Conflict(err.Error())
+		return fail(503, "tmdb_not_configured", "TMDB API key is not configured")
+	case errors.Is(err, requests.ErrAlreadyAvailable):
+		return fail(409, "already_available", err.Error())
+	case errors.Is(err, requests.ErrDuplicate):
+		return fail(409, "duplicate_request", err.Error())
+	case errors.Is(err, requests.ErrBadState):
+		return fail(409, "bad_state", err.Error())
+	case errors.Is(err, requests.ErrNoInstance):
+		return fail(409, "no_instance", err.Error())
 	case errors.Is(err, requests.ErrForbidden):
-		return huma.Error403Forbidden(err.Error())
+		return fail(403, "forbidden", err.Error())
 	case errors.Is(err, requests.ErrInvalid):
-		return huma.Error422UnprocessableEntity(err.Error())
+		return fail(422, "invalid_request", err.Error())
 	}
 	return err
 }

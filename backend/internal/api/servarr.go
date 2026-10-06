@@ -85,14 +85,14 @@ func registerServarr(api huma.API, d Deps) {
 	validate := func(b instanceBody) error {
 		u, err := url.Parse(b.URL)
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-			return huma.Error422UnprocessableEntity("url must be http(s)://host[:port]")
+			return fail(422, "url_invalid", "url must be http(s)://host[:port]")
 		}
 		return nil
 	}
 	genreJSON := func(m map[string]string) (string, error) {
 		for k, v := range m {
 			if _, err := strconv.Atoi(k); err != nil || strings.TrimSpace(v) == "" {
-				return "", huma.Error422UnprocessableEntity("genreRoots must map TMDB genre ids to root folders")
+				return "", fail(422, "bad_genre_roots", "genreRoots must map TMDB genre ids to root folders")
 			}
 		}
 		b, _ := json.Marshal(m)
@@ -111,7 +111,7 @@ func registerServarr(api huma.API, d Deps) {
 			return nil, err
 		}
 		if strings.TrimSpace(in.Body.APIKey) == "" {
-			return nil, huma.Error422UnprocessableEntity("apiKey is required")
+			return nil, fail(422, "api_key_required", "apiKey is required")
 		}
 		inst := &store.ServarrInstance{
 			ID: store.NewID(), Kind: in.Body.Kind, Name: in.Body.Name, URL: strings.TrimRight(in.Body.URL, "/"),
@@ -156,7 +156,7 @@ func registerServarr(api huma.API, d Deps) {
 		}
 		cur, err := d.Store.GetServarr(ctx, in.ID)
 		if errors.Is(err, store.ErrNotFound) {
-			return nil, huma.Error404NotFound("not found")
+			return nil, fail(404, "not_found", "not found")
 		}
 		if err != nil {
 			return nil, err
@@ -214,25 +214,25 @@ func registerServarr(api huma.API, d Deps) {
 				if sameHost(cur.URL, in.Body.URL) {
 					key = cur.APIKey
 				} else {
-					return nil, huma.Error422UnprocessableEntity("enter the API key again when you change the URL")
+					return nil, fail(422, "retype_key", "enter the API key again when you change the URL")
 				}
 			}
 		}
 		if key == "" {
-			return nil, huma.Error422UnprocessableEntity("apiKey is required")
+			return nil, fail(422, "api_key_required", "apiKey is required")
 		}
 		c := servarr.New(in.Body.Kind, in.Body.URL, key, true) // reads only
 		st, err := c.Status(ctx)
 		if err != nil {
-			return nil, huma.Error422UnprocessableEntity("cannot reach " + in.Body.Kind + ": " + err.Error())
+			return nil, fail(422, "unreachable", "cannot reach "+in.Body.Kind+": "+err.Error())
 		}
 		profiles, err := c.QualityProfiles(ctx)
 		if err != nil {
-			return nil, huma.Error422UnprocessableEntity(err.Error())
+			return nil, fail(422, "servarr_error", err.Error())
 		}
 		folders, err := c.RootFolders(ctx)
 		if err != nil {
-			return nil, huma.Error422UnprocessableEntity(err.Error())
+			return nil, fail(422, "servarr_error", err.Error())
 		}
 		return &struct{ Body probeResult }{probeResult{AppName: st.AppName, Version: st.Version, Profiles: profiles, RootFolders: folders}}, nil
 	})

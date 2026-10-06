@@ -61,11 +61,11 @@ func registerSync(api huma.API, d Deps) {
 			return nil, err
 		}
 		if in.Job != "boxoffice-refresh" && !d.Library.Configured(ctx) {
-			return nil, huma.Error503ServiceUnavailable("save a Jellyfin API key in Settings first")
+			return nil, fail(503, "jellyfin_key_missing", "save a Jellyfin API key in Settings first")
 		}
 		switch err := d.Jobs.RunNow(ctx, in.Job); {
 		case errors.Is(err, jobs.ErrAlreadyRunning):
-			return nil, huma.Error409Conflict("job is already running")
+			return nil, fail(409, "job_running", "job is already running")
 		case err != nil:
 			return nil, err
 		}
@@ -84,7 +84,7 @@ func registerSync(api huma.API, d Deps) {
 			return nil, err
 		}
 		if subtle.ConstantTimeCompare([]byte(in.Token), []byte(secret)) != 1 {
-			return nil, huma.Error401Unauthorized("invalid token")
+			return nil, fail(401, "invalid_token", "invalid token")
 		}
 		switch in.Body.NotificationType {
 		case "ItemAdded", "ItemDeleted":

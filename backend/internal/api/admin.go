@@ -91,7 +91,7 @@ func registerAdmin(api huma.API, d Deps) {
 		if in.Body.JellyfinPublicURL != nil {
 			v := strings.TrimRight(strings.TrimSpace(*in.Body.JellyfinPublicURL), "/")
 			if v != "" && !strings.HasPrefix(v, "http://") && !strings.HasPrefix(v, "https://") {
-				return nil, huma.Error422UnprocessableEntity("jellyfinPublicUrl must start with http:// or https://")
+				return nil, fail(422, "url_invalid", "jellyfinPublicUrl must start with http:// or https://")
 			}
 			if err := d.Store.SetSetting(ctx, media.SettingJellyfinPublicURL, v); err != nil {
 				return nil, err

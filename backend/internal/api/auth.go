@@ -46,7 +46,7 @@ func registerAuth(api huma.API, d Deps) {
 	}, func(ctx context.Context, in *loginInput) (*loginOutput, error) {
 		ukey, ikey := auth.UserKey(in.Body.Username), auth.IPKey(clientIP(ctx))
 		if d.LoginLimiter != nil && d.LoginLimiter.Blocked(ukey, ikey) {
-			return nil, huma.Error429TooManyRequests("too many failed sign-in attempts, try again in a few minutes")
+			return nil, fail(429, "too_many_attempts", "too many failed sign-in attempts, try again in a few minutes")
 		}
 		token, user, err := d.Auth.Login(ctx, in.Body.Username, in.Body.Password, in.UserAgent)
 		if d.LoginLimiter != nil {
@@ -58,12 +58,12 @@ func registerAuth(api huma.API, d Deps) {
 		}
 		switch {
 		case errors.Is(err, jellyfin.ErrInvalidCredentials):
-			return nil, huma.Error401Unauthorized("invalid username or password")
+			return nil, fail(401, "invalid_credentials", "invalid username or password")
 		case errors.Is(err, auth.ErrNotConfigured):
-			return nil, huma.Error503ServiceUnavailable("Tipsarr is not set up yet")
+			return nil, fail(503, "not_set_up", "Tipsarr is not set up yet")
 		case err != nil:
 			slog.Warn("login failed", "err", err)
-			return nil, huma.Error503ServiceUnavailable("sign-in is temporarily unavailable")
+			return nil, fail(503, "signin_unavailable", "sign-in is temporarily unavailable")
 		}
 		return &loginOutput{
 			SetCookie: http.Cookie{

@@ -21,10 +21,10 @@ type prefsBody struct {
 
 func (b prefsBody) check() error {
 	if b.Region != nil && !regionRe.MatchString(*b.Region) {
-		return huma.Error422UnprocessableEntity("region must be a 2-letter country code like FR")
+		return fail(422, "bad_region", "region must be a 2-letter country code like FR")
 	}
 	if b.Language != nil && !languageRe.MatchString(*b.Language) {
-		return huma.Error422UnprocessableEntity("language must look like fr or fr-FR")
+		return fail(422, "bad_language", "language must look like fr or fr-FR")
 	}
 	return nil
 }
@@ -97,18 +97,18 @@ func registerUsers(api huma.API, d Deps) {
 		}
 		u, err := d.Store.GetUser(ctx, in.ID)
 		if err != nil {
-			return nil, huma.Error404NotFound("not found")
+			return nil, fail(404, "not_found", "not found")
 		}
 		roleChanged := false
 		if in.Body.Role != nil && *in.Body.Role != u.Role {
 			if u.ID == me.ID {
-				return nil, huma.Error409Conflict("you cannot change your own role")
+				return nil, fail(409, "own_role", "you cannot change your own role")
 			}
 			if u.Role == store.RoleAdmin {
 				if n, err := d.Store.CountAdmins(ctx); err != nil {
 					return nil, err
 				} else if n <= 1 {
-					return nil, huma.Error409Conflict("at least one admin is required")
+					return nil, fail(409, "last_admin", "at least one admin is required")
 				}
 			}
 			u.Role = *in.Body.Role
@@ -142,7 +142,7 @@ func registerUsers(api huma.API, d Deps) {
 		}
 		created, total, err := d.Library.ImportUsers(ctx)
 		if err != nil {
-			return nil, huma.Error503ServiceUnavailable(err.Error())
+			return nil, fail(503, "jellyfin_unavailable", err.Error())
 		}
 		out := &struct {
 			Body struct {

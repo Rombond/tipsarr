@@ -29,7 +29,7 @@ func registerBoxOffice(api huma.API, d Deps) {
 		}
 		err := d.BoxOffice.SetAlias(ctx, in.Body.Title, in.Body.TMDBID)
 		if errors.Is(err, boxoffice.ErrBadTitle) {
-			return nil, huma.Error422UnprocessableEntity(err.Error())
+			return nil, fail(422, "bad_title", err.Error())
 		}
 		return &struct{}{}, mediaErr(err)
 	})
@@ -63,7 +63,7 @@ func registerBoxOffice(api huma.API, d Deps) {
 		}
 		c, err := d.BoxOffice.Chart(ctx, u.Region, in.Region, in.Week)
 		if errors.Is(err, store.ErrNotFound) {
-			return nil, huma.Error404NotFound("no chart stored for that week")
+			return nil, fail(404, "chart_not_found", "no chart stored for that week")
 		}
 		return &struct{ Body *boxoffice.Chart }{c}, err
 	})

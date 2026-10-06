@@ -72,7 +72,8 @@ type Seed struct {
 type Row struct {
 	ID          string       `json:"id"`
 	Kind        string       `json:"kind" enum:"account,because"`
-	Title       string       `json:"title" doc:"Display title, e.g. \"Because you watched Dune\""`
+	Title       string       `json:"title" doc:"English display title (clients should translate from variant + seed)"`
+	Variant     string       `json:"variant" enum:"personal,server,trending,because" doc:"What the row is based on, so clients can show it in the user's language"`
 	Seed        *Seed        `json:"seed,omitempty"`
 	Personal    bool         `json:"personal" doc:"Built from this user's own watch history"`
 	GeneratedAt int64        `json:"generatedAt"`
@@ -128,6 +129,16 @@ func (s *Service) Get(ctx context.Context, u *store.User) (*Result, error) {
 	}
 	for _, r := range rows {
 		row := Row{ID: r.ID, Kind: r.Kind, Personal: r.Personal == 1, GeneratedAt: r.GeneratedAt, Items: []media.Item{}}
+		switch {
+		case r.Kind == KindBecause:
+			row.Variant = "because"
+		case r.SeedTitle == labelServer:
+			row.Variant = "server"
+		case r.SeedTitle == labelTrending:
+			row.Variant = "trending"
+		default:
+			row.Variant = "personal"
+		}
 		if r.Kind == KindBecause {
 			row.Title = "Because you watched " + r.SeedTitle
 			row.Seed = &Seed{Type: r.SeedType, TMDBID: int(r.SeedTMDBID), Title: r.SeedTitle}

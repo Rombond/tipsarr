@@ -30,12 +30,12 @@ func mediaErr(err error) error {
 	case err == nil:
 		return nil
 	case errors.Is(err, media.ErrNotConfigured):
-		return huma.Error503ServiceUnavailable("TMDB API key is not configured (admin: Settings)")
+		return fail(503, "tmdb_not_configured", "TMDB API key is not configured (admin: Settings)")
 	case errors.Is(err, media.ErrNotFound):
-		return huma.Error404NotFound("not found")
+		return fail(404, "not_found", "not found")
 	default:
 		slog.Warn("TMDB request failed", "err", err)
-		return huma.Error502BadGateway("TMDB request failed")
+		return fail(502, "tmdb_failed", "TMDB request failed")
 	}
 }
 

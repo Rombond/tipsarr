@@ -108,7 +108,7 @@ func requireUser(ctx context.Context) (*store.User, error) {
 	if u := userFrom(ctx); u != nil {
 		return u, nil
 	}
-	return nil, huma.Error401Unauthorized("login required")
+	return nil, fail(401, "login_required", "login required")
 }
 
 // requireAdmin returns the logged-in admin or a 401/403 error.
@@ -118,7 +118,7 @@ func requireAdmin(ctx context.Context) (*store.User, error) {
 		return nil, err
 	}
 	if u.Role != store.RoleAdmin {
-		return nil, huma.Error403Forbidden("admin only")
+		return nil, fail(403, "admin_only", "admin only")
 	}
 	return u, nil
 }

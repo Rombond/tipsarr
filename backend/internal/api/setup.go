@@ -59,24 +59,24 @@ func registerSetup(api huma.API, d Deps) {
 			return nil, err
 		}
 		if current != "" {
-			return nil, huma.Error409Conflict("setup already completed")
+			return nil, fail(409, "setup_done", "setup already completed")
 		}
 		// Without the token anyone who reaches the port first could point Tipsarr at their own
 		// "Jellyfin" and become admin. The token is generated at startup and only printed to the log.
 		if d.SetupToken != "" && subtle.ConstantTimeCompare([]byte(in.Body.SetupToken), []byte(d.SetupToken)) != 1 {
-			return nil, huma.Error401Unauthorized("setup token required: see the Tipsarr server log")
+			return nil, fail(401, "setup_token", "setup token required: see the Tipsarr server log")
 		}
 		url := strings.TrimRight(in.Body.JellyfinURL, "/")
 		info, err := jellyfin.New(url).PublicInfo(ctx)
 		if err != nil {
 			slog.Warn("setup: cannot reach Jellyfin", "err", err)
-			return nil, huma.Error422UnprocessableEntity("cannot reach a Jellyfin server at that URL")
+			return nil, fail(422, "setup_unreachable", "cannot reach a Jellyfin server at that URL")
 		}
 		// claim atomically: of two concurrent setups only one wins
 		if ok, err := d.Store.SetSettingIfAbsent(ctx, auth.SettingJellyfinURL, url); err != nil {
 			return nil, err
 		} else if !ok {
-			return nil, huma.Error409Conflict("setup already completed")
+			return nil, fail(409, "setup_done", "setup already completed")
 		}
 		if in.Body.TMDBKey != "" {
 			if err := d.Store.SetSetting(ctx, auth.SettingTMDBKey, in.Body.TMDBKey); err != nil {

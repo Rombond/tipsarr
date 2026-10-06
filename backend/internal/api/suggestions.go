@@ -37,7 +37,7 @@ func registerSuggestions(api huma.API, d Deps) {
 			return nil, err
 		}
 		if err := d.Suggestions.Force(ctx, u.ID); errors.Is(err, suggestions.ErrTooSoon) {
-			return nil, huma.Error429TooManyRequests(err.Error())
+			return nil, fail(429, "refresh_too_soon", err.Error())
 		} else if err != nil {
 			return nil, err
 		}

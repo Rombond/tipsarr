@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
 	"sync"
@@ -232,5 +233,44 @@ func TestSetupTokenIsOptional(t *testing.T) {
 	e2 := newEnvWith(t, true, "tok")
 	if _, b := call(t, e2.app, "GET", "/api/v1/setup/status", ""); !strings.Contains(b, `"tokenRequired":true`) {
 		t.Fatalf("status = %s", b)
+	}
+}
+
+// Errors carry a stable code next to the English text so the UI can translate them.
+func TestErrorsCarryCodes(t *testing.T) {
+	e := newEnv(t, true)
+	jf := fakeJellyfin(t)
+	call(t, e.app, "POST", "/api/v1/setup", `{"jellyfinUrl":"`+jf.URL+`"}`)
+
+	code := func(body string) string {
+		var v struct {
+			Errors []struct {
+				Location string `json:"location"`
+				Value    string `json:"value"`
+			} `json:"errors"`
+		}
+		_ = json.Unmarshal([]byte(body), &v)
+		for _, d := range v.Errors {
+			if d.Location == "code" {
+				return d.Value
+			}
+		}
+		return ""
+	}
+	resp, body := call(t, e.app, "POST", "/api/v1/auth/login", `{"username":"alice","password":"wrong"}`)
+	if resp.StatusCode != 401 || code(body) != "invalid_credentials" {
+		t.Fatalf("login = %d %s", resp.StatusCode, body)
+	}
+	if resp, body := call(t, e.app, "GET", "/api/v1/me", ""); resp.StatusCode != 401 || code(body) != "login_required" {
+		t.Fatalf("me = %d %s", resp.StatusCode, body)
+	}
+	c := loginAs(t, e.app, jf.URL, "bob", "hunter2")
+	if resp, body := call(t, e.app, "GET", "/api/v1/admin/users", "", c); resp.StatusCode != 403 || code(body) != "admin_only" {
+		t.Fatalf("admin = %d %s", resp.StatusCode, body)
+	}
+	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"tmdbApiKey":"k123"}`, loginAs(t, e.app, jf.URL, "alice", "secret"))
+	call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5}`, c)
+	if resp, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5}`, c); resp.StatusCode != 409 || code(body) != "duplicate_request" {
+		t.Fatalf("duplicate = %d %s", resp.StatusCode, body)
 	}
 }

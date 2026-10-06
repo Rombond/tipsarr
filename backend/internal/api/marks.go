@@ -15,7 +15,7 @@ func registerMarks(api huma.API, d Deps) {
 
 	mapErr := func(err error) error {
 		if errors.Is(err, marks.ErrInvalid) {
-			return huma.Error422UnprocessableEntity(err.Error())
+			return fail(422, "invalid_request", err.Error())
 		}
 		return mediaErr(err)
 	}

@@ -46,7 +46,7 @@ func registerWebhooks(api huma.API, d Deps) {
 	check := func(b webhookBody) (string, error) {
 		u, err := url.Parse(b.URL)
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-			return "", huma.Error422UnprocessableEntity("url must be http(s)://…")
+			return "", fail(422, "url_invalid", "url must be http(s)://…")
 		}
 		known := map[string]bool{}
 		for _, e := range notify.AllEvents {
@@ -54,7 +54,7 @@ func registerWebhooks(api huma.API, d Deps) {
 		}
 		for _, e := range b.Events {
 			if !known[e] {
-				return "", huma.Error422UnprocessableEntity("unknown event " + e)
+				return "", fail(422, "unknown_event", "unknown event "+e)
 			}
 		}
 		return strings.Join(b.Events, ","), nil
@@ -123,7 +123,7 @@ func registerWebhooks(api huma.API, d Deps) {
 		}
 		w, err := d.Store.GetWebhook(ctx, in.ID)
 		if errors.Is(err, store.ErrNotFound) {
-			return nil, huma.Error404NotFound("not found")
+			return nil, fail(404, "not_found", "not found")
 		}
 		if err != nil {
 			return nil, err
@@ -163,13 +163,13 @@ func registerWebhooks(api huma.API, d Deps) {
 		}
 		w, err := d.Store.GetWebhook(ctx, in.ID)
 		if errors.Is(err, store.ErrNotFound) {
-			return nil, huma.Error404NotFound("not found")
+			return nil, fail(404, "not_found", "not found")
 		}
 		if err != nil {
 			return nil, err
 		}
 		if err := d.Notify.Deliver(ctx, *w, "test", map[string]string{"message": "Tipsarr test event"}); err != nil {
-			return nil, huma.Error502BadGateway("delivery failed: " + err.Error())
+			return nil, fail(502, "delivery_failed", "delivery failed: "+err.Error())
 		}
 		return &struct{}{}, nil
 	})
