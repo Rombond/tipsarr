@@ -14,6 +14,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/store"
+	"github.com/Rombond/tipsarr/backend/internal/suggestions"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
@@ -22,16 +23,17 @@ import (
 const Version = "0.1.0"
 
 type Deps struct {
-	Store     *store.Store
-	Auth      *auth.Service
-	Media     *media.Service
-	Library   *library.Service
-	Requests  *requests.Service
-	Hub       *events.Hub
-	Notify    *notify.Service
-	Jobs      *jobs.Manager
-	DryRun    bool   // global: nothing is ever sent to Radarr/Sonarr
-	ConfigDir string // image cache lives under here
+	Store       *store.Store
+	Auth        *auth.Service
+	Media       *media.Service
+	Library     *library.Service
+	Requests    *requests.Service
+	Suggestions *suggestions.Service
+	Hub         *events.Hub
+	Notify      *notify.Service
+	Jobs        *jobs.Manager
+	DryRun      bool   // global: nothing is ever sent to Radarr/Sonarr
+	ConfigDir   string // image cache lives under here
 	// ImageBaseURL overrides the TMDB image host (tests).
 	ImageBaseURL string
 }
@@ -60,6 +62,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerAdmin(api, d)
 		registerSync(api, d)
 		registerRequests(api, d)
+		registerSuggestions(api, d)
 		registerServarr(api, d)
 		registerWebhooks(api, d)
 		r.Get("/events", eventsHandler(d))

@@ -26,6 +26,9 @@ const (
 var ErrNoAPIKey = errors.New("Jellyfin API key is not configured")
 
 type Service struct {
+	// OnHistoryChanged (optional) is called for every user whose watch history changed during a sync.
+	OnHistoryChanged func(userID string)
+
 	store       *store.Store
 	newJellyfin func(baseURL string) *jellyfin.Client
 	debounce    time.Duration
@@ -202,6 +205,9 @@ func (s *Service) SyncHistory(ctx context.Context, userID string) (HistoryResult
 		res.Titles += len(rows)
 		if changed {
 			res.Changed++
+			if s.OnHistoryChanged != nil {
+				s.OnHistoryChanged(u.ID)
+			}
 		}
 	}
 	return res, nil

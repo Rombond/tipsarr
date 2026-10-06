@@ -485,3 +485,42 @@ func firstNonEmpty(vs ...string) string {
 	}
 	return ""
 }
+
+// ---- helpers for suggestions and box office ---------------------------------------------
+
+// Annotate fills availability and request status (exported for other services).
+func (s *Service) Annotate(ctx context.Context, items []Item) { s.annotate(ctx, items) }
+
+// Related returns TMDB's recommendations and similar titles for a title, unannotated and
+// cached. Either list may be empty.
+func (s *Service) Related(ctx context.Context, o Opts, mediaType string, id int) (recs, similar []Item, err error) {
+	q := url.Values{"language": {o.lang()}, "page": {"1"}}
+	base := "/" + mediaType + "/" + strconv.Itoa(id)
+	var r, sm rawList
+	if err = s.get(ctx, base+"/recommendations", q, ttlDetail, &r); err != nil && !errors.Is(err, ErrNotFound) {
+		return nil, nil, err
+	}
+	if err = s.get(ctx, base+"/similar", q, ttlDetail, &sm); err != nil && !errors.Is(err, ErrNotFound) {
+		return nil, nil, err
+	}
+	return r.toList(mediaType).Items, sm.toList(mediaType).Items, nil
+}
+
+// SearchMovies searches movies by title (cached, unannotated).
+func (s *Service) SearchMovies(ctx context.Context, o Opts, title string) ([]Item, error) {
+	q := url.Values{"language": {o.lang()}, "query": {title}, "include_adult": {"false"}, "page": {"1"}}
+	var raw rawList
+	if err := s.get(ctx, "/search/movie", q, ttlList, &raw); err != nil {
+		return nil, err
+	}
+	return raw.toList("movie").Items, nil
+}
+
+// TrendingItems returns trending titles without availability annotation.
+func (s *Service) TrendingItems(ctx context.Context, o Opts, page int) ([]Item, error) {
+	var raw rawList
+	if err := s.get(ctx, "/trending/all/week", pageQ(o, page), ttlList, &raw); err != nil {
+		return nil, err
+	}
+	return raw.toList("").Items, nil
+}

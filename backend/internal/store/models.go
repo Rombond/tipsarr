@@ -103,6 +103,7 @@ type ServarrInstance struct {
 	RootFolder       string `bun:"root_folder" json:"rootFolder"`
 	IsDefault        int    `bun:"is_default" json:"-"`
 	CreatedAt        int64  `bun:"created_at" json:"-"`
+	GenreRoots       string `bun:"genre_roots" json:"-"` // JSON {"<genre id>": "<root folder>"}
 }
 
 const (
@@ -152,4 +153,59 @@ type Webhook struct {
 	Events    string `bun:"events" json:"-"` // comma separated
 	Enabled   int    `bun:"enabled" json:"-"`
 	CreatedAt int64  `bun:"created_at" json:"-"`
+}
+
+type SuggestionRow struct {
+	bun.BaseModel `bun:"table:suggestion_rows"`
+
+	ID             string `bun:"id,pk"`
+	UserID         string `bun:"user_id"`
+	Kind           string `bun:"kind"` // account | because
+	SeedType       string `bun:"seed_type"`
+	SeedTMDBID     int64  `bun:"seed_tmdb_id"`
+	SeedTitle      string `bun:"seed_title"`
+	Position       int    `bun:"position"`
+	GeneratedAt    int64  `bun:"generated_at"`
+	HistoryVersion int64  `bun:"history_version"`
+	Personal       int    `bun:"personal"` // 1 when built from the user's own history
+}
+
+type SuggestionItem struct {
+	bun.BaseModel `bun:"table:suggestion_items"`
+
+	RowID       string `bun:"row_id,pk"`
+	Pos         int    `bun:"pos,pk"`
+	MediaType   string `bun:"media_type"`
+	TMDBID      int64  `bun:"tmdb_id"`
+	Title       string `bun:"title"`
+	PosterPath  string `bun:"poster_path"`
+	ReleaseDate string `bun:"release_date"`
+	VoteTenths  int    `bun:"vote_tenths"`
+	Overview    string `bun:"overview"`
+}
+
+type BoxOfficeWeek struct {
+	bun.BaseModel `bun:"table:boxoffice_weeks"`
+
+	Region    string `bun:"region,pk" json:"region"`
+	WeekKey   string `bun:"week_key,pk" json:"weekKey"`
+	Label     string `bun:"label" json:"label"`
+	FetchedAt int64  `bun:"fetched_at" json:"fetchedAt"`
+}
+
+type BoxOfficeEntry struct {
+	bun.BaseModel `bun:"table:boxoffice_entries"`
+
+	Region         string `bun:"region,pk"`
+	WeekKey        string `bun:"week_key,pk"`
+	Pos            int    `bun:"pos,pk"`
+	Title          string `bun:"title"`
+	WeekendGross   int64  `bun:"weekend_gross"`
+	TotalGross     int64  `bun:"total_gross"`
+	WeeksInRelease int    `bun:"weeks_in_release"`
+	TMDBID         int64  `bun:"tmdb_id"`
+	PosterPath     string `bun:"poster_path"`
+	ReleaseDate    string `bun:"release_date"`
+	VoteTenths     int    `bun:"vote_tenths"`
+	Overview       string `bun:"overview"`
 }
