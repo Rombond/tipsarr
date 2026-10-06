@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { toast } from '$lib/toast.svelte';
+	import { t as tr } from '$lib/i18n/index.svelte';
 	import CheckIcon from '@lucide/svelte/icons/circle-check';
 	import AlertIcon from '@lucide/svelte/icons/circle-alert';
 	import InfoIcon from '@lucide/svelte/icons/info';
@@ -16,7 +17,7 @@
 			{:else if t.kind === 'error'}<AlertIcon class="mt-0.5 size-4 shrink-0 text-destructive" />
 			{:else}<InfoIcon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />{/if}
 			<span class="min-w-0 flex-1 break-words">{t.text}</span>
-			<button type="button" class="cursor-pointer text-muted-foreground hover:text-foreground" aria-label="Dismiss" onclick={() => toast.dismiss(t.id)}>
+			<button type="button" class="cursor-pointer text-muted-foreground hover:text-foreground" aria-label={tr('common.dismiss')} onclick={() => toast.dismiss(t.id)}>
 				<XIcon class="size-4" />
 			</button>
 		</div>

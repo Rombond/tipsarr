@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
 	// Horizontal scroller with arrow buttons (pointer devices) and edge-to-edge touch scrolling.
 	import type { Snippet } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -23,8 +24,8 @@
 		<div class="flex items-center justify-between">
 			<h2 class="font-semibold text-lg">{title}</h2>
 			<div class="flex gap-1 [@media(hover:none)]:hidden">
-				<Button variant="outline" size="icon-sm" aria-label="Scroll left" onclick={() => by(-1)}><ChevronLeftIcon /></Button>
-				<Button variant="outline" size="icon-sm" aria-label="Scroll right" onclick={() => by(1)}><ChevronRightIcon /></Button>
+				<Button variant="outline" size="icon-sm" aria-label={t('common.scroll_left')} onclick={() => by(-1)}><ChevronLeftIcon /></Button>
+				<Button variant="outline" size="icon-sm" aria-label={t('common.scroll_right')} onclick={() => by(1)}><ChevronRightIcon /></Button>
 			</div>
 		</div>
 	{/if}

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { MediaItem } from '$lib/api/client';
+	import { t } from '$lib/i18n/index.svelte';
+	import { errorText, type MediaItem } from '$lib/api/client';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Button } from '$lib/components/ui/button';
 	import MediaCard from './media-card.svelte';
@@ -47,18 +48,18 @@
 	<div class="flex items-center justify-between">
 		<h2 class="font-semibold text-lg">{title}</h2>
 		<div class="flex gap-1 [@media(hover:none)]:hidden">
-			<Button variant="outline" size="icon-sm" aria-label="Scroll left" onclick={() => scrollBy(-1)}>
+			<Button variant="outline" size="icon-sm" aria-label={t('common.scroll_left')} onclick={() => scrollBy(-1)}>
 				<ChevronLeftIcon />
 			</Button>
-			<Button variant="outline" size="icon-sm" aria-label="Scroll right" onclick={() => scrollBy(1)}>
+			<Button variant="outline" size="icon-sm" aria-label={t('common.scroll_right')} onclick={() => scrollBy(1)}>
 				<ChevronRightIcon />
 			</Button>
 		</div>
 	</div>
 	{#if error}
 		<div class="text-sm text-destructive">
-			Error: {error.message}
-			<button class="ml-2 underline" onclick={() => onRetry?.()}>Retry</button>
+			{t('common.error_prefix', { message: errorText(error) })}
+			<button class="ml-2 underline" onclick={() => onRetry?.()}>{t('common.retry')}</button>
 		</div>
 	{:else}
 		<div bind:this={scrollEl} class="no-scrollbar -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 md:-mx-8 md:scroll-px-8 md:px-8" onscroll={handleScroll}>
@@ -74,7 +75,7 @@
 				{/each}
 			{/if}
 			{#if !loading && items.length === 0}
-				<p class="text-muted-foreground text-sm">No results found.</p>
+				<p class="text-muted-foreground text-sm">{t('carousel.none')}</p>
 			{/if}
 		</div>
 	{/if}

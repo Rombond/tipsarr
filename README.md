@@ -28,6 +28,10 @@ docker compose -f deployments/docker-compose.dev.yml up --build     # http://loc
 
 The image contains the Go binary with the built frontend embedded; data lives in the `/config` volume.
 
+## Languages
+
+English and French are built in. The language follows your profile (Profile → Language), otherwise the browser; it also decides the language of titles and descriptions from TMDB. Adding a language is one file (`frontend/src/lib/i18n/xx.ts`) plus one line in `LOCALES`; `make test` checks that every catalog has exactly the same keys and placeholders.
+
 ## Develop
 
 ```bash

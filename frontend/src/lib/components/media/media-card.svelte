@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
 	import { goto } from '$app/navigation';
-	import { api, unwrap, imageUrl, type MediaItem } from '$lib/api/client';
+	import { api, unwrap, imageUrl, errorText, type MediaItem } from '$lib/api/client';
 	import { toast } from '$lib/toast.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import InfoIcon from '@lucide/svelte/icons/info';
@@ -51,9 +52,9 @@
 		try {
 			const r = await unwrap(api.POST('/requests', { body: { type: item.type, tmdbId: item.tmdbId } }));
 			requested = r.status;
-			toast.success(r.status === 'approved' ? `"${item.title}" approved${r.dryRun ? ' (dry-run: nothing sent)' : ''}` : `Requested "${item.title}"`);
+			toast.success(r.status === 'approved' ? t(r.dryRun ? 'media.toast_approved_dry' : 'media.toast_approved', { title: item.title }) : t('media.toast_requested', { title: item.title }));
 		} catch (err) {
-			toast.error((err as Error).message);
+			toast.error(errorText(err));
 		} finally {
 			requesting = false;
 		}
@@ -85,12 +86,12 @@
 		{#if item.availability !== 'none'}
 			<Badge class="absolute top-1.5 left-1.5 gap-1 text-[10px]">
 				<CheckIcon class="size-3" />
-				{item.availability === 'available' ? 'Available' : 'Partial'}
+				{item.availability === 'available' ? t('media.available') : t('card.partial')}
 			</Badge>
 		{:else if status}
-			<Badge variant="secondary" class="absolute top-1.5 left-1.5 text-[10px]">{status === 'pending' ? 'Requested' : 'Approved'}</Badge>
+			<Badge variant="secondary" class="absolute top-1.5 left-1.5 text-[10px]">{status === 'pending' ? t('media.requested') : t('media.approved')}</Badge>
 		{:else if inRadarr}
-			<Badge variant="secondary" class="absolute top-1.5 left-1.5 text-[10px]">In Radarr</Badge>
+			<Badge variant="secondary" class="absolute top-1.5 left-1.5 text-[10px]">{t('media.in_radarr')}</Badge>
 		{/if}
 
 		{#if rank}
@@ -107,7 +108,7 @@
 					onclick={quickRequest}
 				>
 					<PlusIcon class="size-3.5" />
-					{requesting ? '…' : 'Request'}
+					{requesting ? '…' : t('card.quick_request')}
 				</button>
 			{:else}
 				<span></span>
@@ -116,8 +117,8 @@
 				{#if onDismiss}
 					<button
 						type="button"
-						aria-label="Not interested"
-						title="Not interested: hide from my suggestions"
+						aria-label={t('media.not_interested')}
+						title={t('media.not_interested_hint')}
 						class="flex size-7 cursor-pointer items-center justify-center rounded-full bg-white/90 text-black shadow hover:bg-white"
 						onclick={(e) => {
 							e.stopPropagation();
@@ -129,7 +130,7 @@
 				{/if}
 				<button
 					type="button"
-					aria-label="View details"
+					aria-label={t('media.view_details')}
 					class="flex size-7 cursor-pointer items-center justify-center rounded-full bg-white/90 text-black shadow hover:bg-white"
 					onclick={(e) => {
 						e.stopPropagation();
@@ -144,7 +145,7 @@
 
 	<p class="mt-1.5 truncate text-sm font-medium" title={item.title}>{item.title}</p>
 	<p class="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-		{#if item.type === 'tv'}<span class="rounded bg-muted px-1 py-px text-[10px] font-medium text-foreground/80">TV</span>{/if}
+		{#if item.type === 'tv'}<span class="rounded bg-muted px-1 py-px text-[10px] font-medium text-foreground/80">{t('type.tv_short')}</span>{/if}
 		{#if year}<span>{year}</span>{/if}
 		{#if item.voteAverage}<span class="inline-flex items-center gap-0.5"><StarIcon class="size-3 fill-amber-400 text-amber-400" />{item.voteAverage.toFixed(1)}</span>{/if}
 	</p>

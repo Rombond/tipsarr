@@ -1199,8 +1199,13 @@ export interface components {
             /** @description Built from this user's own watch history */
             personal: boolean;
             seed?: components["schemas"]["Seed"];
-            /** @description Display title, e.g. "Because you watched Dune" */
+            /** @description English display title (clients should translate from variant + seed) */
             title: string;
+            /**
+             * @description What the row is based on, so clients can show it in the user's language
+             * @enum {string}
+             */
+            variant: "personal" | "server" | "trending" | "because";
         };
         SearchResult: {
             items: components["schemas"]["Item"][];

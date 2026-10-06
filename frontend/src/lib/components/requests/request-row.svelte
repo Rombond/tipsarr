@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
+	import { fmtDate, fmtDuration } from '$lib/i18n/format';
 	import { imageUrl, type Schemas } from '$lib/api/client';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -20,19 +22,20 @@
 	} = $props();
 
 	const poster = $derived(imageUrl(request.posterPath, 'w154'));
-	const mins = (s: number) => (s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min` : `${Math.max(1, Math.round(s / 60))} min`);
 
 	const stageLabel = $derived(
 		{
-			requested: 'Pending approval',
-			approved: request.dryRun ? 'Approved (dry-run: not sent)' : 'Approved',
-			searching: 'Searching',
+			requested: t('req.stage.requested'),
+			approved: request.dryRun ? t('req.stage.approved_dry') : t('req.stage.approved'),
+			searching: t('req.stage.searching'),
 			downloading: request.progress
-				? `Downloading ${request.progress.percent}%${request.progress.etaSeconds ? ` · ${mins(request.progress.etaSeconds)} left` : ''}`
-				: 'Downloading',
-			available: 'Available',
-			declined: 'Declined',
-			failed: 'Failed',
+				? request.progress.etaSeconds
+					? t('req.stage.downloading_eta', { percent: request.progress.percent, eta: fmtDuration(request.progress.etaSeconds, t) })
+					: t('req.stage.downloading_pct', { percent: request.progress.percent })
+				: t('req.stage.downloading'),
+			available: t('req.stage.available'),
+			declined: t('req.stage.declined'),
+			failed: t('req.stage.failed'),
 		}[request.stage],
 	);
 	const variant = $derived(
@@ -52,31 +55,31 @@
 	<div class="grid min-w-0 flex-1 content-start gap-1.5">
 		<div class="flex flex-wrap items-center gap-2">
 			<a href="/media/{request.type}/{request.tmdbId}" class="truncate font-medium hover:underline">{request.title}</a>
-			<Badge variant="outline" class="text-[10px]">{request.type === 'tv' ? 'TV' : 'Movie'}</Badge>
+			<Badge variant="outline" class="text-[10px]">{request.type === 'tv' ? t('type.tv_short') : t('type.movie')}</Badge>
 			<Badge {variant}>{stageLabel}</Badge>
 		</div>
 		<p class="text-xs text-muted-foreground">
-			Requested by {request.requestedBy.name || 'unknown'} · {new Date(request.createdAt * 1000).toLocaleDateString()}
-			{#if request.seasons?.length}· Season{request.seasons.length > 1 ? 's' : ''} {request.seasons.join(', ')}{/if}
-			{#if request.decidedBy}· decided by {request.decidedBy.name}{/if}
+			{t('req.requested_by', { name: request.requestedBy.name || t('req.unknown_user') })} · {fmtDate(request.createdAt)}
+			{#if request.seasons?.length}· {t('req.seasons', { count: request.seasons.length, list: request.seasons.join(', ') })}{/if}
+			{#if request.decidedBy}· {t('req.decided_by', { name: request.decidedBy.name })}{/if}
 		</p>
 		{#if request.stage === 'downloading' && request.progress}
 			<div class="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-muted">
 				<div class="h-full bg-primary transition-all" style="width: {request.progress.percent}%"></div>
 			</div>
 		{/if}
-		{#if request.declineReason}<p class="text-xs">Reason: {request.declineReason}</p>{/if}
+		{#if request.declineReason}<p class="text-xs">{t('req.reason', { reason: request.declineReason })}</p>{/if}
 		{#if request.error}<p class="text-xs text-destructive">{request.error}</p>{/if}
 		{#if isAdmin || canDelete}
 			<div class="flex flex-wrap gap-2 pt-1">
 				{#if isAdmin && (request.status === 'pending' || request.status === 'failed')}
 					<Button size="sm" disabled={busy} onclick={() => onApprove?.(request)}>
-						{request.status === 'failed' ? 'Retry' : 'Approve'}
+						{request.status === 'failed' ? t('req.retry') : t('req.approve')}
 					</Button>
-					<Button size="sm" variant="outline" disabled={busy} onclick={() => onDecline?.(request)}>Decline</Button>
+					<Button size="sm" variant="outline" disabled={busy} onclick={() => onDecline?.(request)}>{t('req.decline')}</Button>
 				{/if}
 				{#if canDelete}
-					<Button size="sm" variant="ghost" disabled={busy} onclick={() => onDelete?.(request)}>Delete</Button>
+					<Button size="sm" variant="ghost" disabled={busy} onclick={() => onDelete?.(request)}>{t('req.delete')}</Button>
 				{/if}
 			</div>
 		{/if}

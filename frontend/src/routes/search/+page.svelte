@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
 	import { page } from '$app/state';
-	import { api, unwrap, type Schemas } from '$lib/api/client';
+	import { api, unwrap, errorText, type Schemas } from '$lib/api/client';
 	import MediaCard from '$lib/components/media/media-card.svelte';
 	import PersonCard from '$lib/components/media/person-card.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -42,20 +43,20 @@
 </script>
 
 <svelte:head>
-	<title>Search · Tipsarr</title>
+	<title>{t('search.page_title')} · Tipsarr</title>
 </svelte:head>
 
 <div class="grid gap-8">
 	<div>
-		<h1 class="font-bold text-3xl">Results for “{query}”</h1>
+		<h1 class="font-bold text-3xl">{t('search.results_for', { query })}</h1>
 		{#if result && !loading}
-			<p class="text-sm text-muted-foreground">{movies.length} movies · {shows.length} TV shows · {people.length} people</p>
+			<p class="text-sm text-muted-foreground">{t('search.counts', { movies: movies.length, shows: shows.length, people: people.length })}</p>
 		{/if}
 	</div>
 
 	{#if result && !loading && movies.length + shows.length + people.length > 0}
-		<div class="flex gap-1 overflow-x-auto" role="tablist" aria-label="Result type">
-			{#each [['all', 'All', movies.length + shows.length + people.length], ['movies', 'Movies', movies.length], ['tv', 'TV shows', shows.length], ['people', 'People', people.length]] as [id, label, n] (id)}
+		<div class="flex gap-1 overflow-x-auto" role="tablist" aria-label={t('search.page_title')}>
+			{#each [['all', t('search.tab_all'), movies.length + shows.length + people.length], ['movies', t('type.movies'), movies.length], ['tv', t('type.shows'), shows.length], ['people', t('type.people'), people.length]] as [id, label, n] (id)}
 				<button
 					type="button"
 					role="tab"
@@ -77,18 +78,18 @@
 		</div>
 	{:else if error}
 		<div class="text-sm text-destructive">
-			Error: {error.message}
-			<button class="ml-2 underline" onclick={load}>Retry</button>
+			{t('common.error_prefix', { message: errorText(error) })}
+			<button class="ml-2 underline" onclick={load}>{t('common.retry')}</button>
 		</div>
 	{:else if !movies.length && !shows.length && !people.length}
 		<div class="rounded-xl border border-dashed border-border p-8 text-center">
-			<p class="font-medium">Nothing found for “{query}”</p>
-			<p class="mt-1 text-sm text-muted-foreground">Check the spelling, or try the original title or fewer words.</p>
+			<p class="font-medium">{t('search.nothing', { query })}</p>
+			<p class="mt-1 text-sm text-muted-foreground">{t('search.nothing_hint')}</p>
 		</div>
 	{:else}
 		{#if movies.length && (tab === 'all' || tab === 'movies')}
 			<section class="grid gap-2">
-				<h2 class="font-semibold text-lg">Movies</h2>
+				<h2 class="font-semibold text-lg">{t('type.movies')}</h2>
 				<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 					{#each movies as item (item.tmdbId)}
 						<MediaCard {item} fluid />
@@ -98,7 +99,7 @@
 		{/if}
 		{#if shows.length && (tab === 'all' || tab === 'tv')}
 			<section class="grid gap-2">
-				<h2 class="font-semibold text-lg">TV Shows</h2>
+				<h2 class="font-semibold text-lg">{t('type.shows')}</h2>
 				<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 					{#each shows as item (item.tmdbId)}
 						<MediaCard {item} fluid />
@@ -108,7 +109,7 @@
 		{/if}
 		{#if people.length && (tab === 'all' || tab === 'people')}
 			<section class="grid gap-2">
-				<h2 class="font-semibold text-lg">People</h2>
+				<h2 class="font-semibold text-lg">{t('type.people')}</h2>
 				<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 					{#each people as person (person.id)}
 						<PersonCard {person} fluid />

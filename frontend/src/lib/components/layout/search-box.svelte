@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
+	import { deptLabel } from '$lib/i18n/format';
 	import { goto } from '$app/navigation';
 	import { api, unwrap, imageUrl, type Schemas } from '$lib/api/client';
 	import SearchIcon from '@lucide/svelte/icons/search';
@@ -21,14 +23,14 @@
 		const titles: Hit[] = r.items.slice(0, 6).map((i) => ({
 			href: `/media/${i.type}/${i.tmdbId}`,
 			title: i.title,
-			sub: `${i.type === 'tv' ? 'TV show' : 'Movie'}${i.releaseDate ? ' · ' + i.releaseDate.slice(0, 4) : ''}`,
+			sub: `${i.type === 'tv' ? t('search.sub_tv') : t('search.sub_movie')}${i.releaseDate ? ' · ' + i.releaseDate.slice(0, 4) : ''}`,
 			img: imageUrl(i.posterPath, 'w92'),
 			kind: i.type,
 		}));
 		const people: Hit[] = r.people.slice(0, 2).map((p) => ({
 			href: `/person/${p.id}`,
 			title: p.name,
-			sub: p.department || 'Person',
+			sub: deptLabel(p.department) || t('search.sub_person'),
 			img: imageUrl(p.profilePath, 'w92'),
 			kind: 'person',
 		}));
@@ -114,8 +116,8 @@
 		role="combobox"
 		aria-expanded={open}
 		aria-controls="search-hits"
-		aria-label="Search movies, TV shows and people"
-		placeholder="Search movies, TV shows, people…  ( / )"
+		aria-label={t('search.aria')}
+		placeholder={t('search.placeholder')}
 		autocomplete="off"
 		class="h-11 w-full rounded-full border border-border/60 bg-background/60 pr-4 pl-11 text-sm shadow-sm outline-none backdrop-blur-md placeholder:text-muted-foreground focus-visible:border-ring focus-visible:bg-background/90 focus-visible:ring-[3px] focus-visible:ring-ring/40 [&::-webkit-search-cancel-button]:hidden"
 	/>
@@ -149,7 +151,7 @@
 					</a>
 				</li>
 			{:else}
-				{#if !loading}<li class="p-3 text-sm text-muted-foreground">No quick matches. Press Enter to search.</li>{/if}
+				{#if !loading}<li class="p-3 text-sm text-muted-foreground">{t('search.no_quick')}</li>{/if}
 			{/each}
 			{#if hits.length}
 				<li>
@@ -159,7 +161,7 @@
 						onmousedown={(e) => {
 							e.preventDefault();
 							go(`/search?q=${encodeURIComponent(query.trim())}`);
-						}}>See all results</a
+						}}>{t('search.see_all')}</a
 					>
 				</li>
 			{/if}

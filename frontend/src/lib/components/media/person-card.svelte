@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
 	import { goto } from '$app/navigation';
 	import { imageUrl } from '$lib/api/client';
 
@@ -16,7 +17,7 @@
 		{#if photo}
 			<img src={photo} alt={person.name} class="h-full w-full object-cover" loading="lazy" />
 		{:else}
-			<div class="flex h-full w-full items-center justify-center text-muted-foreground text-xs">No image</div>
+			<div class="flex h-full w-full items-center justify-center text-muted-foreground text-xs">{t('common.no_image')}</div>
 		{/if}
 	</div>
 	<p class="mt-1.5 truncate text-sm font-medium">{person.name}</p>

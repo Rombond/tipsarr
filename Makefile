@@ -14,7 +14,7 @@ build:
 
 test:
 	cd backend && go test ./...
-	cd frontend && npm run check
+	cd frontend && npm run check && npm run check:i18n
 
 # Re-export the OpenAPI spec and regenerate the frontend TypeScript types.
 generate:

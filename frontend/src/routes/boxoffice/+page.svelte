@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { api, unwrap, expectOk, imageUrl, type Schemas } from '$lib/api/client';
+	import { t } from '$lib/i18n/index.svelte';
+	import { fmtDateTime, fmtMoneyCompact, weekendRange } from '$lib/i18n/format';
+	import { api, unwrap, expectOk, imageUrl, errorText, type Schemas } from '$lib/api/client';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -37,7 +39,7 @@
 			);
 			charts = first.week ? [first, ...rest] : [];
 		} catch (e) {
-			error = (e as Error).message;
+			error = errorText(e);
 		} finally {
 			loading = false;
 		}
@@ -64,7 +66,7 @@
 			const r = await unwrap(api.GET('/search', { params: { query: { q: query.trim() } } }));
 			results = r.items.filter((i) => i.type === 'movie');
 		} catch (e) {
-			fixError = (e as Error).message;
+			fixError = errorText(e);
 		} finally {
 			searching = false;
 		}
@@ -77,12 +79,11 @@
 			fixing = null;
 			await load();
 		} catch (e) {
-			fixError = (e as Error).message;
+			fixError = errorText(e);
 		}
 	}
 
-	const compact = (n: number) =>
-		n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${Math.round(n / 1e3)}K` : n > 0 ? `$${n}` : '-';
+	const compact = (n: number) => fmtMoneyCompact(n);
 	// bars are relative to the #1 of the same weekend
 	const share = (c: Schemas['Chart'], e: Schemas['ChartEntry']) =>
 		Math.max(2, Math.round((e.weekendGross / Math.max(1, ...c.entries.map((x) => x.weekendGross))) * 100));
@@ -103,10 +104,10 @@
 		requesting = new Set(requesting).add(id);
 		try {
 			const r = await unwrap(api.POST('/requests', { body: { type: 'movie', tmdbId: id } }));
-			toast.success(r.status === 'approved' ? `"${e.title}" approved${r.dryRun ? ' (dry-run: nothing sent)' : ''}` : `Requested "${e.title}"`);
+			toast.success(r.status === 'approved' ? t(r.dryRun ? 'media.toast_approved_dry' : 'media.toast_approved', { title: e.title }) : t('media.toast_requested', { title: e.title }));
 			await load();
 		} catch (err) {
-			toast.error((err as Error).message);
+			toast.error(errorText(err));
 		} finally {
 			const next = new Set(requesting);
 			next.delete(id);
@@ -121,7 +122,7 @@
 </script>
 
 <svelte:head>
-	<title>Box office · Tipsarr</title>
+	<title>{t('box.page_title')} · Tipsarr</title>
 </svelte:head>
 
 {#snippet card(c: Schemas['Chart'], e: Schemas['ChartEntry'])}
@@ -134,22 +135,22 @@
 					{#if poster}<img src={poster} alt="" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" loading="lazy" />{/if}
 				</a>
 			{:else}
-				<div class="flex h-full w-full items-center justify-center p-3 text-center text-sm text-muted-foreground">{e.title}<br />(no TMDB match)</div>
+				<div class="flex h-full w-full items-center justify-center p-3 text-center text-sm text-muted-foreground">{t('box.no_match', { title: e.title })}</div>
 			{/if}
 			<span class="pointer-events-none absolute top-2 left-2 rounded-lg bg-black/70 px-2.5 py-0.5 font-black text-lg text-white backdrop-blur">#{e.position}</span>
 			{#if state === 'available'}
-				<Badge class="absolute top-2 right-2 gap-1"><CheckIcon class="size-3" />Available</Badge>
+				<Badge class="absolute top-2 right-2 gap-1"><CheckIcon class="size-3" />{t('media.available')}</Badge>
 			{:else if state === 'requested'}
-				<Badge variant="secondary" class="absolute top-2 right-2">{e.item?.requestStatus === 'pending' ? 'Requested' : 'Approved'}</Badge>
+				<Badge variant="secondary" class="absolute top-2 right-2">{e.item?.requestStatus === 'pending' ? t('media.requested') : t('media.approved')}</Badge>
 			{:else if state === 'radarr'}
-				<Badge variant="secondary" class="absolute top-2 right-2" title={e.hasFile ? 'Radarr already has the file' : 'Radarr is tracking this movie'}>In Radarr</Badge>
+				<Badge variant="secondary" class="absolute top-2 right-2" title={e.hasFile ? t('box.in_radarr_file') : t('box.in_radarr_tracking')}>{t('media.in_radarr')}</Badge>
 			{/if}
 			{#if auth.isAdmin}
 				<button
 					type="button"
 					class="absolute right-2 bottom-2 flex size-8 cursor-pointer items-center justify-center rounded-full bg-black/70 text-white opacity-0 backdrop-blur transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
-					title={e.item ? 'Wrong movie? Fix the match' : 'Pick the right movie'}
-					aria-label="Fix the TMDB match"
+					title={e.item ? t('box.fix_wrong') : t('box.fix_pick')}
+					aria-label={t('box.fix_aria')}
 					onclick={() => startFix(e)}
 				>
 					<PencilIcon class="size-4" />
@@ -160,24 +161,24 @@
 			<div class="grid gap-1.5">
 				<h3 class="line-clamp-2 font-semibold leading-snug" title={e.title}>{e.title}</h3>
 				<p class="text-xs text-muted-foreground">
-					{#if e.item?.releaseDate}{e.item.releaseDate.slice(0, 4)} · {/if}week {e.weeksInRelease || '-'}
+					{#if e.item?.releaseDate}{e.item.releaseDate.slice(0, 4)}&nbsp;·&nbsp;{/if}{t('box.week_n', { n: e.weeksInRelease || '-' })}
 				</p>
-				<div title="Weekend gross relative to #1">
+				<div title={t('box.gross_hint')}>
 					<div class="h-1.5 overflow-hidden rounded-full bg-muted">
 						<div class="h-full rounded-full bg-primary/80" style="width: {share(c, e)}%"></div>
 					</div>
 					<p class="mt-1 flex justify-between text-xs">
 						<span class="font-semibold tabular-nums">{compact(e.weekendGross)}</span>
-						<span class="text-muted-foreground">total {compact(e.totalGross)}</span>
+						<span class="text-muted-foreground">{t('box.total', { amount: compact(e.totalGross) })}</span>
 					</p>
 				</div>
 			</div>
 			{#if state === 'requestable' && e.item}
 				<Button size="sm" class="w-full" disabled={requesting.has(e.item.tmdbId)} onclick={() => quickRequest(e)}>
-					<PlusIcon class="size-4" />Request
+					<PlusIcon class="size-4" />{t('media.request')}
 				</Button>
 			{:else if e.item}
-				<Button size="sm" variant="outline" class="w-full" href="/media/movie/{e.item.tmdbId}">Details</Button>
+				<Button size="sm" variant="outline" class="w-full" href="/media/movie/{e.item.tmdbId}">{t('common.details')}</Button>
 			{/if}
 		</div>
 	</article>
@@ -186,13 +187,13 @@
 <div class="grid grid-cols-[minmax(0,1fr)] gap-8">
 	<div class="flex flex-wrap items-end justify-between gap-3">
 		<div>
-			<h1 class="font-bold text-3xl">Box office</h1>
-			<p class="text-sm text-muted-foreground">Weekend charts, newest first. The same for everyone; nothing is added automatically.</p>
+			<h1 class="font-bold text-3xl">{t('box.title')}</h1>
+			<p class="text-sm text-muted-foreground">{t('box.subtitle')}</p>
 		</div>
 		<div class="flex flex-wrap items-center gap-2">
 			{#if head && head.regions.length > 1}
 				<SimpleSelect
-					label="Region"
+					label={t('box.region')}
 					value={head.region}
 					options={head.regions.map((r) => ({ value: r, label: r }))}
 					onchange={changeRegion}
@@ -201,9 +202,9 @@
 			{/if}
 			{#if charts.length > 1}
 				<!-- jump chips: the weekends sit under each other, these scroll to them -->
-				<nav class="flex flex-wrap gap-1.5" aria-label="Jump to a weekend">
+				<nav class="flex flex-wrap gap-1.5" aria-label={t('box.jump')}>
 					{#each charts as c (c.week)}
-						<a href="#w-{c.week}" class="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground">{c.label || c.week}</a>
+						<a href="#w-{c.week}" class="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground">{weekendRange(c.week)}</a>
 					{/each}
 				</nav>
 			{/if}
@@ -218,18 +219,18 @@
 		</div>
 	{:else if charts.length === 0}
 		<div class="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-			No chart stored yet.{#if auth.isAdmin} Fetch it in <a class="underline" href="/admin/settings">Settings</a> (job “boxoffice-refresh”).{/if}
+			{t('box.empty')}{#if auth.isAdmin} <a class="underline" href="/admin/settings">{t('box.empty_admin')}</a>{/if}
 		</div>
 	{:else}
 		{#each charts as c, i (c.week)}
 			<section id="w-{c.week}" class="grid scroll-mt-24 gap-4 transition-opacity" class:opacity-60={loading}>
 				<div class="flex items-baseline gap-3 border-b border-border pb-2">
-					<h2 class="font-semibold text-xl">Weekend of {c.label || c.week}</h2>
-					{#if i === 0}<Badge variant="secondary">Latest</Badge>{/if}
+					<h2 class="font-semibold text-xl">{t('box.weekend_of', { range: weekendRange(c.week) })}</h2>
+					{#if i === 0}<Badge variant="secondary">{t('box.latest')}</Badge>{/if}
 					<span class="ml-auto text-xs text-muted-foreground">{c.region}</span>
 				</div>
 				{#if c.entries.length === 0}
-					<p class="text-sm text-muted-foreground">No entries.</p>
+					<p class="text-sm text-muted-foreground">{t('box.no_entries')}</p>
 				{:else}
 					<div class="grid grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))] gap-4">
 						{#each c.entries as e (e.position)}{@render card(c, e)}{/each}
@@ -238,7 +239,7 @@
 			</section>
 		{/each}
 		{#if head?.fetchedAt}
-			<p class="text-xs text-muted-foreground">Latest data fetched {new Date(head.fetchedAt * 1000).toLocaleString()} from Box Office Mojo.</p>
+			<p class="text-xs text-muted-foreground">{t('box.fetched', { when: fmtDateTime(head.fetchedAt) })}</p>
 		{/if}
 	{/if}
 </div>
@@ -246,7 +247,7 @@
 <Dialog.Root open={fixing !== null} onOpenChange={(o) => !o && (fixing = null)}>
 	<Dialog.Content>
 		<Dialog.Header>
-			<Dialog.Title>Match "{fixing?.title}" to a TMDB movie</Dialog.Title>
+			<Dialog.Title>{t('box.fix_title', { title: fixing?.title ?? '' })}</Dialog.Title>
 		</Dialog.Header>
 		<form
 			class="flex gap-2"
@@ -255,8 +256,8 @@
 				search();
 			}}
 		>
-			<Input bind:value={query} placeholder="Search TMDB" />
-			<Button type="submit" variant="outline" disabled={searching}>Search</Button>
+			<Input bind:value={query} placeholder={t('box.fix_search')} />
+			<Button type="submit" variant="outline" disabled={searching}>{t('box.fix_go')}</Button>
 		</form>
 		{#if fixError}<p class="text-sm text-destructive">{fixError}</p>{/if}
 		<div class="grid max-h-80 gap-1.5 overflow-y-auto">
@@ -273,7 +274,7 @@
 					</span>
 				</button>
 			{:else}
-				{#if !searching}<p class="text-sm text-muted-foreground">No results.</p>{/if}
+				{#if !searching}<p class="text-sm text-muted-foreground">{t('common.no_results')}</p>{/if}
 			{/each}
 		</div>
 	</Dialog.Content>

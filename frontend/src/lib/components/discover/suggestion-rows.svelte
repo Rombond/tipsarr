@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { api, unwrap, expectOk, type Schemas } from '$lib/api/client';
+	import { t } from '$lib/i18n/index.svelte';
+	import { api, unwrap, expectOk, errorText, type Schemas } from '$lib/api/client';
 	import { onEvent, stream } from '$lib/events.svelte';
 	import Carousel from '$lib/components/media/carousel.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -22,7 +23,7 @@
 			generating = res.generating;
 			error = null;
 		} catch (e) {
-			error = (e as Error).message;
+			error = errorText(e);
 		} finally {
 			loading = false;
 		}
@@ -43,6 +44,11 @@
 		}),
 	);
 
+	function rowTitle(row: Schemas['Row']): string {
+		if (row.variant === 'because') return t('suggest.because', { title: row.seed?.title ?? '' });
+		return t(`suggest.${row.variant}` as 'suggest.personal');
+	}
+
 	async function dismiss(item: Schemas['Item']) {
 		// optimistic: remove it everywhere right away, restore on failure
 		const before = rows;
@@ -59,10 +65,10 @@
 		refreshMessage = null;
 		const { response } = await api.POST('/suggestions/refresh');
 		if (response.status === 429) {
-			refreshMessage = 'Refreshed a moment ago, try again in a minute.';
+			refreshMessage = t('error.refresh_too_soon');
 			refreshing = false;
 		} else if (!response.ok) {
-			refreshMessage = 'Could not refresh right now.';
+			refreshMessage = t('suggest.refresh_failed');
 			refreshing = false;
 		}
 		// on success the suggestions.updated event stops the spinner
@@ -73,19 +79,19 @@
 	<div class="grid gap-2">
 		<Skeleton class="h-5 w-48" />
 		<Skeleton class="h-56 w-full" />
-		<p class="text-xs text-muted-foreground">Preparing your recommendations…</p>
+		<p class="text-xs text-muted-foreground">{t('suggest.preparing')}</p>
 	</div>
 {:else if error}
-	<p class="text-sm text-muted-foreground">Recommendations unavailable: {error}</p>
+	<p class="text-sm text-muted-foreground">{t('suggest.unavailable', { error })}</p>
 {:else}
 	<div class="grid gap-6">
 		{#each rows as row (row.id)}
-			<Carousel title={row.title} items={row.items} {onSelect} onDismiss={dismiss} />
+			<Carousel title={rowTitle(row)} items={row.items} {onSelect} onDismiss={dismiss} />
 		{/each}
 		<div class="-mt-3 flex items-center justify-end gap-3 text-xs text-muted-foreground">
 			{#if refreshMessage}<span>{refreshMessage}</span>{/if}
 			<Button size="sm" variant="ghost" class="h-7 px-2 text-xs" disabled={refreshing || generating} onclick={refresh}>
-				{refreshing || generating ? 'Updating…' : '↻ Refresh recommendations'}
+				{refreshing || generating ? t('suggest.updating') : t('suggest.refresh')}
 			</Button>
 		</div>
 	</div>

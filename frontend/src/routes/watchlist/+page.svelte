@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { api, unwrap, expectOk, type Schemas } from '$lib/api/client';
+	import { t } from '$lib/i18n/index.svelte';
+	import { api, unwrap, expectOk, errorText, type Schemas } from '$lib/api/client';
 	import MediaCard from '$lib/components/media/media-card.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
@@ -10,7 +11,7 @@
 	$effect(() => {
 		unwrap(api.GET('/watchlist'))
 			.then((r) => (items = r))
-			.catch((e) => (error = (e as Error).message))
+			.catch((e) => (error = errorText(e)))
 			.finally(() => (loading = false));
 	});
 
@@ -26,23 +27,23 @@
 </script>
 
 <svelte:head>
-	<title>Watchlist · Tipsarr</title>
+	<title>{t('watchlist.title')} · Tipsarr</title>
 </svelte:head>
 
 <div class="grid gap-4">
-	<h1 class="font-bold text-3xl">Watchlist</h1>
+	<h1 class="font-bold text-3xl">{t('watchlist.title')}</h1>
 	{#if error}
 		<p class="text-sm text-destructive">{error}</p>
 	{:else if loading}
 		<Skeleton class="h-56 w-full" />
 	{:else if items.length === 0}
-		<p class="text-sm text-muted-foreground">Nothing here yet. Open a movie or show and press "+ Watchlist".</p>
+		<p class="text-sm text-muted-foreground">{t('watchlist.empty')}</p>
 	{:else}
 		<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 			{#each items as item (`${item.type}:${item.tmdbId}`)}
 				<MediaCard {item} onDismiss={remove} fluid />
 			{/each}
 		</div>
-		<p class="text-xs text-muted-foreground">Hover a poster and press ✕ to remove it from the list.</p>
+		<p class="text-xs text-muted-foreground">{t('watchlist.hint')}</p>
 	{/if}
 </div>

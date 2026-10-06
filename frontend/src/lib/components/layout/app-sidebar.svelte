@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t, type Key } from '$lib/i18n/index.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -21,17 +22,18 @@
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import MonitorIcon from '@lucide/svelte/icons/monitor';
 
-	const browse = [
-		{ href: '/discover', label: 'Discover', icon: CompassIcon },
-		{ href: '/boxoffice', label: 'Box office', icon: TicketIcon },
-		{ href: '/requests', label: 'Requests', icon: ListIcon },
-		{ href: '/watchlist', label: 'Watchlist', icon: BookmarkIcon },
+	type NavItem = { href: string; key: Key; icon: typeof CompassIcon };
+	const browse: NavItem[] = [
+		{ href: '/discover', key: 'nav.discover', icon: CompassIcon },
+		{ href: '/boxoffice', key: 'nav.boxoffice', icon: TicketIcon },
+		{ href: '/requests', key: 'nav.requests', icon: ListIcon },
+		{ href: '/watchlist', key: 'nav.watchlist', icon: BookmarkIcon },
 	];
-	const admin = [
-		{ href: '/admin/users', label: 'Users', icon: UsersIcon },
-		{ href: '/admin/services', label: 'Radarr / Sonarr', icon: ServerIcon },
-		{ href: '/admin/webhooks', label: 'Webhooks', icon: BellIcon },
-		{ href: '/admin/settings', label: 'Settings', icon: SettingsIcon },
+	const admin: NavItem[] = [
+		{ href: '/admin/users', key: 'nav.users', icon: UsersIcon },
+		{ href: '/admin/services', key: 'nav.services', icon: ServerIcon },
+		{ href: '/admin/webhooks', key: 'nav.webhooks', icon: BellIcon },
+		{ href: '/admin/settings', key: 'nav.settings', icon: SettingsIcon },
 	];
 
 	const sidebar = Sidebar.useSidebar();
@@ -51,13 +53,13 @@
 	}
 </script>
 
-{#snippet item(it: { href: string; label: string; icon: typeof CompassIcon })}
+{#snippet item(it: NavItem)}
 	<Sidebar.MenuItem>
 		<Sidebar.MenuButton isActive={page.url.pathname.startsWith(it.href)} class="h-11 gap-3 px-3 text-[15px] [&_svg]:size-5">
 			{#snippet child({ props })}
 				<a href={it.href} {...props} onclick={() => sidebar.setOpenMobile(false)}>
 					<it.icon />
-					<span>{it.label}</span>
+					<span>{t(it.key)}</span>
 				</a>
 			{/snippet}
 		</Sidebar.MenuButton>
@@ -76,14 +78,14 @@
 	</Sidebar.Header>
 	<Sidebar.Content>
 		<Sidebar.Group class="px-3 py-3">
-			<Sidebar.GroupLabel class="px-3 text-xs font-semibold uppercase tracking-wider">Browse</Sidebar.GroupLabel>
+			<Sidebar.GroupLabel class="px-3 text-xs font-semibold uppercase tracking-wider">{t('nav.browse')}</Sidebar.GroupLabel>
 			<Sidebar.Menu class="gap-1">
 				{#each browse as it (it.href)}{@render item(it)}{/each}
 			</Sidebar.Menu>
 		</Sidebar.Group>
 		{#if auth.isAdmin}
 			<Sidebar.Group class="px-3 py-3">
-				<Sidebar.GroupLabel class="px-3 text-xs font-semibold uppercase tracking-wider">Admin</Sidebar.GroupLabel>
+				<Sidebar.GroupLabel class="px-3 text-xs font-semibold uppercase tracking-wider">{t('nav.admin')}</Sidebar.GroupLabel>
 				<Sidebar.Menu class="gap-1">
 					{#each admin as it (it.href)}{@render item(it)}{/each}
 				</Sidebar.Menu>
@@ -97,33 +99,33 @@
 					<AvatarFallback>{initials(auth.username)}</AvatarFallback>
 				</Avatar>
 				<span class="grid min-w-0 text-left leading-tight">
-					<span class="truncate">{auth.username || 'Account'}</span>
-					<span class="text-[11px] text-muted-foreground">{auth.isAdmin ? 'Administrator' : 'Member'}</span>
+					<span class="truncate">{auth.username || t('nav.account')}</span>
+					<span class="text-[11px] text-muted-foreground">{auth.isAdmin ? t('nav.administrator') : t('nav.member')}</span>
 				</span>
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content side="top" align="start" class="w-56">
 				<DropdownMenu.Item onclick={() => navigate('/profile')}>
 					<UserIcon />
-					Profile
+					{t('nav.profile')}
 				</DropdownMenu.Item>
 				<DropdownMenu.Separator />
-				<DropdownMenu.Label class="text-xs text-muted-foreground">Theme</DropdownMenu.Label>
+				<DropdownMenu.Label class="text-xs text-muted-foreground">{t('theme.title')}</DropdownMenu.Label>
 				<DropdownMenu.Item onclick={() => theme.set('light')}>
 					<SunIcon />
-					Light {theme.value === 'light' ? '✓' : ''}
+					{t('theme.light')} {theme.value === 'light' ? '✓' : ''}
 				</DropdownMenu.Item>
 				<DropdownMenu.Item onclick={() => theme.set('dark')}>
 					<MoonIcon />
-					Dark {theme.value === 'dark' ? '✓' : ''}
+					{t('theme.dark')} {theme.value === 'dark' ? '✓' : ''}
 				</DropdownMenu.Item>
 				<DropdownMenu.Item onclick={() => theme.set('system')}>
 					<MonitorIcon />
-					System {theme.value === 'system' ? '✓' : ''}
+					{t('theme.system')} {theme.value === 'system' ? '✓' : ''}
 				</DropdownMenu.Item>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Item onclick={handleLogout}>
 					<LogOutIcon />
-					Log out
+					{t('nav.logout')}
 				</DropdownMenu.Item>
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>

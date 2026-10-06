@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { api, unwrap, expectOk, type MediaDetail } from '$lib/api/client';
+	import { t } from '$lib/i18n/index.svelte';
+	import { api, unwrap, expectOk, errorText, type MediaDetail } from '$lib/api/client';
 	import { toast } from '$lib/toast.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -38,15 +39,15 @@
 				if (on) await expectOk(api.DELETE('/watchlist/{type}/{id}', { params: { path: { type, id: tmdbId } } }));
 				else await expectOk(api.POST('/watchlist', { body: { type, tmdbId } }));
 				watchlisted = !on;
-				toast.success(on ? 'Removed from your watchlist' : 'Added to your watchlist');
+				toast.success(t(on ? 'actions.toast_watch_removed' : 'actions.toast_watch_added'));
 			} else {
 				if (on) await expectOk(api.DELETE('/blocklist/{type}/{id}', { params: { path: { type, id: tmdbId } } }));
 				else await expectOk(api.POST('/blocklist', { body: { type, tmdbId } }));
 				blocklisted = !on;
-				toast.success(on ? 'Back in your suggestions' : 'Hidden from your suggestions');
+				toast.success(t(on ? 'actions.toast_unhidden' : 'actions.toast_hidden'));
 			}
 		} catch (e) {
-			toast.error((e as Error).message);
+			toast.error(errorText(e));
 		} finally {
 			busy = false;
 		}
@@ -66,39 +67,39 @@
 	{#if details.watchUrl}
 		<Button href={details.watchUrl} target="_blank" rel="noreferrer" class="bg-emerald-600 text-white hover:bg-emerald-600/90">
 			<PlayIcon class="size-4" />
-			Play on Jellyfin
+			{t('actions.play')}
 		</Button>
 	{/if}
 
 	{#if details.trailerKey}
 		<Button variant="outline" href="https://www.youtube.com/watch?v={details.trailerKey}" target="_blank" rel="noreferrer">
 			<ClapperboardIcon class="size-4" />
-			Trailer
+			{t('actions.trailer')}
 		</Button>
 	{/if}
 
 	<Button variant="outline" disabled={busy} onclick={() => toggle('watchlist')} aria-pressed={watchlisted}>
-		{#if watchlisted}<BookmarkCheckIcon class="size-4" /> On watchlist{:else}<BookmarkIcon class="size-4" /> Watchlist{/if}
+		{#if watchlisted}<BookmarkCheckIcon class="size-4" /> {t('actions.on_watchlist')}{:else}<BookmarkIcon class="size-4" /> {t('actions.watchlist')}{/if}
 	</Button>
 
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
-				<Button variant="ghost" size="icon" aria-label="More actions" {...props}><MoreIcon class="size-5" /></Button>
+				<Button variant="ghost" size="icon" aria-label={t('common.more_actions')} {...props}><MoreIcon class="size-5" /></Button>
 			{/snippet}
 		</DropdownMenu.Trigger>
 		<DropdownMenu.Content align="start" class="w-64">
 			<DropdownMenu.Item onclick={() => toggle('blocklist')}>
-				{#if blocklisted}<EyeIcon /> Show in my suggestions again{:else}<EyeOffIcon /> Hide from my suggestions{/if}
+				{#if blocklisted}<EyeIcon /> {t('actions.show_again')}{:else}<EyeOffIcon /> {t('actions.hide')}{/if}
 			</DropdownMenu.Item>
 			<DropdownMenu.Separator />
 			{#if details.imdbId}
 				<DropdownMenu.Item onclick={() => window.open(`https://www.imdb.com/title/${details.imdbId}`, '_blank', 'noreferrer')}>
-					<ExternalIcon /> IMDb
+					<ExternalIcon /> {t('actions.imdb')}
 				</DropdownMenu.Item>
 			{/if}
 			<DropdownMenu.Item onclick={() => window.open(`https://www.themoviedb.org/${type}/${tmdbId}`, '_blank', 'noreferrer')}>
-				<ExternalIcon /> TMDB
+				<ExternalIcon /> {t('actions.tmdb')}
 			</DropdownMenu.Item>
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>

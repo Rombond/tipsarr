@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { api, unwrap, expectOk, type Schemas } from '$lib/api/client';
+	import { api, unwrap, expectOk, errorText, type Schemas } from '$lib/api/client';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
@@ -26,7 +27,7 @@
 		try {
 			hooks = await unwrap(api.GET('/admin/webhooks'));
 		} catch (e) {
-			error = (e as Error).message;
+			error = errorText(e);
 		}
 	}
 
@@ -58,7 +59,7 @@
 			editingId = null;
 			await load();
 		} catch (err) {
-			error = (err as Error).message;
+			error = errorText(err);
 		} finally {
 			busy = false;
 		}
@@ -68,19 +69,19 @@
 		error = message = null;
 		try {
 			await expectOk(api.POST('/admin/webhooks/{id}/test', { params: { path: { id: h.id } } }));
-			message = `Test event delivered to ${h.name}.`;
+			message = t('webhooks.tested', { name: h.name });
 		} catch (e) {
-			error = (e as Error).message;
+			error = errorText(e);
 		}
 	}
 
 	async function remove(h: Schemas['WebhookView']) {
-		if (!confirm(`Delete webhook ${h.name}?`)) return;
+		if (!confirm(t('webhooks.delete_confirm', { name: h.name }))) return;
 		try {
 			await expectOk(api.DELETE('/admin/webhooks/{id}', { params: { path: { id: h.id } } }));
 			await load();
 		} catch (e) {
-			error = (e as Error).message;
+			error = errorText(e);
 		}
 	}
 
@@ -90,22 +91,21 @@
 </script>
 
 <svelte:head>
-	<title>Webhooks · Tipsarr</title>
+	<title>{t('webhooks.title')} · Tipsarr</title>
 </svelte:head>
 
 <div class="grid grid-cols-[minmax(0,1fr)] gap-4">
-	<h1 class="font-bold text-3xl">Webhooks</h1>
+	<h1 class="font-bold text-3xl">{t('webhooks.title')}</h1>
 	<p class="text-sm text-muted-foreground">
-		Tipsarr POSTs a JSON event to each URL (works with ntfy, Discord-compatible bridges, Home Assistant…). With a secret, the body is signed:
-		<code>X-Tipsarr-Signature: sha256=HMAC(secret, body)</code>. Payloads include <code>dryRun</code>.
+		{t('webhooks.intro')}
 	</p>
 	{#if error}<p class="text-sm text-destructive">{error}</p>{/if}
 	{#if message}<p class="text-sm text-muted-foreground">{message}</p>{/if}
 
 	<Card>
 		<CardHeader>
-			<CardTitle>Outgoing webhooks</CardTitle>
-			<CardDescription>Events: {ALL_EVENTS.join(', ')}.</CardDescription>
+			<CardTitle>{t('webhooks.card_title')}</CardTitle>
+			<CardDescription>{t('webhooks.events_line', { events: ALL_EVENTS.join(', ') })}</CardDescription>
 		</CardHeader>
 		<CardContent class="grid gap-3">
 			{#each hooks as h (h.id)}
@@ -113,39 +113,39 @@
 					<div class="grid min-w-0 gap-0.5">
 						<span class="flex items-center gap-2 font-medium">
 							{h.name}
-							{#if !h.enabled}<Badge variant="outline">disabled</Badge>{/if}
-							{#if h.secretConfigured}<Badge variant="secondary">signed</Badge>{/if}
+							{#if !h.enabled}<Badge variant="outline">{t('webhooks.disabled')}</Badge>{/if}
+							{#if h.secretConfigured}<Badge variant="secondary">{t('webhooks.signed')}</Badge>{/if}
 						</span>
 						<span class="truncate font-mono text-xs text-muted-foreground">{h.url}</span>
-						<span class="text-xs text-muted-foreground">{h.events.length ? h.events.join(', ') : 'all events'}</span>
+						<span class="text-xs text-muted-foreground">{h.events.length ? h.events.join(', ') : t('webhooks.all_events')}</span>
 					</div>
 					<div class="flex shrink-0 gap-2">
-						<Button size="sm" variant="outline" onclick={() => test(h)}>Test</Button>
-						<Button size="sm" variant="outline" onclick={() => edit(h)}>Edit</Button>
-						<Button size="sm" variant="ghost" onclick={() => remove(h)}>Delete</Button>
+						<Button size="sm" variant="outline" onclick={() => test(h)}>{t('common.test')}</Button>
+						<Button size="sm" variant="outline" onclick={() => edit(h)}>{t('common.edit')}</Button>
+						<Button size="sm" variant="ghost" onclick={() => remove(h)}>{t('common.delete')}</Button>
 					</div>
 				</div>
 			{/each}
 
 			{#if editingId}
 				<form class="grid gap-3 rounded-lg border border-border p-3" onsubmit={save}>
-					<Input placeholder="Name" bind:value={name} required />
-					<Input placeholder="URL (https://ntfy.sh/my-topic)" type="url" bind:value={url} required />
-					<Input placeholder={editingId === 'new' ? 'Signing secret (optional)' : 'Signing secret (leave empty to keep)'} bind:value={secret} autocomplete="off" />
+					<Input placeholder={t('webhooks.name')} bind:value={name} required />
+					<Input placeholder={t('webhooks.url')} type="url" bind:value={url} required />
+					<Input placeholder={editingId === 'new' ? t('webhooks.secret_new') : t('webhooks.secret_keep')} bind:value={secret} autocomplete="off" />
 					<div class="grid gap-1.5 text-sm">
-						<span class="text-xs text-muted-foreground">Events (none ticked = all)</span>
+						<span class="text-xs text-muted-foreground">{t('webhooks.events_hint')}</span>
 						{#each ALL_EVENTS as ev (ev)}
 							<label class="flex items-center gap-2"><input type="checkbox" checked={events.includes(ev)} onchange={() => toggle(ev)} /> {ev}</label>
 						{/each}
 					</div>
-					<label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={enabled} /> Enabled</label>
+					<label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={enabled} /> {t('webhooks.enabled')}</label>
 					<div class="flex gap-2">
-						<Button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save'}</Button>
-						<Button type="button" variant="outline" onclick={() => (editingId = null)}>Cancel</Button>
+						<Button type="submit" disabled={busy}>{busy ? t('common.saving') : t('common.save')}</Button>
+						<Button type="button" variant="outline" onclick={() => (editingId = null)}>{t('common.cancel')}</Button>
 					</div>
 				</form>
 			{:else}
-				<div><Button size="sm" variant="outline" onclick={() => edit(null)}>Add webhook</Button></div>
+				<div><Button size="sm" variant="outline" onclick={() => edit(null)}>{t('webhooks.add')}</Button></div>
 			{/if}
 		</CardContent>
 	</Card>

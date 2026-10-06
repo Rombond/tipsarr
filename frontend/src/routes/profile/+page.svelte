@@ -1,13 +1,18 @@
 <script lang="ts">
-	import { api, unwrap, expectOk, type Schemas } from '$lib/api/client';
+	import { api, unwrap, expectOk, errorText, type Schemas } from '$lib/api/client';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { t, i18n, LOCALES, type Locale } from '$lib/i18n/index.svelte';
+	import { toast } from '$lib/toast.svelte';
 	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
+	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 
+	// the stored value is a TMDB language tag (fr-FR) or '' for "follow the browser"
+	// svelte-ignore state_referenced_locally
+	let language = $state(auth.user?.language ? LOCALES.find((l) => l.code === auth.user!.language.slice(0, 2))?.tag ?? '' : '');
+	// svelte-ignore state_referenced_locally
 	let region = $state(auth.user?.region ?? '');
-	let language = $state(auth.user?.language ?? '');
-	let message = $state<string | null>(null);
 	let error = $state<string | null>(null);
 	let saving = $state(false);
 	let hidden = $state<Schemas['Item'][]>([]);
@@ -18,15 +23,20 @@
 			.catch(() => {});
 	});
 
+	const languageOptions = $derived([{ value: '', label: t('lang.auto') }, ...LOCALES.map((l) => ({ value: l.tag, label: l.name }))]);
+
 	async function save(e: SubmitEvent) {
 		e.preventDefault();
 		saving = true;
-		error = message = null;
+		error = null;
 		try {
-			auth.user = await unwrap(api.PATCH('/me', { body: { region: region.trim().toUpperCase(), language: language.trim() } }));
-			message = 'Saved. New language applies to titles you open from now on.';
+			auth.user = await unwrap(api.PATCH('/me', { body: { region: region.trim().toUpperCase(), language } }));
+			// the interface follows immediately
+			if (language) i18n.set(LOCALES.find((l) => l.tag === language)!.code as Locale);
+			else i18n.useBrowser();
+			toast.success(t('profile.saved_titles'));
 		} catch (err) {
-			error = (err as Error).message;
+			error = errorText(err);
 		} finally {
 			saving = false;
 		}
@@ -37,46 +47,51 @@
 			await expectOk(api.DELETE('/blocklist/{type}/{id}', { params: { path: { type: item.type, id: item.tmdbId } } }));
 			hidden = hidden.filter((i) => !(i.type === item.type && i.tmdbId === item.tmdbId));
 		} catch (e) {
-			error = (e as Error).message;
+			error = errorText(e);
 		}
 	}
 </script>
 
 <svelte:head>
-	<title>Profile · Tipsarr</title>
+	<title>{t('profile.title')} · Tipsarr</title>
 </svelte:head>
 
-<div class="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2">
-	<h1 class="font-bold text-3xl lg:col-span-2">Profile</h1>
+<div class="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-2">
+	<h1 class="font-bold text-3xl lg:col-span-2">{t('profile.title')}</h1>
 	<Card>
 		<CardHeader>
 			<CardTitle>{auth.username}</CardTitle>
-			<CardDescription>Region and language shape TMDB titles and the default box-office region.</CardDescription>
+			<CardDescription>{t('profile.card_desc')}</CardDescription>
 		</CardHeader>
 		<CardContent>
-			<form class="grid gap-3" onsubmit={save}>
-				<Input placeholder="Region, e.g. FR (empty = none)" bind:value={region} maxlength={2} />
-				<Input placeholder="Language, e.g. fr-FR (empty = English)" bind:value={language} />
+			<form class="grid gap-4" onsubmit={save}>
+				<div class="grid gap-1.5 text-sm">
+					{t('profile.language')}
+					<SimpleSelect label={t('profile.language')} value={language} options={languageOptions} onchange={(v) => (language = v)} class="w-full" />
+				</div>
+				<label class="grid gap-1.5 text-sm">
+					{t('profile.region')}
+					<Input placeholder={t('profile.region_placeholder')} bind:value={region} maxlength={2} />
+				</label>
 				{#if error}<p class="text-sm text-destructive">{error}</p>{/if}
-				{#if message}<p class="text-sm text-muted-foreground">{message}</p>{/if}
-				<Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+				<Button type="submit" disabled={saving}>{saving ? t('common.saving') : t('common.save')}</Button>
 			</form>
 		</CardContent>
 	</Card>
 
 	<Card>
 		<CardHeader>
-			<CardTitle>Hidden from my suggestions</CardTitle>
-			<CardDescription>Titles you marked "not interested".</CardDescription>
+			<CardTitle>{t('profile.hidden_title')}</CardTitle>
+			<CardDescription>{t('profile.hidden_desc')}</CardDescription>
 		</CardHeader>
 		<CardContent class="grid gap-1.5 text-sm">
 			{#each hidden as item (`${item.type}:${item.tmdbId}`)}
 				<div class="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
 					<a href="/media/{item.type}/{item.tmdbId}" class="truncate hover:underline">{item.title}</a>
-					<Button size="sm" variant="ghost" onclick={() => unhide(item)}>Unhide</Button>
+					<Button size="sm" variant="ghost" onclick={() => unhide(item)}>{t('profile.unhide')}</Button>
 				</div>
 			{:else}
-				<p class="text-muted-foreground">Nothing hidden.</p>
+				<p class="text-muted-foreground">{t('profile.nothing_hidden')}</p>
 			{/each}
 		</CardContent>
 	</Card>

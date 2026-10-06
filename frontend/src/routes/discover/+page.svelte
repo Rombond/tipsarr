@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
 	import { api, unwrap, type MediaItem } from '$lib/api/client';
 	import DiscoverRow from '$lib/components/discover/discover-row.svelte';
 	import SuggestionRows from '$lib/components/discover/suggestion-rows.svelte';
@@ -12,11 +13,11 @@
 </script>
 
 <svelte:head>
-	<title>Discover · Tipsarr</title>
+	<title>{t('discover.title')} · Tipsarr</title>
 </svelte:head>
 
 <div class="grid gap-8">
-	<h1 class="sr-only">Discover</h1>
+	<h1 class="sr-only">{t('discover.title')}</h1>
 	<SetupChecklist />
 	<Hero />
 
@@ -24,22 +25,22 @@
 	<BoxofficeRow />
 
 	<DiscoverRow
-		title="Trending"
+		title={t('discover.trending')}
 		onSelect={select}
 		load={(page) => unwrap(api.GET('/discover/trending', { params: { query: { page } } }))}
 	/>
 	<DiscoverRow
-		title="Popular movies"
+		title={t('discover.popular_movies')}
 		onSelect={select}
 		load={(page) => unwrap(api.GET('/discover/movies', { params: { query: { page } } }))}
 	/>
 	<DiscoverRow
-		title="Popular TV"
+		title={t('discover.popular_tv')}
 		onSelect={select}
 		load={(page) => unwrap(api.GET('/discover/tv', { params: { query: { page } } }))}
 	/>
 	<DiscoverRow
-		title="Upcoming movies"
+		title={t('discover.upcoming')}
 		onSelect={select}
 		load={(page) => unwrap(api.GET('/discover/upcoming', { params: { query: { page } } }))}
 	/>

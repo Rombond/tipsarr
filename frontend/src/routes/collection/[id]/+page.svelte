@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
 	import { page } from '$app/state';
-	import { api, unwrap, imageUrl, type Schemas } from '$lib/api/client';
+	import { api, unwrap, imageUrl, errorText, type Schemas } from '$lib/api/client';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import MediaCard from '$lib/components/media/media-card.svelte';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
@@ -29,7 +30,7 @@
 </script>
 
 <svelte:head>
-	<title>{collection?.name ?? 'Collection'} · Tipsarr</title>
+	<title>{collection?.name ?? t('collection.fallback')} · Tipsarr</title>
 </svelte:head>
 
 {#if loading}
@@ -39,8 +40,8 @@
 	</div>
 {:else if error}
 	<div class="text-sm text-destructive">
-		Error: {error.message}
-		<button class="ml-2 underline" onclick={load}>Retry</button>
+		{t('common.error_prefix', { message: errorText(error) })}
+		<button class="ml-2 underline" onclick={load}>{t('common.retry')}</button>
 	</div>
 {:else if collection}
 	<div class="-mx-4 -mt-20 md:-mx-8">
@@ -57,7 +58,7 @@
 				onclick={() => history.back()}
 			>
 				<ArrowLeftIcon class="size-4" />
-				Back
+				{t('common.back')}
 			</button>
 			<div class="absolute right-0 bottom-0 left-0 p-4 md:px-8">
 				<h1 class="font-bold text-3xl text-foreground drop-shadow md:text-4xl">{collection.name}</h1>
@@ -70,7 +71,7 @@
 			{/if}
 
 			<section class="grid gap-2">
-				<h2 class="font-semibold text-lg">Movies in this collection</h2>
+				<h2 class="font-semibold text-lg">{t('collection.movies')}</h2>
 				<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 					{#each collection.parts as item (item.tmdbId)}
 						<MediaCard {item} fluid />

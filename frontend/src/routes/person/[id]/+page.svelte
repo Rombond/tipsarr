@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
+	import { deptLabel, fmtLongDate } from '$lib/i18n/format';
 	import { page } from '$app/state';
-	import { api, unwrap, imageUrl, type Schemas } from '$lib/api/client';
+	import { api, unwrap, imageUrl, errorText, type Schemas } from '$lib/api/client';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import MediaCard from '$lib/components/media/media-card.svelte';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
@@ -19,7 +21,7 @@
 		try {
 			person = await unwrap(api.GET('/person/{id}', { params: { path: { id: personId } } }));
 		} catch (e) {
-			error = (e as Error).message;
+			error = errorText(e);
 		} finally {
 			loading = false;
 		}
@@ -30,7 +32,7 @@
 	});
 
 	const longBio = $derived((person?.biography?.length ?? 0) > 650);
-	const day = (d?: string) => (d ? new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : '');
+	const day = (d?: string) => fmtLongDate(d);
 	function age(birth?: string, death?: string) {
 		if (!birth) return null;
 		const end = death ? new Date(death) : new Date();
@@ -42,7 +44,7 @@
 </script>
 
 <svelte:head>
-	<title>{person?.name ?? 'Person'} · Tipsarr</title>
+	<title>{person?.name ?? t('person.fallback')} · Tipsarr</title>
 </svelte:head>
 
 {#if loading}
@@ -57,8 +59,8 @@
 	</div>
 {:else if error}
 	<div class="text-sm text-destructive">
-		Error: {error}
-		<button class="ml-2 underline" onclick={load}>Retry</button>
+		{t('common.error_prefix', { message: error })}
+		<button class="ml-2 underline" onclick={load}>{t('common.retry')}</button>
 	</div>
 {:else if person}
 	<div class="grid grid-cols-[minmax(0,1fr)] gap-8">
@@ -68,7 +70,7 @@
 			onclick={() => history.back()}
 		>
 			<ArrowLeftIcon class="size-4" />
-			Back
+			{t('common.back')}
 		</button>
 
 		<h1 class="font-bold text-3xl md:hidden">{person.name}</h1>
@@ -83,19 +85,19 @@
 				</div>
 				<dl class="grid max-w-64 gap-3 rounded-xl border border-border p-4 text-sm">
 					{#if person.department}
-						<div><dt class="text-xs text-muted-foreground">Known for</dt><dd>{person.department}</dd></div>
+						<div><dt class="text-xs text-muted-foreground">{t('person.known_for')}</dt><dd>{deptLabel(person.department)}</dd></div>
 					{/if}
 					{#if person.birthday}
 						<div>
-							<dt class="text-xs text-muted-foreground">{person.deathday ? 'Born' : 'Born (age)'}</dt>
+							<dt class="text-xs text-muted-foreground">{person.deathday ? t('person.born') : t('person.born_age')}</dt>
 							<dd>{day(person.birthday)}{#if !person.deathday}&nbsp;({age(person.birthday)}){/if}</dd>
 						</div>
 					{/if}
 					{#if person.deathday}
-						<div><dt class="text-xs text-muted-foreground">Died (age)</dt><dd>{day(person.deathday)}&nbsp;({age(person.birthday, person.deathday)})</dd></div>
+						<div><dt class="text-xs text-muted-foreground">{t('person.died_age')}</dt><dd>{day(person.deathday)}&nbsp;({age(person.birthday, person.deathday)})</dd></div>
 					{/if}
 					{#if person.birthplace}
-						<div><dt class="text-xs text-muted-foreground">Place of birth</dt><dd>{person.birthplace}</dd></div>
+						<div><dt class="text-xs text-muted-foreground">{t('person.birthplace')}</dt><dd>{person.birthplace}</dd></div>
 					{/if}
 				</dl>
 			</aside>
@@ -104,23 +106,23 @@
 				<h1 class="hidden font-bold text-4xl md:block">{person.name}</h1>
 				{#if person.biography}
 					<div>
-						<h2 class="mb-1 font-semibold">Biography</h2>
+						<h2 class="mb-1 font-semibold">{t('person.biography')}</h2>
 						<p class="whitespace-pre-line text-[15px] leading-7 text-foreground/90 {longBio && !expanded ? 'line-clamp-[9]' : ''}">{person.biography}</p>
 						{#if longBio}
 							<button type="button" class="mt-2 cursor-pointer text-sm font-medium underline-offset-4 hover:underline" onclick={() => (expanded = !expanded)}>
-								{expanded ? 'Show less' : 'Read more'}
+								{expanded ? t('person.show_less') : t('person.read_more')}
 							</button>
 						{/if}
 					</div>
 				{:else}
-					<p class="text-sm text-muted-foreground">No biography available.</p>
+					<p class="text-sm text-muted-foreground">{t('person.no_bio')}</p>
 				{/if}
 			</div>
 		</div>
 
 		{#if person.credits.length}
 			<section class="grid gap-3">
-				<h2 class="font-semibold text-lg">Known for <span class="text-sm font-normal text-muted-foreground">({person.credits.length})</span></h2>
+				<h2 class="font-semibold text-lg">{t('person.known_for')} <span class="text-sm font-normal text-muted-foreground">({person.credits.length})</span></h2>
 				<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 					{#each person.credits as item (`${item.type}:${item.tmdbId}`)}
 						<MediaCard {item} fluid />

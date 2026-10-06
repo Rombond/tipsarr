@@ -1,7 +1,10 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
+	import { hasKey } from '$lib/i18n/index.svelte';
+	import { fmtLongDate, fmtMoney, languageName } from '$lib/i18n/format';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { api, unwrap, imageUrl, type MediaDetail } from '$lib/api/client';
+	import { api, unwrap, imageUrl, errorText, type MediaDetail } from '$lib/api/client';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Carousel from '$lib/components/media/carousel.svelte';
@@ -24,7 +27,7 @@
 		try {
 			details = await unwrap(api.GET('/media/{type}/{id}', { params: { path: { type: mediaType, id: tmdbId } } }));
 		} catch (e) {
-			error = (e as Error).message;
+			error = errorText(e);
 		} finally {
 			loading = false;
 		}
@@ -37,38 +40,39 @@
 	const runtimeLabel = $derived(
 		details?.runtimeMinutes
 			? mediaType === 'tv'
-				? `${details.runtimeMinutes} min / episode`
-				: `${Math.floor(details.runtimeMinutes / 60)}h ${details.runtimeMinutes % 60}m`
+				? t('detail.per_episode', { minutes: details.runtimeMinutes })
+				: t('time.hours', { h: Math.floor(details.runtimeMinutes / 60), m: details.runtimeMinutes % 60 })
 			: null,
 	);
 	const year = $derived((details?.releaseDate || '').slice(0, 4));
 	const language = $derived(
 		details?.originalLanguage
-			? (new Intl.DisplayNames(['en'], { type: 'language' }).of(details.originalLanguage) ?? details.originalLanguage)
+			? languageName(details.originalLanguage)
 			: null,
 	);
 	const seasons = $derived((details?.seasons ?? []).filter((s) => s.number > 0));
-	const money = (n?: number) => (n ? `$${n.toLocaleString()}` : null);
-	const fullDate = (d?: string) => (d ? new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : null);
+	const money = (n?: number) => (n ? fmtMoney(n) : null);
+	const fullDate = (d?: string) => fmtLongDate(d) || null;
+	const statusLabel = (s?: string) => (s && hasKey(`status.${s}`) ? t(`status.${s}` as 'status.Released') : (s ?? null));
 
 	// label/value rows of the info panel; empty values are skipped
 	const facts = $derived(
 		details
 			? ([
-					['Release date', fullDate(details.releaseDate)],
-					['Runtime', runtimeLabel],
-					['Status', details.status],
-					['Original language', language],
-					mediaType === 'tv' ? ['Seasons', details.numberOfSeasons ? `${details.numberOfSeasons}` : null] : ['Budget', money(details.budget)],
-					mediaType === 'tv' ? ['Episodes', details.numberOfEpisodes ? `${details.numberOfEpisodes}` : null] : ['Revenue', money(details.revenue)],
-					[mediaType === 'tv' ? 'Network' : 'Studio', details.studios?.slice(0, 3).join(', ') || null],
+					[t('fact.release_date'), fullDate(details.releaseDate)],
+					[t('fact.runtime'), runtimeLabel],
+					[t('fact.status'), statusLabel(details.status)],
+					[t('fact.language'), language],
+					mediaType === 'tv' ? [t('fact.seasons'), details.numberOfSeasons ? `${details.numberOfSeasons}` : null] : [t('fact.budget'), money(details.budget)],
+					mediaType === 'tv' ? [t('fact.episodes'), details.numberOfEpisodes ? `${details.numberOfEpisodes}` : null] : [t('fact.revenue'), money(details.revenue)],
+					[mediaType === 'tv' ? t('fact.network') : t('fact.studio'), details.studios?.slice(0, 3).join(', ') || null],
 				] as [string, string | null][]).filter(([, v]) => v)
 			: [],
 	);
 </script>
 
 <svelte:head>
-	<title>{details?.title ?? 'Details'} · Tipsarr</title>
+	<title>{details?.title ?? t('detail.title_fallback')} · Tipsarr</title>
 </svelte:head>
 
 {#if loading}
@@ -81,8 +85,8 @@
 	</div>
 {:else if error}
 	<div class="text-sm text-destructive">
-		Error: {error}
-		<button class="ml-2 underline" onclick={load}>Retry</button>
+		{t('common.error_prefix', { message: error })}
+		<button class="ml-2 underline" onclick={load}>{t('common.retry')}</button>
 	</div>
 {:else if details}
 	<!-- the backdrop runs under the floating search bar (-mt-20 cancels the page's top padding) -->
@@ -102,7 +106,7 @@
 				onclick={() => history.back()}
 			>
 				<ArrowLeftIcon class="size-4" />
-				Back
+				{t('common.back')}
 			</button>
 
 			<div class="absolute inset-x-0 bottom-0 flex items-end gap-4 px-4 md:gap-6 md:px-8">
@@ -118,8 +122,8 @@
 						{details.title}{#if year}<span class="ml-2 font-normal text-muted-foreground">({year})</span>{/if}
 					</h1>
 					<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-						<Badge variant="secondary">{mediaType === 'tv' ? 'TV' : 'Movie'}</Badge>
-						{#if details.availability !== 'none'}<Badge>{details.availability === 'available' ? 'Available' : 'Partially available'}</Badge>{/if}
+						<Badge variant="secondary">{mediaType === 'tv' ? t('type.tv_short') : t('type.movie')}</Badge>
+						{#if details.availability !== 'none'}<Badge>{details.availability === 'available' ? t('media.available') : t('media.partially_available')}</Badge>{/if}
 						{#if runtimeLabel}<span>{runtimeLabel}</span>{/if}
 						{#if details.voteAverage}<span class="inline-flex items-center gap-1"><StarIcon class="size-4 fill-amber-400 text-amber-400" />{details.voteAverage.toFixed(1)}</span>{/if}
 						{#if details.genres.length}<span>{details.genres.map((g) => g.name).join(' · ')}</span>{/if}
@@ -134,14 +138,14 @@
 				{#if details.tagline}<p class="text-muted-foreground italic">{details.tagline}</p>{/if}
 				{#if details.overview}
 					<div>
-						<h2 class="mb-1 font-semibold text-lg">Overview</h2>
+						<h2 class="mb-1 font-semibold text-lg">{t('detail.overview')}</h2>
 						<p class="leading-7 text-foreground/90">{details.overview}</p>
 					</div>
 				{/if}
 				<DetailActions {details} type={mediaType} {tmdbId} />
 				{#if mediaType === 'tv' && seasons.length}
 					<section class="grid gap-2">
-						<h2 class="font-semibold text-lg">Seasons</h2>
+						<h2 class="font-semibold text-lg">{t('seasons.title')}</h2>
 						<SeasonList {tmdbId} {seasons} />
 					</section>
 				{/if}
@@ -159,7 +163,7 @@
 							<img src={imageUrl(details.collectionBackdropPath, 'w780')} alt="" class="h-full w-full object-cover transition-transform group-hover:scale-105" />
 						{/if}
 						<div class="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/85 to-black/10 p-3">
-							<span class="text-[10px] tracking-wide text-white/70 uppercase">Part of the collection</span>
+							<span class="text-[10px] tracking-wide text-white/70 uppercase">{t('detail.collection_part')}</span>
 							<span class="truncate font-semibold text-sm text-white">{details.collectionName}</span>
 						</div>
 					</button>
@@ -174,7 +178,7 @@
 					{/each}
 					{#if details.directors.length}
 						<div class="flex items-start justify-between gap-4 px-4 py-2.5">
-							<dt class="shrink-0 text-muted-foreground">Director</dt>
+							<dt class="shrink-0 text-muted-foreground">{t('fact.director')}</dt>
 							<dd class="text-right font-medium">
 								{#each details.directors as d, i (d.id)}<a class="hover:underline" href="/person/{d.id}">{d.name}</a>{i < details.directors.length - 1 ? ', ' : ''}{/each}
 							</dd>
@@ -186,7 +190,7 @@
 
 		<div class="grid gap-8 px-4 pb-10 md:px-8">
 			{#if details.cast.length}
-				<Scroller title="Cast">
+				<Scroller title={t('detail.cast')}>
 					{#each details.cast as member (member.id)}
 						<a href="/person/{member.id}" class="w-28 shrink-0 snap-start text-center sm:w-32">
 							<div class="aspect-square w-full overflow-hidden rounded-full bg-muted ring-1 ring-border/60">
@@ -202,7 +206,7 @@
 			{/if}
 
 			{#if details.recommendations.length}
-				<Carousel title="More like this" items={details.recommendations} />
+				<Carousel title={t('detail.more_like')} items={details.recommendations} />
 			{/if}
 		</div>
 	</div>

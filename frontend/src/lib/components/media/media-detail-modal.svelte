@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
 	import { goto } from '$app/navigation';
-	import { api, unwrap, imageUrl, type MediaItem } from '$lib/api/client';
+	import { api, unwrap, imageUrl, errorText, type MediaItem } from '$lib/api/client';
 	import { toast } from '$lib/toast.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Badge } from '$lib/components/ui/badge';
@@ -41,9 +42,9 @@
 		try {
 			const r = await unwrap(api.POST('/requests', { body: { type: item.type, tmdbId: item.tmdbId } }));
 			requested = r.status;
-			toast.success(r.status === 'approved' ? `"${item.title}" approved${r.dryRun ? ' (dry-run: nothing sent)' : ''}` : `Requested "${item.title}"`);
+			toast.success(r.status === 'approved' ? t(r.dryRun ? 'media.toast_approved_dry' : 'media.toast_approved', { title: item.title }) : t('media.toast_requested', { title: item.title }));
 		} catch (e) {
-			toast.error((e as Error).message);
+			toast.error(errorText(e));
 		} finally {
 			busy = false;
 		}
@@ -62,19 +63,19 @@
 			<div class="grid gap-3 p-5 {backdrop ? '-mt-10 relative' : ''}">
 				<Dialog.Header>
 					<div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-						<Badge variant="secondary">{item.type === 'tv' ? 'TV' : 'Movie'}</Badge>
+						<Badge variant="secondary">{item.type === 'tv' ? t('type.tv_short') : t('type.movie')}</Badge>
 						{#if item.releaseDate}<span>{item.releaseDate.slice(0, 4)}</span>{/if}
 						{#if item.voteAverage}<span class="inline-flex items-center gap-0.5"><StarIcon class="size-3 fill-amber-400 text-amber-400" />{item.voteAverage.toFixed(1)}</span>{/if}
-						{#if item.availability !== 'none'}<Badge>{item.availability === 'available' ? 'Available' : 'Partial'}</Badge>{/if}
+						{#if item.availability !== 'none'}<Badge>{item.availability === 'available' ? t('media.available') : t('card.partial')}</Badge>{/if}
 					</div>
 					<Dialog.Title class="text-xl">{item.title}</Dialog.Title>
 				</Dialog.Header>
 				{#if item.overview}<p class="line-clamp-6 text-sm text-muted-foreground">{item.overview}</p>{/if}
 				<Dialog.Footer class="gap-2">
-					<Button variant="outline" onclick={handleViewDetails}>More details</Button>
+					<Button variant="outline" onclick={handleViewDetails}>{t('modal.more_details')}</Button>
 					{#if item.availability !== 'available'}
 						<Button disabled={busy || status !== null} onclick={request}>
-							{status === 'pending' ? 'Requested' : status === 'approved' ? 'Approved' : item.type === 'tv' ? 'Choose seasons' : busy ? 'Requesting…' : 'Request'}
+							{status === 'pending' ? t('media.requested') : status === 'approved' ? t('media.approved') : item.type === 'tv' ? t('hero.choose_seasons') : busy ? t('media.requesting') : t('media.request')}
 						</Button>
 					{/if}
 				</Dialog.Footer>

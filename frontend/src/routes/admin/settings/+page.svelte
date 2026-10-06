@@ -1,7 +1,10 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
+	import { hasKey } from '$lib/i18n/index.svelte';
+	import { fmtDateTime } from '$lib/i18n/format';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { api, unwrap, type Schemas } from '$lib/api/client';
+	import { api, unwrap, errorText, type Schemas } from '$lib/api/client';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
@@ -25,7 +28,7 @@
 		try {
 			sync = await unwrap(api.GET('/admin/sync'));
 		} catch (e) {
-			error = (e as Error).message;
+			error = errorText(e);
 		}
 	}
 
@@ -40,7 +43,7 @@
 				regions = s.boxofficeRegions;
 				publicUrl = s.jellyfinPublicUrl;
 			})
-			.catch((e) => (error = (e as Error).message));
+			.catch((e) => (error = errorText(e)));
 		refreshSync();
 		const timer = setInterval(() => {
 			if (anyRunning) refreshSync();
@@ -62,10 +65,10 @@
 				}),
 			);
 			tmdbKey = jellyfinKey = '';
-			message = 'Saved.';
+			message = t('profile.saved');
 			await refreshSync();
 		} catch (err) {
-			error = (err as Error).message;
+			error = errorText(err);
 		} finally {
 			saving = false;
 		}
@@ -77,9 +80,9 @@
 		try {
 			settings = await unwrap(api.PUT('/admin/settings', { body: { boxofficeRegions: regions } }));
 			regions = settings.boxofficeRegions;
-			message = 'Box office regions saved. Run boxoffice-refresh below to fetch them.';
+			message = t('settings.regions_saved');
 		} catch (err) {
-			error = (err as Error).message;
+			error = errorText(err);
 		}
 	}
 
@@ -89,9 +92,9 @@
 		try {
 			settings = await unwrap(api.PUT('/admin/settings', { body: { jellyfinPublicUrl: publicUrl.trim() } }));
 			publicUrl = settings.jellyfinPublicUrl;
-			toast.success('Saved');
+			toast.success(t('common.saved'));
 		} catch (err) {
-			error = (err as Error).message;
+			error = errorText(err);
 			toast.error(error);
 		}
 	}
@@ -104,56 +107,58 @@
 			await unwrap(api.POST('/admin/sync/{job}', { params: { path: { job } } }));
 			await refreshSync();
 		} catch (err) {
-			error = (err as Error).message;
+			error = errorText(err);
 		}
 	}
 
-	const when = (unix: number) => (unix ? new Date(unix * 1000).toLocaleString() : 'never');
+	const when = (unix: number) => (unix ? fmtDateTime(unix) : t('common.never'));
+	const statusLabel = (s: string) => (hasKey(`job.${s}`) ? t(`job.${s}` as 'job.ok') : s);
 	const webhookUrl = $derived(settings ? `${location.origin}${settings.webhookPath}` : '');
 </script>
 
 <svelte:head>
-	<title>Settings · Tipsarr</title>
+	<title>{t('settings.title')} · Tipsarr</title>
 </svelte:head>
 
 <div class="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-2">
-	<h1 class="font-bold text-3xl lg:col-span-2">Settings</h1>
+	<h1 class="font-bold text-3xl lg:col-span-2">{t('settings.title')}</h1>
 
 	{#if error}<p class="text-sm text-destructive lg:col-span-2">{error}</p>{/if}
 
 	{#if settings}
 		<Card>
 			<CardHeader>
-				<CardTitle>Status</CardTitle>
+				<CardTitle>{t('settings.status')}</CardTitle>
 			</CardHeader>
 			<CardContent class="grid gap-1.5 text-sm">
 				<div class="flex justify-between border-b border-border py-1.5">
-					<span class="text-muted-foreground">Jellyfin</span>
+					<span class="text-muted-foreground">{t('settings.jellyfin')}</span>
 					<span class="font-mono">{settings.jellyfinUrl}</span>
 				</div>
 				<div class="flex items-center justify-between py-1.5">
-					<span class="text-muted-foreground">Dry-run</span>
-					<Badge variant={settings.dryRun ? 'default' : 'destructive'}>{settings.dryRun ? 'ON (safe)' : 'OFF'}</Badge>
+					<span class="text-muted-foreground">{t('settings.dry_run')}</span>
+					<Badge variant={settings.dryRun ? 'default' : 'destructive'}>{settings.dryRun ? t('settings.dry_run_on') : t('settings.dry_run_off')}</Badge>
 				</div>
 			</CardContent>
 		</Card>
 
 		<Card>
 			<CardHeader>
-				<CardTitle>API keys</CardTitle>
+				<CardTitle>{t('settings.keys_title')}</CardTitle>
 				<CardDescription>
-					TMDB: {settings.tmdbConfigured ? 'saved' : 'missing (discover and search need it)'}. Jellyfin API key:
-					{settings.jellyfinApiKeyConfigured ? 'saved' : 'missing (library sync needs it; create one in Jellyfin: Dashboard → API Keys)'}.
-					Entering a value replaces the saved one; keys are never shown again.
+					{t('settings.keys_desc', {
+						tmdb: settings.tmdbConfigured ? t('settings.tmdb_saved') : t('settings.tmdb_missing'),
+						jellyfin: settings.jellyfinApiKeyConfigured ? t('settings.jf_saved') : t('settings.jf_missing'),
+					})}
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<form class="grid gap-3" onsubmit={save}>
-					<Input placeholder="TMDB API key or read-access token" bind:value={tmdbKey} autocomplete="off" />
-					<Input placeholder="Jellyfin API key" bind:value={jellyfinKey} autocomplete="off" />
+					<Input placeholder={t('settings.tmdb_placeholder')} bind:value={tmdbKey} autocomplete="off" />
+					<Input placeholder={t('settings.jf_placeholder')} bind:value={jellyfinKey} autocomplete="off" />
 					{#if message}<p class="text-sm text-muted-foreground">{message}</p>{/if}
 					<Button type="submit" disabled={saving || (!tmdbKey.trim() && !jellyfinKey.trim())}>
-						{saving ? 'Saving…' : 'Save'}
+						{saving ? t('common.saving') : t('common.save')}
 					</Button>
 				</form>
 			</CardContent>
@@ -163,32 +168,30 @@
 	{#if settings}
 		<Card>
 			<CardHeader>
-				<CardTitle>Jellyfin links</CardTitle>
+				<CardTitle>{t('settings.links_title')}</CardTitle>
 				<CardDescription>
-					Address your browser (or your family's phones) can reach Jellyfin at, used by the “Play on Jellyfin” buttons. Leave empty to use
-					<span class="font-mono">{settings.jellyfinUrl}</span>.
+					{t('settings.links_desc', { url: settings.jellyfinUrl })}
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<form class="flex gap-2" onsubmit={savePublicUrl}>
 					<Input bind:value={publicUrl} placeholder="https://jellyfin.example.org" type="url" autocomplete="off" />
-					<Button type="submit" variant="outline">Save</Button>
+					<Button type="submit" variant="outline">{t('common.save')}</Button>
 				</form>
 			</CardContent>
 		</Card>
 
 		<Card>
 			<CardHeader>
-				<CardTitle>Box office regions</CardTitle>
+				<CardTitle>{t('settings.regions_title')}</CardTitle>
 				<CardDescription>
-					Comma-separated codes, e.g. <code>US,GB,FR</code> (US = United States &amp; Canada). Charts come from Box Office Mojo's public
-					pages and are fetched every 12 hours.
+					{t('settings.regions_desc')}
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<form class="flex gap-2" onsubmit={saveRegions}>
 					<Input bind:value={regions} placeholder="US" autocomplete="off" />
-					<Button type="submit" variant="outline">Save</Button>
+					<Button type="submit" variant="outline">{t('common.save')}</Button>
 				</form>
 			</CardContent>
 		</Card>
@@ -197,10 +200,10 @@
 	{#if sync}
 		<Card>
 			<CardHeader>
-				<CardTitle>Background jobs</CardTitle>
+				<CardTitle>{t('settings.jobs_title')}</CardTitle>
 				<CardDescription>
-					Jellyfin sync is read-only. {sync.movies} movies and {sync.shows} shows known in the library.
-					{#if !sync.canSync}Save a Jellyfin API key above to enable syncing.{/if}
+					{t('settings.jobs_desc', { movies: sync.movies, shows: sync.shows })}
+					{#if !sync.canSync}{t('settings.jobs_need_key')}{/if}
 				</CardDescription>
 			</CardHeader>
 			<CardContent class="grid gap-3 text-sm">
@@ -209,10 +212,10 @@
 						<div class="grid gap-0.5">
 							<span class="font-medium">{job.name}</span>
 							<span class="text-xs text-muted-foreground">
-								{job.running ? 'running…' : `${job.status} · ${when(job.lastFinishedAt)}`}
+								{job.running ? t('settings.job_running') : `${statusLabel(job.status)} · ${when(job.lastFinishedAt)}`}
 								{#if job.message}· {job.message}{/if}
 							</span>
-							<span class="text-xs text-muted-foreground">runs every {Math.round(job.everySeconds / 3600)} h</span>
+							<span class="text-xs text-muted-foreground">{t('settings.job_every', { hours: Math.round(job.everySeconds / 3600) })}</span>
 						</div>
 						<Button
 							variant="outline"
@@ -220,22 +223,20 @@
 							disabled={(job.name !== 'boxoffice-refresh' && !sync.canSync) || job.running}
 							onclick={() => runJob(job.name as JobName)}
 						>
-							Sync now
+							{t('settings.job_run')}
 						</Button>
 					</div>
 				{/each}
-				{#if anyRunning}<p class="text-xs text-muted-foreground">Refreshing…</p>{/if}
+				{#if anyRunning}<p class="text-xs text-muted-foreground">{t('settings.refreshing')}</p>{/if}
 			</CardContent>
 		</Card>
 
 		{#if settings}
 			<Card>
 				<CardHeader>
-					<CardTitle>Jellyfin webhook (optional)</CardTitle>
+					<CardTitle>{t('settings.hook_title')}</CardTitle>
 					<CardDescription>
-						Makes watch history and "available" badges update within seconds instead of waiting for the hourly sync.
-						Install Jellyfin's Webhook plugin, add a Generic destination with this URL (event types: Item Added, Playback Stop,
-						User Data Saved) and this template:
+						{t('settings.hook_desc')}
 					</CardDescription>
 				</CardHeader>
 				<CardContent class="grid gap-2 text-xs">
@@ -243,7 +244,7 @@
 					<code class="break-all rounded bg-muted p-2">
 						{'{"NotificationType":"{{NotificationType}}","UserId":"{{UserId}}","ItemType":"{{ItemType}}"}'}
 					</code>
-					<p class="text-muted-foreground">The URL contains a secret token: keep it private. Jellyfin must be able to reach Tipsarr at that address.</p>
+					<p class="text-muted-foreground">{t('settings.hook_secret')}</p>
 				</CardContent>
 			</Card>
 		{/if}

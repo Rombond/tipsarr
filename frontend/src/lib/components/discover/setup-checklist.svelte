@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n/index.svelte';
 	import { api, unwrap, type Schemas } from '$lib/api/client';
 	import { auth } from '$lib/stores/auth.svelte';
 	import CheckIcon from '@lucide/svelte/icons/circle-check';
@@ -33,11 +34,11 @@
 	const steps = $derived(
 		settings && sync
 			? [
-					{ done: settings.tmdbConfigured, label: 'Add your TMDB key', hint: 'Needed for everything you browse', href: '/admin/settings' },
-					{ done: settings.jellyfinApiKeyConfigured, label: 'Add a Jellyfin API key', hint: 'Lets Tipsarr see your library and watch history', href: '/admin/settings' },
-					{ done: sync.movies + sync.shows > 0, label: 'Sync your library', hint: 'Shows what you already have on every poster', href: '/admin/settings' },
-					{ done: instances.some((i) => i.kind === 'radarr'), label: 'Connect Radarr', hint: 'Where approved movies go', href: '/admin/services' },
-					{ done: instances.some((i) => i.kind === 'sonarr'), label: 'Connect Sonarr', hint: 'Where approved shows go', href: '/admin/services' },
+					{ done: settings.tmdbConfigured, label: t('checklist.tmdb'), hint: t('checklist.tmdb_hint'), href: '/admin/settings' },
+					{ done: settings.jellyfinApiKeyConfigured, label: t('checklist.jellyfin_key'), hint: t('checklist.jellyfin_key_hint'), href: '/admin/settings' },
+					{ done: sync.movies + sync.shows > 0, label: t('checklist.sync'), hint: t('checklist.sync_hint'), href: '/admin/settings' },
+					{ done: instances.some((i) => i.kind === 'radarr'), label: t('checklist.radarr'), hint: t('checklist.radarr_hint'), href: '/admin/services' },
+					{ done: instances.some((i) => i.kind === 'sonarr'), label: t('checklist.sonarr'), hint: t('checklist.sonarr_hint'), href: '/admin/services' },
 				]
 			: [],
 	);
@@ -57,10 +58,10 @@
 	<section class="rounded-xl border border-border bg-card p-4">
 		<div class="mb-2 flex items-start justify-between gap-2">
 			<div>
-				<h2 class="font-semibold">Finish setting up Tipsarr</h2>
-				<p class="text-xs text-muted-foreground">{remaining} step{remaining === 1 ? '' : 's'} left. {auth.dryRun ? 'Dry-run is on, so nothing can be sent to Radarr or Sonarr yet.' : ''}</p>
+				<h2 class="font-semibold">{t('checklist.title')}</h2>
+				<p class="text-xs text-muted-foreground">{t('checklist.steps_left', { count: remaining })} {auth.dryRun ? t('checklist.dry_run') : ''}</p>
 			</div>
-			<button type="button" class="cursor-pointer text-muted-foreground hover:text-foreground" aria-label="Hide this checklist" onclick={dismiss}>
+			<button type="button" class="cursor-pointer text-muted-foreground hover:text-foreground" aria-label={t('checklist.hide')} onclick={dismiss}>
 				<XIcon class="size-4" />
 			</button>
 		</div>

@@ -54,9 +54,13 @@ func registerUsers(api huma.API, d Deps) {
 		if err := in.Body.check(); err != nil {
 			return nil, err
 		}
+		before := u.Language
 		in.Body.apply(u)
 		if err := d.Store.UpdatePrefs(ctx, u); err != nil {
 			return nil, err
+		}
+		if u.Language != before && d.Suggestions != nil {
+			d.Suggestions.QueueRefresh(u.ID) // stored suggestion rows hold titles in the old language
 		}
 		return &meOutput{Body: u}, nil
 	})

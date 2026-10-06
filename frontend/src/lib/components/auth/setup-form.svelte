@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { api, unwrap } from '$lib/api/client';
+	import { t } from '$lib/i18n/index.svelte';
+	import { api, unwrap, errorText } from '$lib/api/client';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
@@ -23,7 +24,7 @@
 			);
 			auth.markConfigured();
 		} catch (err) {
-			error = (err as Error).message;
+			error = errorText(err);
 		} finally {
 			submitting = false;
 		}
@@ -32,23 +33,23 @@
 
 <Card class="w-full max-w-sm">
 	<CardHeader>
-		<CardTitle>Set up Tipsarr</CardTitle>
+		<CardTitle>{t('setup.title')}</CardTitle>
 		<CardDescription>
-			Point Tipsarr at your Jellyfin server. The first Jellyfin administrator to sign in becomes the Tipsarr admin.
+			{t('setup.desc')}
 		</CardDescription>
 	</CardHeader>
 	<CardContent>
 		<form class="grid gap-3" onsubmit={handleSubmit}>
 			{#if auth.setupTokenRequired}
-				<Input placeholder="Setup token (printed in the Tipsarr server log)" bind:value={setupToken} autocomplete="off" required />
+				<Input placeholder={t('setup.token')} bind:value={setupToken} autocomplete="off" required />
 			{/if}
-			<Input placeholder="Jellyfin URL (http://host:8096)" type="url" bind:value={jellyfinUrl} required />
-			<Input placeholder="TMDB API key or read token (optional now)" bind:value={tmdbApiKey} autocomplete="off" />
+			<Input placeholder={t('setup.jellyfin_url')} type="url" bind:value={jellyfinUrl} required />
+			<Input placeholder={t('setup.tmdb')} bind:value={tmdbApiKey} autocomplete="off" />
 			{#if error}
 				<p class="text-sm text-destructive">{error}</p>
 			{/if}
 			<Button type="submit" disabled={submitting}>
-				{submitting ? 'Checking Jellyfin…' : 'Save'}
+				{submitting ? t('setup.checking') : t('setup.submit')}
 			</Button>
 		</form>
 	</CardContent>
