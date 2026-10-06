@@ -26,6 +26,9 @@
 	let rootFolder = $state(instance?.rootFolder ?? '');
 	// svelte-ignore state_referenced_locally
 	let isDefault = $state(instance?.isDefault ?? false);
+	// svelte-ignore state_referenced_locally
+	let genreRoots = $state<Record<string, string>>({ ...(instance?.genreRoots ?? {}) });
+	let genres = $state<Schemas['Genre'][]>([]);
 	let probe = $state<Schemas['ProbeResult'] | null>(null);
 	let status = $state<string | null>(null);
 	let error = $state<string | null>(null);
@@ -36,6 +39,9 @@
 		error = status = null;
 		try {
 			probe = await unwrap(api.POST('/admin/servarr/probe', { body: { kind, url: url.trim(), apiKey: apiKey.trim(), id: instance?.id } }));
+			if (kind === 'radarr' && genres.length === 0) {
+				genres = await unwrap(api.GET('/discover/genres/{type}', { params: { path: { type: 'movie' } } })).catch(() => []);
+			}
 			status = `Connected to ${probe.appName} ${probe.version}. Pick a quality profile and root folder.`;
 			if (!probe.profiles.some((p) => p.id === profileId)) profileId = probe.profiles[0]?.id ?? 0;
 			if (!probe.rootFolders.some((f) => f.path === rootFolder)) rootFolder = probe.rootFolders[0]?.path ?? '';
@@ -52,7 +58,7 @@
 		busy = true;
 		error = null;
 		try {
-			const body = { kind, name: name.trim(), url: url.trim(), apiKey: apiKey.trim(), qualityProfileId: profileId, rootFolder, isDefault };
+			const body = { kind, name: name.trim(), url: url.trim(), apiKey: apiKey.trim(), qualityProfileId: profileId, rootFolder, isDefault, ...(kind === 'radarr' ? { genreRoots: Object.fromEntries(Object.entries(genreRoots).filter(([, v]) => v)) } : {}) };
 			if (instance) await unwrap(api.PUT('/admin/servarr/{id}', { params: { path: { id: instance.id } }, body }));
 			else await unwrap(api.POST('/admin/servarr', { body }));
 			onSaved();
@@ -95,8 +101,27 @@
 				{#each probe.rootFolders as f (f.id)}<option value={f.path}>{f.path}</option>{/each}
 			</select>
 		</label>
+		{#if kind === 'radarr' && genres.length}
+			<div class="grid gap-1.5">
+				<span class="text-xs text-muted-foreground">Genre folders (optional): a movie goes to the folder of its first mapped genre, otherwise to the root folder above.</span>
+				<div class="grid max-h-56 gap-1 overflow-y-auto">
+					{#each genres as g (g.id)}
+						<label class="flex items-center gap-2 text-xs">
+							<span class="w-28 shrink-0">{g.name}</span>
+							<select class={selectClass} bind:value={genreRoots[String(g.id)]}>
+								<option value="">(default)</option>
+								{#each probe.rootFolders as f (f.id)}<option value={f.path}>{f.path}</option>{/each}
+							</select>
+						</label>
+					{/each}
+				</div>
+			</div>
+		{/if}
 	{:else if instance}
-		<p class="text-xs text-muted-foreground">Profile #{instance.qualityProfileId} · {instance.rootFolder}. Test the connection to change them.</p>
+		<p class="text-xs text-muted-foreground">
+			Profile #{instance.qualityProfileId} · {instance.rootFolder}
+			{#if kind === 'radarr'}· {Object.keys(instance.genreRoots).length} genre folder(s){/if}. Test the connection to change them.
+		</p>
 	{/if}
 
 	<label class="flex items-center gap-2 text-sm">

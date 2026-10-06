@@ -12,6 +12,7 @@
 	let sync = $state<Schemas['SyncStatusBody'] | null>(null);
 	let tmdbKey = $state('');
 	let jellyfinKey = $state('');
+	let regions = $state('');
 	let message = $state<string | null>(null);
 	let error = $state<string | null>(null);
 	let saving = $state(false);
@@ -32,7 +33,10 @@
 			return;
 		}
 		unwrap(api.GET('/admin/settings'))
-			.then((s) => (settings = s))
+			.then((s) => {
+				settings = s;
+				regions = s.boxofficeRegions;
+			})
 			.catch((e) => (error = (e as Error).message));
 		refreshSync();
 		const timer = setInterval(() => {
@@ -64,7 +68,21 @@
 		}
 	}
 
-	async function runJob(job: 'library-sync' | 'history-sync') {
+	async function saveRegions(e: SubmitEvent) {
+		e.preventDefault();
+		error = message = null;
+		try {
+			settings = await unwrap(api.PUT('/admin/settings', { body: { boxofficeRegions: regions } }));
+			regions = settings.boxofficeRegions;
+			message = 'Box office regions saved. Run boxoffice-refresh below to fetch them.';
+		} catch (err) {
+			error = (err as Error).message;
+		}
+	}
+
+	type JobName = 'library-sync' | 'history-sync' | 'boxoffice-refresh';
+
+	async function runJob(job: JobName) {
 		error = message = null;
 		try {
 			await unwrap(api.POST('/admin/sync/{job}', { params: { path: { job } } }));
@@ -126,12 +144,30 @@
 		</Card>
 	{/if}
 
+	{#if settings}
+		<Card>
+			<CardHeader>
+				<CardTitle>Box office regions</CardTitle>
+				<CardDescription>
+					Comma-separated codes, e.g. <code>US,GB,FR</code> (US = United States &amp; Canada). Charts come from Box Office Mojo's public
+					pages and are fetched every 12 hours.
+				</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<form class="flex gap-2" onsubmit={saveRegions}>
+					<Input bind:value={regions} placeholder="US" autocomplete="off" />
+					<Button type="submit" variant="outline">Save</Button>
+				</form>
+			</CardContent>
+		</Card>
+	{/if}
+
 	{#if sync}
 		<Card>
 			<CardHeader>
-				<CardTitle>Jellyfin sync</CardTitle>
+				<CardTitle>Background jobs</CardTitle>
 				<CardDescription>
-					Read-only. {sync.movies} movies and {sync.shows} shows known in the library.
+					Jellyfin sync is read-only. {sync.movies} movies and {sync.shows} shows known in the library.
 					{#if !sync.canSync}Save a Jellyfin API key above to enable syncing.{/if}
 				</CardDescription>
 			</CardHeader>
@@ -149,8 +185,8 @@
 						<Button
 							variant="outline"
 							size="sm"
-							disabled={!sync.canSync || job.running}
-							onclick={() => runJob(job.name as 'library-sync' | 'history-sync')}
+							disabled={(job.name !== 'boxoffice-refresh' && !sync.canSync) || job.running}
+							onclick={() => runJob(job.name as JobName)}
 						>
 							Sync now
 						</Button>

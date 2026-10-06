@@ -20,7 +20,7 @@ export function connectEvents() {
 	source.onerror = () => {
 		stream.connected = false; // the browser reconnects by itself
 	};
-	for (const type of ['request.updated', 'request.progress', 'media.available', 'sync.status']) {
+	for (const type of ['request.updated', 'request.progress', 'media.available', 'sync.status', 'suggestions.updated']) {
 		source.addEventListener(type, (e) => {
 			let data: unknown = null;
 			try {

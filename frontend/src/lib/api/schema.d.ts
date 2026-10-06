@@ -199,6 +199,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/boxoffice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Weekend box-office chart (top 10) with availability and Radarr status
+         * @description Global, not personalised: one chart per region and week. Defaults to your region (if configured) and the latest stored week. Display only: nothing is added automatically.
+         */
+        get: operations["boxOffice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/collection/{id}": {
         parameters: {
             query?: never;
@@ -601,6 +621,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your suggestion rows: "Recommended for you" and "Because you watched …"
+         * @description Generated the first time it is called, then recomputed only when your watch history changed. Display only: nothing is ever requested automatically.
+         */
+        get: operations["suggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/suggestions/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recompute my suggestions in the background (once a minute at most) */
+        post: operations["refreshSuggestions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -616,6 +673,37 @@ export interface components {
             id: number;
             name: string;
             profilePath?: string;
+        };
+        Chart: {
+            entries: components["schemas"]["ChartEntry"][];
+            /** Format: int64 */
+            fetchedAt: number;
+            label?: string;
+            region: string;
+            regions: string[];
+            /** @description Week key, e.g. 2026W40; empty when nothing is stored yet */
+            week: string;
+            weeks: components["schemas"]["WeekRef"][];
+        };
+        ChartEntry: {
+            /** @description Radarr already has the file */
+            hasFile: boolean;
+            /** @description Radarr already tracks this movie (a request would be redundant) */
+            inRadarr: boolean;
+            /** @description Matched TMDB title; absent when no match was found */
+            item?: components["schemas"]["Item"];
+            /** Format: int64 */
+            position: number;
+            title: string;
+            /** Format: int64 */
+            totalGross: number;
+            /**
+             * Format: int64
+             * @description USD (or the region's currency) for the weekend
+             */
+            weekendGross: number;
+            /** Format: int64 */
+            weeksInRelease: number;
         };
         CollectionDetail: {
             backdropPath?: string;
@@ -751,6 +839,10 @@ export interface components {
         InstanceBody: {
             /** @description Required when creating; omit on update to keep the saved key */
             apiKey?: string;
+            /** @description Radarr only. Omit to keep the saved map, send {} to clear it */
+            genreRoots?: {
+                [key: string]: string;
+            };
             isDefault: boolean;
             /** @enum {string} */
             kind: "radarr" | "sonarr";
@@ -763,6 +855,10 @@ export interface components {
         };
         InstanceView: {
             apiKeyConfigured: boolean;
+            /** @description Radarr only: TMDB genre id -> root folder; the first matching genre of a movie wins */
+            genreRoots: {
+                [key: string]: string;
+            };
             id: string;
             isDefault: boolean;
             /** @enum {string} */
@@ -875,12 +971,30 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        Result: {
+            /** @description A refresh is running in the background; a suggestions.updated event follows */
+            generating: boolean;
+            rows: components["schemas"]["Row"][];
+        };
         RootFolder: {
             /** Format: int64 */
             freeSpace: number;
             /** Format: int64 */
             id: number;
             path: string;
+        };
+        Row: {
+            /** Format: int64 */
+            generatedAt: number;
+            id: string;
+            items: components["schemas"]["Item"][];
+            /** @enum {string} */
+            kind: "account" | "because";
+            /** @description Built from this user's own watch history */
+            personal: boolean;
+            seed?: components["schemas"]["Seed"];
+            /** @description Display title, e.g. "Because you watched Dune" */
+            title: string;
         };
         SearchResult: {
             items: components["schemas"]["Item"][];
@@ -908,7 +1022,16 @@ export interface components {
             overview?: string;
             posterPath?: string;
         };
+        Seed: {
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+            /** @enum {string} */
+            type: "movie" | "tv";
+        };
         SettingsBody: {
+            /** @description Comma-separated box-office region codes, e.g. US,GB,FR */
+            boxofficeRegions: string;
             /** @description When true nothing is ever sent to Radarr/Sonarr */
             dryRun: boolean;
             /** @description Needed for library and history sync */
@@ -970,6 +1093,8 @@ export interface components {
             shows: number;
         };
         UpdateSettingsInputBody: {
+            /** @description Comma-separated region codes; empty resets to US */
+            boxofficeRegions?: string;
             /** @description Jellyfin API key (Dashboard > API Keys); empty string clears it */
             jellyfinApiKey?: string;
             /** @description Set or replace the TMDB key (empty string clears it) */
@@ -1044,6 +1169,10 @@ export interface components {
             /** @description A signing secret is saved (HMAC-SHA256 in X-Tipsarr-Signature) */
             secretConfigured: boolean;
             url: string;
+        };
+        WeekRef: {
+            key: string;
+            label: string;
         };
     };
     responses: never;
@@ -1507,7 +1636,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                job: "library-sync" | "history-sync";
+                job: "library-sync" | "history-sync" | "boxoffice-refresh";
             };
             cookie?: never;
         };
@@ -1966,6 +2095,67 @@ export interface operations {
             };
             /** @description Error */
             default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    boxOffice: {
+        parameters: {
+            query?: {
+                /** @description Region code, e.g. US, GB, FR */
+                region?: string;
+                /** @description Week key, e.g. 2026W40 */
+                week?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Chart"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3486,6 +3676,107 @@ export interface operations {
             };
             /** @description Error */
             default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    suggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Result"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    refreshSuggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

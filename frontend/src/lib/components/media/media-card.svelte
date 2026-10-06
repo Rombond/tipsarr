@@ -4,7 +4,22 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import InfoIcon from '@lucide/svelte/icons/info';
 
-	let { item, onSelect }: { item: MediaItem; onSelect?: (item: MediaItem) => void } = $props();
+	let {
+		item,
+		onSelect,
+		rank,
+		note,
+		inRadarr = false,
+	}: {
+		item: MediaItem;
+		onSelect?: (item: MediaItem) => void;
+		/** Chart position, shown over the poster. */
+		rank?: number;
+		/** Small line under the title, e.g. a box-office gross. */
+		note?: string;
+		/** Radarr already tracks this movie. */
+		inRadarr?: boolean;
+	} = $props();
 
 	const poster = $derived(imageUrl(item.posterPath, 'w342'));
 	const year = $derived(item.releaseDate?.slice(0, 4));
@@ -31,6 +46,15 @@
 			<Badge class="absolute top-1.5 left-1.5 text-[10px]">
 				{item.availability === 'available' ? 'Available' : 'Partial'}
 			</Badge>
+		{:else if item.requestStatus}
+			<Badge variant="secondary" class="absolute top-1.5 left-1.5 text-[10px]">
+				{item.requestStatus === 'pending' ? 'Requested' : 'Approved'}
+			</Badge>
+		{:else if inRadarr}
+			<Badge variant="secondary" class="absolute top-1.5 left-1.5 text-[10px]">In Radarr</Badge>
+		{/if}
+		{#if rank}
+			<span class="pointer-events-none absolute bottom-1 left-2 font-black text-4xl text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{rank}</span>
 		{/if}
 		<button
 			type="button"
@@ -51,4 +75,5 @@
 		{/if}
 	</div>
 	<p class="mt-0.5 truncate text-sm font-medium">{item.title}</p>
+	{#if note}<p class="truncate text-xs text-muted-foreground">{note}</p>{/if}
 </div>

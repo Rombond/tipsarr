@@ -10,12 +10,14 @@
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
+	import TicketIcon from '@lucide/svelte/icons/ticket';
 	import ServerIcon from '@lucide/svelte/icons/server';
 	import BellIcon from '@lucide/svelte/icons/bell';
 
 	const navItems = $derived(
 		[
 			{ href: '/discover', label: 'Discover', icon: CompassIcon },
+			{ href: '/boxoffice', label: 'Box office', icon: TicketIcon },
 			{ href: '/requests', label: 'Requests', icon: ListIcon },
 			...(auth.isAdmin
 				? [

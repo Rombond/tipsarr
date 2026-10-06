@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { api, unwrap, type MediaItem } from '$lib/api/client';
 	import DiscoverRow from '$lib/components/discover/discover-row.svelte';
+	import SuggestionRows from '$lib/components/discover/suggestion-rows.svelte';
+	import BoxofficeRow from '$lib/components/discover/boxoffice-row.svelte';
 	import MediaDetailModal from '$lib/components/media/media-detail-modal.svelte';
 
 	let selected: MediaItem | null = $state(null);
@@ -13,6 +15,9 @@
 
 <div class="grid gap-8">
 	<h1 class="font-bold text-2xl">Discover</h1>
+
+	<SuggestionRows onSelect={select} />
+	<BoxofficeRow />
 
 	<DiscoverRow
 		title="Trending"
