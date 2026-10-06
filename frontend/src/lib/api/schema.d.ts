@@ -22,6 +22,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Library / history sync status (admin) */
+        get: operations["syncStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/sync/{job}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run a sync job now, in the background (admin) */
+        post: operations["runSyncJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -169,6 +203,26 @@ export interface paths {
         get: operations["health"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hooks/jellyfin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receives Jellyfin webhook events (shared-secret token)
+         * @description Configure the Jellyfin Webhook plugin with a Generic destination pointing here and a template like {"NotificationType":"{{NotificationType}}","UserId":"{{UserId}}","ItemType":"{{ItemType}}"}. Library events refresh the library; everything else refreshes that user's watch history (debounced).
+         */
+        post: operations["jellyfinWebhook"];
         delete?: never;
         options?: never;
         head?: never;
@@ -521,9 +575,13 @@ export interface components {
         SettingsBody: {
             /** @description When true nothing is ever sent to Radarr/Sonarr */
             dryRun: boolean;
+            /** @description Needed for library and history sync */
+            jellyfinApiKeyConfigured: boolean;
             jellyfinUrl: string;
             /** @description Secrets are write-only; this only says whether a key is saved */
             tmdbConfigured: boolean;
+            /** @description Path (with secret token) for the Jellyfin webhook plugin to call */
+            webhookPath: string;
         };
         SetupInputBody: {
             /**
@@ -541,6 +599,18 @@ export interface components {
             /** @description True once a Jellyfin URL is saved */
             configured: boolean;
         };
+        Status: {
+            /** Format: int64 */
+            everySeconds: number;
+            /** Format: int64 */
+            lastFinishedAt: number;
+            /** Format: int64 */
+            lastStartedAt: number;
+            message: string;
+            name: string;
+            running: boolean;
+            status: string;
+        };
         StatusOutputBody: {
             /** @description Database engine: sqlite, postgres or mysql */
             db: string;
@@ -548,7 +618,24 @@ export interface components {
             dryRun: boolean;
             version: string;
         };
+        SyncStatusBody: {
+            /** @description True when a Jellyfin API key is saved */
+            canSync: boolean;
+            jobs: components["schemas"]["Status"][];
+            /**
+             * Format: int64
+             * @description Movies currently known in the Jellyfin library
+             */
+            movies: number;
+            /**
+             * Format: int64
+             * @description Shows currently known in the Jellyfin library
+             */
+            shows: number;
+        };
         UpdateSettingsInputBody: {
+            /** @description Jellyfin API key (Dashboard > API Keys); empty string clears it */
+            jellyfinApiKey?: string;
             /** @description Set or replace the TMDB key (empty string clears it) */
             tmdbApiKey?: string;
         };
@@ -562,6 +649,12 @@ export interface components {
             name: string;
             region: string;
             role: string;
+        };
+        WebhookInputBody: {
+            ItemType?: string;
+            /** @description Jellyfin webhook plugin event, e.g. PlaybackStop or ItemAdded */
+            NotificationType?: string;
+            UserId?: string;
         };
     };
     responses: never;
@@ -670,6 +763,127 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    syncStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncStatusBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    runSyncJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job: "library-sync" | "history-sync";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1209,6 +1423,57 @@ export interface operations {
             };
             /** @description Error */
             default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    jellyfinWebhook: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

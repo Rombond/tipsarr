@@ -46,6 +46,15 @@ func (m *Manager) Register(j Job) {
 
 // Start launches one scheduler goroutine per job; they stop when ctx is cancelled.
 func (m *Manager) Start(ctx context.Context) {
+	// A "running" row left by a previous process means that run was interrupted.
+	if runs, err := m.store.JobRuns(ctx); err == nil {
+		for _, r := range runs {
+			if r.Status == "running" {
+				r.Status, r.Message, r.LastFinishedAt = "error", "interrupted by restart", time.Now().Unix()
+				_ = m.store.SaveJobRun(ctx, &r)
+			}
+		}
+	}
 	for _, name := range m.order {
 		j := m.jobs[name]
 		go func() {

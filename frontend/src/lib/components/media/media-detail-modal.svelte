@@ -32,6 +32,9 @@
 					{#if item.voteAverage}
 						<span class="text-xs text-muted-foreground">★ {item.voteAverage.toFixed(1)}</span>
 					{/if}
+					{#if item.availability !== 'none'}
+						<Badge>{item.availability === 'available' ? 'Available' : 'Partial'}</Badge>
+					{/if}
 					{#if item.releaseDate}
 						<span class="text-xs text-muted-foreground">{item.releaseDate}</span>
 					{/if}
