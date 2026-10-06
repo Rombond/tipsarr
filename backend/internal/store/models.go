@@ -133,6 +133,7 @@ type Request struct {
 	SentAt        int64  `bun:"sent_at"`
 	DryRun        int    `bun:"dry_run"`
 	Error         string `bun:"error"`
+	Source        string `bun:"source"` // "" = a user asked; "radarr"/"sonarr" = imported from what they monitor
 	CreatedAt     int64  `bun:"created_at"`
 	UpdatedAt     int64  `bun:"updated_at"`
 }

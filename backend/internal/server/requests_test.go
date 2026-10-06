@@ -612,3 +612,35 @@ func TestIssues(t *testing.T) {
 		t.Fatalf("admin delete = %d", resp.StatusCode)
 	}
 }
+
+func TestImportFromServarr(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, _ := setupUsers(t, e)
+	radarr := newFakeArr(t, "radarr")
+	// TMDB 5 is monitored and missing; 6 is monitored with a file; 7 is not monitored
+	radarr.moviesJSON.Store(`[{"id":42,"title":"Request Me","tmdbId":5,"hasFile":false,"monitored":true},` +
+		`{"id":43,"title":"Done","tmdbId":6,"hasFile":true,"monitored":true},{"id":44,"title":"Off","tmdbId":7,"hasFile":false,"monitored":false}]`)
+	addInstance(t, e, admin, "radarr", radarr)
+	ctx := context.Background()
+
+	msg, err := e.reqs.ImportFromServarr(ctx)
+	if err != nil || msg != "1 imported" {
+		t.Fatalf("import = %q %v", msg, err)
+	}
+	_, body := call(t, e.app, "GET", "/api/v1/requests", "", admin)
+	if !strings.Contains(body, `"total":1`) || !strings.Contains(body, `"source":"radarr"`) || !strings.Contains(body, `"status":"approved"`) {
+		t.Fatalf("list = %s", body)
+	}
+	// running again does not duplicate
+	if msg, _ := e.reqs.ImportFromServarr(ctx); msg != "0 imported" {
+		t.Fatalf("second import = %q", msg)
+	}
+	// the toggle turns it off
+	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"servarrAutoImport":false}`, admin)
+	if msg, _ := e.reqs.ImportFromServarr(ctx); msg != "auto-import is off" {
+		t.Fatalf("off = %q", msg)
+	}
+	if w := radarr.writes(); len(w) != 0 {
+		t.Fatalf("import wrote to radarr: %v", w)
+	}
+}

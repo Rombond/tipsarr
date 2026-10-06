@@ -102,6 +102,7 @@ func run(cfg config.Config) error {
 		return fmt.Sprintf("%d requests in flight", n), err
 	}})
 
+	jm.Register(jobs.Job{Name: "servarr-import", Every: 30 * time.Minute, InitialDelay: 90 * time.Second, Run: reqSvc.ImportFromServarr})
 	jm.Register(jobs.Job{Name: "housekeeping", Every: time.Hour, InitialDelay: 2 * time.Minute, Quiet: true, Run: func(ctx context.Context) (string, error) {
 		if err := st.PurgeExpiredSessions(ctx); err != nil {
 			return "", err

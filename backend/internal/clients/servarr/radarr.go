@@ -8,10 +8,12 @@ import (
 )
 
 type Movie struct {
-	ID      int    `json:"id"`
-	Title   string `json:"title"`
-	TMDBID  int    `json:"tmdbId"`
-	HasFile bool   `json:"hasFile"`
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	TMDBID    int    `json:"tmdbId"`
+	HasFile   bool   `json:"hasFile"`
+	Monitored bool   `json:"monitored"`
+	Year      int    `json:"year"`
 }
 
 // MovieByTMDB returns the movie if Radarr already has it.

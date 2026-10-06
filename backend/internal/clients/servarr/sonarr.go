@@ -11,10 +11,38 @@ type Series struct {
 	ID         int    `json:"id"`
 	Title      string `json:"title"`
 	TVDBID     int    `json:"tvdbId"`
+	TMDBID     int    `json:"tmdbId"`
+	Monitored  bool   `json:"monitored"`
+	Year       int    `json:"year"`
 	Statistics struct {
 		EpisodeFileCount int `json:"episodeFileCount"`
 		EpisodeCount     int `json:"episodeCount"`
 	} `json:"statistics"`
+	Seasons []struct {
+		SeasonNumber int  `json:"seasonNumber"`
+		Monitored    bool `json:"monitored"`
+		Statistics   struct {
+			EpisodeFileCount int `json:"episodeFileCount"`
+			EpisodeCount     int `json:"episodeCount"`
+		} `json:"statistics"`
+	} `json:"seasons"`
+}
+
+// MissingSeasons lists the monitored seasons that still lack episode files.
+func (s Series) MissingSeasons() []int {
+	var out []int
+	for _, sn := range s.Seasons {
+		if sn.SeasonNumber > 0 && sn.Monitored && sn.Statistics.EpisodeCount > 0 && sn.Statistics.EpisodeFileCount < sn.Statistics.EpisodeCount {
+			out = append(out, sn.SeasonNumber)
+		}
+	}
+	return out
+}
+
+// AllSeries lists every series Sonarr tracks.
+func (c *Client) AllSeries(ctx context.Context) ([]Series, error) {
+	var out []Series
+	return out, c.get(ctx, "/series", &out)
 }
 
 // Complete is true when every monitored, aired episode has a file.

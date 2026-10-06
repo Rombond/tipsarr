@@ -11,6 +11,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/Rombond/tipsarr/backend/internal/media"
+	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/danielgtaylor/huma/v2"
 )
 
@@ -22,6 +23,7 @@ type settingsBody struct {
 	BoxOfficeRegions         string `json:"boxofficeRegions" doc:"Comma-separated box-office region codes, e.g. US,GB,FR"`
 	WebhookPath              string `json:"webhookPath" doc:"Path (with secret token) for the Jellyfin webhook plugin to call"`
 	DryRun                   bool   `json:"dryRun" doc:"When true nothing is ever sent to Radarr/Sonarr"`
+	ServarrAutoImport        bool   `json:"servarrAutoImport" doc:"Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only)"`
 }
 
 type settingsOutput struct{ Body settingsBody }
@@ -32,6 +34,7 @@ type updateSettingsInput struct {
 		BoxOfficeRegions  *string `json:"boxofficeRegions,omitempty" doc:"Comma-separated region codes; empty resets to US"`
 		JellyfinPublicURL *string `json:"jellyfinPublicUrl,omitempty" doc:"Empty string clears it"`
 		JellyfinAPIKey    *string `json:"jellyfinApiKey,omitempty" doc:"Jellyfin API key (Dashboard > API Keys); empty string clears it"`
+		ServarrAutoImport *bool   `json:"servarrAutoImport,omitempty"`
 	}
 }
 
@@ -57,9 +60,10 @@ func registerAdmin(api huma.API, d Deps) {
 		}
 		regions := strings.Join(d.BoxOffice.Regions(ctx), ",")
 		publicURL, _ := d.Store.GetSetting(ctx, media.SettingJellyfinPublicURL)
+		autoImport, _ := d.Store.GetSetting(ctx, requests.SettingAutoImport)
 		return settingsBody{
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
-			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret,
+			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, ServarrAutoImport: autoImport != "false",
 		}, nil
 	}
 
@@ -105,6 +109,15 @@ func registerAdmin(api huma.API, d Deps) {
 		}
 		if in.Body.JellyfinAPIKey != nil {
 			if err := d.Store.SetSetting(ctx, library.SettingJellyfinAPIKey, strings.TrimSpace(*in.Body.JellyfinAPIKey)); err != nil {
+				return nil, err
+			}
+		}
+		if in.Body.ServarrAutoImport != nil {
+			v := "true"
+			if !*in.Body.ServarrAutoImport {
+				v = "false"
+			}
+			if err := d.Store.SetSetting(ctx, requests.SettingAutoImport, v); err != nil {
 				return nil, err
 			}
 		}

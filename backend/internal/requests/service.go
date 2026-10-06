@@ -82,6 +82,7 @@ type View struct {
 	DeclineReason string    `json:"declineReason,omitempty"`
 	DryRun        bool      `json:"dryRun" doc:"Approved in dry-run mode: nothing was sent to Radarr/Sonarr"`
 	Error         string    `json:"error,omitempty"`
+	Source        string    `json:"source,omitempty" doc:"Set when the request was imported from what Radarr/Sonarr already monitor"`
 	Progress      *Progress `json:"progress,omitempty"`
 	CreatedAt     int64     `json:"createdAt"`
 	UpdatedAt     int64     `json:"updatedAt"`
@@ -136,7 +137,7 @@ func (s *Service) views(ctx context.Context, rows []store.Request) ([]View, erro
 			ID: r.ID, Type: r.MediaType, TMDBID: int(r.TMDBID), Title: r.Title, PosterPath: r.PosterPath,
 			ReleaseDate: r.ReleaseDate, Seasons: seasons[r.ID], Status: r.Status, Stage: stage,
 			RequestedBy: UserRef{ID: r.RequestedBy, Name: names[r.RequestedBy]}, DeclineReason: r.DeclineReason,
-			DryRun: r.DryRun == 1, Error: r.Error, Progress: prog, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+			DryRun: r.DryRun == 1, Error: r.Error, Source: r.Source, Progress: prog, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
 		}
 		if r.DecidedBy != "" {
 			v.DecidedBy = &UserRef{ID: r.DecidedBy, Name: names[r.DecidedBy]}
@@ -549,3 +550,5 @@ func (s *Service) Options(ctx context.Context, mediaType string) (*Options, erro
 	}
 	return out, nil
 }
+
+func nowUnix() int64 { return time.Now().Unix() }
