@@ -116,10 +116,10 @@
 	<title>Settings · Tipsarr</title>
 </svelte:head>
 
-<div class="grid max-w-2xl gap-4">
-	<h1 class="font-bold text-2xl">Settings</h1>
+<div class="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-2">
+	<h1 class="font-bold text-3xl lg:col-span-2">Settings</h1>
 
-	{#if error}<p class="text-sm text-destructive">{error}</p>{/if}
+	{#if error}<p class="text-sm text-destructive lg:col-span-2">{error}</p>{/if}
 
 	{#if settings}
 		<Card>

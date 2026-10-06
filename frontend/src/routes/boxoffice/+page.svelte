@@ -5,6 +5,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { toast } from '$lib/toast.svelte';
+	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
@@ -120,9 +121,9 @@
 	}
 	const selectClass = 'h-9 rounded-md border border-input bg-transparent px-3 text-sm';
 
-	function changeRegion(e: Event) {
+	function changeRegion(value: string) {
 		week = ''; // each region has its own weeks
-		region = (e.currentTarget as HTMLSelectElement).value;
+		region = value;
 	}
 </script>
 
@@ -130,103 +131,115 @@
 	<title>Box office · Tipsarr</title>
 </svelte:head>
 
-<div class="grid max-w-4xl grid-cols-[minmax(0,1fr)] gap-4">
-	<div class="flex flex-wrap items-center justify-between gap-2">
+<div class="grid grid-cols-[minmax(0,1fr)] gap-5">
+	<div class="flex flex-wrap items-end justify-between gap-3">
 		<div>
-			<h1 class="font-bold text-2xl">Box office</h1>
-			{#if chart?.label}<p class="text-sm text-muted-foreground">Weekend of {chart.label}{chart.regions.length > 1 ? ` · ${chart.region}` : ''}</p>{/if}
+			<h1 class="font-bold text-3xl">Box office</h1>
+			<p class="text-sm text-muted-foreground">
+				{#if chart?.label}Weekend of {chart.label}{chart.regions.length > 1 ? ` · ${chart.region}` : ''} ·{/if}
+				the same chart for everyone, nothing is added automatically.
+			</p>
 		</div>
 		{#if chart}
 			<div class="flex items-center gap-2">
 				{#if chart.regions.length > 1}
-					<select class={selectClass} value={chart.region} onchange={changeRegion} aria-label="Region">
-						{#each chart.regions as r (r)}<option value={r}>{r}</option>{/each}
-					</select>
+					<SimpleSelect
+						label="Region"
+						value={chart.region}
+						options={chart.regions.map((r) => ({ value: r, label: r }))}
+						onchange={changeRegion}
+						class="min-w-20"
+					/>
 				{/if}
 				{#if chart.weeks.length}
-					<Button variant="outline" size="icon" aria-label="Newer weekend" disabled={weekIndex <= 0} onclick={() => stepWeek(-1)}>
+					<!-- the weeks are listed newest first: left = back in time, right = towards today -->
+					<Button variant="outline" size="icon" aria-label="Previous (older) weekend" disabled={weekIndex >= chart.weeks.length - 1} onclick={() => stepWeek(1)}>
 						<ChevronLeftIcon class="size-4" />
 					</Button>
-					<select class={selectClass} bind:value={week} aria-label="Weekend">
-						{#each chart.weeks as w (w.key)}<option value={w.key}>{w.label || w.key}</option>{/each}
-					</select>
-					<Button variant="outline" size="icon" aria-label="Older weekend" disabled={weekIndex >= chart.weeks.length - 1} onclick={() => stepWeek(1)}>
+					<SimpleSelect
+						label="Weekend"
+						value={chart.week}
+						options={chart.weeks.map((w) => ({ value: w.key, label: w.label || w.key }))}
+						onchange={(v) => (week = v)}
+						class="min-w-44"
+					/>
+					<Button variant="outline" size="icon" aria-label="Next (newer) weekend" disabled={weekIndex <= 0} onclick={() => stepWeek(-1)}>
 						<ChevronRightIcon class="size-4" />
 					</Button>
 				{/if}
 			</div>
 		{/if}
 	</div>
-	<p class="text-sm text-muted-foreground">The same chart for everyone, not personalised. Nothing is added automatically: request what you want.</p>
 
 	{#if error}
 		<p class="text-sm text-destructive">{error}</p>
 	{:else if loading && !chart}
-		<Skeleton class="h-24 w-full" />
-		<Skeleton class="h-24 w-full" />
+		<div class="grid grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))] gap-4">
+			{#each { length: 10 } as _, i (i)}<Skeleton class="aspect-[2/3.1] rounded-2xl" />{/each}
+		</div>
 	{:else if chart && chart.entries.length === 0}
-		<div class="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+		<div class="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
 			No chart stored yet.{#if auth.isAdmin} Fetch it in <a class="underline" href="/admin/settings">Settings</a> (job “boxoffice-refresh”).{/if}
 		</div>
 	{:else if chart}
-		<div class="grid grid-cols-[minmax(0,1fr)] gap-2.5" class:opacity-60={loading}>
+		<div class="grid grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))] gap-4 transition-opacity" class:opacity-60={loading}>
 			{#each chart.entries as e (e.position)}
-				{@const poster = imageUrl(e.item?.posterPath, 'w154')}
+				{@const poster = imageUrl(e.item?.posterPath, 'w342')}
 				{@const state = stateOf(e)}
-				<div class="flex gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:border-foreground/20">
-					<span class="w-7 shrink-0 pt-1 text-center font-black text-2xl text-muted-foreground">{e.position}</span>
-					{#if e.item}
-						<a href="/media/movie/{e.item.tmdbId}" class="w-14 shrink-0 sm:w-16" aria-label={e.title}>
-							{#if poster}<img src={poster} alt="" class="aspect-[2/3] w-full rounded-md object-cover" loading="lazy" />{/if}
-						</a>
-					{:else}
-						<div class="flex aspect-[2/3] w-14 shrink-0 items-center justify-center rounded-md bg-muted text-[10px] text-muted-foreground sm:w-16">?</div>
-					{/if}
-					<div class="grid min-w-0 flex-1 content-start gap-1.5">
-						<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-							{#if e.item}
-								<a href="/media/movie/{e.item.tmdbId}" class="truncate font-semibold hover:underline">{e.title}</a>
-							{:else}
-								<span class="truncate font-semibold">{e.title}</span>
-								<Badge variant="outline" class="text-[10px]">no TMDB match</Badge>
-							{/if}
-							{#if e.item?.releaseDate}<span class="text-xs text-muted-foreground">{e.item.releaseDate.slice(0, 4)}</span>{/if}
-						</div>
-						<div class="flex items-center gap-2" title="Weekend gross relative to #1">
-							<div class="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-								<div class="h-full rounded-full bg-primary/80" style="width: {share(e)}%"></div>
-							</div>
-							<span class="w-20 shrink-0 text-right text-xs font-medium tabular-nums">{compact(e.weekendGross)}</span>
-						</div>
-						<p class="text-xs text-muted-foreground">
-							Total {compact(e.totalGross)} · week {e.weeksInRelease || '-'}
-						</p>
-					</div>
-					<div class="flex w-24 shrink-0 flex-col items-end justify-between gap-2 sm:w-28">
+				<article class="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
+					<div class="relative aspect-[2/3] overflow-hidden bg-muted">
+						{#if e.item}
+							<a href="/media/movie/{e.item.tmdbId}" class="block h-full w-full" aria-label={e.title}>
+								{#if poster}<img src={poster} alt="" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" loading="lazy" />{/if}
+							</a>
+						{:else}
+							<div class="flex h-full w-full items-center justify-center p-3 text-center text-sm text-muted-foreground">{e.title}<br />(no TMDB match)</div>
+						{/if}
+						<span class="pointer-events-none absolute top-2 left-2 rounded-lg bg-black/70 px-2.5 py-0.5 font-black text-lg text-white backdrop-blur">#{e.position}</span>
+						{#if state === 'available'}
+							<Badge class="absolute top-2 right-2 gap-1"><CheckIcon class="size-3" />Available</Badge>
+						{:else if state === 'requested'}
+							<Badge variant="secondary" class="absolute top-2 right-2">{e.item?.requestStatus === 'pending' ? 'Requested' : 'Approved'}</Badge>
+						{:else if state === 'radarr'}
+							<Badge variant="secondary" class="absolute top-2 right-2" title={e.hasFile ? 'Radarr already has the file' : 'Radarr is tracking this movie'}>In Radarr</Badge>
+						{/if}
 						{#if auth.isAdmin}
 							<button
 								type="button"
-								class="cursor-pointer rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+								class="absolute right-2 bottom-2 flex size-8 cursor-pointer items-center justify-center rounded-full bg-black/70 text-white opacity-0 backdrop-blur transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
 								title={e.item ? 'Wrong movie? Fix the match' : 'Pick the right movie'}
 								aria-label="Fix the TMDB match"
 								onclick={() => startFix(e)}
 							>
-								<PencilIcon class="size-3.5" />
+								<PencilIcon class="size-4" />
 							</button>
-						{:else}<span></span>{/if}
-						{#if state === 'available'}
-							<Badge class="gap-1"><CheckIcon class="size-3" />Available</Badge>
-						{:else if state === 'requested'}
-							<Badge variant="secondary">{e.item?.requestStatus === 'pending' ? 'Requested' : 'Approved'}</Badge>
-						{:else if state === 'radarr'}
-							<Badge variant="secondary" title={e.hasFile ? 'Radarr already has the file' : 'Radarr is tracking this movie'}>In Radarr</Badge>
-						{:else if state === 'requestable' && e.item}
-							<Button size="sm" disabled={requesting.has(e.item.tmdbId)} onclick={() => quickRequest(e)}>
-								<PlusIcon class="size-4" />Request
-							</Button>
 						{/if}
 					</div>
-				</div>
+					<div class="grid flex-1 content-between gap-3 p-3">
+						<div class="grid gap-1.5">
+							<h2 class="line-clamp-2 font-semibold leading-snug" title={e.title}>{e.title}</h2>
+							<p class="text-xs text-muted-foreground">
+								{#if e.item?.releaseDate}{e.item.releaseDate.slice(0, 4)} · {/if}week {e.weeksInRelease || '-'}
+							</p>
+							<div title="Weekend gross relative to #1">
+								<div class="h-1.5 overflow-hidden rounded-full bg-muted">
+									<div class="h-full rounded-full bg-primary/80" style="width: {share(e)}%"></div>
+								</div>
+								<p class="mt-1 flex justify-between text-xs">
+									<span class="font-semibold tabular-nums">{compact(e.weekendGross)}</span>
+									<span class="text-muted-foreground">total {compact(e.totalGross)}</span>
+								</p>
+							</div>
+						</div>
+						{#if state === 'requestable' && e.item}
+							<Button size="sm" class="w-full" disabled={requesting.has(e.item.tmdbId)} onclick={() => quickRequest(e)}>
+								<PlusIcon class="size-4" />Request
+							</Button>
+						{:else if e.item}
+							<Button size="sm" variant="outline" class="w-full" href="/media/movie/{e.item.tmdbId}">Details</Button>
+						{/if}
+					</div>
+				</article>
 			{/each}
 		</div>
 		{#if chart.fetchedAt}

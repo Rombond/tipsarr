@@ -118,7 +118,7 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 	}))
 	mux.HandleFunc("/movie/1", hit(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"id":1,"title":"Movie One","runtime":120,"genres":[{"id":28,"name":"Action"}],
-			"imdb_id":"tt1","belongs_to_collection":{"id":9,"name":"Saga","backdrop_path":"/sagab.jpg"},
+			"imdb_id":"tt1","budget":63000000,"revenue":463517383,"production_companies":[{"name":"Warner Bros."},{"name":"Village Roadshow"}],"belongs_to_collection":{"id":9,"name":"Saga","backdrop_path":"/sagab.jpg"},
 			"videos":{"results":[{"key":"abc123","site":"YouTube","type":"Trailer","official":false},{"key":"OFFICIAL1","site":"YouTube","type":"Trailer","official":true},{"key":"vim","site":"Vimeo","type":"Trailer","official":true}]},
 			"credits":{"cast":[{"id":5,"name":"Ann","character":"Hero"}],"crew":[{"id":6,"name":"Dir","job":"Director"},{"id":7,"name":"X","job":"Editor"}]},
 			"recommendations":{"results":[{"id":4,"title":"Rec"}]},"similar":{"results":[]}}`))
@@ -578,6 +578,9 @@ func TestLibrarySyncAndAvailability(t *testing.T) {
 	_ = json.Unmarshal([]byte(body), &md)
 	if md.Availability != "available" || md.Recommendations[0].Availability != "none" {
 		t.Fatalf("movie detail availability = %s", md.Availability)
+	}
+	if md.Budget != 63000000 || md.Revenue != 463517383 || len(md.Studios) != 2 || md.Studios[0] != "Warner Bros." {
+		t.Fatalf("budget/revenue/studios = %d %d %v", md.Budget, md.Revenue, md.Studios)
 	}
 	if md.TrailerKey != "OFFICIAL1" || md.CollectionBackdropPath != "/sagab.jpg" {
 		t.Fatalf("trailer/collection backdrop = %q %q", md.TrailerKey, md.CollectionBackdropPath)

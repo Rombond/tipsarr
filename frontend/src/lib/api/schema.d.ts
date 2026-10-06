@@ -907,6 +907,8 @@ export interface components {
              */
             availability: "none" | "partial" | "available";
             backdropPath?: string;
+            /** Format: int64 */
+            budget?: number;
             cast: components["schemas"]["CastMember"][];
             collectionBackdropPath?: string;
             /** Format: int64 */
@@ -933,10 +935,14 @@ export interface components {
              */
             requestStatus?: "pending" | "approved";
             /** Format: int64 */
+            revenue?: number;
+            /** Format: int64 */
             runtimeMinutes?: number;
             seasons?: components["schemas"]["Season"][];
             similar: components["schemas"]["Item"][];
             status?: string;
+            /** @description Production companies (movies) or networks (TV) */
+            studios?: string[];
             tagline?: string;
             title: string;
             /** Format: int64 */

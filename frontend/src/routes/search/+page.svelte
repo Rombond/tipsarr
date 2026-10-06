@@ -47,7 +47,7 @@
 
 <div class="grid gap-8">
 	<div>
-		<h1 class="font-bold text-2xl">Results for “{query}”</h1>
+		<h1 class="font-bold text-3xl">Results for “{query}”</h1>
 		{#if result && !loading}
 			<p class="text-sm text-muted-foreground">{movies.length} movies · {shows.length} TV shows · {people.length} people</p>
 		{/if}
@@ -89,9 +89,9 @@
 		{#if movies.length && (tab === 'all' || tab === 'movies')}
 			<section class="grid gap-2">
 				<h2 class="font-semibold text-lg">Movies</h2>
-				<div class="flex flex-wrap gap-4">
+				<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 					{#each movies as item (item.tmdbId)}
-						<MediaCard {item} />
+						<MediaCard {item} fluid />
 					{/each}
 				</div>
 			</section>
@@ -99,9 +99,9 @@
 		{#if shows.length && (tab === 'all' || tab === 'tv')}
 			<section class="grid gap-2">
 				<h2 class="font-semibold text-lg">TV Shows</h2>
-				<div class="flex flex-wrap gap-4">
+				<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 					{#each shows as item (item.tmdbId)}
-						<MediaCard {item} />
+						<MediaCard {item} fluid />
 					{/each}
 				</div>
 			</section>
@@ -109,9 +109,9 @@
 		{#if people.length && (tab === 'all' || tab === 'people')}
 			<section class="grid gap-2">
 				<h2 class="font-semibold text-lg">People</h2>
-				<div class="flex flex-wrap gap-4">
+				<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 					{#each people as person (person.id)}
-						<PersonCard {person} />
+						<PersonCard {person} fluid />
 					{/each}
 				</div>
 			</section>

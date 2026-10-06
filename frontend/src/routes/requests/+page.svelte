@@ -122,9 +122,9 @@
 	<title>Requests · Tipsarr</title>
 </svelte:head>
 
-<div class="grid max-w-3xl grid-cols-[minmax(0,1fr)] gap-4">
+<div class="grid grid-cols-[minmax(0,1fr)] gap-4">
 	<div class="flex flex-wrap items-center justify-between gap-2">
-		<h1 class="font-bold text-2xl">Requests</h1>
+		<h1 class="font-bold text-3xl">Requests</h1>
 		{#if auth.isAdmin && filter === 'pending' && items.length > 1}
 			<Button size="sm" disabled={approvingAll} onclick={approveAll}>{approvingAll ? 'Approving…' : `Approve all ${items.length} pending`}</Button>
 		{/if}
@@ -157,7 +157,7 @@
 			<p class="mt-1 text-sm text-muted-foreground">Find something on <a class="underline" href="/discover">Discover</a> or the <a class="underline" href="/boxoffice">box office</a> and press Request.</p>
 		</div>
 	{:else}
-		<div class="grid gap-3">
+		<div class="grid gap-3 xl:grid-cols-2">
 			{#each items as r (r.id)}
 				<RequestRow request={r} isAdmin={auth.isAdmin} busy={busyId === r.id} onApprove={approve} onDecline={(x) => (declining = x)} onDelete={remove} />
 			{/each}

@@ -93,8 +93,8 @@
 	<title>Webhooks · Tipsarr</title>
 </svelte:head>
 
-<div class="grid max-w-2xl gap-4">
-	<h1 class="font-bold text-2xl">Webhooks</h1>
+<div class="grid grid-cols-[minmax(0,1fr)] gap-4">
+	<h1 class="font-bold text-3xl">Webhooks</h1>
 	<p class="text-sm text-muted-foreground">
 		Tipsarr POSTs a JSON event to each URL (works with ntfy, Discord-compatible bridges, Home Assistant…). With a secret, the body is signed:
 		<code>X-Tipsarr-Signature: sha256=HMAC(secret, body)</code>. Payloads include <code>dryRun</code>.

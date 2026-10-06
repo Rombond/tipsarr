@@ -2,14 +2,14 @@
 	import { goto } from '$app/navigation';
 	import { imageUrl } from '$lib/api/client';
 
-	let { person }: { person: { id: number; name: string; profilePath?: string } } = $props();
+	let { person, fluid = false }: { person: { id: number; name: string; profilePath?: string }; fluid?: boolean } = $props();
 
 	const photo = $derived(imageUrl(person.profilePath, 'w185'));
 </script>
 
 <button
 	type="button"
-	class="w-40 shrink-0 cursor-pointer snap-start text-left"
+	class={fluid ? 'min-w-0 cursor-pointer text-left' : 'w-40 shrink-0 cursor-pointer snap-start text-left'}
 	onclick={() => goto(`/person/${person.id}`)}
 >
 	<div class="aspect-[2/3] w-full overflow-hidden rounded-lg bg-muted shadow-sm transition-shadow hover:shadow-md">

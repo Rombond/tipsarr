@@ -16,6 +16,7 @@
 		note,
 		inRadarr = false,
 		onDismiss,
+		fluid = false,
 	}: {
 		item: MediaItem;
 		onSelect?: (item: MediaItem) => void;
@@ -27,6 +28,8 @@
 		inRadarr?: boolean;
 		/** Shows a "not interested" button on hover (used by suggestion rows). */
 		onDismiss?: (item: MediaItem) => void;
+		/** Fill the grid cell instead of a fixed poster width. */
+		fluid?: boolean;
 	} = $props();
 
 	let requested = $state<string | null>(null);
@@ -57,7 +60,7 @@
 	}
 </script>
 
-<div class="w-32 shrink-0 snap-start sm:w-40">
+<div class={fluid ? 'min-w-0' : 'w-32 shrink-0 snap-start sm:w-40'}>
 	<div
 		class="group relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-muted shadow-sm ring-1 ring-border/50 transition hover:shadow-lg hover:ring-border focus-within:ring-2 focus-within:ring-ring"
 	>

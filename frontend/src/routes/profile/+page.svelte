@@ -46,8 +46,8 @@
 	<title>Profile · Tipsarr</title>
 </svelte:head>
 
-<div class="grid max-w-xl gap-4">
-	<h1 class="font-bold text-2xl">Profile</h1>
+<div class="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2">
+	<h1 class="font-bold text-3xl lg:col-span-2">Profile</h1>
 	<Card>
 		<CardHeader>
 			<CardTitle>{auth.username}</CardTitle>

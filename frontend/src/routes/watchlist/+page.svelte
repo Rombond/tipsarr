@@ -30,7 +30,7 @@
 </svelte:head>
 
 <div class="grid gap-4">
-	<h1 class="font-bold text-2xl">Watchlist</h1>
+	<h1 class="font-bold text-3xl">Watchlist</h1>
 	{#if error}
 		<p class="text-sm text-destructive">{error}</p>
 	{:else if loading}
@@ -38,9 +38,9 @@
 	{:else if items.length === 0}
 		<p class="text-sm text-muted-foreground">Nothing here yet. Open a movie or show and press "+ Watchlist".</p>
 	{:else}
-		<div class="flex flex-wrap gap-4">
+		<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 			{#each items as item (`${item.type}:${item.tmdbId}`)}
-				<MediaCard {item} onDismiss={remove} />
+				<MediaCard {item} onDismiss={remove} fluid />
 			{/each}
 		</div>
 		<p class="text-xs text-muted-foreground">Hover a poster and press ✕ to remove it from the list.</p>

@@ -61,7 +61,7 @@
 			<button class="ml-2 underline" onclick={() => onRetry?.()}>Retry</button>
 		</div>
 	{:else}
-		<div bind:this={scrollEl} class="no-scrollbar -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 md:-mx-6 md:scroll-px-6 md:px-6" onscroll={handleScroll}>
+		<div bind:this={scrollEl} class="no-scrollbar -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 md:-mx-8 md:scroll-px-8 md:px-8" onscroll={handleScroll}>
 			{#each items as item (`${item.type}:${item.tmdbId}`)}
 				<MediaCard {item} {onSelect} {onDismiss} />
 			{/each}

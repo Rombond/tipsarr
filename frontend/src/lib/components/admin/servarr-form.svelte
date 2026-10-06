@@ -2,6 +2,7 @@
 	import { api, unwrap, type Schemas } from '$lib/api/client';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
+	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 
 	let {
 		kind,
@@ -65,7 +66,6 @@
 		}
 	}
 
-	const selectClass = 'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm';
 </script>
 
 <form class="grid gap-3 rounded-lg border border-border p-3" onsubmit={save}>
@@ -85,26 +85,19 @@
 	</div>
 
 	{#if probe}
-		<label class="grid gap-1 text-xs">
+		<div class="grid gap-1 text-xs">
 			Quality profile
-			<select class={selectClass} bind:value={profileId}>
-				{#each probe.profiles as p (p.id)}<option value={p.id}>{p.name}</option>{/each}
-			</select>
-		</label>
-		<label class="grid gap-1 text-xs">
+			<SimpleSelect label="Quality profile" value={String(profileId)} options={probe.profiles.map((p) => ({ value: String(p.id), label: p.name }))} onchange={(v) => (profileId = Number(v))} class="w-full" />
+		</div>
+		<div class="grid gap-1 text-xs">
 			Root folder
-			<select class={selectClass} bind:value={rootFolder}>
-				{#each probe.rootFolders as f (f.id)}<option value={f.path}>{f.path}</option>{/each}
-			</select>
-		</label>
+			<SimpleSelect label="Root folder" value={rootFolder} options={probe.rootFolders.map((f) => ({ value: f.path, label: f.path }))} onchange={(v) => (rootFolder = v)} class="w-full" />
+		</div>
 		{#if kind === 'sonarr'}
-			<label class="grid gap-1 text-xs">
+			<div class="grid gap-1 text-xs">
 				Anime folder (optional): shows that are Animation with a Japanese original language go here and are added as series type anime
-				<select class={selectClass} bind:value={animeRoot}>
-					<option value="">(same as the root folder above)</option>
-					{#each probe.rootFolders as f (f.id)}<option value={f.path}>{f.path}</option>{/each}
-				</select>
-			</label>
+				<SimpleSelect label="Anime folder" value={animeRoot} options={[{ value: '', label: '(same as the root folder above)' }, ...probe.rootFolders.map((f) => ({ value: f.path, label: f.path }))]} onchange={(v) => (animeRoot = v)} class="w-full" />
+			</div>
 		{/if}
 	{:else if instance}
 		<p class="text-xs text-muted-foreground">

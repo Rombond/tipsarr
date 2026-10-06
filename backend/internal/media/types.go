@@ -79,6 +79,9 @@ type Detail struct {
 	CollectionID           int          `json:"collectionId,omitempty"`
 	CollectionName         string       `json:"collectionName,omitempty"`
 	CollectionBackdropPath string       `json:"collectionBackdropPath,omitempty"`
+	Studios                []string     `json:"studios,omitempty" doc:"Production companies (movies) or networks (TV)"`
+	Budget                 int64        `json:"budget,omitempty"`
+	Revenue                int64        `json:"revenue,omitempty"`
 	TrailerKey             string       `json:"trailerKey,omitempty" doc:"YouTube video key of the official trailer"`
 	WatchURL               string       `json:"watchUrl,omitempty" doc:"Deep link to the title in Jellyfin when it is in the library"`
 	Recommendations        []Item       `json:"recommendations"`

@@ -314,7 +314,15 @@ type rawDetail struct {
 		Name         string `json:"name"`
 		BackdropPath string `json:"backdrop_path"`
 	} `json:"belongs_to_collection"`
-	Videos struct {
+	ProductionCompanies []struct {
+		Name string `json:"name"`
+	} `json:"production_companies"`
+	Networks []struct {
+		Name string `json:"name"`
+	} `json:"networks"`
+	Budget  int64 `json:"budget"`
+	Revenue int64 `json:"revenue"`
+	Videos  struct {
 		Results []struct {
 			Key      string `json:"key"`
 			Site     string `json:"site"`
@@ -380,6 +388,16 @@ func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) 
 		}
 	}
 	d.TrailerKey = pickTrailer(raw)
+	d.Budget, d.Revenue = raw.Budget, raw.Revenue
+	if mediaType == "tv" {
+		for _, n := range raw.Networks {
+			d.Studios = append(d.Studios, n.Name)
+		}
+	} else {
+		for _, c := range raw.ProductionCompanies {
+			d.Studios = append(d.Studios, c.Name)
+		}
+	}
 	s.annotate(ctx, d.Recommendations)
 	s.annotate(ctx, d.Similar)
 	one := []Item{d.Item}

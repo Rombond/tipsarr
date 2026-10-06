@@ -31,7 +31,7 @@
 			</h2>
 			<a class="shrink-0 text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline" href="/boxoffice">Full chart →</a>
 		</div>
-		<div class="no-scrollbar -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 md:-mx-6 md:scroll-px-6 md:px-6">
+		<div class="no-scrollbar -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 md:-mx-8 md:scroll-px-8 md:px-8">
 			{#each matched as e (e.position)}
 				<MediaCard item={e.item!} rank={e.position} note={money(e.weekendGross)} inRadarr={e.inRadarr} />
 			{/each}

@@ -101,8 +101,8 @@
 
 <svelte:window onkeydown={globalKey} />
 
-<div class="relative w-full max-w-md">
-	<SearchIcon class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+<div class="relative w-full">
+	<SearchIcon class="pointer-events-none absolute top-1/2 left-4 z-10 size-5 -translate-y-1/2 text-muted-foreground" />
 	<input
 		bind:this={input}
 		bind:value={query}
@@ -117,7 +117,7 @@
 		aria-label="Search movies, TV shows and people"
 		placeholder="Search movies, TV shows, people…  ( / )"
 		autocomplete="off"
-		class="h-9 w-full rounded-md border border-input bg-transparent pr-3 pl-8 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 [&::-webkit-search-cancel-button]:hidden"
+		class="h-11 w-full rounded-full border border-border/60 bg-background/60 pr-4 pl-11 text-sm shadow-sm outline-none backdrop-blur-md placeholder:text-muted-foreground focus-visible:border-ring focus-visible:bg-background/90 focus-visible:ring-[3px] focus-visible:ring-ring/40 [&::-webkit-search-cancel-button]:hidden"
 	/>
 	{#if open}
 		<ul

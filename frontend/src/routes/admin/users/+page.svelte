@@ -5,6 +5,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 
 	let users = $state<Schemas['User'][]>([]);
 	let error = $state<string | null>(null);
@@ -53,16 +54,15 @@
 	}
 
 	const when = (unix: number) => (unix ? new Date(unix * 1000).toLocaleDateString() : 'never');
-	const selectClass = 'h-8 rounded-md border border-input bg-transparent px-2 text-sm';
 </script>
 
 <svelte:head>
 	<title>Users · Tipsarr</title>
 </svelte:head>
 
-<div class="grid max-w-3xl gap-4">
+<div class="grid grid-cols-[minmax(0,1fr)] gap-4">
 	<div class="flex flex-wrap items-center justify-between gap-2">
-		<h1 class="font-bold text-2xl">Users</h1>
+		<h1 class="font-bold text-3xl">Users</h1>
 		<Button variant="outline" size="sm" disabled={busy} onclick={importUsers}>Import from Jellyfin</Button>
 	</div>
 	<p class="text-sm text-muted-foreground">
@@ -78,16 +78,14 @@
 					<div class="font-medium">{u.name}{#if u.id === auth.user?.id} <span class="text-xs text-muted-foreground">(you)</span>{/if}</div>
 					<div class="text-xs text-muted-foreground">last sign-in {when(u.lastLoginAt)}</div>
 				</div>
-				<select
-					class={selectClass}
+				<SimpleSelect
+					label="Role"
 					value={u.role}
 					disabled={u.id === auth.user?.id}
-					aria-label="Role"
-					onchange={(e) => patch(u, { role: e.currentTarget.value as 'admin' | 'user' })}
-				>
-					<option value="user">user</option>
-					<option value="admin">admin</option>
-				</select>
+					options={[{ value: 'user', label: 'user' }, { value: 'admin', label: 'admin' }]}
+					onchange={(v) => patch(u, { role: v as 'admin' | 'user' })}
+					class="h-8 min-w-24"
+				/>
 				<Input
 					class="h-8 w-20"
 					placeholder="Region"

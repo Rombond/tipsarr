@@ -53,7 +53,7 @@
 
 {#snippet item(it: { href: string; label: string; icon: typeof CompassIcon })}
 	<Sidebar.MenuItem>
-		<Sidebar.MenuButton isActive={page.url.pathname.startsWith(it.href)}>
+		<Sidebar.MenuButton isActive={page.url.pathname.startsWith(it.href)} class="h-11 gap-3 px-3 text-[15px] [&_svg]:size-5">
 			{#snippet child({ props })}
 				<a href={it.href} {...props} onclick={() => sidebar.setOpenMobile(false)}>
 					<it.icon />
@@ -69,22 +69,22 @@
 
 <Sidebar.Root>
 	<Sidebar.Header>
-		<a href="/discover" class="flex items-center gap-2 px-2 py-1.5 font-bold text-lg" onclick={() => sidebar.setOpenMobile(false)}>
-			<span class="inline-flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground text-sm">T</span>
+		<a href="/discover" class="flex items-center gap-3 px-3 py-3 font-bold text-xl" onclick={() => sidebar.setOpenMobile(false)}>
+			<span class="inline-flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">T</span>
 			Tipsarr
 		</a>
 	</Sidebar.Header>
 	<Sidebar.Content>
-		<Sidebar.Group>
-			<Sidebar.GroupLabel>Browse</Sidebar.GroupLabel>
-			<Sidebar.Menu>
+		<Sidebar.Group class="px-3 py-3">
+			<Sidebar.GroupLabel class="px-3 text-xs font-semibold uppercase tracking-wider">Browse</Sidebar.GroupLabel>
+			<Sidebar.Menu class="gap-1">
 				{#each browse as it (it.href)}{@render item(it)}{/each}
 			</Sidebar.Menu>
 		</Sidebar.Group>
 		{#if auth.isAdmin}
-			<Sidebar.Group>
-				<Sidebar.GroupLabel>Admin</Sidebar.GroupLabel>
-				<Sidebar.Menu>
+			<Sidebar.Group class="px-3 py-3">
+				<Sidebar.GroupLabel class="px-3 text-xs font-semibold uppercase tracking-wider">Admin</Sidebar.GroupLabel>
+				<Sidebar.Menu class="gap-1">
 					{#each admin as it (it.href)}{@render item(it)}{/each}
 				</Sidebar.Menu>
 			</Sidebar.Group>
@@ -92,8 +92,8 @@
 	</Sidebar.Content>
 	<Sidebar.Footer>
 		<DropdownMenu.Root>
-			<DropdownMenu.Trigger class="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent">
-				<Avatar class="size-7">
+			<DropdownMenu.Trigger class="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-sidebar-accent">
+				<Avatar class="size-9">
 					<AvatarFallback>{initials(auth.username)}</AvatarFallback>
 				</Avatar>
 				<span class="grid min-w-0 text-left leading-tight">
