@@ -6,7 +6,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
-	let { onSelect }: { onSelect?: (item: Schemas['Item']) => void } = $props();
+	import type { Snippet } from 'svelte';
+
+	let { onSelect, fillers = [] }: { onSelect?: (item: Schemas['Item']) => void; /** Other sections to weave between the "Because you watched" rows. */ fillers?: Snippet[] } = $props();
 
 	let rows = $state<Schemas['Row'][]>([]);
 	let generating = $state(false);
@@ -43,6 +45,21 @@
 			load(false);
 		}),
 	);
+
+	// "Because you watched X" rows would otherwise sit in one block: alternate them with the other sections
+	const sequence = $derived.by(() => {
+		const lead = rows.filter((r) => r.variant !== 'because');
+		const because = rows.filter((r) => r.variant === 'because');
+		const out: ({ row: Schemas['Row'] } | { filler: Snippet })[] = lead.map((row) => ({ row }));
+		const spare = [...fillers];
+		for (const row of because) {
+			const f = spare.shift();
+			if (f && out.length) out.push({ filler: f });
+			else if (f) spare.unshift(f);
+			out.push({ row });
+		}
+		return [...out, ...spare.map((filler) => ({ filler }))];
+	});
 
 	function rowTitle(row: Schemas['Row']): string {
 		if (row.variant === 'because') return t('suggest.because', { title: row.seed?.title ?? '' });
@@ -81,12 +98,18 @@
 		<Skeleton class="h-56 w-full" />
 		<p class="text-xs text-muted-foreground">{t('suggest.preparing')}</p>
 	</div>
+	{#each fillers as filler}{@render filler()}{/each}
 {:else if error}
 	<p class="text-sm text-muted-foreground">{t('suggest.unavailable', { error })}</p>
+	{#each fillers as filler}{@render filler()}{/each}
 {:else}
-	<div class="grid gap-6">
-		{#each rows as row (row.id)}
-			<Carousel title={rowTitle(row)} items={row.items} {onSelect} onDismiss={dismiss} />
+	<div class="grid gap-8">
+		{#each sequence as part, i (i)}
+			{#if 'row' in part}
+				<Carousel title={rowTitle(part.row)} items={part.row.items} {onSelect} onDismiss={dismiss} />
+			{:else}
+				{@render part.filler()}
+			{/if}
 		{/each}
 		<div class="-mt-3 flex items-center justify-end gap-3 text-xs text-muted-foreground">
 			{#if refreshMessage}<span>{refreshMessage}</span>{/if}

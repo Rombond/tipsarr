@@ -317,7 +317,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Weekend box-office chart (top 10) with availability and Radarr status
+         * Box-office chart (top 10): weekend or full week with availability and Radarr status
          * @description Global, not personalised: one chart per region and week. Defaults to your region (if configured) and the latest stored week. Display only: nothing is added automatically.
          */
         get: operations["boxOffice"];
@@ -355,6 +355,23 @@ export interface paths {
         };
         /** Genre list */
         get: operations["discoverGenres"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/discover/keywords/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One tag (keyword) by id */
+        get: operations["keyword"];
         put?: never;
         post?: never;
         delete?: never;
@@ -462,6 +479,113 @@ export interface paths {
          * @description Configure the Jellyfin Webhook plugin with a Generic destination pointing here and a template like {"NotificationType":"{{NotificationType}}","UserId":"{{UserId}}","ItemType":"{{ItemType}}"}. Library events refresh the library; everything else refreshes that user's watch history (debounced).
          */
         post: operations["jellyfinWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List issues (admins see everyone's, users their own) */
+        get: operations["listIssues"];
+        put?: never;
+        /**
+         * Report a problem with a movie or show
+         * @description Admins are notified through the webhooks (issue.created) and the live event stream.
+         */
+        post: operations["createIssue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issues/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open and resolved issue totals */
+        get: operations["issueCounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issues/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One issue with its comments */
+        get: operations["getIssue"];
+        put?: never;
+        post?: never;
+        /** Delete an issue (admin) */
+        delete: operations["deleteIssue"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issues/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a comment (reporter or admin) */
+        post: operations["commentIssue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issues/{id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reopen an issue (reporter or admin) */
+        post: operations["reopenIssue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issues/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve an issue (reporter or admin) */
+        post: operations["resolveIssue"];
         delete?: never;
         options?: never;
         head?: never;
@@ -584,6 +708,26 @@ export interface paths {
         };
         /** Requests per status */
         get: operations["requestCounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Quality profiles and root folders an admin can pick when requesting
+         * @description Read-only calls to the default Radarr (movie) or Sonarr (tv) instance.
+         */
+        get: operations["requestOptions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -786,6 +930,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A user's profile and request statistics
+         * @description Everyone can read their own profile; admins can read anyone's.
+         */
+        get: operations["userProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/watchlist": {
         parameters: {
             query?: never;
@@ -850,14 +1014,19 @@ export interface components {
             profilePath?: string;
         };
         Chart: {
+            end?: string;
             entries: components["schemas"]["ChartEntry"][];
             /** Format: int64 */
             fetchedAt: number;
+            /** @description Weekly charts are stored for this region */
+            hasWeekly: boolean;
             label?: string;
             region: string;
             regions: string[];
+            start?: string;
             /** @description Week key, e.g. 2026W40; empty when nothing is stored yet */
             week: string;
+            weekly: boolean;
             weeks: components["schemas"]["WeekRef"][];
         };
         ChartEntry: {
@@ -889,13 +1058,50 @@ export interface components {
             parts: components["schemas"]["Item"][];
             posterPath?: string;
         };
+        CommentIssueRequest: {
+            message: string;
+        };
+        CreateIssueRequest: {
+            /**
+             * Format: int64
+             * @description TV only, 0 = whole season
+             */
+            episode?: number;
+            /** @enum {string} */
+            kind: "video" | "audio" | "subtitles" | "other";
+            message: string;
+            /**
+             * Format: int64
+             * @description TV only, 0 = whole show
+             */
+            season?: number;
+            /** Format: int64 */
+            tmdbId: number;
+            /** @enum {string} */
+            type: "movie" | "tv";
+        };
         CreateRequestRequest: {
+            /**
+             * Format: int64
+             * @description Admin only: Radarr/Sonarr quality profile to use
+             */
+            qualityProfileId?: number;
+            /** @description Admin only: root folder to use */
+            rootFolder?: string;
             /** @description TV only; empty means every season */
             seasons?: number[];
             /** Format: int64 */
             tmdbId: number;
             /** @enum {string} */
             type: "movie" | "tv";
+        };
+        CrewMember: {
+            /** Format: int64 */
+            id: number;
+            /** @description Director, Writer, Screenplay, Story, Novel, Editor, Producer, Composer, Cinematography, Creator */
+            job: string;
+            name: string;
+            profilePath?: string;
         };
         DeclineRequestRequest: {
             reason?: string;
@@ -914,11 +1120,19 @@ export interface components {
             /** Format: int64 */
             collectionId?: number;
             collectionName?: string;
+            /** @description Production countries */
+            countries?: string[];
+            /** @description Key crew (writers, editor, producers, composer...); creators for TV */
+            crew: components["schemas"]["CrewMember"][];
             directors: components["schemas"]["Person"][];
             genreIds?: number[];
             genres: components["schemas"]["Genre"][];
             homepage?: string;
             imdbId?: string;
+            /** @description TMDB tags such as "superhero"; searchable */
+            keywords: components["schemas"]["Keyword"][];
+            /** @description Spoken languages, English names */
+            languages?: string[];
             /** Format: int64 */
             numberOfEpisodes?: number;
             /** Format: int64 */
@@ -958,6 +1172,8 @@ export interface components {
             type: "movie" | "tv";
             /** Format: double */
             voteAverage: number;
+            /** Format: int64 */
+            voteCount?: number;
             /** @description Deep link to the title in Jellyfin when it is in the library */
             watchUrl?: string;
         };
@@ -1069,6 +1285,48 @@ export interface components {
             rootFolder: string;
             url: string;
         };
+        IssueComment: {
+            /** Format: int64 */
+            createdAt: number;
+            id: string;
+            message: string;
+            user: components["schemas"]["IssueUser"];
+        };
+        IssueCounts: {
+            /** Format: int64 */
+            open: number;
+            /** Format: int64 */
+            resolved: number;
+        };
+        IssueUser: {
+            id: string;
+            name: string;
+        };
+        IssueView: {
+            /** Format: int64 */
+            commentCount: number;
+            /** Format: int64 */
+            createdAt: number;
+            createdBy: components["schemas"]["IssueUser"];
+            /** Format: int64 */
+            episode?: number;
+            id: string;
+            /** @enum {string} */
+            kind: "video" | "audio" | "subtitles" | "other";
+            posterPath?: string;
+            resolvedBy?: components["schemas"]["IssueUser"];
+            /** Format: int64 */
+            season?: number;
+            /** @enum {string} */
+            status: "open" | "resolved";
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+            /** @enum {string} */
+            type: "movie" | "tv";
+            /** Format: int64 */
+            updatedAt: number;
+        };
         Item: {
             /**
              * @description Library availability (filled by library sync)
@@ -1097,6 +1355,11 @@ export interface components {
             /** Format: double */
             voteAverage: number;
         };
+        Keyword: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+        };
         List: {
             items: components["schemas"]["Item"][];
             /** Format: int64 */
@@ -1104,9 +1367,26 @@ export interface components {
             /** Format: int64 */
             totalPages: number;
         };
+        ListIssuesResponse: {
+            items: components["schemas"]["IssueView"][];
+            /** Format: int64 */
+            total: number;
+        };
         LoginInputBody: {
             password: string;
             username: string;
+        };
+        Options: {
+            instanceName: string;
+            profiles: components["schemas"]["QualityProfile"][];
+            /**
+             * Format: int64
+             * @description The instance default
+             */
+            qualityProfileId: number;
+            /** @description The instance default */
+            rootFolder: string;
+            rootFolders: components["schemas"]["RootFolder"][];
         };
         Person: {
             department?: string;
@@ -1148,6 +1428,50 @@ export interface components {
             profiles: components["schemas"]["QualityProfile"][];
             rootFolders: components["schemas"]["RootFolder"][];
             version: string;
+        };
+        ProfileStats: {
+            /** Format: int64 */
+            approved: number;
+            /** Format: int64 */
+            available: number;
+            /** Format: int64 */
+            declined: number;
+            /** Format: int64 */
+            failed: number;
+            /**
+             * Format: int64
+             * @description Requested movies
+             */
+            movies: number;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            requests: number;
+            /**
+             * Format: int64
+             * @description Requested shows
+             */
+            shows: number;
+            /**
+             * Format: int64
+             * @description Titles watched according to the Jellyfin history
+             */
+            watched: number;
+            /** Format: int64 */
+            watchlist: number;
+        };
+        ProfileView: {
+            /** Format: int64 */
+            createdAt: number;
+            id: string;
+            language: string;
+            /** Format: int64 */
+            lastLoginAt: number;
+            name: string;
+            region: string;
+            /** @enum {string} */
+            role: "admin" | "user";
+            stats: components["schemas"]["ProfileStats"];
         };
         Progress: {
             /** Format: int64 */
@@ -1209,9 +1533,13 @@ export interface components {
         };
         SearchResult: {
             items: components["schemas"]["Item"][];
+            /** @description Tags matching the query (only when tags=true) */
+            keywords: components["schemas"]["Keyword"][];
             /** Format: int64 */
             page: number;
             people: components["schemas"]["Person"][];
+            /** @description Titles carrying one of those tags that the text search did not return */
+            tagged: components["schemas"]["Item"][];
             /** Format: int64 */
             totalPages: number;
         };
@@ -1255,6 +1583,8 @@ export interface components {
             /** @description Address browsers use to open Jellyfin (Play buttons); empty = same as jellyfinUrl */
             jellyfinPublicUrl: string;
             jellyfinUrl: string;
+            /** @description Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only) */
+            servarrAutoImport: boolean;
             /** @description Secrets are write-only; this only says whether a key is saved */
             tmdbConfigured: boolean;
             /** @description Path (with secret token) for the Jellyfin webhook plugin to call */
@@ -1314,6 +1644,32 @@ export interface components {
              */
             shows: number;
         };
+        Thread: {
+            /** Format: int64 */
+            commentCount: number;
+            comments: components["schemas"]["IssueComment"][];
+            /** Format: int64 */
+            createdAt: number;
+            createdBy: components["schemas"]["IssueUser"];
+            /** Format: int64 */
+            episode?: number;
+            id: string;
+            /** @enum {string} */
+            kind: "video" | "audio" | "subtitles" | "other";
+            posterPath?: string;
+            resolvedBy?: components["schemas"]["IssueUser"];
+            /** Format: int64 */
+            season?: number;
+            /** @enum {string} */
+            status: "open" | "resolved";
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+            /** @enum {string} */
+            type: "movie" | "tv";
+            /** Format: int64 */
+            updatedAt: number;
+        };
         UpdateSettingsInputBody: {
             /** @description Comma-separated region codes; empty resets to US */
             boxofficeRegions?: string;
@@ -1321,6 +1677,7 @@ export interface components {
             jellyfinApiKey?: string;
             /** @description Empty string clears it */
             jellyfinPublicUrl?: string;
+            servarrAutoImport?: boolean;
             /** @description Set or replace the TMDB key (empty string clears it) */
             tmdbApiKey?: string;
         };
@@ -1361,6 +1718,8 @@ export interface components {
             releaseDate?: string;
             requestedBy: components["schemas"]["UserRef"];
             seasons?: number[];
+            /** @description Set when the request was imported from what Radarr/Sonarr already monitor */
+            source?: string;
             /**
              * @description User-facing lifecycle step
              * @enum {string}
@@ -1403,8 +1762,15 @@ export interface components {
             url: string;
         };
         WeekRef: {
+            /** @description Last day covered, YYYY-MM-DD */
+            end?: string;
+            /** @description Week key; weekly charts end with a "w" */
             key: string;
             label: string;
+            /** @description First day covered, YYYY-MM-DD */
+            start?: string;
+            /** @description Full Monday-Sunday week instead of the Friday-Sunday weekend */
+            weekly: boolean;
         };
     };
     responses: never;
@@ -2800,8 +3166,10 @@ export interface operations {
             query?: {
                 /** @description Region code, e.g. US, GB, FR */
                 region?: string;
-                /** @description Week key, e.g. 2026W40 */
+                /** @description Week key, e.g. 2026W40 (a trailing w means the full week) */
                 week?: string;
+                /** @description List full Monday-Sunday weeks instead of weekends */
+                weekly?: boolean;
             };
             header?: never;
             path?: never;
@@ -2999,6 +3367,82 @@ export interface operations {
             };
         };
     };
+    keyword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Keyword"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     discover_movie: {
         parameters: {
             query?: {
@@ -3006,6 +3450,8 @@ export interface operations {
                 page?: number;
                 /** @description TMDB genre id */
                 genre?: number;
+                /** @description TMDB keyword (tag) id */
+                keyword?: number;
             };
             header?: never;
             path?: never;
@@ -3144,6 +3590,8 @@ export interface operations {
                 page?: number;
                 /** @description TMDB genre id */
                 genre?: number;
+                /** @description TMDB keyword (tag) id */
+                keyword?: number;
             };
             header?: never;
             path?: never;
@@ -3328,6 +3776,459 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    listIssues: {
+        parameters: {
+            query?: {
+                filter?: "all" | "open" | "resolved";
+                /** @description With tmdbId: only the issues of one title */
+                type?: string;
+                tmdbId?: number;
+                take?: number;
+                skip?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListIssuesResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    createIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateIssueRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Thread"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    issueCounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssueCounts"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    getIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Thread"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    deleteIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    commentIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentIssueRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Thread"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    reopenIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Thread"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    resolveIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Thread"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3728,6 +4629,8 @@ export interface operations {
         parameters: {
             query?: {
                 filter?: "all" | "mine" | "pending" | "approved" | "available" | "declined" | "failed";
+                /** @description Admins only: only this user's requests */
+                user?: string;
                 take?: number;
                 skip?: number;
             };
@@ -3873,6 +4776,82 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    requestOptions: {
+        parameters: {
+            query: {
+                type: "movie" | "tv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Options"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4305,6 +5284,8 @@ export interface operations {
                 /** @description Page number */
                 page?: number;
                 q: string;
+                /** @description Also look for titles carrying a matching tag (slower; for the results page) */
+                tags?: boolean;
             };
             header?: never;
             path?: never;
@@ -4569,6 +5550,73 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    userProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

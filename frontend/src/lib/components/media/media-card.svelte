@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.svelte';
 	import { goto } from '$app/navigation';
-	import { api, unwrap, imageUrl, errorText, type MediaItem } from '$lib/api/client';
-	import { toast } from '$lib/toast.svelte';
-	import { Badge } from '$lib/components/ui/badge';
+	import { imageUrl, type MediaItem } from '$lib/api/client';
+	import StatusIcon from '$lib/components/ui/status-icon.svelte';
+	import RequestFlow from '$lib/components/requests/request-flow.svelte';
+	import { itemStatus } from '$lib/status';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import XIcon from '@lucide/svelte/icons/x';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import CheckIcon from '@lucide/svelte/icons/check';
 	import StarIcon from '@lucide/svelte/icons/star';
 
 	let {
@@ -16,6 +16,7 @@
 		rank,
 		note,
 		inRadarr = false,
+		radarrHasFile = false,
 		onDismiss,
 		fluid = false,
 	}: {
@@ -27,6 +28,8 @@
 		note?: string;
 		/** Radarr already tracks this movie. */
 		inRadarr?: boolean;
+		/** ...and already has the file. */
+		radarrHasFile?: boolean;
 		/** Shows a "not interested" button on hover (used by suggestion rows). */
 		onDismiss?: (item: MediaItem) => void;
 		/** Fill the grid cell instead of a fixed poster width. */
@@ -35,31 +38,19 @@
 
 	let requested = $state<string | null>(null);
 	let requesting = $state(false);
+	let flow: { start: () => void } | undefined = $state();
 
 	const poster = $derived(imageUrl(item.posterPath, 'w342'));
 	const year = $derived(item.releaseDate?.slice(0, 4));
-	const status = $derived(requested ?? item.requestStatus ?? null);
-	const canQuickRequest = $derived(item.type === 'movie' && item.availability !== 'available' && status === null);
+	const shown = $derived(itemStatus({ availability: item.availability, requestStatus: requested ?? item.requestStatus }, { tracked: inRadarr, hasFile: radarrHasFile }));
+	const canQuickRequest = $derived(item.availability !== 'available' && shown === null);
 
 	function openDetails() {
 		goto(`/media/${item.type}/${item.tmdbId}`);
 	}
-
-	async function quickRequest(e: MouseEvent) {
-		e.stopPropagation();
-		if (requesting) return;
-		requesting = true;
-		try {
-			const r = await unwrap(api.POST('/requests', { body: { type: item.type, tmdbId: item.tmdbId } }));
-			requested = r.status;
-			toast.success(r.status === 'approved' ? t(r.dryRun ? 'media.toast_approved_dry' : 'media.toast_approved', { title: item.title }) : t('media.toast_requested', { title: item.title }));
-		} catch (err) {
-			toast.error(errorText(err));
-		} finally {
-			requesting = false;
-		}
-	}
 </script>
+
+<RequestFlow bind:this={flow} bind:busy={requesting} type={item.type} tmdbId={item.tmdbId} title={item.title} onrequested={(r) => (requested = r.status)} />
 
 <div class={fluid ? 'min-w-0' : 'w-32 shrink-0 snap-start sm:w-40'}>
 	<div
@@ -83,15 +74,8 @@
 			{/if}
 		</button>
 
-		{#if item.availability !== 'none'}
-			<Badge class="absolute top-1.5 right-1.5 gap-1 text-[10px]">
-				<CheckIcon class="size-3" />
-				{item.availability === 'available' ? t('media.available') : t('card.partial')}
-			</Badge>
-		{:else if status}
-			<Badge variant="secondary" class="absolute top-1.5 right-1.5 text-[10px]">{status === 'pending' ? t('media.requested') : t('media.approved')}</Badge>
-		{:else if inRadarr}
-			<Badge variant="secondary" class="absolute top-1.5 right-1.5 text-[10px]">{t('media.in_radarr')}</Badge>
+		{#if shown}
+			<StatusIcon status={shown} class="absolute top-1.5 right-1.5" />
 		{/if}
 
 		<span class="pointer-events-none absolute top-1.5 left-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white uppercase backdrop-blur-sm">
@@ -109,7 +93,10 @@
 					type="button"
 					class="flex cursor-pointer items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-black shadow hover:bg-white disabled:opacity-60"
 					disabled={requesting}
-					onclick={quickRequest}
+					onclick={(e) => {
+						e.stopPropagation();
+						flow?.start();
+					}}
 				>
 					<PlusIcon class="size-3.5" />
 					{requesting ? '…' : t('card.quick_request')}
@@ -150,7 +137,7 @@
 	<p class="mt-1.5 truncate text-sm font-medium" title={item.title}>{item.title}</p>
 	<p class="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
 		{#if year}<span>{year}</span>{/if}
-		{#if item.voteAverage}<span class="inline-flex items-center gap-0.5"><StarIcon class="size-3 fill-amber-400 text-amber-400" />{item.voteAverage.toFixed(1)}</span>{/if}
+		{#if item.voteAverage}<span class="inline-flex items-center gap-0.5" title={t('card.rating_hint')}><StarIcon class="size-3 fill-amber-400 text-amber-400" />{item.voteAverage.toFixed(1)}</span>{/if}
 	</p>
 	{#if note}<p class="truncate text-xs text-muted-foreground">{note}</p>{/if}
 </div>

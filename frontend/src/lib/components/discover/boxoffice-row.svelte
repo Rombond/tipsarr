@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.svelte';
-	import { fmtMoneyCompact, weekendRange } from '$lib/i18n/format';
+	import { fmtMoneyCompact, dateRange } from '$lib/i18n/format';
 	import { api, unwrap, errorText, type Schemas } from '$lib/api/client';
 	import MediaCard from '$lib/components/media/media-card.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -29,13 +29,13 @@
 		<div class="flex items-baseline justify-between gap-3">
 			<h2 class="min-w-0 font-semibold text-lg">
 				{t('boxrow.title')}
-				<span class="block text-xs font-normal text-muted-foreground sm:ml-1 sm:inline sm:text-sm">{weekendRange(chart.week)} · {chart.region}</span>
+				<span class="block text-xs font-normal text-muted-foreground sm:ml-1 sm:inline sm:text-sm">{dateRange(chart.start, chart.end)} · {chart.region}</span>
 			</h2>
 			<a class="shrink-0 text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline" href="/boxoffice">{t('boxrow.full')}</a>
 		</div>
 		<div class="no-scrollbar -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 md:-mx-8 md:scroll-px-8 md:px-8">
 			{#each matched as e (e.position)}
-				<MediaCard item={e.item!} rank={e.position} note={money(e.weekendGross)} inRadarr={e.inRadarr} />
+				<MediaCard item={e.item!} rank={e.position} note={money(e.weekendGross)} inRadarr={e.inRadarr} radarrHasFile={e.hasFile} />
 			{/each}
 		</div>
 	</section>

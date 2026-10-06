@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.svelte';
-	import { goto } from '$app/navigation';
-	import { api, unwrap, imageUrl, errorText, type MediaItem } from '$lib/api/client';
+		import { api, unwrap, imageUrl, errorText, type MediaItem } from '$lib/api/client';
 	import { toast } from '$lib/toast.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Badge } from '$lib/components/ui/badge';
+	import StatusIcon from '$lib/components/ui/status-icon.svelte';
+	import { itemStatus } from '$lib/status';
 	import { Button } from '$lib/components/ui/button';
 	import StarIcon from '@lucide/svelte/icons/star';
 
@@ -28,16 +29,11 @@
 		if (!next) onclose?.();
 	}
 
-	function handleViewDetails() {
-		if (!item) return;
-		const url = `/media/${item.type}/${item.tmdbId}`;
-		onclose?.();
-		goto(url);
-	}
+	const detailsUrl = $derived(item ? `/media/${item.type}/${item.tmdbId}` : '#');
+	const shown = $derived(item ? itemStatus({ availability: item.availability, requestStatus: status }) : null);
 
 	async function request() {
 		if (!item) return;
-		if (item.type === 'tv') return handleViewDetails(); // seasons are chosen on the details page
 		busy = true;
 		try {
 			const r = await unwrap(api.POST('/requests', { body: { type: item.type, tmdbId: item.tmdbId } }));
@@ -66,17 +62,20 @@
 						<Badge variant="secondary">{item.type === 'tv' ? t('type.tv_short') : t('type.movie')}</Badge>
 						{#if item.releaseDate}<span>{item.releaseDate.slice(0, 4)}</span>{/if}
 						{#if item.voteAverage}<span class="inline-flex items-center gap-0.5"><StarIcon class="size-3 fill-amber-400 text-amber-400" />{item.voteAverage.toFixed(1)}</span>{/if}
-						{#if item.availability !== 'none'}<Badge>{item.availability === 'available' ? t('media.available') : t('card.partial')}</Badge>{/if}
+						{#if shown}<StatusIcon status={shown} />{/if}
 					</div>
 					<Dialog.Title class="text-xl">{item.title}</Dialog.Title>
 				</Dialog.Header>
 				{#if item.overview}<p class="line-clamp-6 text-sm text-muted-foreground">{item.overview}</p>{/if}
 				<Dialog.Footer class="gap-2">
-					<Button variant="outline" onclick={handleViewDetails}>{t('modal.more_details')}</Button>
-					{#if item.availability !== 'available'}
-						<Button disabled={busy || status !== null} onclick={request}>
-							{status === 'pending' ? t('media.requested') : status === 'approved' ? t('media.approved') : item.type === 'tv' ? t('hero.choose_seasons') : busy ? t('media.requesting') : t('media.request')}
-						</Button>
+					<Button variant="outline" href={detailsUrl} onclick={() => onclose?.()}>{t('modal.more_details')}</Button>
+					{#if item.availability !== 'available' && status === null}
+						{#if item.type === 'tv'}
+							<!-- seasons are picked on the details page: this only navigates -->
+							<Button href={detailsUrl} onclick={() => onclose?.()}>{t('hero.choose_seasons')}</Button>
+						{:else}
+							<Button disabled={busy} onclick={request}>{busy ? t('media.requesting') : t('media.request')}</Button>
+						{/if}
 					{/if}
 				</Dialog.Footer>
 			</div>

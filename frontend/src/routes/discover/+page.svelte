@@ -12,6 +12,20 @@
 	const select = (item: MediaItem) => (selected = item);
 </script>
 
+{#snippet boxoffice()}<BoxofficeRow />{/snippet}
+{#snippet trending()}
+	<DiscoverRow title={t('discover.trending')} onSelect={select} load={(page) => unwrap(api.GET('/discover/trending', { params: { query: { page } } }))} />
+{/snippet}
+{#snippet popularMovies()}
+	<DiscoverRow title={t('discover.popular_movies')} onSelect={select} load={(page) => unwrap(api.GET('/discover/movies', { params: { query: { page } } }))} />
+{/snippet}
+{#snippet popularTv()}
+	<DiscoverRow title={t('discover.popular_tv')} onSelect={select} load={(page) => unwrap(api.GET('/discover/tv', { params: { query: { page } } }))} />
+{/snippet}
+{#snippet upcoming()}
+	<DiscoverRow title={t('discover.upcoming')} onSelect={select} load={(page) => unwrap(api.GET('/discover/upcoming', { params: { query: { page } } }))} />
+{/snippet}
+
 <svelte:head>
 	<title>{t('discover.title')} · Tipsarr</title>
 </svelte:head>
@@ -21,29 +35,7 @@
 	<SetupChecklist />
 	<Hero />
 
-	<SuggestionRows onSelect={select} />
-	<BoxofficeRow />
-
-	<DiscoverRow
-		title={t('discover.trending')}
-		onSelect={select}
-		load={(page) => unwrap(api.GET('/discover/trending', { params: { query: { page } } }))}
-	/>
-	<DiscoverRow
-		title={t('discover.popular_movies')}
-		onSelect={select}
-		load={(page) => unwrap(api.GET('/discover/movies', { params: { query: { page } } }))}
-	/>
-	<DiscoverRow
-		title={t('discover.popular_tv')}
-		onSelect={select}
-		load={(page) => unwrap(api.GET('/discover/tv', { params: { query: { page } } }))}
-	/>
-	<DiscoverRow
-		title={t('discover.upcoming')}
-		onSelect={select}
-		load={(page) => unwrap(api.GET('/discover/upcoming', { params: { query: { page } } }))}
-	/>
+	<SuggestionRows onSelect={select} fillers={[boxoffice, trending, popularMovies, popularTv, upcoming]} />
 </div>
 
 <MediaDetailModal open={selected !== null} item={selected} onclose={() => (selected = null)} />

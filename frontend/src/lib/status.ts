@@ -22,11 +22,11 @@ export const STATUS: Record<StatusKey, { icon: typeof CheckIcon; solid: string; 
 };
 
 /** The state a MediaItem shows: availability wins, then the active request. */
-export function itemStatus(item: { availability: string; requestStatus?: string | null }, extra?: { tracked?: boolean }): StatusKey | null {
+export function itemStatus(item: { availability: string; requestStatus?: string | null }, extra?: { tracked?: boolean; hasFile?: boolean }): StatusKey | null {
 	if (item.availability === 'available') return 'available';
 	if (item.availability === 'partial') return 'partial';
 	if (item.requestStatus === 'pending') return 'requested';
 	if (item.requestStatus === 'approved') return 'approved';
-	if (extra?.tracked) return 'approved'; // already in Radarr/Sonarr: same as an approved request
+	if (extra?.tracked) return extra.hasFile ? 'available' : 'approved'; // in Radarr/Sonarr: same as an approved request (or already downloaded)
 	return null;
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.svelte';
-	import { fmtDateTime, fmtMoneyCompact, weekendRange } from '$lib/i18n/format';
+	import { dateRange, fmtDateTime, fmtMoneyCompact } from '$lib/i18n/format';
 	import { api, unwrap, expectOk, imageUrl, errorText, type Schemas } from '$lib/api/client';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -10,11 +10,13 @@
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import CheckIcon from '@lucide/svelte/icons/check';
 	import { Badge } from '$lib/components/ui/badge';
+	import StatusIcon from '$lib/components/ui/status-icon.svelte';
+	import { itemStatus } from '$lib/status';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
 	let region = $state('');
+	let weekly = $state(false); // full Monday-Sunday weeks instead of weekends
 	let head = $state<Schemas['Chart'] | null>(null); // region/week lists + latest chart
 	let charts = $state<Schemas['Chart'][]>([]); // one chart per stored weekend, newest first
 	let loading = $state(true);
@@ -31,7 +33,7 @@
 		loading = true;
 		error = null;
 		try {
-			const first = await unwrap(api.GET('/boxoffice', { params: { query: region ? { region } : {} } }));
+			const first = await unwrap(api.GET('/boxoffice', { params: { query: { ...(region ? { region } : {}), weekly } } }));
 			head = first;
 			region = first.region;
 			const rest = await Promise.all(
@@ -47,6 +49,7 @@
 
 	$effect(() => {
 		region;
+		weekly;
 		load();
 	});
 
@@ -88,14 +91,8 @@
 	const share = (c: Schemas['Chart'], e: Schemas['ChartEntry']) =>
 		Math.max(2, Math.round((e.weekendGross / Math.max(1, ...c.entries.map((x) => x.weekendGross))) * 100));
 
-	// what the row can do right now
-	function stateOf(e: Schemas['ChartEntry']): 'available' | 'requested' | 'radarr' | 'requestable' | 'none' {
-		if (!e.item) return 'none';
-		if (e.item.availability === 'available') return 'available';
-		if (e.item.requestStatus) return 'requested';
-		if (e.inRadarr) return 'radarr';
-		return 'requestable';
-	}
+	// what the row can do right now: the same states as a request, plus "nothing yet"
+	const stateOf = (e: Schemas['ChartEntry']) => (e.item ? itemStatus(e.item, { tracked: e.inRadarr, hasFile: e.hasFile }) : null);
 
 	let requesting = $state(new Set<number>());
 	async function quickRequest(e: Schemas['ChartEntry']) {
@@ -119,6 +116,11 @@
 	function changeRegion(value: string) {
 		region = value;
 	}
+
+	const periods = $derived([
+		{ value: 'weekend', label: t('box.period_weekend') },
+		{ value: 'week', label: t('box.period_week') },
+	]);
 </script>
 
 <svelte:head>
@@ -127,7 +129,7 @@
 
 {#snippet card(c: Schemas['Chart'], e: Schemas['ChartEntry'])}
 	{@const poster = imageUrl(e.item?.posterPath, 'w342')}
-	{@const state = stateOf(e)}
+	{@const shown = stateOf(e)}
 	<article class="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
 		<div class="relative aspect-[2/3] overflow-hidden bg-muted">
 			{#if e.item}
@@ -138,13 +140,7 @@
 				<div class="flex h-full w-full items-center justify-center p-3 text-center text-sm text-muted-foreground">{t('box.no_match', { title: e.title })}</div>
 			{/if}
 			<span class="pointer-events-none absolute top-2 left-2 rounded-lg bg-black/70 px-2.5 py-0.5 font-black text-lg text-white backdrop-blur">#{e.position}</span>
-			{#if state === 'available'}
-				<Badge class="absolute top-2 right-2 gap-1"><CheckIcon class="size-3" />{t('media.available')}</Badge>
-			{:else if state === 'requested'}
-				<Badge variant="secondary" class="absolute top-2 right-2">{e.item?.requestStatus === 'pending' ? t('media.requested') : t('media.approved')}</Badge>
-			{:else if state === 'radarr'}
-				<Badge variant="secondary" class="absolute top-2 right-2" title={e.hasFile ? t('box.in_radarr_file') : t('box.in_radarr_tracking')}>{t('media.in_radarr')}</Badge>
-			{/if}
+			{#if shown}<StatusIcon status={shown} class="absolute top-2 right-2" />{/if}
 			{#if auth.isAdmin}
 				<button
 					type="button"
@@ -163,17 +159,18 @@
 				<p class="text-xs text-muted-foreground">
 					{#if e.item?.releaseDate}{e.item.releaseDate.slice(0, 4)}&nbsp;·&nbsp;{/if}{t('box.week_n', { n: e.weeksInRelease || '-' })}
 				</p>
-				<div title={t('box.gross_hint')}>
-					<div class="h-1.5 overflow-hidden rounded-full bg-muted">
+				<div title={c.weekly ? t('box.gross_hint_week') : t('box.gross_hint')}>
+					<p class="flex items-baseline justify-between gap-2">
+						<span class="font-semibold text-sm tabular-nums">{compact(e.weekendGross)}</span>
+						<span class="text-xs text-muted-foreground">{c.weekly ? t('box.this_week') : t('box.this_weekend')}</span>
+					</p>
+					<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
 						<div class="h-full rounded-full bg-primary/80" style="width: {share(c, e)}%"></div>
 					</div>
-					<p class="mt-1 flex justify-between text-xs">
-						<span class="font-semibold tabular-nums">{compact(e.weekendGross)}</span>
-						<span class="text-muted-foreground">{t('box.total', { amount: compact(e.totalGross) })}</span>
-					</p>
+					<p class="mt-1 text-xs text-muted-foreground">{t('box.total', { amount: compact(e.totalGross) })}</p>
 				</div>
 			</div>
-			{#if state === 'requestable' && e.item}
+			{#if shown === null && e.item}
 				<Button size="sm" class="w-full" disabled={requesting.has(e.item.tmdbId)} onclick={() => quickRequest(e)}>
 					<PlusIcon class="size-4" />{t('media.request')}
 				</Button>
@@ -189,6 +186,7 @@
 		<div>
 			<h1 class="font-bold text-3xl">{t('box.title')}</h1>
 			<p class="text-sm text-muted-foreground">{t('box.subtitle')}</p>
+			<p class="text-xs text-muted-foreground">{t('box.bar_hint')}</p>
 		</div>
 		<div class="flex flex-wrap items-center gap-2">
 			{#if head && head.regions.length > 1}
@@ -200,11 +198,14 @@
 					class="min-w-20"
 				/>
 			{/if}
+			{#if head?.hasWeekly || weekly}
+				<SimpleSelect label={t('box.period')} value={weekly ? 'week' : 'weekend'} options={periods} onchange={(v) => (weekly = v === 'week')} class="min-w-32" />
+			{/if}
 			{#if charts.length > 1}
 				<!-- jump chips: the weekends sit under each other, these scroll to them -->
 				<nav class="flex flex-wrap gap-1.5" aria-label={t('box.jump')}>
 					{#each charts as c (c.week)}
-						<a href="#w-{c.week}" class="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground">{weekendRange(c.week)}</a>
+						<a href="#w-{c.week}" class="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground">{dateRange(c.start, c.end)}</a>
 					{/each}
 				</nav>
 			{/if}
@@ -225,7 +226,7 @@
 		{#each charts as c, i (c.week)}
 			<section id="w-{c.week}" class="grid scroll-mt-24 gap-4 transition-opacity" class:opacity-60={loading}>
 				<div class="flex items-baseline gap-3 border-b border-border pb-2">
-					<h2 class="font-semibold text-xl">{t('box.weekend_of', { range: weekendRange(c.week) })}</h2>
+					<h2 class="font-semibold text-xl">{t(c.weekly ? 'box.week_of' : 'box.weekend_of', { range: dateRange(c.start, c.end) })}</h2>
 					{#if i === 0}<Badge variant="secondary">{t('box.latest')}</Badge>{/if}
 					<span class="ml-auto text-xs text-muted-foreground">{c.region}</span>
 				</div>

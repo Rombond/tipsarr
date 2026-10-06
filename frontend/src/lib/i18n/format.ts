@@ -34,21 +34,12 @@ export function languageName(code: string): string {
 	}
 }
 
-/** "2026W40" -> the Friday-Sunday range of that ISO week, e.g. "2–4 octobre 2026". */
-export function weekendRange(weekKey: string): string {
-	const m = /^(\d{4})W(\d{2})$/.exec(weekKey);
-	if (!m) return weekKey;
-	const year = Number(m[1]);
-	const week = Number(m[2]);
-	// ISO week 1 contains Jan 4th; Monday of week N, then Friday..Sunday
-	const jan4 = new Date(Date.UTC(year, 0, 4));
-	const monday = new Date(jan4);
-	monday.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() + 6) % 7) + (week - 1) * 7);
-	const fri = new Date(monday);
-	fri.setUTCDate(monday.getUTCDate() + 4);
-	const sun = new Date(monday);
-	sun.setUTCDate(monday.getUTCDate() + 6);
-	return new Intl.DateTimeFormat(i18n.tag, { dateStyle: 'long', timeZone: 'UTC' }).formatRange(fri, sun);
+/** Two ISO dates (YYYY-MM-DD) as one localised range, e.g. "2–4 octobre 2026". */
+export function dateRange(start?: string, end?: string): string {
+	if (!start || !end) return start || end || '';
+	const a = new Date(`${start}T00:00:00Z`);
+	const b = new Date(`${end}T00:00:00Z`);
+	return new Intl.DateTimeFormat(i18n.tag, { dateStyle: 'long', timeZone: 'UTC' }).formatRange(a, b);
 }
 
 export function fmtDuration(seconds: number, t: (k: 'time.min' | 'time.hours', p: Record<string, number>) => string): string {

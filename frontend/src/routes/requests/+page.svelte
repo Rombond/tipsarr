@@ -11,6 +11,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
 	type Filter = 'all' | 'mine' | 'pending' | 'approved' | 'available' | 'declined' | 'failed';
+	const dot: Record<string, string> = { pending: 'bg-amber-500', approved: 'bg-sky-500', available: 'bg-emerald-500', declined: 'bg-rose-500', failed: 'bg-orange-600' };
 	const filters: Filter[] = ['all', 'pending', 'approved', 'available', 'declined', 'failed'];
 
 	let filter = $state<Filter>('all');
@@ -141,6 +142,7 @@
 				class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-sm capitalize transition-colors {filter === f ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'}"
 				onclick={() => (filter = f)}
 			>
+				{#if dot[f]}<span class="size-2 rounded-full {dot[f]}"></span>{/if}
 				{t(`requests.tab.${f === 'mine' ? 'all' : f}` as 'requests.tab.all')}
 				{#if n > 0}<span class="rounded-full bg-black/10 px-1.5 text-[11px] dark:bg-white/15 {f === 'pending' && filter !== f ? 'bg-primary text-primary-foreground dark:bg-primary' : ''}">{n}</span>{/if}
 			</button>
