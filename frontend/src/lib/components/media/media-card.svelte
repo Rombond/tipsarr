@@ -84,15 +84,19 @@
 		</button>
 
 		{#if item.availability !== 'none'}
-			<Badge class="absolute top-1.5 left-1.5 gap-1 text-[10px]">
+			<Badge class="absolute top-1.5 right-1.5 gap-1 text-[10px]">
 				<CheckIcon class="size-3" />
 				{item.availability === 'available' ? t('media.available') : t('card.partial')}
 			</Badge>
 		{:else if status}
-			<Badge variant="secondary" class="absolute top-1.5 left-1.5 text-[10px]">{status === 'pending' ? t('media.requested') : t('media.approved')}</Badge>
+			<Badge variant="secondary" class="absolute top-1.5 right-1.5 text-[10px]">{status === 'pending' ? t('media.requested') : t('media.approved')}</Badge>
 		{:else if inRadarr}
-			<Badge variant="secondary" class="absolute top-1.5 left-1.5 text-[10px]">{t('media.in_radarr')}</Badge>
+			<Badge variant="secondary" class="absolute top-1.5 right-1.5 text-[10px]">{t('media.in_radarr')}</Badge>
 		{/if}
+
+		<span class="pointer-events-none absolute top-1.5 left-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white uppercase backdrop-blur-sm">
+			{item.type === 'tv' ? t('type.tv_short') : t('type.movie')}
+		</span>
 
 		{#if rank}
 			<span class="pointer-events-none absolute bottom-1 left-2 font-black text-4xl text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{rank}</span>
@@ -145,7 +149,6 @@
 
 	<p class="mt-1.5 truncate text-sm font-medium" title={item.title}>{item.title}</p>
 	<p class="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-		{#if item.type === 'tv'}<span class="rounded bg-muted px-1 py-px text-[10px] font-medium text-foreground/80">{t('type.tv_short')}</span>{/if}
 		{#if year}<span>{year}</span>{/if}
 		{#if item.voteAverage}<span class="inline-flex items-center gap-0.5"><StarIcon class="size-3 fill-amber-400 text-amber-400" />{item.voteAverage.toFixed(1)}</span>{/if}
 	</p>
