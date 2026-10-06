@@ -42,7 +42,7 @@
 </script>
 
 <div class="flex gap-3 rounded-lg border border-border p-3">
-	<a href="/media/{request.type}/{request.tmdbId}" class="w-16 shrink-0">
+	<a href="/media/{request.type}/{request.tmdbId}" class="w-16 shrink-0" aria-label={request.title}>
 		{#if poster}
 			<img src={poster} alt={request.title} class="aspect-[2/3] w-full rounded-md object-cover" loading="lazy" />
 		{:else}

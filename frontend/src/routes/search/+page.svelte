@@ -63,7 +63,7 @@
 					class="shrink-0 cursor-pointer rounded-full border px-3 py-1 text-sm transition-colors {tab === id ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'}"
 					onclick={() => (tab = id as Tab)}
 				>
-					{label} <span class="opacity-70">{n}</span>
+					{label} <span class="text-[0.85em]">({n})</span>
 				</button>
 			{/each}
 		</div>

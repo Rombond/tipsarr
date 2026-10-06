@@ -174,9 +174,9 @@
 				{@const poster = imageUrl(e.item?.posterPath, 'w154')}
 				{@const state = stateOf(e)}
 				<div class="flex gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:border-foreground/20">
-					<span class="w-7 shrink-0 pt-1 text-center font-black text-2xl text-muted-foreground/70">{e.position}</span>
+					<span class="w-7 shrink-0 pt-1 text-center font-black text-2xl text-muted-foreground">{e.position}</span>
 					{#if e.item}
-						<a href="/media/movie/{e.item.tmdbId}" class="w-14 shrink-0 sm:w-16">
+						<a href="/media/movie/{e.item.tmdbId}" class="w-14 shrink-0 sm:w-16" aria-label={e.title}>
 							{#if poster}<img src={poster} alt="" class="aspect-[2/3] w-full rounded-md object-cover" loading="lazy" />{/if}
 						</a>
 					{:else}
