@@ -106,3 +106,11 @@ func (s *Store) LibraryTitle(ctx context.Context, mediaType string, tmdbID int64
 		Where("media_type = ?", mediaType).Where("tmdb_id = ?", tmdbID).Scan(ctx, &t)
 	return t
 }
+
+// LibraryJellyfinID returns the Jellyfin item id of a library title ("" if unknown).
+func (s *Store) LibraryJellyfinID(ctx context.Context, mediaType string, tmdbID int64) string {
+	var id string
+	_ = s.DB.NewSelect().Model((*LibraryItem)(nil)).Column("jellyfin_id").
+		Where("media_type = ?", mediaType).Where("tmdb_id = ?", tmdbID).Scan(ctx, &id)
+	return id
+}

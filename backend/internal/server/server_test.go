@@ -118,7 +118,8 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 	}))
 	mux.HandleFunc("/movie/1", hit(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"id":1,"title":"Movie One","runtime":120,"genres":[{"id":28,"name":"Action"}],
-			"imdb_id":"tt1","belongs_to_collection":{"id":9,"name":"Saga"},
+			"imdb_id":"tt1","belongs_to_collection":{"id":9,"name":"Saga","backdrop_path":"/sagab.jpg"},
+			"videos":{"results":[{"key":"abc123","site":"YouTube","type":"Trailer","official":false},{"key":"OFFICIAL1","site":"YouTube","type":"Trailer","official":true},{"key":"vim","site":"Vimeo","type":"Trailer","official":true}]},
 			"credits":{"cast":[{"id":5,"name":"Ann","character":"Hero"}],"crew":[{"id":6,"name":"Dir","job":"Director"},{"id":7,"name":"X","job":"Editor"}]},
 			"recommendations":{"results":[{"id":4,"title":"Rec"}]},"similar":{"results":[]}}`))
 	}))
@@ -577,6 +578,21 @@ func TestLibrarySyncAndAvailability(t *testing.T) {
 	_ = json.Unmarshal([]byte(body), &md)
 	if md.Availability != "available" || md.Recommendations[0].Availability != "none" {
 		t.Fatalf("movie detail availability = %s", md.Availability)
+	}
+	if md.TrailerKey != "OFFICIAL1" || md.CollectionBackdropPath != "/sagab.jpg" {
+		t.Fatalf("trailer/collection backdrop = %q %q", md.TrailerKey, md.CollectionBackdropPath)
+	}
+	if want := jf.URL + "/web/#/details?id=jm1"; md.WatchURL != want {
+		t.Fatalf("watch url = %q, want %q", md.WatchURL, want)
+	}
+	// a public URL (what browsers can reach) replaces the internal one in links
+	call(t, app, "PUT", "/api/v1/admin/settings", `{"jellyfinPublicUrl":"https://jf.example.org/"}`, admin)
+	_, body = call(t, app, "GET", "/api/v1/media/movie/1", "", bob)
+	if !strings.Contains(body, `"watchUrl":"https://jf.example.org/web/#/details?id=jm1"`) {
+		t.Fatalf("public watch url: %s", body)
+	}
+	if resp, _ := call(t, app, "PUT", "/api/v1/admin/settings", `{"jellyfinPublicUrl":"ftp://x"}`, admin); resp.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("bad public url = %d", resp.StatusCode)
 	}
 	_, body = call(t, app, "GET", "/api/v1/media/tv/2", "", bob)
 	var td media.Detail

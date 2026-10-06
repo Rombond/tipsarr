@@ -10,11 +10,13 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/auth"
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/library"
+	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/danielgtaylor/huma/v2"
 )
 
 type settingsBody struct {
 	JellyfinURL              string `json:"jellyfinUrl"`
+	JellyfinPublicURL        string `json:"jellyfinPublicUrl" doc:"Address browsers use to open Jellyfin (Play buttons); empty = same as jellyfinUrl"`
 	TMDBConfigured           bool   `json:"tmdbConfigured" doc:"Secrets are write-only; this only says whether a key is saved"`
 	JellyfinAPIKeyConfigured bool   `json:"jellyfinApiKeyConfigured" doc:"Needed for library and history sync"`
 	BoxOfficeRegions         string `json:"boxofficeRegions" doc:"Comma-separated box-office region codes, e.g. US,GB,FR"`
@@ -26,9 +28,10 @@ type settingsOutput struct{ Body settingsBody }
 
 type updateSettingsInput struct {
 	Body struct {
-		TMDBKey          *string `json:"tmdbApiKey,omitempty" doc:"Set or replace the TMDB key (empty string clears it)"`
-		BoxOfficeRegions *string `json:"boxofficeRegions,omitempty" doc:"Comma-separated region codes; empty resets to US"`
-		JellyfinAPIKey   *string `json:"jellyfinApiKey,omitempty" doc:"Jellyfin API key (Dashboard > API Keys); empty string clears it"`
+		TMDBKey           *string `json:"tmdbApiKey,omitempty" doc:"Set or replace the TMDB key (empty string clears it)"`
+		BoxOfficeRegions  *string `json:"boxofficeRegions,omitempty" doc:"Comma-separated region codes; empty resets to US"`
+		JellyfinPublicURL *string `json:"jellyfinPublicUrl,omitempty" doc:"Empty string clears it"`
+		JellyfinAPIKey    *string `json:"jellyfinApiKey,omitempty" doc:"Jellyfin API key (Dashboard > API Keys); empty string clears it"`
 	}
 }
 
@@ -53,8 +56,9 @@ func registerAdmin(api huma.API, d Deps) {
 			return settingsBody{}, err
 		}
 		regions := strings.Join(d.BoxOffice.Regions(ctx), ",")
+		publicURL, _ := d.Store.GetSetting(ctx, media.SettingJellyfinPublicURL)
 		return settingsBody{
-			JellyfinURL: url, TMDBConfigured: key != "", DryRun: d.DryRun,
+			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
 			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret,
 		}, nil
 	}
@@ -81,6 +85,15 @@ func registerAdmin(api huma.API, d Deps) {
 		}
 		if in.Body.TMDBKey != nil {
 			if err := d.Store.SetSetting(ctx, auth.SettingTMDBKey, strings.TrimSpace(*in.Body.TMDBKey)); err != nil {
+				return nil, err
+			}
+		}
+		if in.Body.JellyfinPublicURL != nil {
+			v := strings.TrimRight(strings.TrimSpace(*in.Body.JellyfinPublicURL), "/")
+			if v != "" && !strings.HasPrefix(v, "http://") && !strings.HasPrefix(v, "https://") {
+				return nil, huma.Error422UnprocessableEntity("jellyfinPublicUrl must start with http:// or https://")
+			}
+			if err := d.Store.SetSetting(ctx, media.SettingJellyfinPublicURL, v); err != nil {
 				return nil, err
 			}
 		}

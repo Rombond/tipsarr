@@ -63,23 +63,26 @@ type Season struct {
 
 type Detail struct {
 	Item
-	Tagline          string       `json:"tagline,omitempty"`
-	Status           string       `json:"status,omitempty"`
-	RuntimeMinutes   int          `json:"runtimeMinutes,omitempty"`
-	Genres           []Genre      `json:"genres"`
-	OriginalLanguage string       `json:"originalLanguage,omitempty"`
-	Homepage         string       `json:"homepage,omitempty"`
-	IMDbID           string       `json:"imdbId,omitempty"`
-	TVDBID           int          `json:"tvdbId,omitempty"`
-	Cast             []CastMember `json:"cast"`
-	Directors        []Person     `json:"directors"`
-	NumberOfSeasons  int          `json:"numberOfSeasons,omitempty"`
-	NumberOfEpisodes int          `json:"numberOfEpisodes,omitempty"`
-	Seasons          []Season     `json:"seasons,omitempty"`
-	CollectionID     int          `json:"collectionId,omitempty"`
-	CollectionName   string       `json:"collectionName,omitempty"`
-	Recommendations  []Item       `json:"recommendations"`
-	Similar          []Item       `json:"similar"`
+	Tagline                string       `json:"tagline,omitempty"`
+	Status                 string       `json:"status,omitempty"`
+	RuntimeMinutes         int          `json:"runtimeMinutes,omitempty"`
+	Genres                 []Genre      `json:"genres"`
+	OriginalLanguage       string       `json:"originalLanguage,omitempty"`
+	Homepage               string       `json:"homepage,omitempty"`
+	IMDbID                 string       `json:"imdbId,omitempty"`
+	TVDBID                 int          `json:"tvdbId,omitempty"`
+	Cast                   []CastMember `json:"cast"`
+	Directors              []Person     `json:"directors"`
+	NumberOfSeasons        int          `json:"numberOfSeasons,omitempty"`
+	NumberOfEpisodes       int          `json:"numberOfEpisodes,omitempty"`
+	Seasons                []Season     `json:"seasons,omitempty"`
+	CollectionID           int          `json:"collectionId,omitempty"`
+	CollectionName         string       `json:"collectionName,omitempty"`
+	CollectionBackdropPath string       `json:"collectionBackdropPath,omitempty"`
+	TrailerKey             string       `json:"trailerKey,omitempty" doc:"YouTube video key of the official trailer"`
+	WatchURL               string       `json:"watchUrl,omitempty" doc:"Deep link to the title in Jellyfin when it is in the library"`
+	Recommendations        []Item       `json:"recommendations"`
+	Similar                []Item       `json:"similar"`
 }
 
 type Episode struct {

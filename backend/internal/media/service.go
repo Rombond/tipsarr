@@ -310,9 +310,18 @@ type rawDetail struct {
 		PosterPath   string `json:"poster_path"`
 	} `json:"seasons"`
 	BelongsToCollection *struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
+		ID           int    `json:"id"`
+		Name         string `json:"name"`
+		BackdropPath string `json:"backdrop_path"`
 	} `json:"belongs_to_collection"`
+	Videos struct {
+		Results []struct {
+			Key      string `json:"key"`
+			Site     string `json:"site"`
+			Type     string `json:"type"`
+			Official bool   `json:"official"`
+		} `json:"results"`
+	} `json:"videos"`
 	Credits struct {
 		Cast []struct {
 			ID          int    `json:"id"`
@@ -332,7 +341,7 @@ type rawDetail struct {
 }
 
 func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) (*Detail, error) {
-	q := url.Values{"language": {o.lang()}, "append_to_response": {"credits,recommendations,similar,external_ids"}}
+	q := url.Values{"language": {o.lang()}, "append_to_response": {"credits,recommendations,similar,external_ids,videos"}, "include_video_language": {"en,null"}}
 	var raw rawDetail
 	if err := s.get(ctx, "/"+mediaType+"/"+strconv.Itoa(id), q, ttlDetail, &raw); err != nil {
 		return nil, err
@@ -357,7 +366,7 @@ func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) 
 		d.Seasons = append(d.Seasons, Season{Number: sn.SeasonNumber, Name: sn.Name, EpisodeCount: sn.EpisodeCount, AirDate: sn.AirDate, PosterPath: sn.PosterPath})
 	}
 	if raw.BelongsToCollection != nil {
-		d.CollectionID, d.CollectionName = raw.BelongsToCollection.ID, raw.BelongsToCollection.Name
+		d.CollectionID, d.CollectionName, d.CollectionBackdropPath = raw.BelongsToCollection.ID, raw.BelongsToCollection.Name, raw.BelongsToCollection.BackdropPath
 	}
 	for i, c := range raw.Credits.Cast {
 		if i >= 20 {
@@ -370,6 +379,7 @@ func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) 
 			d.Directors = append(d.Directors, Person{ID: c.ID, Name: c.Name, ProfilePath: c.ProfilePath, Department: "Directing"})
 		}
 	}
+	d.TrailerKey = pickTrailer(raw)
 	s.annotate(ctx, d.Recommendations)
 	s.annotate(ctx, d.Similar)
 	one := []Item{d.Item}
@@ -377,6 +387,9 @@ func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) 
 	d.Availability, d.RequestStatus = one[0].Availability, one[0].RequestStatus
 	if mediaType == "tv" {
 		s.showAvailability(ctx, d)
+	}
+	if d.Availability != AvailabilityNone {
+		d.WatchURL = s.watchURL(ctx, mediaType, d.TMDBID)
 	}
 	return d, nil
 }
@@ -523,4 +536,44 @@ func (s *Service) TrendingItems(ctx context.Context, o Opts, page int) ([]Item, 
 		return nil, err
 	}
 	return raw.toList("").Items, nil
+}
+
+// pickTrailer returns the YouTube key of the best trailer: official first, then any trailer.
+func pickTrailer(raw rawDetail) string {
+	fallback := ""
+	for _, v := range raw.Videos.Results {
+		if v.Site != "YouTube" || v.Type != "Trailer" {
+			continue
+		}
+		if v.Official {
+			return v.Key
+		}
+		if fallback == "" {
+			fallback = v.Key
+		}
+	}
+	return fallback
+}
+
+// Settings read by watchURL.
+const (
+	settingJellyfinURL       = "jellyfin.url"
+	SettingJellyfinPublicURL = "jellyfin.public_url"
+)
+
+// watchURL builds a deep link into Jellyfin's web UI for a title in the library ("" if unknown).
+// The public URL (what browsers can reach) falls back to the URL Tipsarr itself uses.
+func (s *Service) watchURL(ctx context.Context, mediaType string, tmdbID int) string {
+	id := s.store.LibraryJellyfinID(ctx, mediaType, int64(tmdbID))
+	if id == "" {
+		return ""
+	}
+	base, _ := s.store.GetSetting(ctx, SettingJellyfinPublicURL)
+	if base == "" {
+		base, _ = s.store.GetSetting(ctx, settingJellyfinURL)
+	}
+	if base == "" {
+		return ""
+	}
+	return strings.TrimRight(base, "/") + "/web/#/details?id=" + id
 }
