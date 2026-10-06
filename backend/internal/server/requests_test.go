@@ -29,6 +29,7 @@ type fakeArr struct {
 	failPost    atomic.Bool
 	hasFile     atomic.Bool
 	downloading atomic.Bool
+	moviesJSON  atomic.Value // string: body of GET /movie without a tmdbId filter
 }
 
 func newFakeArr(t *testing.T, kind string) *fakeArr {
@@ -69,6 +70,12 @@ func newFakeArr(t *testing.T, kind string) *fakeArr {
 			w.WriteHeader(http.StatusCreated)
 			out(`{"id":42,"tmdbId":5}`)
 		case kind == "radarr" && p == "/movie":
+			if r.URL.Query().Get("tmdbId") == "" {
+				if v, ok := f.moviesJSON.Load().(string); ok {
+					out(v)
+					return
+				}
+			}
 			out(`[]`)
 		case kind == "radarr" && p == "/movie/lookup/tmdb":
 			out(`{"title":"Request Me","tmdbId":5,"year":2025}`)

@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/Rombond/tipsarr/backend/internal/auth"
+	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
 	"github.com/Rombond/tipsarr/backend/internal/library"
@@ -29,6 +30,7 @@ type Deps struct {
 	Library     *library.Service
 	Requests    *requests.Service
 	Suggestions *suggestions.Service
+	BoxOffice   *boxoffice.Service
 	Hub         *events.Hub
 	Notify      *notify.Service
 	Jobs        *jobs.Manager
@@ -63,6 +65,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerSync(api, d)
 		registerRequests(api, d)
 		registerSuggestions(api, d)
+		registerBoxOffice(api, d)
 		registerServarr(api, d)
 		registerWebhooks(api, d)
 		r.Get("/events", eventsHandler(d))

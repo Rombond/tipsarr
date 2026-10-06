@@ -2,9 +2,11 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/servarr"
@@ -13,29 +15,33 @@ import (
 )
 
 type instanceView struct {
-	ID               string `json:"id"`
-	Kind             string `json:"kind" enum:"radarr,sonarr"`
-	Name             string `json:"name"`
-	URL              string `json:"url"`
-	APIKeyConfigured bool   `json:"apiKeyConfigured"`
-	QualityProfileID int    `json:"qualityProfileId"`
-	RootFolder       string `json:"rootFolder"`
-	IsDefault        bool   `json:"isDefault"`
+	ID               string            `json:"id"`
+	Kind             string            `json:"kind" enum:"radarr,sonarr"`
+	Name             string            `json:"name"`
+	URL              string            `json:"url"`
+	APIKeyConfigured bool              `json:"apiKeyConfigured"`
+	QualityProfileID int               `json:"qualityProfileId"`
+	RootFolder       string            `json:"rootFolder"`
+	IsDefault        bool              `json:"isDefault"`
+	GenreRoots       map[string]string `json:"genreRoots" doc:"Radarr only: TMDB genre id -> root folder; the first matching genre of a movie wins"`
 }
 
 func toInstanceView(in store.ServarrInstance) instanceView {
+	roots := map[string]string{}
+	_ = json.Unmarshal([]byte(in.GenreRoots), &roots)
 	return instanceView{ID: in.ID, Kind: in.Kind, Name: in.Name, URL: in.URL, APIKeyConfigured: in.APIKey != "",
-		QualityProfileID: in.QualityProfileID, RootFolder: in.RootFolder, IsDefault: in.IsDefault == 1}
+		QualityProfileID: in.QualityProfileID, RootFolder: in.RootFolder, IsDefault: in.IsDefault == 1, GenreRoots: roots}
 }
 
 type instanceBody struct {
-	Kind             string `json:"kind" enum:"radarr,sonarr"`
-	Name             string `json:"name" minLength:"1" maxLength:"100"`
-	URL              string `json:"url" format:"uri"`
-	APIKey           string `json:"apiKey,omitempty" doc:"Required when creating; omit on update to keep the saved key"`
-	QualityProfileID int    `json:"qualityProfileId" minimum:"1"`
-	RootFolder       string `json:"rootFolder" minLength:"1"`
-	IsDefault        bool   `json:"isDefault"`
+	Kind             string            `json:"kind" enum:"radarr,sonarr"`
+	Name             string            `json:"name" minLength:"1" maxLength:"100"`
+	URL              string            `json:"url" format:"uri"`
+	APIKey           string            `json:"apiKey,omitempty" doc:"Required when creating; omit on update to keep the saved key"`
+	QualityProfileID int               `json:"qualityProfileId" minimum:"1"`
+	RootFolder       string            `json:"rootFolder" minLength:"1"`
+	IsDefault        bool              `json:"isDefault"`
+	GenreRoots       map[string]string `json:"genreRoots,omitempty" doc:"Radarr only. Omit to keep the saved map, send {} to clear it"`
 }
 
 type probeBody struct {
@@ -81,6 +87,15 @@ func registerServarr(api huma.API, d Deps) {
 		}
 		return nil
 	}
+	genreJSON := func(m map[string]string) (string, error) {
+		for k, v := range m {
+			if _, err := strconv.Atoi(k); err != nil || strings.TrimSpace(v) == "" {
+				return "", huma.Error422UnprocessableEntity("genreRoots must map TMDB genre ids to root folders")
+			}
+		}
+		b, _ := json.Marshal(m)
+		return string(b), nil
+	}
 
 	huma.Register(api, huma.Operation{
 		OperationID: "createServarr", Method: http.MethodPost, Path: "/admin/servarr",
@@ -102,6 +117,13 @@ func registerServarr(api huma.API, d Deps) {
 		}
 		if in.Body.IsDefault {
 			inst.IsDefault = 1
+		}
+		if in.Body.GenreRoots != nil {
+			g, err := genreJSON(in.Body.GenreRoots)
+			if err != nil {
+				return nil, err
+			}
+			inst.GenreRoots = g
 		}
 		if err := d.Store.SaveServarr(ctx, inst); err != nil {
 			return nil, err
@@ -141,6 +163,13 @@ func registerServarr(api huma.API, d Deps) {
 		}
 		if in.Body.IsDefault {
 			cur.IsDefault = 1
+		}
+		if in.Body.GenreRoots != nil {
+			g, err := genreJSON(in.Body.GenreRoots)
+			if err != nil {
+				return nil, err
+			}
+			cur.GenreRoots = g
 		}
 		if err := d.Store.SaveServarr(ctx, cur); err != nil {
 			return nil, err

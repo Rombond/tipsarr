@@ -55,12 +55,12 @@ func registerSync(api huma.API, d Deps) {
 		DefaultStatus: http.StatusAccepted,
 		Errors:        append(adminErrs, http.StatusConflict, http.StatusServiceUnavailable),
 	}, func(ctx context.Context, in *struct {
-		Job string `path:"job" enum:"library-sync,history-sync"`
+		Job string `path:"job" enum:"library-sync,history-sync,boxoffice-refresh"`
 	}) (*struct{}, error) {
 		if _, err := requireAdmin(ctx); err != nil {
 			return nil, err
 		}
-		if !d.Library.Configured(ctx) {
+		if in.Job != "boxoffice-refresh" && !d.Library.Configured(ctx) {
 			return nil, huma.Error503ServiceUnavailable("save a Jellyfin API key in Settings first")
 		}
 		switch err := d.Jobs.RunNow(ctx, in.Job); {

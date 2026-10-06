@@ -13,6 +13,7 @@ import (
 
 	"github.com/Rombond/tipsarr/backend/internal/api"
 	"github.com/Rombond/tipsarr/backend/internal/auth"
+	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/config"
 	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
@@ -89,6 +90,8 @@ func run(cfg config.Config) error {
 	notifier := notify.New(st, cfg.DryRun)
 	sugg := suggestions.New(st, mediaSvc, hub)
 	lib.OnHistoryChanged = sugg.QueueRefresh
+	box := boxoffice.New(st, mediaSvc, "")
+	jm.Register(jobs.Job{Name: "boxoffice-refresh", Every: 12 * time.Hour, InitialDelay: time.Minute, Run: box.Refresh})
 	reqSvc := requests.New(st, mediaSvc, hub, notifier, cfg.DryRun)
 	jm.Register(jobs.Job{Name: "request-poll", Every: 15 * time.Second, InitialDelay: 20 * time.Second, Quiet: true, Run: func(ctx context.Context) (string, error) {
 		n, err := reqSvc.Poll(ctx)
@@ -98,7 +101,7 @@ func run(cfg config.Config) error {
 	jm.Start(ctx)
 
 	handler, _ := server.New(api.Deps{
-		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Suggestions: sugg, Hub: hub, Notify: notifier,
+		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Suggestions: sugg, BoxOffice: box, Hub: hub, Notify: notifier,
 		DryRun: cfg.DryRun, ConfigDir: cfg.ConfigDir,
 	})
 	if cfg.DryRun {

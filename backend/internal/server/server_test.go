@@ -5,15 +5,18 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/Rombond/tipsarr/backend/internal/api"
 	"github.com/Rombond/tipsarr/backend/internal/auth"
+	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
 	"github.com/Rombond/tipsarr/backend/internal/library"
@@ -145,6 +148,18 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 	mux.HandleFunc("/movie/1/similar", hit(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(rec("movie", 11, 15, 16))) }))
 	mux.HandleFunc("/tv/2/recommendations", hit(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(rec("tv", 20, 21, 22, 23, 24))) }))
 	mux.HandleFunc("/tv/2/similar", hit(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(rec("tv", 25))) }))
+	mux.HandleFunc("/search/movie", hit(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Query().Get("query") {
+		case "Verity":
+			_, _ = w.Write([]byte(`{"results":[{"id":900,"title":"Verity","release_date":"2026-10-02","poster_path":"/v.jpg","vote_average":7.1,"overview":"A thriller."}]}`))
+		case "Resident Evil":
+			_, _ = w.Write([]byte(`{"results":[{"id":901,"title":"Resident Evil","release_date":"2002-03-15","poster_path":"/re1.jpg"},{"id":902,"title":"Resident Evil","release_date":"2026-08-28","poster_path":"/re2.jpg"}]}`))
+		case "Heart of the Beast":
+			_, _ = w.Write([]byte(`{"results":[{"id":903,"title":"Heart of the Beast: Part One","release_date":"2026-09-18","poster_path":"/hb.jpg"}]}`))
+		default:
+			_, _ = w.Write([]byte(`{"results":[]}`))
+		}
+	}))
 	mux.HandleFunc("/movie/404", hit(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotFound) }))
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -164,12 +179,39 @@ func fakeImages(t *testing.T) *httptest.Server {
 	return srv
 }
 
+var bomHits struct {
+	sync.Mutex
+	urls []string
+}
+
+// fakeBOM serves the real chart fixture for two weekends and an empty page for the rest.
+func fakeBOM(t *testing.T) *httptest.Server {
+	t.Helper()
+	fixture, err := os.ReadFile("../boxoffice/testdata/weekend.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bomHits.Lock()
+		bomHits.urls = append(bomHits.urls, r.URL.RequestURI())
+		bomHits.Unlock()
+		if strings.HasPrefix(r.URL.Path, "/weekend/2026W40/") || strings.HasPrefix(r.URL.Path, "/weekend/2026W39/") {
+			_, _ = w.Write(fixture)
+			return
+		}
+		_, _ = w.Write([]byte("<html><body>no data yet</body></html>"))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
 type env struct {
 	app      *httptest.Server
 	st       *store.Store
 	lib      *library.Service
 	reqs     *requests.Service
 	sugg     *suggestions.Service
+	box      *boxoffice.Service
 	hub      *events.Hub
 	notifier *notify.Service
 }
@@ -208,16 +250,20 @@ func newEnv(t *testing.T, dryRun bool) *env {
 	notifier := notify.New(st, dryRun)
 	notifier.SetRetryDelays(10*time.Millisecond, 10*time.Millisecond)
 	reqs := requests.New(st, mediaSvc, hub, notifier, dryRun)
+	box := boxoffice.New(st, mediaSvc, fakeBOM(t).URL)
+	box.SetPause(0)
+	box.SetNow(func() time.Time { return time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC) }) // a Tuesday: latest weekend is 2026W40
+	jm.Register(jobs.Job{Name: "boxoffice-refresh", Every: time.Hour, InitialDelay: time.Hour, Run: box.Refresh})
 	sugg := suggestions.New(st, mediaSvc, hub)
 	sugg.SetQueueDelay(20 * time.Millisecond)
 	lib.OnHistoryChanged = sugg.QueueRefresh
 	h, _ := server.New(api.Deps{
-		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Suggestions: sugg, Hub: hub, Notify: notifier,
+		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Suggestions: sugg, BoxOffice: box, Hub: hub, Notify: notifier,
 		DryRun: dryRun, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)
 	t.Cleanup(app.Close)
-	return &env{app: app, st: st, lib: lib, reqs: reqs, sugg: sugg, hub: hub, notifier: notifier}
+	return &env{app: app, st: st, lib: lib, reqs: reqs, sugg: sugg, box: box, hub: hub, notifier: notifier}
 }
 
 func call(t *testing.T, app *httptest.Server, method, path, body string, cookies ...*http.Cookie) (*http.Response, string) {

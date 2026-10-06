@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Rombond/tipsarr/backend/internal/auth"
+	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -16,6 +17,7 @@ type settingsBody struct {
 	JellyfinURL              string `json:"jellyfinUrl"`
 	TMDBConfigured           bool   `json:"tmdbConfigured" doc:"Secrets are write-only; this only says whether a key is saved"`
 	JellyfinAPIKeyConfigured bool   `json:"jellyfinApiKeyConfigured" doc:"Needed for library and history sync"`
+	BoxOfficeRegions         string `json:"boxofficeRegions" doc:"Comma-separated box-office region codes, e.g. US,GB,FR"`
 	WebhookPath              string `json:"webhookPath" doc:"Path (with secret token) for the Jellyfin webhook plugin to call"`
 	DryRun                   bool   `json:"dryRun" doc:"When true nothing is ever sent to Radarr/Sonarr"`
 }
@@ -24,8 +26,9 @@ type settingsOutput struct{ Body settingsBody }
 
 type updateSettingsInput struct {
 	Body struct {
-		TMDBKey        *string `json:"tmdbApiKey,omitempty" doc:"Set or replace the TMDB key (empty string clears it)"`
-		JellyfinAPIKey *string `json:"jellyfinApiKey,omitempty" doc:"Jellyfin API key (Dashboard > API Keys); empty string clears it"`
+		TMDBKey          *string `json:"tmdbApiKey,omitempty" doc:"Set or replace the TMDB key (empty string clears it)"`
+		BoxOfficeRegions *string `json:"boxofficeRegions,omitempty" doc:"Comma-separated region codes; empty resets to US"`
+		JellyfinAPIKey   *string `json:"jellyfinApiKey,omitempty" doc:"Jellyfin API key (Dashboard > API Keys); empty string clears it"`
 	}
 }
 
@@ -49,9 +52,10 @@ func registerAdmin(api huma.API, d Deps) {
 		if err != nil {
 			return settingsBody{}, err
 		}
+		regions := strings.Join(d.BoxOffice.Regions(ctx), ",")
 		return settingsBody{
 			JellyfinURL: url, TMDBConfigured: key != "", DryRun: d.DryRun,
-			JellyfinAPIKeyConfigured: jfKey != "", WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret,
+			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret,
 		}, nil
 	}
 
@@ -77,6 +81,12 @@ func registerAdmin(api huma.API, d Deps) {
 		}
 		if in.Body.TMDBKey != nil {
 			if err := d.Store.SetSetting(ctx, auth.SettingTMDBKey, strings.TrimSpace(*in.Body.TMDBKey)); err != nil {
+				return nil, err
+			}
+		}
+		if in.Body.BoxOfficeRegions != nil {
+			regions := strings.Join(boxoffice.ParseRegions(*in.Body.BoxOfficeRegions), ",")
+			if err := d.Store.SetSetting(ctx, boxoffice.SettingRegions, regions); err != nil {
 				return nil, err
 			}
 		}

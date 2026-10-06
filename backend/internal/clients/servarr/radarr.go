@@ -61,3 +61,9 @@ func (c *Client) AddMovie(ctx context.Context, tmdbID, qualityProfileID int, roo
 	}
 	return created.ID, nil
 }
+
+// Movies lists every movie Radarr tracks.
+func (c *Client) Movies(ctx context.Context) ([]Movie, error) {
+	var out []Movie
+	return out, c.get(ctx, "/movie", &out)
+}

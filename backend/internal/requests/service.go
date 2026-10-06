@@ -10,10 +10,12 @@ package requests
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -322,12 +324,20 @@ func (s *Service) Approve(ctx context.Context, by *store.User, id string, ov *Ov
 		return nil, err
 	}
 	profile, root := inst.QualityProfileID, inst.RootFolder
+	explicitRoot := ov != nil && ov.RootFolder != ""
 	if ov != nil {
 		if ov.ProfileID != nil {
 			profile = *ov.ProfileID
 		}
 		if ov.RootFolder != "" {
 			root = ov.RootFolder
+		}
+	}
+	if !explicitRoot && r.MediaType == "movie" && inst.GenreRoots != "" {
+		if d, err := s.media.Detail(ctx, media.Opts{}, "movie", int(r.TMDBID)); err == nil {
+			if gr := GenreRoot(inst.GenreRoots, d.Genres); gr != "" {
+				root = gr
+			}
 		}
 	}
 
@@ -353,6 +363,21 @@ func (s *Service) Approve(ctx context.Context, by *store.User, id string, ov *Ov
 		s.notify.Dispatch(notify.RequestApproved, s.payload(ctx, r))
 	}
 	return s.view(ctx, r)
+}
+
+// GenreRoot picks the root folder for a movie from the instance's genre map (JSON
+// {"<tmdb genre id>": "<folder>"}): the first of the movie's genres that has a mapping wins.
+func GenreRoot(genreRootsJSON string, genres []media.Genre) string {
+	var m map[string]string
+	if json.Unmarshal([]byte(genreRootsJSON), &m) != nil {
+		return ""
+	}
+	for _, g := range genres {
+		if p := m[strconv.Itoa(g.ID)]; p != "" {
+			return p
+		}
+	}
+	return ""
 }
 
 func (s *Service) send(ctx context.Context, c *servarr.Client, r *store.Request, profile int, root string) (int, error) {

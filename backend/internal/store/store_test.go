@@ -248,3 +248,85 @@ func TestRequestQueriesAllEngines(t *testing.T) {
 		})
 	}
 }
+
+// Suggestions and box-office tables on every engine (incl. the ALTER TABLE column).
+func TestSuggestionsBoxOfficeAllEngines(t *testing.T) {
+	urls := map[string]string{"sqlite": "sqlite:" + filepath.Join(t.TempDir(), "sb.db")}
+	if v := os.Getenv("TIPSARR_TEST_PG_URL"); v != "" {
+		urls["postgres"] = v
+	}
+	if v := os.Getenv("TIPSARR_TEST_MYSQL_URL"); v != "" {
+		urls["mysql"] = v
+	}
+	for name, url := range urls {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
+			s, err := Open(ctx, url)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer s.Close()
+			tag := fmt.Sprintf("%d", time.Now().UnixNano())
+			uid := "su" + tag
+
+			rowA := SuggestionRow{ID: "ra" + tag, UserID: uid, Kind: "account", SeedTitle: "Recommended for you", Position: 0, GeneratedAt: 1, HistoryVersion: 3, Personal: 1}
+			rowB := SuggestionRow{ID: "rb" + tag, UserID: uid, Kind: "because", SeedType: "movie", SeedTMDBID: 9, SeedTitle: "Dune", Position: 1, GeneratedAt: 1, HistoryVersion: 3, Personal: 1}
+			items := []SuggestionItem{
+				{RowID: rowA.ID, Pos: 0, MediaType: "movie", TMDBID: 1, Title: "A", VoteTenths: 71, Overview: "o"},
+				{RowID: rowA.ID, Pos: 1, MediaType: "tv", TMDBID: 2, Title: "B"},
+				{RowID: rowB.ID, Pos: 0, MediaType: "movie", TMDBID: 3, Title: "C"},
+			}
+			for i := 0; i < 2; i++ { // replacing must wipe the previous rows and items
+				rowA.ID, rowB.ID = fmt.Sprintf("ra%s-%d", tag, i), fmt.Sprintf("rb%s-%d", tag, i)
+				items[0].RowID, items[1].RowID, items[2].RowID = rowA.ID, rowA.ID, rowB.ID
+				if err := s.ReplaceSuggestions(ctx, uid, []SuggestionRow{rowA, rowB}, items); err != nil {
+					t.Fatal(err)
+				}
+			}
+			rows, byRow, err := s.SuggestionRows(ctx, uid)
+			if err != nil || len(rows) != 2 || rows[0].Kind != "account" || len(byRow[rows[0].ID]) != 2 || byRow[rows[0].ID][0].VoteTenths != 71 {
+				t.Fatalf("rows = %+v items = %+v err = %v", rows, byRow, err)
+			}
+
+			if _, err := s.ReplaceUserHistory(ctx, uid, []WatchHistory{{MediaType: "movie", TMDBID: 1, LastPlayedAt: 5, PlayCount: 1}}); err != nil {
+				t.Fatal(err)
+			}
+			if w, _ := s.WatchedSet(ctx, uid); !w[WatchKey("movie", 1)] || len(w) != 1 {
+				t.Fatalf("watched = %v", w)
+			}
+			if seeds, err := s.GlobalHistorySeeds(ctx, 5); err != nil || len(seeds) == 0 {
+				t.Fatalf("global seeds = %v %v", seeds, err)
+			}
+
+			week := BoxOfficeWeek{Region: "T" + tag[len(tag)-2:], WeekKey: "2026W40", Label: "October 2-4, 2026", FetchedAt: 1}
+			entries := []BoxOfficeEntry{
+				{Region: week.Region, WeekKey: week.WeekKey, Pos: 1, Title: "Verity", WeekendGross: 32031011, TotalGross: 32031011, WeeksInRelease: 1, TMDBID: 900},
+				{Region: week.Region, WeekKey: week.WeekKey, Pos: 2, Title: "Other"},
+			}
+			for i := 0; i < 2; i++ {
+				if err := s.SaveBoxOffice(ctx, week, entries); err != nil {
+					t.Fatal(err)
+				}
+			}
+			w, got, err := s.BoxOffice(ctx, week.Region, week.WeekKey)
+			if err != nil || w.Label != week.Label || len(got) != 2 || got[0].WeekendGross != 32031011 {
+				t.Fatalf("box office = %+v %+v %v", w, got, err)
+			}
+			if weeks, _ := s.BoxOfficeWeeks(ctx, week.Region); len(weeks) != 1 {
+				t.Fatalf("weeks = %v", weeks)
+			}
+			if _, _, err := s.BoxOffice(ctx, week.Region, "2000W01"); err != ErrNotFound {
+				t.Fatalf("missing week err = %v", err)
+			}
+
+			inst := &ServarrInstance{ID: "g" + tag, Kind: "radarr", Name: "G", URL: "http://g", APIKey: "k", QualityProfileID: 1, RootFolder: "/m", GenreRoots: `{"28":"/a"}`}
+			if err := s.SaveServarr(ctx, inst); err != nil {
+				t.Fatal(err)
+			}
+			if got, err := s.GetServarr(ctx, inst.ID); err != nil || got.GenreRoots != `{"28":"/a"}` {
+				t.Fatalf("genre roots = %+v %v", got, err)
+			}
+			_ = s.DeleteServarr(ctx, inst.ID)
+		})
+	}
+}
