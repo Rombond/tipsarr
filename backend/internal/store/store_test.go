@@ -164,3 +164,87 @@ func TestLibraryQueriesAllEngines(t *testing.T) {
 		})
 	}
 }
+
+// Request, instance and webhook queries on every engine.
+func TestRequestQueriesAllEngines(t *testing.T) {
+	urls := map[string]string{"sqlite": "sqlite:" + filepath.Join(t.TempDir(), "req.db")}
+	if v := os.Getenv("TIPSARR_TEST_PG_URL"); v != "" {
+		urls["postgres"] = v
+	}
+	if v := os.Getenv("TIPSARR_TEST_MYSQL_URL"); v != "" {
+		urls["mysql"] = v
+	}
+	for name, url := range urls {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
+			s, err := Open(ctx, url)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer s.Close()
+			tag := fmt.Sprintf("%d", time.Now().UnixNano()) // external DBs persist between runs
+			uid := "user" + tag
+
+			if _, err := s.UpsertUser(ctx, uid, "carol", false); err != nil {
+				t.Fatal(err)
+			}
+			r := &Request{ID: "r" + tag, MediaType: "tv", TMDBID: 424242, Title: "Show", RequestedBy: uid, Status: StatusPending}
+			if err := s.CreateRequest(ctx, r, []int{1, 3}); err != nil {
+				t.Fatal(err)
+			}
+			if got, _ := s.RequestSeasons(ctx, []string{r.ID}); len(got[r.ID]) != 2 || got[r.ID][1] != 3 {
+				t.Fatalf("seasons = %v", got)
+			}
+			if act, _ := s.ActiveRequestStatuses(ctx, "tv", []int{424242, 1}); act[424242] != StatusPending || len(act) != 1 {
+				t.Fatalf("active = %v", act)
+			}
+			r.Status, r.SentAt, r.ServarrID = StatusApproved, 100, 7
+			if err := s.UpdateRequest(ctx, r); err != nil {
+				t.Fatal(err)
+			}
+			rows, total, err := s.ListRequests(ctx, RequestFilter{RequestedBy: uid, Statuses: []string{StatusApproved}, Take: 10})
+			if err != nil || total != 1 || len(rows) != 1 || rows[0].ServarrID != 7 {
+				t.Fatalf("list = %+v total=%d err=%v", rows, total, err)
+			}
+			if c, _ := s.RequestCounts(ctx, uid); c[StatusApproved] != 1 {
+				t.Fatalf("counts = %v", c)
+			}
+			if names, _ := s.UserNames(ctx, []string{uid}); names[uid] != "carol" {
+				t.Fatalf("names = %v", names)
+			}
+			if err := s.DeleteRequest(ctx, r.ID); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := s.GetRequest(ctx, r.ID); err != ErrNotFound {
+				t.Fatalf("deleted request still there: %v", err)
+			}
+
+			a := &ServarrInstance{ID: "a" + tag, Kind: "radarr", Name: "A", URL: "http://a", APIKey: "k", QualityProfileID: 1, RootFolder: "/m"}
+			b := &ServarrInstance{ID: "b" + tag, Kind: "radarr", Name: "B", URL: "http://b", APIKey: "k", QualityProfileID: 1, RootFolder: "/m", IsDefault: 1}
+			if err := s.SaveServarr(ctx, a); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.SaveServarr(ctx, b); err != nil {
+				t.Fatal(err)
+			}
+			if def, err := s.DefaultServarr(ctx, "radarr"); err != nil || def.ID != b.ID {
+				t.Fatalf("default = %+v %v", def, err)
+			}
+			_ = s.DeleteServarr(ctx, a.ID)
+			_ = s.DeleteServarr(ctx, b.ID)
+
+			w := &Webhook{ID: "w" + tag, Name: "hook", URL: "http://x", Events: "request.created", Enabled: 1}
+			if err := s.SaveWebhook(ctx, w); err != nil {
+				t.Fatal(err)
+			}
+			w.Name = "hook2"
+			if err := s.SaveWebhook(ctx, w); err != nil { // update path must keep created_at
+				t.Fatal(err)
+			}
+			if got, err := s.GetWebhook(ctx, w.ID); err != nil || got.Name != "hook2" || got.CreatedAt == 0 {
+				t.Fatalf("webhook = %+v %v", got, err)
+			}
+			_ = s.DeleteWebhook(ctx, w.ID)
+		})
+	}
+}

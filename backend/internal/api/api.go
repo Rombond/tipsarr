@@ -7,9 +7,12 @@ import (
 	"net/http"
 
 	"github.com/Rombond/tipsarr/backend/internal/auth"
+	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
 	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/Rombond/tipsarr/backend/internal/media"
+	"github.com/Rombond/tipsarr/backend/internal/notify"
+	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
@@ -23,6 +26,9 @@ type Deps struct {
 	Auth      *auth.Service
 	Media     *media.Service
 	Library   *library.Service
+	Requests  *requests.Service
+	Hub       *events.Hub
+	Notify    *notify.Service
 	Jobs      *jobs.Manager
 	DryRun    bool   // global: nothing is ever sent to Radarr/Sonarr
 	ConfigDir string // image cache lives under here
@@ -53,6 +59,10 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerDiscover(api, d)
 		registerAdmin(api, d)
 		registerSync(api, d)
+		registerRequests(api, d)
+		registerServarr(api, d)
+		registerWebhooks(api, d)
+		r.Get("/events", eventsHandler(d))
 		r.Get("/images/tmdb/{size}/{file}", imageHandler(d))
 	})
 	return api

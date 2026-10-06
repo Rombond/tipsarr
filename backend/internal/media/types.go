@@ -8,16 +8,17 @@ const (
 )
 
 type Item struct {
-	Type         string  `json:"type" enum:"movie,tv" doc:"movie or tv"`
-	TMDBID       int     `json:"tmdbId"`
-	Title        string  `json:"title"`
-	ReleaseDate  string  `json:"releaseDate,omitempty"`
-	Overview     string  `json:"overview,omitempty"`
-	PosterPath   string  `json:"posterPath,omitempty" doc:"TMDB path, load via /images/tmdb/{size}/{file}"`
-	BackdropPath string  `json:"backdropPath,omitempty"`
-	VoteAverage  float64 `json:"voteAverage"`
-	GenreIDs     []int   `json:"genreIds,omitempty"`
-	Availability string  `json:"availability" enum:"none,partial,available" doc:"Library availability (filled by library sync)"`
+	Type          string  `json:"type" enum:"movie,tv" doc:"movie or tv"`
+	TMDBID        int     `json:"tmdbId"`
+	Title         string  `json:"title"`
+	ReleaseDate   string  `json:"releaseDate,omitempty"`
+	Overview      string  `json:"overview,omitempty"`
+	PosterPath    string  `json:"posterPath,omitempty" doc:"TMDB path, load via /images/tmdb/{size}/{file}"`
+	BackdropPath  string  `json:"backdropPath,omitempty"`
+	VoteAverage   float64 `json:"voteAverage"`
+	GenreIDs      []int   `json:"genreIds,omitempty"`
+	Availability  string  `json:"availability" enum:"none,partial,available" doc:"Library availability (filled by library sync)"`
+	RequestStatus string  `json:"requestStatus,omitempty" enum:"pending,approved" doc:"Set while an active request exists for this title"`
 }
 
 type Person struct {
@@ -69,6 +70,7 @@ type Detail struct {
 	OriginalLanguage string       `json:"originalLanguage,omitempty"`
 	Homepage         string       `json:"homepage,omitempty"`
 	IMDbID           string       `json:"imdbId,omitempty"`
+	TVDBID           int          `json:"tvdbId,omitempty"`
 	Cast             []CastMember `json:"cast"`
 	Directors        []Person     `json:"directors"`
 	NumberOfSeasons  int          `json:"numberOfSeasons,omitempty"`

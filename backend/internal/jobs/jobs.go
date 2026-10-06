@@ -22,21 +22,27 @@ type Job struct {
 	Name         string
 	Every        time.Duration
 	InitialDelay time.Duration
+	// Quiet jobs run often; their runs are only recorded when they fail (or recover from a failure).
+	Quiet bool
 	// Run returns a short human-readable summary.
 	Run func(ctx context.Context) (string, error)
 }
 
 type Manager struct {
+	// OnChange (optional) is called when a non-quiet job starts or finishes.
+	OnChange func(name, status, message string)
+
 	store *store.Store
 	jobs  map[string]Job
 	order []string
 
 	mu      sync.Mutex
 	running map[string]bool
+	failing map[string]bool // quiet jobs whose last recorded run was an error
 }
 
 func New(s *store.Store) *Manager {
-	return &Manager{store: s, jobs: map[string]Job{}, running: map[string]bool{}}
+	return &Manager{store: s, jobs: map[string]Job{}, running: map[string]bool{}, failing: map[string]bool{}}
 }
 
 func (m *Manager) Register(j Job) {
@@ -114,7 +120,10 @@ func (m *Manager) run(ctx context.Context, j Job) error {
 	}()
 
 	rec := &store.JobRun{Name: j.Name, LastStartedAt: time.Now().Unix(), Status: "running"}
-	_ = m.store.SaveJobRun(ctx, rec)
+	if !j.Quiet {
+		_ = m.store.SaveJobRun(ctx, rec)
+		m.notifyChange(j.Name, "running", "")
+	}
 
 	jobCtx, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
@@ -132,8 +141,15 @@ func (m *Manager) run(ctx context.Context, j Job) error {
 	default:
 		rec.Status, rec.Message = "ok", msg
 	}
-	if serr := m.store.SaveJobRun(context.WithoutCancel(ctx), rec); serr != nil {
-		slog.Warn("save job run", "err", serr)
+	m.mu.Lock()
+	record := !j.Quiet || rec.Status == "error" || m.failing[j.Name]
+	m.failing[j.Name] = j.Quiet && rec.Status == "error"
+	m.mu.Unlock()
+	if record {
+		m.notifyChange(j.Name, rec.Status, rec.Message)
+		if serr := m.store.SaveJobRun(context.WithoutCancel(ctx), rec); serr != nil {
+			slog.Warn("save job run", "err", serr)
+		}
 	}
 	return err
 }
@@ -158,6 +174,9 @@ func (m *Manager) Statuses(ctx context.Context) ([]Status, error) {
 	defer m.mu.Unlock()
 	out := make([]Status, 0, len(m.order))
 	for _, name := range m.order {
+		if m.jobs[name].Quiet {
+			continue // internal housekeeping, not shown
+		}
 		r, ok := byName[name]
 		if !ok {
 			r = store.JobRun{Name: name, Status: "never"}
@@ -165,4 +184,10 @@ func (m *Manager) Statuses(ctx context.Context) ([]Status, error) {
 		out = append(out, Status{JobRun: r, EverySeconds: int(m.jobs[name].Every.Seconds()), Running: m.running[name]})
 	}
 	return out, nil
+}
+
+func (m *Manager) notifyChange(name, status, message string) {
+	if m.OnChange != nil {
+		m.OnChange(name, status, message)
+	}
 }

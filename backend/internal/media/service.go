@@ -111,10 +111,15 @@ func (s *Service) annotate(ctx context.Context, items []Item) {
 		if err != nil {
 			continue
 		}
+		active, _ := s.store.ActiveRequestStatuses(ctx, mt, ids)
 		for i := range items {
-			if items[i].Type == mt && have[items[i].TMDBID] {
+			if items[i].Type != mt {
+				continue
+			}
+			if have[items[i].TMDBID] {
 				items[i].Availability = AvailabilityAvailable
 			}
+			items[i].RequestStatus = active[items[i].TMDBID]
 		}
 	}
 }
@@ -293,6 +298,7 @@ type rawDetail struct {
 	IMDbID           string  `json:"imdb_id"`
 	ExternalIDs      struct {
 		IMDbID string `json:"imdb_id"`
+		TVDBID int    `json:"tvdb_id"`
 	} `json:"external_ids"`
 	NumberOfSeasons  int `json:"number_of_seasons"`
 	NumberOfEpisodes int `json:"number_of_episodes"`
@@ -334,7 +340,7 @@ func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) 
 	d := &Detail{
 		Item: raw.rawItem.toItem(mediaType), Tagline: raw.Tagline, Status: raw.Status,
 		RuntimeMinutes: raw.Runtime, OriginalLanguage: raw.OriginalLanguage, Homepage: raw.Homepage,
-		IMDbID: firstNonEmpty(raw.IMDbID, raw.ExternalIDs.IMDbID),
+		IMDbID: firstNonEmpty(raw.IMDbID, raw.ExternalIDs.IMDbID), TVDBID: raw.ExternalIDs.TVDBID,
 		Genres: raw.Genres, NumberOfSeasons: raw.NumberOfSeasons, NumberOfEpisodes: raw.NumberOfEpisodes,
 		Cast: []CastMember{}, Directors: []Person{},
 		Recommendations: raw.Recommendations.toList(mediaType).Items,
@@ -368,7 +374,7 @@ func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) 
 	s.annotate(ctx, d.Similar)
 	one := []Item{d.Item}
 	s.annotate(ctx, one)
-	d.Availability = one[0].Availability
+	d.Availability, d.RequestStatus = one[0].Availability, one[0].RequestStatus
 	if mediaType == "tv" {
 		s.showAvailability(ctx, d)
 	}

@@ -14,9 +14,12 @@ import (
 
 	"github.com/Rombond/tipsarr/backend/internal/api"
 	"github.com/Rombond/tipsarr/backend/internal/auth"
+	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
 	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/Rombond/tipsarr/backend/internal/media"
+	"github.com/Rombond/tipsarr/backend/internal/notify"
+	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/server"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
@@ -116,11 +119,15 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 	mux.HandleFunc("/tv/2", hit(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"id":2,"name":"Show Two","episode_run_time":[45],"number_of_seasons":2,"number_of_episodes":20,
 			"seasons":[{"season_number":1,"name":"Season 1","episode_count":10},{"season_number":2,"name":"Season 2","episode_count":10}],
-			"external_ids":{"imdb_id":"tt2"},"recommendations":{"results":[]},"similar":{"results":[]}}`))
+			"external_ids":{"imdb_id":"tt2","tvdb_id":81189},"recommendations":{"results":[]},"similar":{"results":[]}}`))
 	}))
 	mux.HandleFunc("/search/multi", hit(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"page":1,"total_pages":1,"results":[
 			{"id":1,"media_type":"movie","title":"Movie One"},{"id":8,"media_type":"person","name":"Zed","profile_path":"/z.jpg"}]}`))
+	}))
+	mux.HandleFunc("/movie/5", hit(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"id":5,"title":"Request Me","release_date":"2025-05-05","poster_path":"/rm.jpg","genres":[],
+			"credits":{"cast":[],"crew":[]},"recommendations":{"results":[]},"similar":{"results":[]}}`))
 	}))
 	mux.HandleFunc("/movie/404", hit(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotFound) }))
 	srv := httptest.NewServer(mux)
@@ -141,12 +148,26 @@ func fakeImages(t *testing.T) *httptest.Server {
 	return srv
 }
 
+type env struct {
+	app      *httptest.Server
+	st       *store.Store
+	lib      *library.Service
+	reqs     *requests.Service
+	hub      *events.Hub
+	notifier *notify.Service
+}
+
 func newApp(t *testing.T) *httptest.Server {
 	app, _, _ := newAppFull(t)
 	return app
 }
 
 func newAppFull(t *testing.T) (*httptest.Server, *store.Store, *library.Service) {
+	e := newEnv(t, true)
+	return e.app, e.st, e.lib
+}
+
+func newEnv(t *testing.T, dryRun bool) *env {
 	t.Helper()
 	tm, im := fakeTMDB(t), fakeImages(t)
 	st, err := store.Open(context.Background(), "sqlite:"+filepath.Join(t.TempDir(), "t.db"))
@@ -165,13 +186,18 @@ func newAppFull(t *testing.T) (*httptest.Server, *store.Store, *library.Service)
 		r, err := lib.SyncHistory(ctx, "")
 		return r.String(), err
 	}})
+	hub := events.New()
+	mediaSvc := media.New(st, tm.URL)
+	notifier := notify.New(st, dryRun)
+	notifier.SetRetryDelays(10*time.Millisecond, 10*time.Millisecond)
+	reqs := requests.New(st, mediaSvc, hub, notifier, dryRun)
 	h, _ := server.New(api.Deps{
-		Store: st, Auth: auth.New(st), Media: media.New(st, tm.URL), Library: lib, Jobs: jm,
-		DryRun: true, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
+		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Hub: hub, Notify: notifier,
+		DryRun: dryRun, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)
 	t.Cleanup(app.Close)
-	return app, st, lib
+	return &env{app: app, st: st, lib: lib, reqs: reqs, hub: hub, notifier: notifier}
 }
 
 func call(t *testing.T, app *httptest.Server, method, path, body string, cookies ...*http.Cookie) (*http.Response, string) {

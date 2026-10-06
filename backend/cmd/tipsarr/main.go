@@ -14,9 +14,12 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/api"
 	"github.com/Rombond/tipsarr/backend/internal/auth"
 	"github.com/Rombond/tipsarr/backend/internal/config"
+	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
 	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/Rombond/tipsarr/backend/internal/media"
+	"github.com/Rombond/tipsarr/backend/internal/notify"
+	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/server"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
@@ -77,10 +80,22 @@ func run(cfg config.Config) error {
 		r, err := lib.SyncHistory(ctx, "")
 		return r.String(), err
 	}})
+	hub := events.New()
+	jm.OnChange = func(name, status, message string) {
+		hub.Publish("sync.status", "", map[string]string{"job": name, "state": status, "message": message}, true)
+	}
+	mediaSvc := media.New(st, "")
+	notifier := notify.New(st, cfg.DryRun)
+	reqSvc := requests.New(st, mediaSvc, hub, notifier, cfg.DryRun)
+	jm.Register(jobs.Job{Name: "request-poll", Every: 15 * time.Second, InitialDelay: 20 * time.Second, Quiet: true, Run: func(ctx context.Context) (string, error) {
+		n, err := reqSvc.Poll(ctx)
+		return fmt.Sprintf("%d requests in flight", n), err
+	}})
+
 	jm.Start(ctx)
 
 	handler, _ := server.New(api.Deps{
-		Store: st, Auth: auth.New(st), Media: media.New(st, ""), Library: lib, Jobs: jm,
+		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Hub: hub, Notify: notifier,
 		DryRun: cfg.DryRun, ConfigDir: cfg.ConfigDir,
 	})
 	if cfg.DryRun {
