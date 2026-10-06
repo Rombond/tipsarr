@@ -19,7 +19,7 @@ const authHeader = `MediaBrowser Client="Tipsarr", Device="Tipsarr", DeviceId="t
 
 type Client struct {
 	baseURL string
-	token   string // optional API key; sent as X-Emby-Token
+	token   string // optional API key; sent in the Authorization header
 	http    *http.Client
 }
 
@@ -94,11 +94,13 @@ func (c *Client) do(ctx context.Context, method, path string, body []byte, out a
 		return err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", authHeader)
-	req.Header.Set("X-Emby-Authorization", authHeader)
+	hdr := authHeader
 	if c.token != "" {
-		req.Header.Set("X-Emby-Token", c.token)
+		// Newer Jellyfin only accepts API keys inside the Authorization header (X-Emby-Token is rejected).
+		hdr += `, Token="` + c.token + `"`
 	}
+	req.Header.Set("Authorization", hdr)
+	req.Header.Set("X-Emby-Authorization", hdr)
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}

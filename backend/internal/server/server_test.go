@@ -44,7 +44,7 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 	const aliceID, bobID = "aaaaaaaabbbbccccddddeeeeeeeeeeee", "bbbbbbbbbbbbccccddddeeeeeeeeeeee"
 	keyed := func(h http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			if r.Header.Get("X-Emby-Token") != "jfkey" {
+			if !strings.Contains(r.Header.Get("Authorization"), `Token="jfkey"`) || r.Header.Get("X-Emby-Token") != "" {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
