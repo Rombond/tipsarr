@@ -85,16 +85,16 @@
 				Back
 			</button>
 
-			<div class="relative z-10 -mt-16 flex flex-col gap-4 px-4 sm:flex-row sm:items-end md:-mt-24 md:px-6">
+			<div class="relative z-10 -mt-12 flex items-end gap-3 px-4 sm:-mt-16 sm:gap-4 md:-mt-24 md:px-6">
 				{#if details.posterPath}
 					<img
 						src={imageUrl(details.posterPath, 'w342')}
 						alt={details.title}
-						class="w-32 shrink-0 rounded-lg shadow-lg sm:w-44"
+						class="w-24 shrink-0 rounded-lg shadow-lg sm:w-36 md:w-44"
 					/>
 				{/if}
 				<div class="grid gap-3 pb-1 sm:pl-2">
-					<h1 class="font-bold text-2xl text-foreground drop-shadow md:text-3xl">{details.title}</h1>
+					<h1 class="font-bold text-xl text-foreground drop-shadow sm:text-2xl md:text-3xl">{details.title}</h1>
 					<div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
 						<Badge variant="secondary">{mediaType === 'tv' ? 'TV' : 'Movie'}</Badge>
 						{#if details.availability !== 'none'}
