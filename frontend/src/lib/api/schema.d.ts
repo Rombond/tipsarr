@@ -706,7 +706,7 @@ export interface paths {
         put?: never;
         /**
          * First-run setup: point Tipsarr at Jellyfin
-         * @description Only allowed until a Jellyfin URL is saved, and only with the setup token printed in the server log. Afterwards the first Jellyfin administrator to log in becomes the Tipsarr admin.
+         * @description Only allowed until a Jellyfin URL is saved, and, when TIPSARR_SETUP_TOKEN=true, only with the setup token printed in the server log. Afterwards the first Jellyfin administrator to log in becomes the Tipsarr admin.
          */
         post: operations["setup"];
         delete?: never;
@@ -1259,6 +1259,8 @@ export interface components {
         SetupStatusOutputBody: {
             /** @description True once a Jellyfin URL is saved */
             configured: boolean;
+            /** @description The setup call needs the token printed in the server log (TIPSARR_SETUP_TOKEN=true) */
+            tokenRequired: boolean;
         };
         Status: {
             /** Format: int64 */

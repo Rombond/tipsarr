@@ -16,9 +16,9 @@ cd backend && go run ./cmd/tipsarr
 cd frontend && npm ci && npm run dev
 ```
 
-Open http://localhost:5173. On first run the setup page asks for the **setup token** (printed in the backend log at startup, so a stranger cannot claim a fresh install), your Jellyfin URL (and optionally a TMDB API key / read token); then sign in with a Jellyfin account. The first Jellyfin administrator to sign in becomes the Tipsarr admin and can set the TMDB key under Settings.
+Open http://localhost:5173. On first run the setup page asks for your Jellyfin URL (and optionally a TMDB API key / read token); then sign in with a Jellyfin account. The first Jellyfin administrator to sign in becomes the Tipsarr admin and can set the TMDB key under Settings.
 
-Backend environment (all optional): `TIPSARR_PORT` (8080), `TIPSARR_CONFIG_DIR` (`./config`), `TIPSARR_DB_URL` (default `sqlite:<config>/tipsarr.db`; also `postgres://…` or `mysql://user:pass@host:3306/db`), `TIPSARR_JELLYFIN_URL`, `TIPSARR_DRY_RUN` (default `true`), `TIPSARR_COOKIE_SECURE` (`true` to always mark the session cookie Secure; otherwise it is Secure behind a proxy that sends `X-Forwarded-Proto: https`), `TIPSARR_LOG_LEVEL`.
+Backend environment (all optional): `TIPSARR_PORT` (8080), `TIPSARR_CONFIG_DIR` (`./config`), `TIPSARR_DB_URL` (default `sqlite:<config>/tipsarr.db`; also `postgres://…` or `mysql://user:pass@host:3306/db`), `TIPSARR_JELLYFIN_URL`, `TIPSARR_DRY_RUN` (default `true`), `TIPSARR_SETUP_TOKEN` (`true` makes the first-run setup require a one-time token printed in the log, useful if the port is reachable by strangers on a fresh install), `TIPSARR_COOKIE_SECURE` (`true` to always mark the session cookie Secure; otherwise it is Secure behind a proxy that sends `X-Forwarded-Proto: https`), `TIPSARR_LOG_LEVEL`.
 
 ## Docker (single image)
 

@@ -7,6 +7,8 @@ class AuthState {
 	/** false until setup has been completed (Jellyfin URL saved). */
 	configured: boolean | null = $state(null);
 	dryRun = $state(false);
+	/** the setup call needs the token from the server log (opt-in on the server) */
+	setupTokenRequired = $state(false);
 
 	get isAdmin() {
 		return this.user?.role === 'admin';
@@ -25,6 +27,7 @@ class AuthState {
 				unwrap(api.GET('/status')),
 			]);
 			this.configured = setup.configured;
+			this.setupTokenRequired = setup.tokenRequired;
 			this.dryRun = st.dryRun;
 		} catch {
 			this.configured = null;

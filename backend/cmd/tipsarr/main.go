@@ -109,10 +109,11 @@ func run(cfg config.Config) error {
 	}})
 	jm.Start(ctx)
 
-	// A fresh install must be claimed with a one-time token that only appears in this log, so a
-	// stranger who reaches the port first cannot point Tipsarr at their own "Jellyfin".
+	// Optional (TIPSARR_SETUP_TOKEN=true): a fresh install must be claimed with a one-time token
+	// that only appears in this log, so a stranger who reaches the port first cannot point Tipsarr
+	// at their own "Jellyfin". Off by default: on a private network it is just friction.
 	setupToken := ""
-	if cur, _ := st.GetSetting(ctx, auth.SettingJellyfinURL); cur == "" {
+	if cur, _ := st.GetSetting(ctx, auth.SettingJellyfinURL); cur == "" && cfg.RequireSetupToken {
 		raw := make([]byte, 12)
 		if _, err := rand.Read(raw); err != nil {
 			return err

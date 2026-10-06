@@ -39,7 +39,9 @@
 	</CardHeader>
 	<CardContent>
 		<form class="grid gap-3" onsubmit={handleSubmit}>
-			<Input placeholder="Setup token (printed in the Tipsarr server log)" bind:value={setupToken} autocomplete="off" required />
+			{#if auth.setupTokenRequired}
+				<Input placeholder="Setup token (printed in the Tipsarr server log)" bind:value={setupToken} autocomplete="off" required />
+			{/if}
 			<Input placeholder="Jellyfin URL (http://host:8096)" type="url" bind:value={jellyfinUrl} required />
 			<Input placeholder="TMDB API key or read token (optional now)" bind:value={tmdbApiKey} autocomplete="off" />
 			{#if error}

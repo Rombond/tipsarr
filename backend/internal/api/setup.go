@@ -14,7 +14,8 @@ import (
 
 type setupStatusOutput struct {
 	Body struct {
-		Configured bool `json:"configured" doc:"True once a Jellyfin URL is saved"`
+		Configured    bool `json:"configured" doc:"True once a Jellyfin URL is saved"`
+		TokenRequired bool `json:"tokenRequired" doc:"The setup call needs the token printed in the server log (TIPSARR_SETUP_TOKEN=true)"`
 	}
 }
 
@@ -43,13 +44,14 @@ func registerSetup(api huma.API, d Deps) {
 		}
 		out := &setupStatusOutput{}
 		out.Body.Configured = url != ""
+		out.Body.TokenRequired = url == "" && d.SetupToken != ""
 		return out, nil
 	})
 
 	huma.Register(api, huma.Operation{
 		OperationID: "setup", Method: http.MethodPost, Path: "/setup",
 		Summary:     "First-run setup: point Tipsarr at Jellyfin",
-		Description: "Only allowed until a Jellyfin URL is saved, and only with the setup token printed in the server log. Afterwards the first Jellyfin administrator to log in becomes the Tipsarr admin.",
+		Description: "Only allowed until a Jellyfin URL is saved, and, when TIPSARR_SETUP_TOKEN=true, only with the setup token printed in the server log. Afterwards the first Jellyfin administrator to log in becomes the Tipsarr admin.",
 		Tags:        []string{"setup"}, Errors: []int{http.StatusUnauthorized, http.StatusConflict, http.StatusUnprocessableEntity},
 	}, func(ctx context.Context, in *setupInput) (*setupOutput, error) {
 		current, err := d.Store.GetSetting(ctx, auth.SettingJellyfinURL)

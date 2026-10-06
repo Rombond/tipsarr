@@ -217,3 +217,20 @@ func TestRoleChangeEndsSessions(t *testing.T) {
 		t.Fatalf("old session must end after a role change, got %d", resp.StatusCode)
 	}
 }
+
+func TestSetupTokenIsOptional(t *testing.T) {
+	// default: no token, the setup call works as before and the UI is told not to ask for one
+	e := newEnv(t, true)
+	if _, b := call(t, e.app, "GET", "/api/v1/setup/status", ""); !strings.Contains(b, `"tokenRequired":false`) {
+		t.Fatalf("status = %s", b)
+	}
+	jf := fakeJellyfin(t)
+	if resp, _ := call(t, e.app, "POST", "/api/v1/setup", `{"jellyfinUrl":"`+jf.URL+`"}`); resp.StatusCode != 200 {
+		t.Fatalf("setup without token = %d", resp.StatusCode)
+	}
+	// opt-in: the status says a token is needed
+	e2 := newEnvWith(t, true, "tok")
+	if _, b := call(t, e2.app, "GET", "/api/v1/setup/status", ""); !strings.Contains(b, `"tokenRequired":true`) {
+		t.Fatalf("status = %s", b)
+	}
+}
