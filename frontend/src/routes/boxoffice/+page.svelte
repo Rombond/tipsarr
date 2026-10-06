@@ -130,7 +130,7 @@
 	<title>Box office · Tipsarr</title>
 </svelte:head>
 
-<div class="grid max-w-4xl gap-4">
+<div class="grid max-w-4xl grid-cols-[minmax(0,1fr)] gap-4">
 	<div class="flex flex-wrap items-center justify-between gap-2">
 		<div>
 			<h1 class="font-bold text-2xl">Box office</h1>
@@ -169,7 +169,7 @@
 			No chart stored yet.{#if auth.isAdmin} Fetch it in <a class="underline" href="/admin/settings">Settings</a> (job “boxoffice-refresh”).{/if}
 		</div>
 	{:else if chart}
-		<div class="grid gap-2.5" class:opacity-60={loading}>
+		<div class="grid grid-cols-[minmax(0,1fr)] gap-2.5" class:opacity-60={loading}>
 			{#each chart.entries as e (e.position)}
 				{@const poster = imageUrl(e.item?.posterPath, 'w154')}
 				{@const state = stateOf(e)}
@@ -202,7 +202,7 @@
 							Total {compact(e.totalGross)} · week {e.weeksInRelease || '-'}
 						</p>
 					</div>
-					<div class="flex shrink-0 flex-col items-end justify-between gap-2">
+					<div class="flex w-24 shrink-0 flex-col items-end justify-between gap-2 sm:w-28">
 						{#if auth.isAdmin}
 							<button
 								type="button"

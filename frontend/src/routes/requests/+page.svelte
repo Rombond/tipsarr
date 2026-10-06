@@ -122,7 +122,7 @@
 	<title>Requests · Tipsarr</title>
 </svelte:head>
 
-<div class="grid max-w-3xl gap-4">
+<div class="grid max-w-3xl grid-cols-[minmax(0,1fr)] gap-4">
 	<div class="flex flex-wrap items-center justify-between gap-2">
 		<h1 class="font-bold text-2xl">Requests</h1>
 		{#if auth.isAdmin && filter === 'pending' && items.length > 1}
