@@ -139,7 +139,7 @@
 				type="button"
 				role="tab"
 				aria-selected={filter === f}
-				class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-sm capitalize transition-colors {filter === f ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'}"
+				class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors {filter === f ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'}"
 				onclick={() => (filter = f)}
 			>
 				{#if dot[f]}<span class="size-2 rounded-full {dot[f]}"></span>{/if}

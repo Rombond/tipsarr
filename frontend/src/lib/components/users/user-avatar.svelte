@@ -2,17 +2,25 @@
 	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
 
 	let { id, name, class: className = 'size-9' }: { id: string; name: string; class?: string } = $props();
-	let failed = $state(false);
+	// the photo is probed first: a missing one (404) must never show a broken-image icon
+	let loaded = $state(false);
 
 	$effect(() => {
-		id;
-		failed = false;
+		const src = `/api/v1/users/${id}/avatar`;
+		loaded = false;
+		const probe = new Image();
+		probe.onload = () => (loaded = true);
+		probe.src = src;
+		return () => {
+			probe.onload = null;
+		};
 	});
 </script>
 
 <Avatar class={className}>
-	{#if !failed}
-		<img src="/api/v1/users/{id}/avatar" alt="" class="aspect-square size-full object-cover" onerror={() => (failed = true)} />
+	{#if loaded}
+		<img src="/api/v1/users/{id}/avatar" alt="" class="aspect-square size-full object-cover" />
+	{:else}
+		<AvatarFallback>{(name || '?').slice(0, 2).toUpperCase()}</AvatarFallback>
 	{/if}
-	{#if failed}<AvatarFallback>{(name || '?').slice(0, 2).toUpperCase()}</AvatarFallback>{/if}
 </Avatar>
