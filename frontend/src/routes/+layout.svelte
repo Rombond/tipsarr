@@ -5,11 +5,17 @@
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth.svelte';
 	import AppShell from '$lib/components/layout/app-shell.svelte';
+	import { connectEvents, disconnectEvents } from '$lib/events.svelte';
 
 	let { children } = $props();
 
 	$effect(() => {
 		auth.bootstrap();
+	});
+
+	$effect(() => {
+		if (auth.status === 'authenticated') connectEvents();
+		else disconnectEvents();
 	});
 
 	$effect(() => {

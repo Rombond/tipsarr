@@ -10,6 +10,8 @@
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
+	import ServerIcon from '@lucide/svelte/icons/server';
+	import BellIcon from '@lucide/svelte/icons/bell';
 
 	const navItems = $derived(
 		[
@@ -18,6 +20,8 @@
 			...(auth.isAdmin
 				? [
 						{ href: '/admin/users', label: 'Users', icon: UsersIcon },
+						{ href: '/admin/services', label: 'Radarr / Sonarr', icon: ServerIcon },
+						{ href: '/admin/webhooks', label: 'Webhooks', icon: BellIcon },
 						{ href: '/admin/settings', label: 'Settings', icon: SettingsIcon },
 					]
 				: []),

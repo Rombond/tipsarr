@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Carousel from '$lib/components/media/carousel.svelte';
+	import RequestButton from '$lib/components/requests/request-button.svelte';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 
@@ -128,7 +129,13 @@
 				{/if}
 
 				<div class="flex flex-wrap gap-2">
-					<Button disabled title="Requests arrive in a later phase">Request</Button>
+					<RequestButton
+						type={mediaType}
+						{tmdbId}
+						seasons={details.seasons}
+						availability={details.availability}
+						requestStatus={details.requestStatus}
+					/>
 					{#if details.imdbId}
 						<Button variant="outline" href="https://www.imdb.com/title/{details.imdbId}" target="_blank" rel="noreferrer">
 							IMDb

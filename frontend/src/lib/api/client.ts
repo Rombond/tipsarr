@@ -33,6 +33,15 @@ export async function unwrap<T>(
 	return data;
 }
 
+/** Like unwrap, for endpoints that answer 204 No Content. */
+export async function expectOk(result: Promise<{ error?: unknown; response: Response }>): Promise<void> {
+	const { error, response } = await result;
+	if (!response.ok) {
+		const e = error as { detail?: string; title?: string } | undefined;
+		throw new ApiError(e?.detail || e?.title || `${response.status} ${response.statusText}`, response.status);
+	}
+}
+
 /** URL for a TMDB image served (and cached) by the backend. `path` is a TMDB path like "/abc.jpg". */
 export function imageUrl(path: string | null | undefined, size = 'w342'): string | null {
 	return path ? `/api/v1/images/tmdb/${size}${path}` : null;
