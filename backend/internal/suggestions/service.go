@@ -109,7 +109,9 @@ func (s *Service) Get(ctx context.Context, u *store.User) (*Result, error) {
 		}
 	}
 	res := &Result{Rows: []Row{}}
-	if cur, err := s.store.HistoryVersion(ctx, u.ID); err == nil && stale(rows[0:1], cur) {
+	cur, _ := s.store.HistoryVersion(ctx, u.ID)
+	hasHistory, _ := s.store.HasHistory(ctx, u.ID)
+	if stale(rows[0:1], cur, hasHistory) {
 		res.Generating = true
 		go s.refreshInBackground(u.ID)
 	}
@@ -141,7 +143,7 @@ func (s *Service) Get(ctx context.Context, u *store.User) (*Result, error) {
 	return res, nil
 }
 
-func stale(rows []store.SuggestionRow, currentVersion int64) bool {
+func stale(rows []store.SuggestionRow, currentVersion int64, hasHistory bool) bool {
 	if len(rows) == 0 {
 		return true
 	}
@@ -150,8 +152,8 @@ func stale(rows []store.SuggestionRow, currentVersion int64) bool {
 		return r.HistoryVersion != currentVersion
 	}
 	// built from server-wide history or trending: refresh when the user gains history of their
-	// own, or weekly
-	return currentVersion > 0 || time.Since(time.Unix(r.GeneratedAt, 0)) > staleNoHistory
+	// own (a synced but EMPTY history does not count), or weekly
+	return hasHistory || time.Since(time.Unix(r.GeneratedAt, 0)) > staleNoHistory
 }
 
 // hiddenSet is everything that must not appear in a user's suggestions: titles they watched

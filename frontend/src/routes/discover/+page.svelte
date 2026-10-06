@@ -3,6 +3,8 @@
 	import DiscoverRow from '$lib/components/discover/discover-row.svelte';
 	import SuggestionRows from '$lib/components/discover/suggestion-rows.svelte';
 	import BoxofficeRow from '$lib/components/discover/boxoffice-row.svelte';
+	import Hero from '$lib/components/discover/hero.svelte';
+	import SetupChecklist from '$lib/components/discover/setup-checklist.svelte';
 	import MediaDetailModal from '$lib/components/media/media-detail-modal.svelte';
 
 	let selected: MediaItem | null = $state(null);
@@ -14,7 +16,9 @@
 </svelte:head>
 
 <div class="grid gap-8">
-	<h1 class="font-bold text-2xl">Discover</h1>
+	<h1 class="sr-only">Discover</h1>
+	<SetupChecklist />
+	<Hero />
 
 	<SuggestionRows onSelect={select} />
 	<BoxofficeRow />

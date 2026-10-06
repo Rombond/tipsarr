@@ -114,3 +114,9 @@ func (s *Store) LibraryJellyfinID(ctx context.Context, mediaType string, tmdbID 
 		Where("media_type = ?", mediaType).Where("tmdb_id = ?", tmdbID).Scan(ctx, &id)
 	return id
 }
+
+// HasHistory reports whether a user has any watched title stored.
+func (s *Store) HasHistory(ctx context.Context, userID string) (bool, error) {
+	n, err := s.DB.NewSelect().Model((*WatchHistory)(nil)).Where("user_id = ?", userID).Limit(1).Count(ctx)
+	return n > 0, err
+}

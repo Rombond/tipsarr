@@ -80,11 +80,11 @@
 		{#each rows as row (row.id)}
 			<Carousel title={row.title} items={row.items} {onSelect} onDismiss={dismiss} />
 		{/each}
-		<div class="flex items-center gap-3 text-xs text-muted-foreground">
-			<Button size="sm" variant="ghost" disabled={refreshing || generating} onclick={refresh}>
-				{refreshing || generating ? 'Updating recommendations…' : 'Refresh recommendations'}
-			</Button>
+		<div class="-mt-3 flex items-center justify-end gap-3 text-xs text-muted-foreground">
 			{#if refreshMessage}<span>{refreshMessage}</span>{/if}
+			<Button size="sm" variant="ghost" class="h-7 px-2 text-xs" disabled={refreshing || generating} onclick={refresh}>
+				{refreshing || generating ? 'Updating…' : '↻ Refresh recommendations'}
+			</Button>
 		</div>
 	</div>
 {/if}

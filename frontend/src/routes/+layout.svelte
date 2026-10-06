@@ -1,13 +1,18 @@
 <script lang="ts">
 	import './layout.css';
-	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth.svelte';
 	import AppShell from '$lib/components/layout/app-shell.svelte';
 	import { connectEvents, disconnectEvents } from '$lib/events.svelte';
+	import { theme } from '$lib/theme.svelte';
+	import Toaster from '$lib/components/ui/toaster/toaster.svelte';
 
 	let { children } = $props();
+
+	$effect(() => {
+		theme.init();
+	});
 
 	$effect(() => {
 		auth.bootstrap();
@@ -28,7 +33,6 @@
 	});
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 {#if page.url.pathname === '/login'}
 	{@render children()}
@@ -41,3 +45,5 @@
 		{auth.status === 'unauthenticated' ? 'Redirecting to login…' : 'Loading…'}
 	</div>
 {/if}
+
+<Toaster />

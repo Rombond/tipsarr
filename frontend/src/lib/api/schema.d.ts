@@ -908,6 +908,7 @@ export interface components {
             availability: "none" | "partial" | "available";
             backdropPath?: string;
             cast: components["schemas"]["CastMember"][];
+            collectionBackdropPath?: string;
             /** Format: int64 */
             collectionId?: number;
             collectionName?: string;
@@ -940,6 +941,8 @@ export interface components {
             title: string;
             /** Format: int64 */
             tmdbId: number;
+            /** @description YouTube video key of the official trailer */
+            trailerKey?: string;
             /** Format: int64 */
             tvdbId?: number;
             /**
@@ -949,6 +952,8 @@ export interface components {
             type: "movie" | "tv";
             /** Format: double */
             voteAverage: number;
+            /** @description Deep link to the title in Jellyfin when it is in the library */
+            watchUrl?: string;
         };
         Episode: {
             airDate?: string;
@@ -1236,6 +1241,8 @@ export interface components {
             dryRun: boolean;
             /** @description Needed for library and history sync */
             jellyfinApiKeyConfigured: boolean;
+            /** @description Address browsers use to open Jellyfin (Play buttons); empty = same as jellyfinUrl */
+            jellyfinPublicUrl: string;
             jellyfinUrl: string;
             /** @description Secrets are write-only; this only says whether a key is saved */
             tmdbConfigured: boolean;
@@ -1301,6 +1308,8 @@ export interface components {
             boxofficeRegions?: string;
             /** @description Jellyfin API key (Dashboard > API Keys); empty string clears it */
             jellyfinApiKey?: string;
+            /** @description Empty string clears it */
+            jellyfinPublicUrl?: string;
             /** @description Set or replace the TMDB key (empty string clears it) */
             tmdbApiKey?: string;
         };

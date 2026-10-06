@@ -46,7 +46,7 @@
 <section class="grid gap-2">
 	<div class="flex items-center justify-between">
 		<h2 class="font-semibold text-lg">{title}</h2>
-		<div class="flex gap-1">
+		<div class="flex gap-1 [@media(hover:none)]:hidden">
 			<Button variant="outline" size="icon-sm" aria-label="Scroll left" onclick={() => scrollBy(-1)}>
 				<ChevronLeftIcon />
 			</Button>
@@ -61,7 +61,7 @@
 			<button class="ml-2 underline" onclick={() => onRetry?.()}>Retry</button>
 		</div>
 	{:else}
-		<div bind:this={scrollEl} class="no-scrollbar flex gap-3 overflow-x-auto pb-2 snap-x" onscroll={handleScroll}>
+		<div bind:this={scrollEl} class="no-scrollbar -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 md:-mx-6 md:scroll-px-6 md:px-6" onscroll={handleScroll}>
 			{#each items as item (`${item.type}:${item.tmdbId}`)}
 				<MediaCard {item} {onSelect} {onDismiss} />
 			{/each}

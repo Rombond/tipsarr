@@ -1,40 +1,27 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import * as Sidebar from '$lib/components/ui/sidebar';
-	import { Input } from '$lib/components/ui/input';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { counts } from '$lib/stores/counts.svelte';
 	import AppSidebar from './app-sidebar.svelte';
 	import DryRunBanner from './dry-run-banner.svelte';
-	import SearchIcon from '@lucide/svelte/icons/search';
+	import SearchBox from './search-box.svelte';
+	import MobileNav from './mobile-nav.svelte';
 
 	let { children } = $props();
 
-	let query = $state('');
-
-	function handleSearchKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter' && query.trim()) {
-			goto(`/search?q=${encodeURIComponent(query.trim())}`);
-		}
-	}
+	$effect(() => (auth.isAdmin ? counts.track() : undefined));
 </script>
 
 <Sidebar.Provider>
 	<AppSidebar />
 	<Sidebar.Inset>
 		<DryRunBanner />
-		<div class="flex items-center gap-2 border-b border-border px-4 py-2">
-			<Sidebar.Trigger class="md:hidden" />
-			<div class="relative w-full max-w-md">
-				<SearchIcon class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-				<Input
-					class="pl-8"
-					placeholder="Search movies, TV shows, people…"
-					bind:value={query}
-					onkeydown={handleSearchKeydown}
-				/>
-			</div>
-		</div>
-		<div class="p-4 md:p-6">
+		<header class="sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/85 px-4 py-2 backdrop-blur">
+			<SearchBox />
+		</header>
+		<div class="p-4 pb-24 md:p-6 md:pb-6">
 			{@render children()}
 		</div>
+		<MobileNav pending={auth.isAdmin ? counts.pending : 0} />
 	</Sidebar.Inset>
 </Sidebar.Provider>
