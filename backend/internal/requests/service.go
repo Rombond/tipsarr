@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sort"
 	"strconv"
 	"sync"
@@ -57,9 +58,19 @@ func New(s *store.Store, m *media.Service, h *events.Hub, n *notify.Service, dry
 	return svc
 }
 
+type SeasonProgress struct {
+	Season  int `json:"season"`
+	Percent int `json:"percent" doc:"Episodes Sonarr already has, as a percentage of the season"`
+}
+
 type Progress struct {
-	Percent    int `json:"percent"`
-	ETASeconds int `json:"etaSeconds"`
+	Percent    int              `json:"percent"`
+	ETASeconds int              `json:"etaSeconds"`
+	Seasons    []SeasonProgress `json:"seasons,omitempty" doc:"Shows only: per-season completion"`
+}
+
+func (p Progress) same(o Progress) bool {
+	return p.Percent == o.Percent && p.ETASeconds == o.ETASeconds && slices.Equal(p.Seasons, o.Seasons)
 }
 
 type UserRef struct {

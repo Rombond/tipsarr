@@ -50,6 +50,7 @@ func (s *Service) Poll(ctx context.Context) (int, error) {
 func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Request, queue map[int]servarr.QueueItem) error {
 	done := false
 	seriesPct := 0 // shows: the episodes Sonarr already has, as a percentage
+	var seasons []SeasonProgress
 	var err error
 	if r.MediaType == "movie" {
 		var m *servarr.Movie
@@ -60,6 +61,11 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 		var sr *servarr.Series
 		if sr, err = c.Series(ctx, int(r.ServarrID)); err == nil {
 			done = sr.Complete()
+			for _, sn := range sr.Seasons {
+				if n := sn.Statistics.EpisodeCount; sn.SeasonNumber > 0 && n > 0 {
+					seasons = append(seasons, SeasonProgress{Season: sn.SeasonNumber, Percent: min(100, sn.Statistics.EpisodeFileCount*100/n)})
+				}
+			}
 			if n := sr.Statistics.EpisodeCount; n > 0 {
 				seriesPct = min(99, sr.Statistics.EpisodeFileCount*100/n)
 			}
@@ -103,6 +109,7 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 	if seriesPct > 0 {
 		next.Percent = seriesPct
 	}
+	next.Seasons = seasons
 	s.mu.Lock()
 	prev, had := s.progress[r.ID]
 	if downloading {
@@ -112,8 +119,8 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 	}
 	cur := s.progress[r.ID]
 	s.mu.Unlock()
-	if downloading && (!had || prev != cur) {
-		s.hub.Publish("request.progress", r.RequestedBy, map[string]any{"id": r.ID, "percent": cur.Percent, "etaSeconds": cur.ETASeconds}, false)
+	if downloading && (!had || !prev.same(cur)) {
+		s.hub.Publish("request.progress", r.RequestedBy, map[string]any{"id": r.ID, "percent": cur.Percent, "etaSeconds": cur.ETASeconds, "seasons": cur.Seasons}, false)
 		if !had {
 			s.changed(ctx, r) // searching -> downloading
 		}

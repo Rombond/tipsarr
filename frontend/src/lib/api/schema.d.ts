@@ -1507,6 +1507,8 @@ export interface components {
             etaSeconds: number;
             /** Format: int64 */
             percent: number;
+            /** @description Shows only: per-season completion */
+            seasons?: components["schemas"]["SeasonProgress"][];
         };
         QualityProfile: {
             /** Format: int64 */
@@ -1601,6 +1603,15 @@ export interface components {
             number: number;
             overview?: string;
             posterPath?: string;
+        };
+        SeasonProgress: {
+            /**
+             * Format: int64
+             * @description Episodes Sonarr already has, as a percentage of the season
+             */
+            percent: number;
+            /** Format: int64 */
+            season: number;
         };
         Seed: {
             title: string;
