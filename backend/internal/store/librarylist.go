@@ -17,6 +17,7 @@ type LibraryFilter struct {
 	MinRating  int    // x 10
 	MaxRuntime int    // minutes, 0 = any
 	Watched    string // "", "yes" or "no" (by UserID)
+	Nobody     bool   // watched by nobody at all (admin clean-up view)
 	Sort       string // added, title, year, rating, runtime, popular
 	Desc       bool
 	Offset     int
@@ -85,6 +86,10 @@ func (s *Store) ListLibrary(ctx context.Context, f LibraryFilter) ([]LibraryRow,
 		q = q.Where("COALESCE(me.play_count, 0) > 0")
 	case "no":
 		q = q.Where("COALESCE(me.play_count, 0) = 0")
+	}
+	if f.Nobody {
+		q = q.Where("COALESCE(w.plays, 0) = 0").
+			Where("NOT EXISTS (SELECT 1 FROM watch_events e WHERE e.media_type = l.media_type AND e.tmdb_id = l.tmdb_id AND e.seconds >= 60)")
 	}
 	total, err := q.Count(ctx)
 	if err != nil {

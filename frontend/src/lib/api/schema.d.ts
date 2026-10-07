@@ -1783,6 +1783,11 @@ export interface components {
             failed: number;
             /** Format: int64 */
             pending: number;
+            /**
+             * Format: int64
+             * @description Admins: available requests their requester never watched
+             */
+            unwatched: number;
         };
         RequestList: {
             items: components["schemas"]["View"][];
@@ -4813,6 +4818,8 @@ export interface operations {
                 maxRuntime?: number;
                 /** @description By the logged-in user */
                 watched?: "any" | "yes" | "no";
+                /** @description Admins only: titles nobody ever watched (library clean-up) */
+                neverWatched?: boolean;
                 sort?: "added" | "title" | "year" | "rating" | "runtime" | "popular";
                 dir?: "asc" | "desc";
                 page?: number;
@@ -4835,6 +4842,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5477,7 +5493,7 @@ export interface operations {
     listRequests: {
         parameters: {
             query?: {
-                filter?: "all" | "mine" | "pending" | "approved" | "available" | "declined" | "failed";
+                filter?: "all" | "mine" | "pending" | "approved" | "available" | "declined" | "failed" | "unwatched";
                 /** @description Admins only: only this user's requests */
                 user?: string;
                 take?: number;

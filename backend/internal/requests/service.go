@@ -192,6 +192,11 @@ func (s *Service) List(ctx context.Context, u *store.User, p ListParams) (*ListR
 	switch p.Filter {
 	case "pending", "approved", "available", "declined", "failed":
 		f.Statuses = []string{p.Filter}
+	case "unwatched":
+		if u.Role != store.RoleAdmin {
+			return &ListResult{Items: []View{}}, nil // an admin clean-up view
+		}
+		f.Unwatched = true
 	}
 	rows, total, err := s.store.ListRequests(ctx, f)
 	if err != nil {
@@ -239,6 +244,11 @@ func (s *Service) Counts(ctx context.Context, u *store.User) (map[string]int, er
 	for _, k := range []string{store.StatusPending, store.StatusApproved, store.StatusAvailable, store.StatusDeclined, store.StatusFailed} {
 		if _, ok := c[k]; !ok {
 			c[k] = 0
+		}
+	}
+	if u.Role == store.RoleAdmin {
+		if n, err := s.store.CountUnwatchedRequests(ctx); err == nil {
+			c["unwatched"] = n
 		}
 	}
 	return c, nil

@@ -92,7 +92,21 @@ type RequestFilter struct {
 	Statuses    []string
 	MediaType   string
 	TMDBID      int64
-	Take, Skip  int
+	// Unwatched keeps what is available but its requester never watched (admin clean-up view).
+	Unwatched  bool
+	Take, Skip int
+}
+
+// unwatchedByRequester: the requester has no play of the title, neither in the synced history nor
+// in the plays copied from Playback Reporting. Imported requests have no requester and never match.
+const unwatchedByRequester = `?TableAlias.status = 'available' AND ?TableAlias.requested_by <> '' ` +
+	`AND NOT EXISTS (SELECT 1 FROM watch_history h WHERE h.user_id = ?TableAlias.requested_by AND h.media_type = ?TableAlias.media_type AND h.tmdb_id = ?TableAlias.tmdb_id) ` +
+	`AND NOT EXISTS (SELECT 1 FROM watch_events e WHERE e.user_id = ?TableAlias.requested_by AND e.media_type = ?TableAlias.media_type AND e.tmdb_id = ?TableAlias.tmdb_id AND e.seconds >= 60)`
+
+// CountUnwatchedRequests counts what the "not watched" view lists.
+func (s *Store) CountUnwatchedRequests(ctx context.Context) (int, error) {
+	n, err := s.DB.NewSelect().Model((*Request)(nil)).Where(unwatchedByRequester).Count(ctx)
+	return int(n), err
 }
 
 func (s *Store) CreateRequest(ctx context.Context, r *Request, seasons []int) error {
@@ -147,6 +161,9 @@ func (s *Store) ListRequests(ctx context.Context, f RequestFilter) ([]Request, i
 	}
 	if len(f.Statuses) > 0 {
 		q = q.Where("status IN (?)", bun.In(f.Statuses))
+	}
+	if f.Unwatched {
+		q = q.Where(unwatchedByRequester)
 	}
 	if f.MediaType != "" {
 		q = q.Where("media_type = ?", f.MediaType)

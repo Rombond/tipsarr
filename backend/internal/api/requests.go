@@ -54,7 +54,7 @@ func registerRequests(api huma.API, d Deps) {
 		Summary: "List requests (admins see everyone's, users their own)", Tags: []string{"requests"}, Security: sec,
 		Errors: []int{http.StatusUnauthorized},
 	}, func(ctx context.Context, in *struct {
-		Filter string `query:"filter" enum:"all,mine,pending,approved,available,declined,failed" default:"all"`
+		Filter string `query:"filter" enum:"all,mine,pending,approved,available,declined,failed,unwatched" default:"all"`
 		User   string `query:"user" maxLength:"64" doc:"Admins only: only this user's requests"`
 		Take   int    `query:"take" minimum:"1" maximum:"100" default:"20"`
 		Skip   int    `query:"skip" minimum:"0" default:"0"`
@@ -80,6 +80,7 @@ func registerRequests(api huma.API, d Deps) {
 			Available int `json:"available"`
 			Declined  int `json:"declined"`
 			Failed    int `json:"failed"`
+			Unwatched int `json:"unwatched" doc:"Admins: available requests their requester never watched"`
 		}
 	}, error) {
 		u, err := requireUser(ctx)
@@ -97,10 +98,12 @@ func registerRequests(api huma.API, d Deps) {
 				Available int `json:"available"`
 				Declined  int `json:"declined"`
 				Failed    int `json:"failed"`
+				Unwatched int `json:"unwatched" doc:"Admins: available requests their requester never watched"`
 			}
 		}{}
 		out.Body.Pending, out.Body.Approved, out.Body.Available = c[store.StatusPending], c[store.StatusApproved], c[store.StatusAvailable]
 		out.Body.Declined, out.Body.Failed = c[store.StatusDeclined], c[store.StatusFailed]
+		out.Body.Unwatched = c["unwatched"]
 		return out, nil
 	})
 

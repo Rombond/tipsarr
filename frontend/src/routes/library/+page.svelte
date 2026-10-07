@@ -3,6 +3,8 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { t } from '$lib/i18n/index.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { fmtDate } from '$lib/i18n/format';
 	import { api, unwrap, errorText, type Schemas } from '$lib/api/client';
 	import MediaCard from '$lib/components/media/media-card.svelte';
 	import { asMediaItem } from '$lib/library-item';
@@ -33,6 +35,8 @@
 	let watched = $state(q0.get('watched') ?? 'any');
 	let sort = $state<Sort>(SORTS.includes(q0.get('sort') as Sort) ? (q0.get('sort') as Sort) : 'added');
 	let desc = $state(q0.get('dir') !== 'asc');
+	// admin clean-up view: titles nobody ever watched
+	let never = $state(auth.isAdmin && q0.get('never') === '1');
 	let panelOpen = $state(false);
 	let allGenres = $state(false);
 
@@ -56,11 +60,12 @@
 		if (minRating) p.set('minRating', minRating);
 		if (maxRuntime) p.set('maxRuntime', maxRuntime);
 		if (watched !== 'any') p.set('watched', watched);
+		if (never) p.set('never', '1');
 		if (sort !== 'added') p.set('sort', sort);
 		if (!desc) p.set('dir', 'asc');
 		return p.toString();
 	});
-	const activeFilters = $derived(genres.length + [yearFrom, yearTo, minRating, maxRuntime].filter(Boolean).length + (watched !== 'any' ? 1 : 0));
+	const activeFilters = $derived(genres.length + [yearFrom, yearTo, minRating, maxRuntime].filter(Boolean).length + (watched !== 'any' ? 1 : 0) + (never ? 1 : 0));
 	const shownGenres = $derived(allGenres ? (facets?.genres ?? []) : (facets?.genres ?? []).slice(0, GENRES_SHOWN));
 
 	let typingTimer: ReturnType<typeof setTimeout>;
@@ -90,6 +95,7 @@
 							minRating: Number(minRating) || undefined,
 							maxRuntime: Number(maxRuntime) || undefined,
 							watched: watched as 'any' | 'yes' | 'no',
+							neverWatched: never || undefined,
 							sort,
 							dir: desc ? 'desc' : 'asc',
 							page: pageNo + 1,
@@ -143,6 +149,15 @@
 		if (activeFilters) panelOpen = true;
 	});
 
+	// the clean-up view starts with the titles that have waited the longest
+	function setNever(on: boolean) {
+		never = on;
+		if (on) {
+			sort = 'added';
+			desc = false;
+		}
+	}
+
 	function toggleGenre(g: string) {
 		genres = genres.includes(g) ? genres.filter((x) => x !== g) : [...genres, g];
 	}
@@ -153,6 +168,7 @@
 		genres = [];
 		yearFrom = yearTo = minRating = maxRuntime = '';
 		watched = 'any';
+		never = false;
 		sort = 'added';
 		desc = true;
 	}
@@ -241,6 +257,12 @@
 						{#if genres.length > 1}<p class="text-xs text-muted-foreground">{t('library.genres_all')}</p>{/if}
 					</div>
 				{/if}
+				{#if auth.isAdmin}
+					<label class="flex cursor-pointer items-start gap-2 text-sm">
+						<input type="checkbox" class="mt-0.5" checked={never} onchange={(e) => setNever(e.currentTarget.checked)} />
+						<span><span class="font-medium">{t('library.never_watched')}</span><span class="block text-xs text-muted-foreground">{t('library.never_watched_hint')}</span></span>
+					</label>
+				{/if}
 				<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 					<div class="grid gap-1 text-sm">
 						<span class="font-medium">{t('library.year')}</span>
@@ -275,7 +297,7 @@
 		<p class="text-xs text-muted-foreground" aria-live="polite">{t('library.count', { count: total })}</p>
 		<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 			{#each items as item (item.type + item.tmdbId)}
-				<MediaCard item={asMediaItem(item)} posterUrl={item.posterUrl} hideStatus watched={item.watched} fluid />
+				<MediaCard item={asMediaItem(item)} posterUrl={item.posterUrl} hideStatus watched={item.watched} note={never && item.addedAt ? t('library.added_on', { date: fmtDate(item.addedAt * 1000) }) : undefined} fluid />
 			{/each}
 			{#if loading}
 				{#each { length: 8 } as _, i (i)}<Skeleton class="aspect-[2/3] w-full rounded-lg" />{/each}

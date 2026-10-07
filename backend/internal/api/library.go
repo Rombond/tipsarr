@@ -60,7 +60,7 @@ func registerLibrary(api huma.API, d Deps) {
 		OperationID: "listLibrary", Method: http.MethodGet, Path: "/library",
 		Summary:     "Browse what is in Jellyfin, with filters and sorting",
 		Description: "Data comes from the library sync (genres, year, rating, runtime, date added from Jellyfin). `genre` may be repeated: a title must have all of them. `watched` is about the logged-in user.",
-		Tags:        []string{"library"}, Security: sec, Errors: []int{http.StatusUnauthorized},
+		Tags:        []string{"library"}, Security: sec, Errors: []int{http.StatusUnauthorized, http.StatusForbidden},
 	}, func(ctx context.Context, in *struct {
 		Type       string   `query:"type" enum:"all,movie,tv" default:"all"`
 		Q          string   `query:"q" maxLength:"100" doc:"Part of the title"`
@@ -70,6 +70,7 @@ func registerLibrary(api huma.API, d Deps) {
 		MinRating  float64  `query:"minRating" minimum:"0" maximum:"10"`
 		MaxRuntime int      `query:"maxRuntime" minimum:"0" maximum:"1000" doc:"Minutes"`
 		Watched    string   `query:"watched" enum:"any,yes,no" default:"any" doc:"By the logged-in user"`
+		Nobody     bool     `query:"neverWatched" doc:"Admins only: titles nobody ever watched (library clean-up)"`
 		Sort       string   `query:"sort" enum:"added,title,year,rating,runtime,popular" default:"added"`
 		Dir        string   `query:"dir" enum:"asc,desc" default:"desc"`
 		Page       int      `query:"page" minimum:"1" default:"1"`
@@ -79,7 +80,11 @@ func registerLibrary(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
+		if in.Nobody && u.Role != store.RoleAdmin {
+			return nil, fail(403, "admin_only", "admin only")
+		}
 		f := storeFilter(u.ID, in.Type, in.Q, in.Genre, in.YearFrom, in.YearTo, int(in.MinRating*10+0.5), in.MaxRuntime, in.Watched, in.Sort, in.Dir == "desc", (in.Page-1)*in.PageSize, in.PageSize)
+		f.Nobody = in.Nobody
 		rows, total, err := d.Store.ListLibrary(ctx, f)
 		if err != nil {
 			return nil, err

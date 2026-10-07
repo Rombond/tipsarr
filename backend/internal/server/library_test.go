@@ -140,3 +140,25 @@ func TestLibraryIncludesMoviesInCollections(t *testing.T) {
 		t.Fatalf("a movie in a collection is missing: %s", body)
 	}
 }
+
+// Admins can list what nobody ever watched (library clean-up); other people cannot.
+func TestLibraryNeverWatchedByAnyone(t *testing.T) {
+	jfBoxed.Store(true)
+	t.Cleanup(func() { jfBoxed.Store(false) })
+	jf := fakeJellyfin(t)
+	app := newApp(t)
+	admin := loginAs(t, app, jf.URL, "alice", "secret")
+	bob := loginAs(t, app, jf.URL, "bob", "hunter2")
+	call(t, app, "PUT", "/api/v1/admin/settings", `{"jellyfinApiKey":"jfkey"}`, admin)
+	adminCall := func(m, p string) (*http.Response, string) { return call(t, app, m, p, "", admin) }
+	runJobAndWait(t, app, adminCall, "library-sync", "ok")
+	runJobAndWait(t, app, adminCall, "history-sync", "ok") // alice watched Movie One and Show Two
+
+	_, body := call(t, app, "GET", "/api/v1/library?neverWatched=true", "", admin)
+	if !strings.Contains(body, `"total":1`) || !strings.Contains(body, `"title":"Boxed Movie"`) || strings.Contains(body, "Movie One") {
+		t.Fatalf("never watched = %s", body)
+	}
+	if resp, _ := call(t, app, "GET", "/api/v1/library?neverWatched=true", "", bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("a user may not use the clean-up view: %d", resp.StatusCode)
+	}
+}

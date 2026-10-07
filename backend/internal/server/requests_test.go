@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/Rombond/tipsarr/backend/internal/store"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -736,5 +737,42 @@ func TestDefaultLanguage(t *testing.T) {
 	// the default never overwrites what is saved on a profile
 	if _, b := call(t, e.app, "GET", "/api/v1/me", "", bob); !strings.Contains(b, `"language":""`) {
 		t.Fatalf("me = %s", b)
+	}
+}
+
+// Admins can list available requests whose requester never watched the title.
+func TestUnwatchedRequests(t *testing.T) {
+	jfBoxed.Store(false)
+	e := newEnv(t, true)
+	jfURL, admin, bob := setupUsers(t, e)
+	_ = jfURL
+	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"jellyfinApiKey":"jfkey"}`, admin)
+	adminCall := func(m, p string) (*http.Response, string) { return call(t, e.app, m, p, "", admin) }
+	runJobAndWait(t, e.app, adminCall, "library-sync", "ok")
+	runJobAndWait(t, e.app, adminCall, "history-sync", "ok") // alice watched Movie One (tmdb 1)
+
+	ctx := context.Background()
+	const aliceID, bobID = "aaaaaaaabbbbccccddddeeeeeeeeeeee", "bbbbbbbbbbbbccccddddeeeeeeeeeeee"
+	for _, r := range []*store.Request{
+		{ID: "r-bob", MediaType: "movie", TMDBID: 1, Title: "Movie One", RequestedBy: bobID, Status: store.StatusAvailable},     // bob never watched it
+		{ID: "r-alice", MediaType: "movie", TMDBID: 1, Title: "Movie One", RequestedBy: aliceID, Status: store.StatusAvailable}, // alice did
+		{ID: "r-pending", MediaType: "movie", TMDBID: 99, Title: "Pending", RequestedBy: bobID, Status: store.StatusPending},
+		{ID: "r-import", MediaType: "movie", TMDBID: 98, Title: "Imported", RequestedBy: "", Status: store.StatusAvailable},
+	} {
+		if err := e.st.CreateRequest(ctx, r, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_, body := call(t, e.app, "GET", "/api/v1/requests?filter=unwatched", "", admin)
+	if !strings.Contains(body, `"total":1`) || !strings.Contains(body, `"id":"r-bob"`) || strings.Contains(body, "r-alice") || strings.Contains(body, "r-import") {
+		t.Fatalf("unwatched = %s", body)
+	}
+	_, body = call(t, e.app, "GET", "/api/v1/requests?filter=unwatched", "", bob)
+	if !strings.Contains(body, `"total":0`) {
+		t.Fatalf("a user sees no clean-up view: %s", body)
+	}
+	_, body = call(t, e.app, "GET", "/api/v1/requests/counts", "", admin)
+	if !strings.Contains(body, `"unwatched":1`) {
+		t.Fatalf("counts = %s", body)
 	}
 }
