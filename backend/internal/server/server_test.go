@@ -3,6 +3,7 @@ package server_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -25,8 +26,10 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/marks"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
+	"github.com/Rombond/tipsarr/backend/internal/playback"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/server"
+	"github.com/Rombond/tipsarr/backend/internal/stats"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/Rombond/tipsarr/backend/internal/suggestions"
 )
@@ -68,7 +71,11 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 		_, _ = w.Write([]byte(`[{"Id":"` + aliceID + `","Name":"alice","Policy":{"IsAdministrator":true}},{"Id":"` + bobID + `","Name":"bob","Policy":{"IsAdministrator":false}},{"Id":"cccccccccccccccccccccccccccccccc","Name":"carol","Policy":{"IsAdministrator":false}}]`))
 	}))
 	mux.HandleFunc("GET /Plugins", keyed(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`[{"Id":"p1","Name":"Webhook","Status":"Active"},{"Id":"958aad66378d4a2db89ba76f0ee1b06a","Name":"LDAP Authentication","Status":"Active"}]`))
+		_, _ = w.Write([]byte(`[{"Id":"p1","Name":"Webhook","Status":"Active"},{"Id":"958aad66378d4a2db89ba76f0ee1b06a","Name":"LDAP Authentication","Status":"Active"}`))
+		if jfPlayback.Load() {
+			_, _ = w.Write([]byte(`,{"Id":"5c53438191a343cb907a35aa02eb9d2c","Name":"Playback Reporting","Status":"Active"}`))
+		}
+		_, _ = w.Write([]byte(`]`))
 	}))
 	mux.HandleFunc("GET /Plugins/{id}/Configuration", keyed(func(w http.ResponseWriter, r *http.Request) {
 		if r.PathValue("id") != "958aad66378d4a2db89ba76f0ee1b06a" {
@@ -88,6 +95,33 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 		}
 		_, _ = w.Write([]byte(`{"Id":"` + id + `","Name":"` + name + `","Policy":{"IsAdministrator":` + strconv.FormatBool(id == aliceID) + `,"IsDisabled":` + strconv.FormatBool(jfDisabled.Load() == id) + `}}`))
 	}))
+	// Playback Reporting plugin: a few plays, newest rowid 4; only fixed queries are expected
+	mux.HandleFunc("POST /user_usage_stats/submit_custom_query", keyed(func(w http.ResponseWriter, r *http.Request) {
+		var in struct{ CustomQueryString string }
+		_ = json.NewDecoder(r.Body).Decode(&in)
+		q := in.CustomQueryString
+		if !strings.HasPrefix(q, "SELECT ") {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		day := func(h int) string {
+			return time.Now().Add(-time.Duration(h) * time.Hour).Format("2006-01-02 15:04:05.0000000")
+		}
+		all := [][]string{
+			{"1", day(72), aliceID, "aaaa0000000000000000000000000001", "Movie", "Movie One", "7200"},
+			{"2", day(48), aliceID, "e1", "Episode", "Show Two - s01e01 - Pilot", "2700"},
+			{"3", day(47), aliceID, "e2", "Episode", "Show Two - s01e02 - Next", "30"},
+			{"4", day(24), bobID, "aaaa0000000000000000000000000001", "Movie", "Movie One", "3600"},
+		}
+		out := map[string]any{"colums": []string{"x"}, "results": [][]string{}, "message": ""}
+		switch {
+		case strings.Contains(q, "MAX(rowid)"):
+			out["results"] = [][]string{{"4"}}
+		case strings.Contains(q, "rowid > 0 "):
+			out["results"] = all
+		}
+		_ = json.NewEncoder(w).Encode(out)
+	}))
 	mux.HandleFunc("GET /Items/{id}/Images/Primary", keyed(func(w http.ResponseWriter, r *http.Request) {
 		if r.PathValue("id") != "aaaa0000000000000000000000000001" {
 			w.WriteHeader(http.StatusNotFound)
@@ -97,6 +131,14 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 		_, _ = w.Write([]byte("JFPOSTER"))
 	}))
 	mux.HandleFunc("/Items", keyed(func(w http.ResponseWriter, r *http.Request) {
+		if ids := r.URL.Query().Get("Ids"); ids != "" { // episodes -> their show
+			var items []string
+			for _, id := range strings.Split(ids, ",") {
+				items = append(items, `{"Id":"`+id+`","Type":"Episode","SeriesId":"js1"}`)
+			}
+			writeItems(w, strings.Join(items, ","))
+			return
+		}
 		switch r.URL.Query().Get("IncludeItemTypes") {
 		case "Movie,Series":
 			writeItems(w, `{"Id":"aaaa0000000000000000000000000001","Name":"Movie One","Type":"Movie","ProviderIds":{"Tmdb":"1"},"Genres":["Action","Drama"],"ProductionYear":2024,"RunTimeTicks":72000000000,"CommunityRating":7.5,"DateCreated":"2026-09-01T10:00:00Z","ImageTags":{"Primary":"tg1"}},
@@ -126,6 +168,9 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 }
 
 var tmdbHits atomic.Int32
+
+// jfPlayback makes the fake Jellyfin list the Playback Reporting plugin.
+var jfPlayback atomic.Bool
 
 // jfDisabled is the id of the one fake Jellyfin user currently reported as disabled.
 var jfDisabled atomic.Value
@@ -321,9 +366,17 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	sugg.SetQueueDelay(20 * time.Millisecond)
 	lib.OnHistoryChanged = sugg.QueueRefresh
 	authSvc := auth.New(st)
+	pb := playback.New(st)
+	jm.Register(jobs.Job{Name: "playback-sync", Every: time.Hour, InitialDelay: time.Hour, Run: func(ctx context.Context) (string, error) {
+		msg, err := pb.Sync(ctx)
+		if errors.Is(err, playback.ErrNotInstalled) {
+			return "not installed", jobs.ErrSkipped
+		}
+		return msg, err
+	}})
 	authSvc.SetRecheckEvery(0) // tests: ask the fake Jellyfin about the account on every request
 	h, _ := server.New(api.Deps{
-		Store: st, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier,
+		Store: st, Stats: stats.New(st), Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier,
 		DryRun: dryRun, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)

@@ -78,6 +78,20 @@ type WatchHistory struct {
 	PlayCount    int    `bun:"play_count"`
 }
 
+// WatchEvent is one play session reported by Jellyfin's Playback Reporting plugin.
+type WatchEvent struct {
+	bun.BaseModel `bun:"table:watch_events"`
+
+	SourceRowID int64  `bun:"source_rowid,pk"`
+	UserID      string `bun:"user_id"`
+	JellyfinID  string `bun:"jellyfin_id"`
+	MediaType   string `bun:"media_type"` // movie | tv
+	TMDBID      int64  `bun:"tmdb_id"`    // the movie, or the show of an episode; 0 = unknown
+	Title       string `bun:"title"`
+	PlayedAt    int64  `bun:"played_at"` // unix seconds
+	Seconds     int    `bun:"seconds"`
+}
+
 type UserHistoryState struct {
 	bun.BaseModel `bun:"table:user_history_state"`
 

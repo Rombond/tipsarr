@@ -18,6 +18,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
+	"github.com/Rombond/tipsarr/backend/internal/stats"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/Rombond/tipsarr/backend/internal/suggestions"
 	"github.com/danielgtaylor/huma/v2"
@@ -28,6 +29,7 @@ import (
 const Version = "0.1.0"
 
 type Deps struct {
+	Stats         *stats.Service
 	Store         *store.Store
 	Auth          *auth.Service
 	Media         *media.Service
@@ -86,6 +88,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerWebhooks(api, d)
 		registerLDAPImport(api, d)
 		registerLibrary(api, d)
+		registerStats(api, d)
 		r.Get("/events", eventsHandler(d))
 		r.Get("/images/tmdb/{size}/{file}", imageHandler(d))
 		r.Get("/images/jellyfin/{id}", jellyfinImageHandler(d))

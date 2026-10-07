@@ -55,7 +55,7 @@ func registerSync(api huma.API, d Deps) {
 		DefaultStatus: http.StatusAccepted,
 		Errors:        append(adminErrs, http.StatusConflict, http.StatusServiceUnavailable),
 	}, func(ctx context.Context, in *struct {
-		Job string `path:"job" enum:"library-sync,history-sync,boxoffice-refresh,servarr-import"`
+		Job string `path:"job" enum:"library-sync,history-sync,boxoffice-refresh,servarr-import,playback-sync"`
 	}) (*struct{}, error) {
 		if _, err := requireAdmin(ctx); err != nil {
 			return nil, err

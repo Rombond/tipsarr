@@ -123,10 +123,14 @@
 		});
 	});
 
-	// scrolling near the end loads the next page
+	// Scrolling near the end loads the next page. The observer is rebuilt after every page: it
+	// reports a change only, so on a big screen where the first pages do not fill the view it would
+	// otherwise never ask again (a fresh observer reports the current state straight away).
 	$effect(() => {
-		if (!sentinel) return;
-		const io = new IntersectionObserver((e) => e[0].isIntersecting && !error && loadNext(), { rootMargin: '600px' });
+		items.length;
+		pageNo;
+		if (!sentinel || loading) return;
+		const io = new IntersectionObserver((e) => e[0].isIntersecting && !error && untrack(loadNext), { rootMargin: '600px' });
 		io.observe(sentinel);
 		return () => io.disconnect();
 	});

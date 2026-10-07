@@ -2,6 +2,8 @@ package jellyfin
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -67,4 +69,46 @@ func (c *Client) LDAPPlugin(ctx context.Context) (*LDAPConfig, error) {
 		return &cfg, nil
 	}
 	return nil, nil
+}
+
+// PlaybackReportingInstalled reports whether the Playback Reporting plugin is installed.
+func (c *Client) PlaybackReportingInstalled(ctx context.Context) (bool, error) {
+	plugins, err := c.Plugins(ctx)
+	if err != nil {
+		return false, err
+	}
+	for _, p := range plugins {
+		if strings.Contains(strings.ToLower(p.Name), "playback reporting") {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// PlaybackQuery runs a SELECT on the Playback Reporting plugin's database and returns the column
+// names and the rows (every value as text). WARNING: the plugin runs ANY SQL it is sent, with
+// write access, so the query must always be built by Tipsarr itself and never contain text
+// that came from a person.
+func (c *Client) PlaybackQuery(ctx context.Context, query string) ([]string, [][]string, error) {
+	body, err := json.Marshal(map[string]any{"CustomQueryString": query, "ReplaceUserId": false})
+	if err != nil {
+		return nil, nil, err
+	}
+	var out struct {
+		Columns []string   `json:"colums"` // sic: the plugin's spelling
+		Results [][]string `json:"results"`
+		Message string     `json:"message"`
+	}
+	if err := c.do(ctx, http.MethodPost, "/user_usage_stats/submit_custom_query", body, &out); err != nil {
+		return nil, nil, err
+	}
+	if strings.Contains(out.Message, "Error Running Query") {
+		return nil, nil, errors.New("Playback Reporting could not run the query")
+	}
+	return out.Columns, out.Results, nil
+}
+
+// ItemsByID fetches items by Jellyfin id (episodes: the show they belong to is in SeriesID).
+func (c *Client) ItemsByID(ctx context.Context, ids []string, fn func(Item) error) error {
+	return c.Items(ctx, "", url.Values{"Ids": {strings.Join(ids, ",")}}, fn)
 }

@@ -25,8 +25,10 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/marks"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
+	"github.com/Rombond/tipsarr/backend/internal/playback"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/server"
+	"github.com/Rombond/tipsarr/backend/internal/stats"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/Rombond/tipsarr/backend/internal/suggestions"
 )
@@ -113,6 +115,17 @@ func run(cfg config.Config) error {
 		}
 		return "purged", st.PurgeExpiredCache(ctx)
 	}})
+	pb := playback.New(st)
+	jm.Register(jobs.Job{Name: "playback-sync", Every: time.Hour, InitialDelay: 2*time.Minute + 30*time.Second, Run: func(ctx context.Context) (string, error) {
+		msg, err := pb.Sync(ctx)
+		switch {
+		case errors.Is(err, playback.ErrNotInstalled):
+			return "Playback Reporting is not installed in Jellyfin", jobs.ErrSkipped
+		case errors.Is(err, playback.ErrNoAPIKey):
+			return "no Jellyfin API key saved", jobs.ErrSkipped
+		}
+		return msg, err
+	}})
 	jm.Start(ctx)
 
 	// Optional (TIPSARR_SETUP_TOKEN=true): a fresh install must be claimed with a one-time token
@@ -129,7 +142,7 @@ func run(cfg config.Config) error {
 	}
 
 	handler, _ := server.New(api.Deps{
-		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier,
+		Store: st, Stats: stats.New(st), Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier,
 		DryRun: cfg.DryRun, ConfigDir: cfg.ConfigDir,
 	})
 	if cfg.DryRun {

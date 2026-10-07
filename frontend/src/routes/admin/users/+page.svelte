@@ -9,6 +9,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
+	import UserAvatar from '$lib/components/users/user-avatar.svelte';
 
 	let users = $state<Schemas['User'][]>([]);
 	let error = $state<string | null>(null);
@@ -77,6 +78,7 @@
 	<div class="grid gap-2">
 		{#each users as u (u.id)}
 			<div class="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3 text-sm">
+				<a href="/users/{u.id}" class="shrink-0" tabindex="-1" aria-hidden="true"><UserAvatar id={u.id} name={u.name} class="size-10" /></a>
 				<div class="min-w-32 flex-1">
 					<div class="font-medium"><a href="/users/{u.id}" class="hover:underline">{u.name}</a>{#if u.id === auth.user?.id} <span class="text-xs text-muted-foreground">{t('common.you')}</span>{/if}</div>
 					<div class="text-xs text-muted-foreground">{t('users.last_signin', { when: when(u.lastLoginAt) })}</div>
