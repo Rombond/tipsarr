@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.svelte';
-		import { api, unwrap, imageUrl, errorText, type MediaItem } from '$lib/api/client';
-	import { toast } from '$lib/toast.svelte';
+		import { api, unwrap, imageUrl, type MediaItem } from '$lib/api/client';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import RequestFlow from '$lib/components/requests/request-flow.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import StatusIcon from '$lib/components/ui/status-icon.svelte';
 	import { itemStatus } from '$lib/status';
@@ -19,6 +19,7 @@
 	// list results often lack an overview in the person's language: the details carry the English fallback
 	let fetchedOverview = $state('');
 	let busy = $state(false);
+	let flow: { start: () => void } | undefined = $state();
 
 	$effect(() => {
 		if (!open) return;
@@ -42,19 +43,6 @@
 	const detailsUrl = $derived(item ? `/media/${item.type}/${item.tmdbId}` : '#');
 	const shown = $derived(item ? itemStatus({ availability: item.availability, requestStatus: status }) : null);
 
-	async function request() {
-		if (!item) return;
-		busy = true;
-		try {
-			const r = await unwrap(api.POST('/requests', { body: { type: item.type, tmdbId: item.tmdbId } }));
-			requested = r.status;
-			toast.success(r.status === 'approved' ? t(r.dryRun ? 'media.toast_approved_dry' : 'media.toast_approved', { title: item.title }) : t('media.toast_requested', { title: item.title }));
-		} catch (e) {
-			toast.error(errorText(e));
-		} finally {
-			busy = false;
-		}
-	}
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
@@ -84,7 +72,7 @@
 							<!-- seasons are picked on the details page: this only navigates -->
 							<Button href={detailsUrl} onclick={() => onclose?.()}>{t('hero.choose_seasons')}</Button>
 						{:else}
-							<Button disabled={busy} onclick={request}>{busy ? t('media.requesting') : t('media.request')}</Button>
+							<Button disabled={busy} onclick={() => flow?.start()}>{busy ? t('media.requesting') : t('media.request')}</Button>
 						{/if}
 					{/if}
 				</Dialog.Footer>
@@ -92,3 +80,7 @@
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>
+
+{#if item}
+	<RequestFlow bind:this={flow} bind:busy type={item.type} tmdbId={item.tmdbId} title={item.title} onrequested={(r) => (requested = r.status)} />
+{/if}

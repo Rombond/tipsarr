@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.svelte';
 	import { goto } from '$app/navigation';
-	import { api, unwrap, imageUrl, errorText, type MediaItem } from '$lib/api/client';
-	import { toast } from '$lib/toast.svelte';
+	import { api, unwrap, imageUrl, type MediaItem } from '$lib/api/client';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import RequestFlow from '$lib/components/requests/request-flow.svelte';
 	import StarIcon from '@lucide/svelte/icons/star';
 
 	let slides = $state<MediaItem[]>([]);
@@ -30,17 +30,17 @@
 	const key = (i: MediaItem) => `${i.type}:${i.tmdbId}`;
 	const status = (i: MediaItem) => requested[key(i)] ?? i.requestStatus ?? null;
 
-	async function request(i: MediaItem) {
+	let flow: { start: () => void } | undefined = $state();
+	let flowBusy = $state(false);
+	function request(i: MediaItem) {
 		if (i.type === 'tv') return goto(`/media/tv/${i.tmdbId}`); // seasons are chosen on the details page
-		try {
-			const r = await unwrap(api.POST('/requests', { body: { type: i.type, tmdbId: i.tmdbId } }));
-			requested = { ...requested, [key(i)]: r.status };
-			toast.success(t('media.toast_requested', { title: i.title }));
-		} catch (e) {
-			toast.error(errorText(e));
-		}
+		flow?.start(); // the same request dialog as everywhere (quality profile...)
 	}
 </script>
+
+{#if current}
+	<RequestFlow bind:this={flow} bind:busy={flowBusy} type={current.type} tmdbId={current.tmdbId} title={current.title} onrequested={(r) => (requested = { ...requested, [key(current)]: r.status })} />
+{/if}
 
 {#if loading}
 	<Skeleton class="h-56 w-full rounded-xl md:h-80" />

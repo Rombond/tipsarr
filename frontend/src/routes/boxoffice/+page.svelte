@@ -6,7 +6,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { toast } from '$lib/toast.svelte';
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -15,6 +14,8 @@
 	import { itemStatus } from '$lib/status';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
+	import { tick } from 'svelte';
+	import RequestFlow from '$lib/components/requests/request-flow.svelte';
 	let region = $state('');
 	let weekly = $state(false); // full Monday-Sunday weeks instead of weekends
 	let head = $state<Schemas['Chart'] | null>(null); // region/week lists + latest chart
@@ -94,22 +95,15 @@
 	// what the row can do right now: the same states as a request, plus "nothing yet"
 	const stateOf = (e: Schemas['ChartEntry']) => (e.item ? itemStatus(e.item, { tracked: e.inRadarr, hasFile: e.hasFile }) : null);
 
-	let requesting = $state(new Set<number>());
+	// every Request button opens the same request dialog (quality profile...)
+	let target = $state<{ id: number; title: string } | null>(null);
+	let flow: { start: () => void } | undefined = $state();
+	let requesting = $state(false);
 	async function quickRequest(e: Schemas['ChartEntry']) {
 		if (!e.item) return;
-		const id = e.item.tmdbId;
-		requesting = new Set(requesting).add(id);
-		try {
-			const r = await unwrap(api.POST('/requests', { body: { type: 'movie', tmdbId: id } }));
-			toast.success(r.status === 'approved' ? t(r.dryRun ? 'media.toast_approved_dry' : 'media.toast_approved', { title: e.title }) : t('media.toast_requested', { title: e.title }));
-			await load();
-		} catch (err) {
-			toast.error(errorText(err));
-		} finally {
-			const next = new Set(requesting);
-			next.delete(id);
-			requesting = next;
-		}
+		target = { id: e.item.tmdbId, title: e.title };
+		await tick();
+		flow?.start();
 	}
 	const selectClass = 'h-9 rounded-md border border-input bg-transparent px-3 text-sm';
 
@@ -171,7 +165,7 @@
 				</div>
 			</div>
 			{#if shown === null && e.item}
-				<Button size="sm" class="w-full" disabled={requesting.has(e.item.tmdbId)} onclick={() => quickRequest(e)}>
+				<Button size="sm" class="w-full" disabled={requesting} onclick={() => quickRequest(e)}>
 					<PlusIcon class="size-4" />{t('media.request')}
 				</Button>
 			{:else if e.item}
@@ -244,6 +238,10 @@
 		{/if}
 	{/if}
 </div>
+
+{#if target}
+	<RequestFlow bind:this={flow} bind:busy={requesting} type="movie" tmdbId={target.id} title={target.title} onrequested={() => load()} />
+{/if}
 
 <Dialog.Root open={fixing !== null} onOpenChange={(o) => !o && (fixing = null)}>
 	<Dialog.Content>
