@@ -78,6 +78,8 @@ type Rating struct {
 }
 
 type MovieRatings struct {
+	Title          string
+	Year           int
 	IMDbID         string
 	IMDb           *Rating
 	Metacritic     *Rating
@@ -88,6 +90,8 @@ type MovieRatings struct {
 // Metacritic and Rotten Tomatoes scores. A score Radarr does not have is nil.
 func (c *Client) RatingsByTMDB(ctx context.Context, tmdbID int) (*MovieRatings, error) {
 	var out struct {
+		Title   string `json:"title"`
+		Year    int    `json:"year"`
 		IMDbID  string `json:"imdbId"`
 		Ratings struct {
 			IMDb           *Rating `json:"imdb"`
@@ -104,5 +108,5 @@ func (c *Client) RatingsByTMDB(ctx context.Context, tmdbID int) (*MovieRatings, 
 		}
 		return r
 	}
-	return &MovieRatings{IMDbID: out.IMDbID, IMDb: keep(out.Ratings.IMDb), Metacritic: keep(out.Ratings.Metacritic), RottenTomatoes: keep(out.Ratings.RottenTomatoes)}, nil
+	return &MovieRatings{Title: out.Title, Year: out.Year, IMDbID: out.IMDbID, IMDb: keep(out.Ratings.IMDb), Metacritic: keep(out.Ratings.Metacritic), RottenTomatoes: keep(out.Ratings.RottenTomatoes)}, nil
 }

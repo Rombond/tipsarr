@@ -695,10 +695,30 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * IMDb, Metacritic and Rotten Tomatoes scores of a movie, from Radarr
-         * @description Empty when no Radarr is configured or Radarr has no score. Shows have none.
+         * IMDb, Metacritic and Rotten Tomatoes scores of a movie
+         * @description From Radarr; Rotten Tomatoes' own search fills in when Radarr has no Rotten Tomatoes score. Empty when nothing is found.
          */
         get: operations["movieRatings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/tv/{id}/ratings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rotten Tomatoes scores of a show
+         * @description Radarr only knows movies, so shows get Rotten Tomatoes' own search. Empty when nothing is found.
+         */
+        get: operations["showRatings"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1632,6 +1652,9 @@ export interface components {
             metacritic?: components["schemas"]["Score"];
             /** @description Critics score in percent */
             rottenTomatoes?: components["schemas"]["Score"];
+            /** @description Audience score in percent (only from Rotten Tomatoes' own search) */
+            rottenTomatoesAudience?: components["schemas"]["Score"];
+            rottenTomatoesUrl?: string;
         };
         Options: {
             instanceName: string;
@@ -5033,6 +5056,73 @@ export interface operations {
             };
         };
     };
+    showRatings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovieScores"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     tvSeason: {
         parameters: {
             query?: never;
@@ -5317,6 +5407,8 @@ export interface operations {
         parameters: {
             query: {
                 ids: string;
+                /** @description The score the posters show; Rotten Tomatoes' own search is only asked for rottenTomatoes */
+                source?: "tmdb" | "imdb" | "metacritic" | "rottenTomatoes" | "";
             };
             header?: never;
             path?: never;

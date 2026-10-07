@@ -35,33 +35,40 @@ export function pick(source: RatingSource, scores: Scores | undefined): Shown | 
 class Ratings {
 	/** TMDB id -> scores ({} = Radarr has none) */
 	scores = $state<Record<number, Scores>>({});
-	private asked = new Set<number>();
-	private queue = new Set<number>();
+	private asked = new Set<string>();
+	private queue = new Map<string, { id: number; rt: boolean }>();
 	private timer: ReturnType<typeof setTimeout> | null = null;
 
 	/** Ask for a movie's scores; many calls in a short time become one request. */
-	want(id: number) {
-		if (this.asked.has(id)) return;
-		this.asked.add(id);
-		this.queue.add(id);
+	want(id: number, rottenTomatoes = false) {
+		const key = `${id}:${rottenTomatoes ? 'rt' : ''}`;
+		if (this.asked.has(key)) return;
+		this.asked.add(key);
+		this.queue.set(key, { id, rt: rottenTomatoes });
 		this.timer ??= setTimeout(() => this.flush(), 80);
 	}
 
 	private async flush() {
 		this.timer = null;
-		const ids = [...this.queue];
+		const wanted = [...this.queue.entries()];
 		this.queue.clear();
-		for (let i = 0; i < ids.length; i += 40) {
-			const chunk = ids.slice(i, i + 40);
-			try {
-				const res = await unwrap(api.GET('/ratings/movies', { params: { query: { ids: chunk.join(',') } } }));
-				for (const id of chunk) {
-					const s = res[String(id)];
-					if (s) this.scores[id] = s;
-					else this.asked.delete(id); // not ready yet: a later look asks again
+		// Rotten Tomatoes needs its own (slower) lookup, so those movies travel apart
+		for (const rt of [false, true]) {
+			const group = wanted.filter(([, w]) => w.rt === rt);
+			for (let i = 0; i < group.length; i += 40) {
+				const chunk = group.slice(i, i + 40);
+				try {
+					const res = await unwrap(
+						api.GET('/ratings/movies', { params: { query: { ids: chunk.map(([, w]) => w.id).join(','), source: rt ? 'rottenTomatoes' : undefined } } }),
+					);
+					for (const [key, w] of chunk) {
+						const s = res[String(w.id)];
+						if (s) this.scores[w.id] = { ...this.scores[w.id], ...s };
+						else this.asked.delete(key); // not ready yet: a later look asks again
+					}
+				} catch {
+					for (const [key] of chunk) this.asked.delete(key);
 				}
-			} catch {
-				for (const id of chunk) this.asked.delete(id);
 			}
 		}
 	}

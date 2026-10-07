@@ -267,6 +267,7 @@ export const fr: Record<keyof typeof en, string> = {
 	"card.rating_source_hint": "Note {source}",
 	"ratings.votes": "{count} votes",
 	"ratings.rt_hint": "Note des critiques Rotten Tomatoes",
+	"ratings.rt_audience_hint": "Note du public Rotten Tomatoes",
 	"ratings.mc_hint": "Note Metacritic sur 100",
 	"nav.stats": "Statistiques",
 	"stats.title": "Statistiques",

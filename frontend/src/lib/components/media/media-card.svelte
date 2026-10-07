@@ -60,7 +60,7 @@
 	// the score on the poster follows the person's choice (movies only; shows keep TMDB)
 	const source = $derived((auth.user?.ratingSource || 'tmdb') as RatingSource);
 	$effect(() => {
-		if (source !== 'tmdb' && item.type === 'movie') ratings.want(item.tmdbId);
+		if (source !== 'tmdb' && item.type === 'movie') ratings.want(item.tmdbId, source === 'rottenTomatoes');
 	});
 	const external = $derived(source !== 'tmdb' && item.type === 'movie' ? pick(source, ratings.scores[item.tmdbId]) : null);
 

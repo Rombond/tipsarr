@@ -133,8 +133,8 @@ func registerDiscover(api huma.API, d Deps) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "movieRatings", Method: http.MethodGet, Path: "/media/movie/{id}/ratings",
-		Summary:     "IMDb, Metacritic and Rotten Tomatoes scores of a movie, from Radarr",
-		Description: "Empty when no Radarr is configured or Radarr has no score. Shows have none.",
+		Summary:     "IMDb, Metacritic and Rotten Tomatoes scores of a movie",
+		Description: "From Radarr; Rotten Tomatoes' own search fills in when Radarr has no Rotten Tomatoes score. Empty when nothing is found.",
 		Tags:        []string{"media"}, Security: sec, Errors: errs,
 	}, func(ctx context.Context, in *struct {
 		ID int `path:"id" minimum:"1"`
@@ -142,7 +142,29 @@ func registerDiscover(api huma.API, d Deps) {
 		if _, err := requireUser(ctx); err != nil {
 			return nil, err
 		}
-		return &struct{ Body ratings.MovieScores }{d.Ratings.Movie(ctx, in.ID)}, nil
+		title, year := "", 0
+		if det, err := d.Media.Detail(ctx, media.Opts{}, "movie", in.ID); err == nil {
+			title, year = det.Title, yearOf(det.ReleaseDate)
+		}
+		return &struct{ Body ratings.MovieScores }{d.Ratings.Movie(ctx, in.ID, title, year, true)}, nil
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "showRatings", Method: http.MethodGet, Path: "/media/tv/{id}/ratings",
+		Summary:     "Rotten Tomatoes scores of a show",
+		Description: "Radarr only knows movies, so shows get Rotten Tomatoes' own search. Empty when nothing is found.",
+		Tags:        []string{"media"}, Security: sec, Errors: errs,
+	}, func(ctx context.Context, in *struct {
+		ID int `path:"id" minimum:"1"`
+	}) (*struct{ Body ratings.MovieScores }, error) {
+		if _, err := requireUser(ctx); err != nil {
+			return nil, err
+		}
+		det, err := d.Media.Detail(ctx, media.Opts{}, "tv", in.ID)
+		if err != nil {
+			return &struct{ Body ratings.MovieScores }{}, nil
+		}
+		return &struct{ Body ratings.MovieScores }{d.Ratings.Show(ctx, in.ID, det.Title, yearOf(det.ReleaseDate))}, nil
 	})
 
 	huma.Register(api, huma.Operation{
@@ -151,7 +173,8 @@ func registerDiscover(api huma.API, d Deps) {
 		Description: "`ids` is a comma-separated list of TMDB ids (at most 40). Movies whose scores are not ready within a few seconds are left out; ask again later.",
 		Tags:        []string{"media"}, Security: sec, Errors: errs,
 	}, func(ctx context.Context, in *struct {
-		IDs string `query:"ids" required:"true" maxLength:"400"`
+		IDs    string `query:"ids" required:"true" maxLength:"400"`
+		Source string `query:"source" enum:"tmdb,imdb,metacritic,rottenTomatoes," doc:"The score the posters show; Rotten Tomatoes' own search is only asked for rottenTomatoes"`
 	}) (*struct {
 		Body map[string]ratings.MovieScores
 	}, error) {
@@ -165,7 +188,7 @@ func registerDiscover(api huma.API, d Deps) {
 			}
 		}
 		out := map[string]ratings.MovieScores{}
-		for id, sc := range d.Ratings.Movies(ctx, ids) {
+		for id, sc := range d.Ratings.Movies(ctx, ids, in.Source == "rottenTomatoes") {
 			out[strconv.Itoa(id)] = sc
 		}
 		return &struct {
@@ -231,4 +254,13 @@ func registerDiscover(api huma.API, d Deps) {
 		r, err := d.Media.Collection(ctx, o, in.ID)
 		return &struct{ Body *media.CollectionDetail }{r}, mediaErr(err)
 	})
+}
+
+// yearOf reads the year of a TMDB date ("2026-03-05"); 0 when unknown.
+func yearOf(date string) int {
+	if len(date) < 4 {
+		return 0
+	}
+	y, _ := strconv.Atoi(date[:4])
+	return y
 }

@@ -266,6 +266,7 @@ export const en = {
 	"card.rating_source_hint": "{source} score",
 	"ratings.votes": "{count} votes",
 	"ratings.rt_hint": "Rotten Tomatoes critics score",
+	"ratings.rt_audience_hint": "Rotten Tomatoes audience score",
 	"ratings.mc_hint": "Metacritic score out of 100",
 	"nav.stats": "Stats",
 	"stats.title": "Stats",
