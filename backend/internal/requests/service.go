@@ -259,8 +259,8 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 	if p.Type != "movie" && p.Type != "tv" || p.TMDBID <= 0 {
 		return nil, ErrInvalid
 	}
-	if p.Overrides != nil && !s.mayChoose(ctx, u) {
-		return nil, ErrForbidden
+	if p.Overrides != nil && p.Overrides.RootFolder != "" && !s.mayChooseFolder(ctx, u) {
+		return nil, ErrForbidden // the quality profile is everyone's choice, the folder is the admin's call
 	}
 	d, err := s.media.Detail(ctx, media.Opts{Language: u.Language, Region: u.Region}, p.Type, p.TMDBID)
 	if err != nil {
@@ -620,10 +620,14 @@ func (s *Service) UpdateOptions(ctx context.Context, u *store.User, id string, o
 	if r.Status != store.StatusPending && r.Status != store.StatusFailed {
 		return nil, ErrBadState
 	}
-	if !s.mayChoose(ctx, u) {
+	if ov.RootFolder != "" && !s.mayChooseFolder(ctx, u) {
 		return nil, ErrForbidden
 	}
-	r.ProfileID, r.RootFolder = 0, ov.RootFolder
+	folderAllowed := s.mayChooseFolder(ctx, u)
+	r.ProfileID = 0
+	if folderAllowed {
+		r.RootFolder = ov.RootFolder
+	}
 	if ov.ProfileID != nil {
 		r.ProfileID = *ov.ProfileID
 	}
@@ -644,16 +648,16 @@ func (s *Service) seasonProgress(id string) []SeasonProgress {
 	return s.seasons[id]
 }
 
-// SettingUserOptions lets every user pick the quality profile and folder when requesting.
-// Off by default: then only admins choose, everyone else gets the defaults.
-const SettingUserOptions = "requests.user_options"
+// SettingUserFolder lets every user pick the root folder when requesting. Off by default: then
+// only admins see the folder choice. The quality profile is always everyone's choice.
+const SettingUserFolder = "requests.user_folder"
 
-// UsersMayChoose reports whether non-admins may choose the quality profile and folder.
-func (s *Service) UsersMayChoose(ctx context.Context) bool {
-	v, _ := s.store.GetSetting(ctx, SettingUserOptions)
+// UsersMayChooseFolder reports whether non-admins may choose the root folder.
+func (s *Service) UsersMayChooseFolder(ctx context.Context) bool {
+	v, _ := s.store.GetSetting(ctx, SettingUserFolder)
 	return v == "true"
 }
 
-func (s *Service) mayChoose(ctx context.Context, u *store.User) bool {
-	return u.Role == store.RoleAdmin || s.UsersMayChoose(ctx)
+func (s *Service) mayChooseFolder(ctx context.Context, u *store.User) bool {
+	return u.Role == store.RoleAdmin || s.UsersMayChooseFolder(ctx)
 }

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/Rombond/tipsarr/backend/internal/media"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -18,8 +19,10 @@ type statusOutput struct {
 		Version string `json:"version"`
 		DB      string `json:"db" doc:"Database engine: sqlite, postgres or mysql"`
 		DryRun  bool   `json:"dryRun" doc:"When true nothing is ever sent to Radarr/Sonarr"`
-		// Whether non-admins may pick the quality profile and folder when requesting.
-		UserRequestOptions bool `json:"userRequestOptions"`
+		// Whether non-admins may pick the root folder when requesting (the profile is always theirs to pick).
+		UserFolderChoice bool `json:"userFolderChoice"`
+		// The app-wide default language (a TMDB tag such as fr-FR); empty means the browser decides.
+		DefaultLanguage string `json:"defaultLanguage"`
 	}
 }
 
@@ -41,7 +44,8 @@ func registerSystem(api huma.API, d Deps) {
 		out.Body.Version = Version
 		out.Body.DB = d.Store.Dialect
 		out.Body.DryRun = d.DryRun
-		out.Body.UserRequestOptions = d.Requests.UsersMayChoose(ctx)
+		out.Body.UserFolderChoice = d.Requests.UsersMayChooseFolder(ctx)
+		out.Body.DefaultLanguage, _ = d.Store.GetSetting(ctx, media.SettingDefaultLanguage)
 		return out, nil
 	})
 }

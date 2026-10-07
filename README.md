@@ -111,9 +111,9 @@ identity_providers:
 
 Tipsarr itself must be able to reach the provider's address (container to provider), not only your browser.
 
-### Requests: who chooses the quality profile
+### Requests: quality profile and folder
 
-By default only admins pick the quality profile and folder when requesting; everyone else gets the Radarr/Sonarr defaults. Settings → Quality profile and folder lets every user choose.
+Everyone can choose the quality profile when requesting. The folder choice is shown to admins only; Settings → Folder choice lets every user choose it too. Whatever is not chosen uses the Radarr/Sonarr defaults.
 
 ### Profile pictures from LDAP (optional)
 

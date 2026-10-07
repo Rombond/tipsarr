@@ -23,13 +23,15 @@ function supported(code: string | null | undefined): Locale | null {
 
 class I18n {
 	locale = $state<Locale>('en');
+	/** the admin's app-wide default (a TMDB tag such as fr-FR), if any */
+	private appDefault: Locale | null = null;
 
 	/** BCP 47 tag for Intl and for TMDB (e.g. fr-FR). */
 	get tag() {
 		return LOCALES.find((l) => l.code === this.locale)!.tag;
 	}
 
-	/** Pick the starting language: saved choice, then the browser; the profile overrides it after login. */
+	/** Pick the starting language: saved choice, then the app default, then the browser; the profile overrides it after login. */
 	init() {
 		let saved: string | null = null;
 		try {
@@ -41,13 +43,25 @@ class I18n {
 		this.apply(supported(saved) ?? browser ?? 'en');
 	}
 
+	/** The app-wide default language: it applies unless the person chose one (login switcher or profile). */
+	setAppDefault(tag: string | null | undefined) {
+		this.appDefault = supported(tag);
+		let saved: string | null = null;
+		try {
+			saved = localStorage.getItem(STORAGE_KEY);
+		} catch {
+			/* private mode */
+		}
+		if (!supported(saved) && this.appDefault) this.apply(this.appDefault);
+	}
+
 	/** Use the account's language (profile) once known; empty means "keep the current one". */
 	useProfileLanguage(lang: string | null | undefined) {
 		const l = supported(lang);
 		if (l) this.apply(l);
 	}
 
-	/** Forget the explicit choice and follow the browser again. */
+	/** Forget the explicit choice: follow the app default, or the browser when there is none. */
 	useBrowser() {
 		try {
 			localStorage.removeItem(STORAGE_KEY);
@@ -55,7 +69,7 @@ class I18n {
 			/* ignore */
 		}
 		const browser = typeof navigator !== 'undefined' ? navigator.languages?.map(supported).find(Boolean) : null;
-		this.apply(browser ?? 'en');
+		this.apply(this.appDefault ?? browser ?? 'en');
 	}
 
 	set(locale: Locale) {

@@ -41,7 +41,7 @@
 					params: { path: { id: request.id } },
 					body: {
 						...(Number(profile) !== options.qualityProfileId ? { qualityProfileId: Number(profile) } : {}),
-						...(folder !== options.rootFolder ? { rootFolder: folder } : {}),
+						...(options.rootFolders.length && folder !== options.rootFolder ? { rootFolder: folder } : {}),
 					},
 				}),
 			);
@@ -67,10 +67,12 @@
 					<span class="font-medium">{t('req.quality_profile')}</span>
 					<SimpleSelect label={t('req.quality_profile')} value={profile} options={options.profiles.map((p) => ({ value: String(p.id), label: p.name }))} onchange={(v) => (profile = v)} class="w-full" />
 				</div>
-				<div class="grid gap-1.5">
-					<span class="font-medium">{t('req.root_folder')}</span>
-					<SimpleSelect label={t('req.root_folder')} value={folder} options={options.rootFolders.map((f) => ({ value: f.path, label: f.path }))} onchange={(v) => (folder = v)} class="w-full" />
-				</div>
+				{#if options.rootFolders.length}
+					<div class="grid gap-1.5">
+						<span class="font-medium">{t('req.root_folder')}</span>
+						<SimpleSelect label={t('req.root_folder')} value={folder} options={options.rootFolders.map((f) => ({ value: f.path, label: f.path }))} onchange={(v) => (folder = v)} class="w-full" />
+					</div>
+				{/if}
 			</div>
 		{/if}
 		{#if error}<p class="text-sm text-destructive">{error}</p>{/if}

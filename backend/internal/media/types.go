@@ -1,6 +1,10 @@
 package media
 
 // Availability / request state are filled in by later phases (library sync, requests).
+// SettingDefaultLanguage is the app-wide default TMDB/interface language (e.g. "fr-FR"). A person's
+// own language wins; empty means "follow the browser".
+const SettingDefaultLanguage = "app.language"
+
 const (
 	AvailabilityNone      = "none"
 	AvailabilityPartial   = "partial"

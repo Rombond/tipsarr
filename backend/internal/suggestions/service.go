@@ -272,6 +272,9 @@ func (s *Service) Generate(ctx context.Context, userID string) error {
 	opts := media.Opts{}
 	if u, err := s.store.GetUser(ctx, userID); err == nil {
 		opts = media.Opts{Language: u.Language, Region: u.Region}
+		if opts.Language == "" { // no saved language: the app-wide default
+			opts.Language, _ = s.store.GetSetting(ctx, media.SettingDefaultLanguage)
+		}
 	}
 	hist, err := s.store.UserHistory(ctx, userID, 0)
 	if err != nil {

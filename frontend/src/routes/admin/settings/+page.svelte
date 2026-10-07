@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.svelte';
-	import { hasKey } from '$lib/i18n/index.svelte';
+	import { hasKey, i18n, LOCALES } from '$lib/i18n/index.svelte';
+	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 	import { fmtDateTime } from '$lib/i18n/format';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -165,10 +166,27 @@
 		}
 	}
 
-	async function toggleUserOptions(on: boolean) {
+	// app-wide default language
+	let defaultLang = $state('');
+	$effect(() => {
+		if (settings) defaultLang = settings.defaultLanguage;
+	});
+	async function saveDefaultLanguage(v: string) {
+		defaultLang = v;
 		try {
-			settings = await unwrap(api.PUT('/admin/settings', { body: { userRequestOptions: on } }));
-			auth.userRequestOptions = on;
+			settings = await unwrap(api.PUT('/admin/settings', { body: { defaultLanguage: v } }));
+			i18n.setAppDefault(v);
+			toast.success(t('common.saved'));
+		} catch (err) {
+			toast.error(errorText(err));
+			settings = await unwrap(api.GET('/admin/settings'));
+		}
+	}
+
+	async function toggleFolderChoice(on: boolean) {
+		try {
+			settings = await unwrap(api.PUT('/admin/settings', { body: { userFolderChoice: on } }));
+			auth.userFolderChoice = on;
 			toast.success(t('common.saved'));
 		} catch (err) {
 			toast.error(errorText(err));
@@ -323,12 +341,28 @@
 
 		<Card>
 			<CardHeader>
+				<CardTitle>{t('settings.lang_title')}</CardTitle>
+				<CardDescription>{t('settings.lang_desc')}</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<SimpleSelect
+					label={t('settings.lang_title')}
+					value={defaultLang}
+					options={[{ value: '', label: t('settings.lang_browser') }, ...LOCALES.map((l) => ({ value: l.tag, label: l.name }))]}
+					onchange={saveDefaultLanguage}
+					class="w-full max-w-xs"
+				/>
+			</CardContent>
+		</Card>
+
+		<Card>
+			<CardHeader>
 				<CardTitle>{t('settings.useropts_title')}</CardTitle>
 				<CardDescription>{t('settings.useropts_desc')}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<label class="flex cursor-pointer items-center gap-2 text-sm">
-					<input type="checkbox" checked={settings.userRequestOptions} onchange={(e) => toggleUserOptions(e.currentTarget.checked)} />
+					<input type="checkbox" checked={settings.userFolderChoice} onchange={(e) => toggleFolderChoice(e.currentTarget.checked)} />
 					{t('settings.useropts_toggle')}
 				</label>
 			</CardContent>

@@ -493,23 +493,26 @@ func TestRequestOptionsAndOverrides(t *testing.T) {
 		t.Fatalf("options without an instance = %d", resp.StatusCode)
 	}
 	addInstance(t, e, admin, "radarr", radarr)
-	// by default only admins choose: users get the defaults
-	if resp, _ := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", bob); resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("user options while off = %d", resp.StatusCode)
-	}
-	if resp, _ := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"qualityProfileId":9}`, bob); resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("user override while off = %d", resp.StatusCode)
-	}
-	if _, b := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(b, `"userRequestOptions":false`) {
-		t.Fatalf("status = %s", b)
-	}
-	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"userRequestOptions":true}`, admin)
-	if _, b := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(b, `"userRequestOptions":true`) {
-		t.Fatalf("status = %s", b)
-	}
+	// everyone chooses the quality profile; the folder choice is the admin's call (off by default)
 	resp, body := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", bob)
-	if resp.StatusCode != 200 || !strings.Contains(body, `"HD-1080p"`) || !strings.Contains(body, `"/data/media"`) || !strings.Contains(body, `"qualityProfileId":4`) {
-		t.Fatalf("options = %d %s", resp.StatusCode, body)
+	if resp.StatusCode != 200 || !strings.Contains(body, `"HD-1080p"`) || strings.Contains(body, `/data/media`) || !strings.Contains(body, `"qualityProfileId":4`) {
+		t.Fatalf("user options while folders are off = %d %s", resp.StatusCode, body)
+	}
+	if resp, _ := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"rootFolder":"/data/other"}`, bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("user folder while off = %d", resp.StatusCode)
+	}
+	if _, b := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(b, `"userFolderChoice":false`) {
+		t.Fatalf("status = %s", b)
+	}
+	if resp, body := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", admin); resp.StatusCode != 200 || !strings.Contains(body, `/data/media`) {
+		t.Fatalf("admin options = %d %s", resp.StatusCode, body)
+	}
+	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"userFolderChoice":true}`, admin)
+	if _, b := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(b, `"userFolderChoice":true`) {
+		t.Fatalf("status = %s", b)
+	}
+	if _, body = call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", bob); !strings.Contains(body, `/data/media`) {
+		t.Fatalf("user options with folders on = %s", body)
 	}
 	// a user's choice is remembered and used when an admin approves
 	resp, body = call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"qualityProfileId":9,"rootFolder":"/data/other"}`, bob)
@@ -709,5 +712,27 @@ func TestLanguageHint(t *testing.T) {
 	}
 	if b := get("/api/v1/me", ""); !strings.Contains(b, `"language":""`) || !strings.Contains(b, `"region":"FR"`) {
 		t.Fatalf("me after patch = %s", b)
+	}
+}
+
+func TestDefaultLanguage(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	if _, b := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(b, `"defaultLanguage":""`) {
+		t.Fatalf("status = %s", b)
+	}
+	if resp, _ := call(t, e.app, "PUT", "/api/v1/admin/settings", `{"defaultLanguage":"french"}`, admin); resp.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("bad language = %d", resp.StatusCode)
+	}
+	if resp, _ := call(t, e.app, "PUT", "/api/v1/admin/settings", `{"defaultLanguage":"fr-FR"}`, bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("user setting = %d", resp.StatusCode)
+	}
+	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"defaultLanguage":"fr-FR"}`, admin)
+	if _, b := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(b, `"defaultLanguage":"fr-FR"`) {
+		t.Fatalf("status = %s", b)
+	}
+	// the default never overwrites what is saved on a profile
+	if _, b := call(t, e.app, "GET", "/api/v1/me", "", bob); !strings.Contains(b, `"language":""`) {
+		t.Fatalf("me = %s", b)
 	}
 }

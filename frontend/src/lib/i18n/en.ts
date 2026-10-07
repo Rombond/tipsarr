@@ -291,7 +291,6 @@ export const en = {
 	"brand.tagline": "Discover, request and watch from your own library.",
 
 	"lang.title": "Language",
-	"lang.auto": "Browser default",
 
 	"card.quick_request": "Request",
 	"card.partial": "Partial",
@@ -586,9 +585,6 @@ export const en = {
 	"settings.sso_claim": "Groups claim (default groups)",
 	"settings.sso_fallback": "Leave the address empty to turn it off. Password form at:",
 	"error.oidc_unreachable": "Cannot read the provider’s configuration. Check the address.",
-	"settings.useropts_title": "Quality profile and folder",
-	"settings.useropts_desc": "By default only admins choose the quality profile and folder when requesting: everyone else gets the Radarr/Sonarr defaults. Turn this on to let every user choose.",
-	"settings.useropts_toggle": "Let users choose the quality profile and folder",
 	"profile.change_picture": "Change picture",
 	"profile.remove_picture": "Remove my picture",
 	"profile.picture_saved": "Picture updated.",
@@ -601,4 +597,11 @@ export const en = {
 	"settings.ldap_password": "Bind password",
 	"settings.ldap_base": "Users base DN",
 	"error.ldap_unreachable": "Cannot sign in to LDAP with these settings.",
+	"settings.useropts_title": "Folder choice",
+	"settings.useropts_desc": "Everyone can choose the quality profile when requesting. The folder choice is shown to admins only, unless you turn this on.",
+	"settings.useropts_toggle": "Let users choose the folder",
+	"settings.lang_title": "Default language",
+	"settings.lang_desc": "The language of the interface and of titles and descriptions for everyone who has not chosen one. Each person can still pick their own in their profile or on the login page.",
+	"settings.lang_browser": "The browser’s language",
+	"lang.auto": "Default (app setting or browser)",
 } as const;

@@ -66,7 +66,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 
 	var api huma.API
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Use(sessionMiddleware(d.Auth))
+		r.Use(sessionMiddleware(d.Auth, d.Store))
 		api = humachi.New(r, cfg)
 		registerSystem(api, d)
 		registerSetup(api, d)
@@ -96,7 +96,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 }
 
 // sessionMiddleware loads the session user (if any) into the request context.
-func sessionMiddleware(a *auth.Service) func(http.Handler) http.Handler {
+func sessionMiddleware(a *auth.Service, st *store.Store) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r = r.WithContext(context.WithValue(r.Context(), ipCtxKey{}, remoteIP(r)))
@@ -106,6 +106,9 @@ func sessionMiddleware(a *auth.Service) func(http.Handler) http.Handler {
 					// (sent by the app), so titles and overviews match the screen. In-memory only.
 					if h := r.Header.Get("X-Tipsarr-Language"); u.Language == "" && languageRe.MatchString(h) {
 						u.Language = h
+					}
+					if u.Language == "" { // then the app-wide default, if the admin set one
+						u.Language, _ = st.GetSetting(r.Context(), media.SettingDefaultLanguage)
 					}
 					r = r.WithContext(context.WithValue(r.Context(), userCtxKey{}, u))
 				}

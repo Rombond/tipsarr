@@ -1,5 +1,6 @@
 // Session store: the backend owns the session cookie; this only mirrors "who am I".
 import { api, unwrap, type User } from '$lib/api/client';
+import { i18n } from '$lib/i18n/index.svelte';
 
 class AuthState {
 	user: User | null = $state(null);
@@ -7,8 +8,8 @@ class AuthState {
 	/** false until setup has been completed (Jellyfin URL saved). */
 	configured: boolean | null = $state(null);
 	dryRun = $state(false);
-	/** non-admins may choose the quality profile and folder when requesting */
-	userRequestOptions = $state(false);
+	/** non-admins may choose the root folder when requesting (everyone chooses the quality profile) */
+	userFolderChoice = $state(false);
 	/** bumped when a picture changes so browsers refetch it */
 	avatarV = $state(0);
 	/** the setup call needs the token from the server log (opt-in on the server) */
@@ -33,7 +34,8 @@ class AuthState {
 			this.configured = setup.configured;
 			this.setupTokenRequired = setup.tokenRequired;
 			this.dryRun = st.dryRun;
-			this.userRequestOptions = st.userRequestOptions;
+			this.userFolderChoice = st.userFolderChoice;
+			i18n.setAppDefault(st.defaultLanguage);
 		} catch {
 			this.configured = null;
 		}

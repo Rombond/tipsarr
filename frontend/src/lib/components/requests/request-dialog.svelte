@@ -51,7 +51,7 @@
 		if (type === 'tv') choice.seasons = askSeasons ? picked : regular.map((s) => s.number);
 		if (options) {
 			if (Number(profile) !== options.qualityProfileId) choice.qualityProfileId = Number(profile);
-			if (folder !== options.rootFolder) choice.rootFolder = folder;
+			if (options.rootFolders.length && folder !== options.rootFolder) choice.rootFolder = folder;
 		}
 		onsubmit(choice);
 	}
@@ -95,10 +95,12 @@
 					<span class="font-medium">{t('req.quality_profile')}</span>
 					<SimpleSelect label={t('req.quality_profile')} value={profile} options={profileOptions} onchange={(v) => (profile = v)} class="w-full" />
 				</div>
-				<div class="grid gap-1.5">
-					<span class="font-medium">{t('req.root_folder')}</span>
-					<SimpleSelect label={t('req.root_folder')} value={folder} options={folderOptions} onchange={(v) => (folder = v)} class="w-full" />
-				</div>
+				{#if options.rootFolders.length}
+					<div class="grid gap-1.5">
+						<span class="font-medium">{t('req.root_folder')}</span>
+						<SimpleSelect label={t('req.root_folder')} value={folder} options={folderOptions} onchange={(v) => (folder = v)} class="w-full" />
+					</div>
+				{/if}
 			</div>
 		{/if}
 

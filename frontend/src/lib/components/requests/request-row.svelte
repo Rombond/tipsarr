@@ -50,7 +50,7 @@
 	);
 	const canDelete = $derived(isAdmin || ['pending', 'declined', 'failed'].includes(request.status));
 	// the requester and admins may change the quality profile until it is sent
-	const canEdit = $derived(!request.source && (request.status === 'pending' || request.status === 'failed') && (isAdmin || (auth.userRequestOptions && request.requestedBy.id === auth.user?.id)));
+	const canEdit = $derived(!request.source && (request.status === 'pending' || request.status === 'failed') && (isAdmin || request.requestedBy.id === auth.user?.id));
 	const canDecide = $derived(isAdmin && (request.status === 'pending' || request.status === 'failed'));
 
 	// a profile opens for yourself, or for any user when you are an admin

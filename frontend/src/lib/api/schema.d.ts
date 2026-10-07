@@ -744,7 +744,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Quality profiles and root folders you can pick when requesting
+         * Quality profiles (and, when allowed, root folders) you can pick when requesting
          * @description Read-only calls to the default Radarr (movie) or Sonarr (tv) instance.
          */
         get: operations["requestOptions"];
@@ -1656,6 +1656,8 @@ export interface components {
         SettingsBody: {
             /** @description Comma-separated box-office region codes, e.g. US,GB,FR */
             boxofficeRegions: string;
+            /** @description App-wide default language, e.g. fr-FR; empty = the browser decides. A person's own language wins */
+            defaultLanguage: string;
             /** @description When true nothing is ever sent to Radarr/Sonarr */
             dryRun: boolean;
             /** @description Needed for library and history sync */
@@ -1681,8 +1683,8 @@ export interface components {
             servarrAutoImport: boolean;
             /** @description Secrets are write-only; this only says whether a key is saved */
             tmdbConfigured: boolean;
-            /** @description Non-admins may choose the quality profile and folder when requesting (default false) */
-            userRequestOptions: boolean;
+            /** @description Non-admins may choose the root folder when requesting (default false); the quality profile is always their choice */
+            userFolderChoice: boolean;
             /** @description Path (with secret token) for the Jellyfin webhook plugin to call */
             webhookPath: string;
         };
@@ -1721,9 +1723,10 @@ export interface components {
         StatusOutputBody: {
             /** @description Database engine: sqlite, postgres or mysql */
             db: string;
+            defaultLanguage: string;
             /** @description When true nothing is ever sent to Radarr/Sonarr */
             dryRun: boolean;
-            userRequestOptions: boolean;
+            userFolderChoice: boolean;
             version: string;
         };
         SyncStatusBody: {
@@ -1753,6 +1756,8 @@ export interface components {
         UpdateSettingsInputBody: {
             /** @description Comma-separated region codes; empty resets to US */
             boxofficeRegions?: string;
+            /** @description e.g. fr-FR; empty clears it */
+            defaultLanguage?: string;
             /** @description Jellyfin API key (Dashboard > API Keys); empty string clears it */
             jellyfinApiKey?: string;
             /** @description Empty string clears it */
@@ -1773,7 +1778,7 @@ export interface components {
             servarrAutoImport?: boolean;
             /** @description Set or replace the TMDB key (empty string clears it) */
             tmdbApiKey?: string;
-            userRequestOptions?: boolean;
+            userFolderChoice?: boolean;
         };
         UpdateUserRequest: {
             /** @description e.g. fr or fr-FR, empty to clear */
@@ -4939,15 +4944,6 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -292,7 +292,6 @@ export const fr: Record<keyof typeof en, string> = {
 	"brand.tagline": "Découvrez, demandez et regardez depuis votre propre bibliothèque.",
 
 	"lang.title": "Langue",
-	"lang.auto": "Langue du navigateur",
 
 	"card.quick_request": "Demander",
 	"card.partial": "Partiel",
@@ -587,9 +586,6 @@ export const fr: Record<keyof typeof en, string> = {
 	"settings.sso_claim": "Claim des groupes (par défaut groups)",
 	"settings.sso_fallback": "Laissez l’adresse vide pour la désactiver. Formulaire de mot de passe :",
 	"error.oidc_unreachable": "Impossible de lire la configuration du fournisseur. Vérifiez l’adresse.",
-	"settings.useropts_title": "Profil de qualité et dossier",
-	"settings.useropts_desc": "Par défaut, seuls les administrateurs choisissent le profil de qualité et le dossier lors d’une demande : les autres reçoivent les valeurs par défaut de Radarr/Sonarr. Activez pour laisser chaque utilisateur choisir.",
-	"settings.useropts_toggle": "Laisser les utilisateurs choisir le profil de qualité et le dossier",
 	"profile.change_picture": "Changer la photo",
 	"profile.remove_picture": "Retirer ma photo",
 	"profile.picture_saved": "Photo mise à jour.",
@@ -602,4 +598,11 @@ export const fr: Record<keyof typeof en, string> = {
 	"settings.ldap_password": "Mot de passe du bind",
 	"settings.ldap_base": "Base DN des utilisateurs",
 	"error.ldap_unreachable": "Connexion LDAP impossible avec ces réglages.",
+	"settings.useropts_title": "Choix du dossier",
+	"settings.useropts_desc": "Tout le monde peut choisir le profil de qualité lors d’une demande. Le choix du dossier n’est montré qu’aux administrateurs, sauf si vous activez cette option.",
+	"settings.useropts_toggle": "Laisser les utilisateurs choisir le dossier",
+	"settings.lang_title": "Langue par défaut",
+	"settings.lang_desc": "La langue de l’interface, des titres et des descriptions pour toutes les personnes qui n’en ont pas choisi une. Chacun peut toujours choisir la sienne dans son profil ou sur la page de connexion.",
+	"settings.lang_browser": "La langue du navigateur",
+	"lang.auto": "Par défaut (réglage de l’app ou navigateur)",
 };
