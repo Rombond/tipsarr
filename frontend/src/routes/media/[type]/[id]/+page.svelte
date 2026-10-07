@@ -181,37 +181,6 @@
 						</div>
 					</section>
 				{/if}
-				{#if details.keywords.length}
-					<section class="grid gap-2">
-						<h2 class="font-semibold text-lg">{t('detail.tags')}</h2>
-						<div class="flex flex-wrap gap-1.5">
-							{#each details.keywords as k (k.id)}
-								<a
-									href="/browse?keyword={k.id}&name={encodeURIComponent(k.name)}"
-									class="rounded-md bg-muted px-2 py-1 text-xs text-foreground/80 transition-colors hover:bg-primary hover:text-primary-foreground"
-								>{k.name}</a>
-							{/each}
-						</div>
-					</section>
-				{/if}
-				{#if details.reviews.length}
-					<section class="grid gap-2">
-						<h2 class="font-semibold text-lg">{t('detail.reviews')}</h2>
-						<div class="grid gap-3">
-							{#each details.reviews as r (r.url || r.author + r.content.slice(0, 20))}
-								<figure class="rounded-xl border border-border p-4 text-sm">
-									<figcaption class="mb-1.5 flex items-center gap-2 text-xs text-muted-foreground">
-										<span class="font-medium text-foreground">{r.author}</span>
-										{#if r.rating}<span class="inline-flex items-center gap-0.5"><StarIcon class="size-3 fill-amber-400 text-amber-400" />{r.rating}/10</span>{/if}
-										{#if r.createdAt}<span>{fmtLongDate(r.createdAt.slice(0, 10))}</span>{/if}
-									</figcaption>
-									<blockquote class="leading-6 text-foreground/90">{r.content}</blockquote>
-									{#if r.url}<a href={r.url} target="_blank" rel="noreferrer" class="mt-2 inline-block text-xs underline">{t('detail.read_review')}</a>{/if}
-								</figure>
-							{/each}
-						</div>
-					</section>
-				{/if}
 				{#if mediaType === 'tv' && seasons.length}
 					<section class="grid gap-2">
 						<h2 class="font-semibold text-lg">{t('seasons.title')}</h2>
@@ -268,6 +237,38 @@
 
 			{#if details.recommendations.length}
 				<Carousel title={t('detail.more_like')} items={details.recommendations} />
+			{/if}
+
+			{#if details.keywords.length}
+				<section class="grid gap-2">
+					<h2 class="font-semibold text-lg">{t('detail.tags')}</h2>
+					<div class="flex flex-wrap gap-1.5">
+						{#each details.keywords as k (k.id)}
+							<a
+								href="/browse?keyword={k.id}&name={encodeURIComponent(k.name)}"
+								class="rounded-md bg-muted px-2 py-1 text-xs text-foreground/80 transition-colors hover:bg-primary hover:text-primary-foreground"
+							>{k.name}</a>
+						{/each}
+					</div>
+				</section>
+			{/if}
+			{#if details.reviews.length}
+				<section class="grid gap-2">
+					<h2 class="font-semibold text-lg">{t('detail.reviews')}</h2>
+					<div class="grid gap-3">
+						{#each details.reviews as r (r.url || r.author + r.content.slice(0, 20))}
+							<figure class="rounded-xl border border-border p-4 text-sm">
+								<figcaption class="mb-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+									<span class="font-medium text-foreground">{r.author}</span>
+									{#if r.rating}<span class="inline-flex items-center gap-0.5"><StarIcon class="size-3 fill-amber-400 text-amber-400" />{r.rating}/10</span>{/if}
+									{#if r.createdAt}<span>{fmtLongDate(r.createdAt.slice(0, 10))}</span>{/if}
+								</figcaption>
+								<blockquote class="leading-6 text-foreground/90">{r.content}</blockquote>
+								{#if r.url}<a href={r.url} target="_blank" rel="noreferrer" class="mt-2 inline-block text-xs underline">{t('detail.read_review')}</a>{/if}
+							</figure>
+						{/each}
+					</div>
+				</section>
 			{/if}
 		</div>
 	</div>

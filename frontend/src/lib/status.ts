@@ -15,7 +15,7 @@ export const STATUS: Record<StatusKey, { icon: typeof CheckIcon; solid: string; 
 	partial: { icon: CircleDashedIcon, solid: 'bg-teal-500 text-white', soft: 'bg-teal-500/15 text-teal-700 dark:text-teal-300' },
 	requested: { icon: ClockIcon, solid: 'bg-amber-500 text-white', soft: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
 	approved: { icon: ThumbsUpIcon, solid: 'bg-sky-500 text-white', soft: 'bg-sky-500/15 text-sky-700 dark:text-sky-300' },
-	searching: { icon: SearchIcon, solid: 'bg-violet-500 text-white', soft: 'bg-violet-500/15 text-violet-700 dark:text-violet-300' },
+	searching: { icon: SearchIcon, solid: 'bg-fuchsia-500 text-white', soft: 'bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300' },
 	downloading: { icon: DownloadIcon, solid: 'bg-indigo-500 text-white', soft: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300' },
 	declined: { icon: BanIcon, solid: 'bg-rose-500 text-white', soft: 'bg-rose-500/15 text-rose-700 dark:text-rose-300' },
 	failed: { icon: TriangleAlertIcon, solid: 'bg-orange-600 text-white', soft: 'bg-orange-500/15 text-orange-700 dark:text-orange-300' },
