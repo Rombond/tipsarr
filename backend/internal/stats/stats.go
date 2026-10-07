@@ -80,7 +80,7 @@ type StatsReport struct {
 	Months    []StatsMonth  `json:"months" doc:"Last 12 months, oldest first (plugin source only)"`
 	Weekdays  []float64     `json:"weekdays" doc:"Hours per weekday, Monday first (plugin source only)"`
 	Hours24   []float64     `json:"hoursOfDay" doc:"Hours per hour of the day (plugin source only)"`
-	Top       []StatsTop    `json:"top" doc:"Everything watched at least once, most plays first (movies and shows together)"`
+	Top       []StatsTop    `json:"top" doc:"Everything watched at least once, most time spent first (movies and shows together)"`
 	TopMovies []StatsTop    `json:"topMovies" doc:"Most watched movies"`
 	TopShows  []StatsTop    `json:"topShows" doc:"Most watched shows"`
 	Requests  StatsRequests `json:"requests"`
@@ -315,12 +315,13 @@ func aggregate(res *StatsReport, titles map[string]*title) {
 	}
 	sort.Slice(res.Decades, func(i, j int) bool { return res.Decades[i].Name < res.Decades[j].Name })
 
+	// most watched = most time spent: play counts are not comparable (a show has many episodes)
 	sort.Slice(all, func(i, j int) bool {
-		if all[i].plays != all[j].plays {
-			return all[i].plays > all[j].plays
-		}
 		if all[i].secs != all[j].secs {
 			return all[i].secs > all[j].secs
+		}
+		if all[i].plays != all[j].plays {
+			return all[i].plays > all[j].plays
 		}
 		return all[i].name < all[j].name
 	})

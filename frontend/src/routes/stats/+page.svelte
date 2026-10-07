@@ -157,7 +157,7 @@
 								posterUrl={item.posterUrl}
 								hideStatus
 								rank={i + 1}
-								note={item.type === 'tv' ? t('stats.n_episodes', { count: item.plays }) : t('stats.n_plays', { count: item.plays })}
+								note={`${hours(item.hours)} · ${item.type === 'tv' ? t('stats.n_episodes', { count: item.plays }) : t('stats.n_plays', { count: item.plays })}`}
 							/>
 						{/each}
 					</Scroller>
