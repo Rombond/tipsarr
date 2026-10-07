@@ -33,6 +33,7 @@ var (
 	ErrBadState         = errors.New("request is not in a state that allows this")
 	ErrForbidden        = errors.New("not allowed")
 	ErrInvalid          = errors.New("invalid request")
+	ErrServarrFailed    = errors.New("Radarr/Sonarr could not remove it")
 )
 
 type Service struct {
@@ -68,24 +69,26 @@ type UserRef struct {
 
 // View is the API shape of a request.
 type View struct {
-	ID            string    `json:"id"`
-	Type          string    `json:"type" enum:"movie,tv"`
-	TMDBID        int       `json:"tmdbId"`
-	Title         string    `json:"title"`
-	PosterPath    string    `json:"posterPath,omitempty"`
-	ReleaseDate   string    `json:"releaseDate,omitempty"`
-	Seasons       []int     `json:"seasons,omitempty"`
-	Status        string    `json:"status" enum:"pending,approved,declined,failed,available"`
-	Stage         string    `json:"stage" enum:"requested,approved,searching,downloading,available,declined,failed" doc:"User-facing lifecycle step"`
-	RequestedBy   UserRef   `json:"requestedBy"`
-	DecidedBy     *UserRef  `json:"decidedBy,omitempty"`
-	DeclineReason string    `json:"declineReason,omitempty"`
-	DryRun        bool      `json:"dryRun" doc:"Approved in dry-run mode: nothing was sent to Radarr/Sonarr"`
-	Error         string    `json:"error,omitempty"`
-	Source        string    `json:"source,omitempty" doc:"Set when the request was imported from what Radarr/Sonarr already monitor"`
-	Progress      *Progress `json:"progress,omitempty"`
-	CreatedAt     int64     `json:"createdAt"`
-	UpdatedAt     int64     `json:"updatedAt"`
+	ID               string    `json:"id"`
+	Type             string    `json:"type" enum:"movie,tv"`
+	TMDBID           int       `json:"tmdbId"`
+	Title            string    `json:"title"`
+	PosterPath       string    `json:"posterPath,omitempty"`
+	ReleaseDate      string    `json:"releaseDate,omitempty"`
+	Seasons          []int     `json:"seasons,omitempty"`
+	Status           string    `json:"status" enum:"pending,approved,declined,failed,available"`
+	Stage            string    `json:"stage" enum:"requested,approved,searching,downloading,available,declined,failed" doc:"User-facing lifecycle step"`
+	RequestedBy      UserRef   `json:"requestedBy"`
+	DecidedBy        *UserRef  `json:"decidedBy,omitempty"`
+	DeclineReason    string    `json:"declineReason,omitempty"`
+	DryRun           bool      `json:"dryRun" doc:"Approved in dry-run mode: nothing was sent to Radarr/Sonarr"`
+	Error            string    `json:"error,omitempty"`
+	QualityProfileID int       `json:"qualityProfileId,omitempty" doc:"Chosen quality profile (absent = the instance default)"`
+	RootFolder       string    `json:"rootFolder,omitempty" doc:"Chosen root folder (absent = the instance default)"`
+	Source           string    `json:"source,omitempty" doc:"Set when the request was imported from what Radarr/Sonarr already monitor"`
+	Progress         *Progress `json:"progress,omitempty"`
+	CreatedAt        int64     `json:"createdAt"`
+	UpdatedAt        int64     `json:"updatedAt"`
 }
 
 func (s *Service) stage(r *store.Request) (string, *Progress) {
@@ -137,7 +140,7 @@ func (s *Service) views(ctx context.Context, rows []store.Request) ([]View, erro
 			ID: r.ID, Type: r.MediaType, TMDBID: int(r.TMDBID), Title: r.Title, PosterPath: r.PosterPath,
 			ReleaseDate: r.ReleaseDate, Seasons: seasons[r.ID], Status: r.Status, Stage: stage,
 			RequestedBy: UserRef{ID: r.RequestedBy, Name: names[r.RequestedBy]}, DeclineReason: r.DeclineReason,
-			DryRun: r.DryRun == 1, Error: r.Error, Source: r.Source, Progress: prog, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+			DryRun: r.DryRun == 1, Error: r.Error, Source: r.Source, QualityProfileID: r.ProfileID, RootFolder: r.RootFolder, Progress: prog, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
 		}
 		if r.DecidedBy != "" {
 			v.DecidedBy = &UserRef{ID: r.DecidedBy, Name: names[r.DecidedBy]}
@@ -240,7 +243,7 @@ type CreateParams struct {
 	Type    string
 	TMDBID  int
 	Seasons []int // TV only; empty = every regular season
-	// Admin only: send with this quality profile / root folder instead of the instance defaults.
+	// Send with this quality profile / root folder instead of the instance defaults.
 	Overrides *Overrides
 }
 
@@ -248,9 +251,6 @@ type CreateParams struct {
 func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*View, error) {
 	if p.Type != "movie" && p.Type != "tv" || p.TMDBID <= 0 {
 		return nil, ErrInvalid
-	}
-	if p.Overrides != nil && u.Role != store.RoleAdmin {
-		return nil, ErrForbidden
 	}
 	d, err := s.media.Detail(ctx, media.Opts{Language: u.Language, Region: u.Region}, p.Type, p.TMDBID)
 	if err != nil {
@@ -301,6 +301,12 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 		ID: store.NewID(), MediaType: p.Type, TMDBID: int64(p.TMDBID), Title: d.Title, PosterPath: d.PosterPath,
 		ReleaseDate: d.ReleaseDate, RequestedBy: u.ID, Status: store.StatusPending,
 	}
+	if p.Overrides != nil {
+		if p.Overrides.ProfileID != nil {
+			r.ProfileID = *p.Overrides.ProfileID
+		}
+		r.RootFolder = p.Overrides.RootFolder
+	}
 	if err := s.store.CreateRequest(ctx, r, seasons); err != nil {
 		return nil, err
 	}
@@ -348,6 +354,16 @@ func (s *Service) Approve(ctx context.Context, by *store.User, id string, ov *Ov
 		return nil, err
 	}
 	profile, root := inst.QualityProfileID, inst.RootFolder
+	if ov != nil && ov.ProfileID == nil && ov.RootFolder == "" {
+		ov = nil // nothing chosen now
+	}
+	if ov == nil && (r.ProfileID > 0 || r.RootFolder != "") { // what the requester chose
+		ov = &Overrides{RootFolder: r.RootFolder}
+		if r.ProfileID > 0 {
+			pid := r.ProfileID
+			ov.ProfileID = &pid
+		}
+	}
 	explicitRoot := ov != nil && ov.RootFolder != ""
 	if ov != nil {
 		if ov.ProfileID != nil {
@@ -372,6 +388,14 @@ func (s *Service) Approve(ctx context.Context, by *store.User, id string, ov *Ov
 		}
 	}
 
+	if ov != nil { // remember what was sent, for retries and the edit dialog
+		if ov.ProfileID != nil {
+			r.ProfileID = *ov.ProfileID
+		}
+		if ov.RootFolder != "" {
+			r.RootFolder = ov.RootFolder
+		}
+	}
 	r.DecidedBy, r.InstanceID, r.DeclineReason, r.Error = by.ID, inst.ID, "", ""
 	client := s.newServarr(inst)
 	servarrID, sendErr := s.send(ctx, client, r, profile, root, seriesType)
@@ -475,6 +499,9 @@ func (s *Service) Delete(ctx context.Context, u *store.User, id string) error {
 	if u.Role != store.RoleAdmin && r.Status != store.StatusPending && r.Status != store.StatusDeclined && r.Status != store.StatusFailed {
 		return ErrForbidden
 	}
+	if err := s.removeFromServarr(ctx, r); err != nil {
+		return err
+	}
 	if err := s.store.DeleteRequest(ctx, id); err != nil {
 		return err
 	}
@@ -552,3 +579,50 @@ func (s *Service) Options(ctx context.Context, mediaType string) (*Options, erro
 }
 
 func nowUnix() int64 { return time.Now().Unix() }
+
+// removeFromServarr takes a request that was sent to Radarr/Sonarr (and is not downloaded yet) out
+// of there too. Files on disk are never deleted, finished requests are left alone, and dry-run
+// blocks it like every other write. A title that is already gone from Radarr/Sonarr is fine.
+func (s *Service) removeFromServarr(ctx context.Context, r *store.Request) error {
+	if r.SentAt == 0 || r.ServarrID == 0 || (r.Status != store.StatusApproved && r.Status != store.StatusFailed) {
+		return nil
+	}
+	inst, err := s.store.GetServarr(ctx, r.InstanceID)
+	if err != nil {
+		return nil // the instance itself was removed
+	}
+	err = s.newServarr(inst).DeleteMedia(ctx, int(r.ServarrID))
+	switch {
+	case err == nil, errors.Is(err, servarr.ErrDryRun), servarr.IsNotFound(err):
+		return nil
+	}
+	return fmt.Errorf("%w: %v", ErrServarrFailed, err)
+}
+
+// UpdateOptions changes the quality profile / root folder of a request that has not been sent yet
+// (or failed). The requester and admins may do it.
+func (s *Service) UpdateOptions(ctx context.Context, u *store.User, id string, ov Overrides) (*View, error) {
+	r, err := s.store.GetRequest(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if !canSee(u, r) {
+		return nil, store.ErrNotFound
+	}
+	if r.Status != store.StatusPending && r.Status != store.StatusFailed {
+		return nil, ErrBadState
+	}
+	r.ProfileID, r.RootFolder = 0, ov.RootFolder
+	if ov.ProfileID != nil {
+		r.ProfileID = *ov.ProfileID
+	}
+	if err := s.store.UpdateRequest(ctx, r); err != nil {
+		return nil, err
+	}
+	s.changed(ctx, r)
+	v, err := s.view(ctx, r)
+	if v != nil {
+		redact(v, u)
+	}
+	return v, err
+}

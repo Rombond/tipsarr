@@ -7,6 +7,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import type { StatusKey } from '$lib/status';
 	import XIcon from '@lucide/svelte/icons/x';
+	import SlidersIcon from '@lucide/svelte/icons/sliders-horizontal';
+	import RequestOptionsDialog from './request-options-dialog.svelte';
 
 	let {
 		request,
@@ -15,6 +17,7 @@
 		onApprove,
 		onDecline,
 		onDelete,
+		onChanged,
 	}: {
 		request: Schemas['View'];
 		isAdmin: boolean;
@@ -22,7 +25,11 @@
 		onApprove?: (r: Schemas['View']) => void;
 		onDecline?: (r: Schemas['View']) => void;
 		onDelete?: (r: Schemas['View']) => void;
+		/** Called after the quality profile was changed. */
+		onChanged?: () => void;
 	} = $props();
+
+	let editing = $state(false);
 
 	const poster = $derived(imageUrl(request.posterPath, 'w154'));
 
@@ -42,6 +49,8 @@
 		}[request.stage],
 	);
 	const canDelete = $derived(isAdmin || ['pending', 'declined', 'failed'].includes(request.status));
+	// the requester and admins may change the quality profile until it is sent
+	const canEdit = $derived(!request.source && (request.status === 'pending' || request.status === 'failed') && (isAdmin || request.requestedBy.id === auth.user?.id));
 	const canDecide = $derived(isAdmin && (request.status === 'pending' || request.status === 'failed'));
 
 	// a profile opens for yourself, or for any user when you are an admin
@@ -54,6 +63,18 @@
 {/snippet}
 
 <div class="relative flex gap-3 rounded-xl border border-border bg-card p-3 shadow-sm">
+	{#if canEdit}
+		<button
+			type="button"
+			class="absolute top-2 right-10 flex size-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+			title={t('req.change_options_short')}
+			aria-label={t('req.change_options', { title: request.title })}
+			disabled={busy}
+			onclick={() => (editing = true)}
+		>
+			<SlidersIcon class="size-4" />
+		</button>
+	{/if}
 	{#if canDelete}
 		<button
 			type="button"
@@ -106,7 +127,7 @@
 		{#if request.error}<p class="text-xs text-destructive">{request.error}</p>{/if}
 		{#if canDecide}
 			<div class="flex flex-wrap justify-end gap-2 pt-1">
-				<Button size="sm" variant="outline" disabled={busy} onclick={() => onDecline?.(request)}>{t('req.decline')}</Button>
+				<Button size="sm" class="bg-rose-600 text-white hover:bg-rose-600/90" disabled={busy} onclick={() => onDecline?.(request)}>{t('req.decline')}</Button>
 				<Button size="sm" class="bg-emerald-600 text-white hover:bg-emerald-600/90" disabled={busy} onclick={() => onApprove?.(request)}>
 					{request.status === 'failed' ? t('req.retry') : t('req.approve')}
 				</Button>
@@ -114,3 +135,5 @@
 		{/if}
 	</div>
 </div>
+
+{#if canEdit}<RequestOptionsDialog bind:open={editing} {request} onsaved={() => onChanged?.()} />{/if}

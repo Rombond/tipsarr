@@ -724,7 +724,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Quality profiles and root folders an admin can pick when requesting
+         * Quality profiles and root folders you can pick when requesting
          * @description Read-only calls to the default Radarr (movie) or Sonarr (tv) instance.
          */
         get: operations["requestOptions"];
@@ -747,11 +747,12 @@ export interface paths {
         get: operations["getRequest"];
         put?: never;
         post?: never;
-        /** Delete a request (admin: any; owner: unfinished ones) */
+        /** Delete a request (admin: any; owner: unfinished ones). A request still waiting in Radarr/Sonarr is removed there too (files are kept) */
         delete: operations["deleteRequest"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Change the quality profile / root folder of a pending or failed request (requester or admin) */
+        patch: operations["updateRequestOptions"];
         trace?: never;
     };
     "/requests/{id}/approve": {
@@ -1083,10 +1084,10 @@ export interface components {
         CreateRequestRequest: {
             /**
              * Format: int64
-             * @description Admin only: Radarr/Sonarr quality profile to use
+             * @description Radarr/Sonarr quality profile to use (omit for the default); see /requests/options
              */
             qualityProfileId?: number;
-            /** @description Admin only: root folder to use */
+            /** @description Root folder to use (omit for the default) */
             rootFolder?: string;
             /** @description TV only; empty means every season */
             seasons?: number[];
@@ -1684,6 +1685,15 @@ export interface components {
              */
             shows: number;
         };
+        UpdateRequestOptionsRequest: {
+            /**
+             * Format: int64
+             * @description Omit for the instance default
+             */
+            qualityProfileId?: number;
+            /** @description Empty for the instance default */
+            rootFolder?: string;
+        };
         UpdateSettingsInputBody: {
             /** @description Comma-separated region codes; empty resets to US */
             boxofficeRegions?: string;
@@ -1729,8 +1739,15 @@ export interface components {
             id: string;
             posterPath?: string;
             progress?: components["schemas"]["Progress"];
+            /**
+             * Format: int64
+             * @description Chosen quality profile (absent = the instance default)
+             */
+            qualityProfileId?: number;
             releaseDate?: string;
             requestedBy: components["schemas"]["UserRef"];
+            /** @description Chosen root folder (absent = the instance default) */
+            rootFolder?: string;
             seasons?: number[];
             /** @description Set when the request was imported from what Radarr/Sonarr already monitor */
             source?: string;
@@ -4828,15 +4845,6 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ErrorModel"];
                 };
             };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
             /** @description Conflict */
             409: {
                 headers: {
@@ -4971,6 +4979,86 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    updateRequestOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRequestOptionsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["View"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

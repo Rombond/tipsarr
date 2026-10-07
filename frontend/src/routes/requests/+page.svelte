@@ -117,7 +117,12 @@
 		reason = '';
 	}
 
-	const remove = (r: Schemas['View']) => act(r, () => expectOk(api.DELETE('/requests/{id}', { params: { path: { id: r.id } } })));
+	function remove(r: Schemas['View']) {
+		// anything still waiting in Radarr/Sonarr is removed there too (files are kept)
+		const inArr = r.status === 'approved' && !r.dryRun;
+		if (!confirm(inArr ? t('requests.confirm_delete_arr', { title: r.title }) : t('requests.confirm_delete', { title: r.title }))) return;
+		return act(r, () => expectOk(api.DELETE('/requests/{id}', { params: { path: { id: r.id } } })));
+	}
 </script>
 
 <svelte:head>
@@ -162,7 +167,7 @@
 	{:else}
 		<div class="grid gap-3 xl:grid-cols-2">
 			{#each items as r (r.id)}
-				<RequestRow request={r} isAdmin={auth.isAdmin} busy={busyId === r.id} onApprove={approve} onDecline={(x) => (declining = x)} onDelete={remove} />
+				<RequestRow request={r} isAdmin={auth.isAdmin} busy={busyId === r.id} onApprove={approve} onDecline={(x) => (declining = x)} onDelete={remove} onChanged={() => load(false)} />
 			{/each}
 		</div>
 		<p class="text-xs text-muted-foreground">{t('requests.total', { count: total })}</p>

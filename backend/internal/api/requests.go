@@ -29,6 +29,8 @@ func reqErr(err error) error {
 		return fail(409, "no_instance", err.Error())
 	case errors.Is(err, requests.ErrForbidden):
 		return fail(403, "forbidden", err.Error())
+	case errors.Is(err, requests.ErrServarrFailed):
+		return fail(502, "servarr_error", err.Error())
 	case errors.Is(err, requests.ErrInvalid):
 		return fail(422, "invalid_request", err.Error())
 	}
@@ -109,12 +111,11 @@ func registerRequests(api huma.API, d Deps) {
 		Errors: []int{http.StatusUnauthorized, http.StatusNotFound, http.StatusConflict, http.StatusUnprocessableEntity},
 	}, func(ctx context.Context, in *struct {
 		Body struct {
-			Type    string `json:"type" enum:"movie,tv"`
-			TMDBID  int    `json:"tmdbId" minimum:"1"`
-			Seasons []int  `json:"seasons,omitempty" doc:"TV only; empty means every season"`
-			// Admin only; ignored by the defaults when omitted.
-			QualityProfileID *int   `json:"qualityProfileId,omitempty" doc:"Admin only: Radarr/Sonarr quality profile to use"`
-			RootFolder       string `json:"rootFolder,omitempty" doc:"Admin only: root folder to use"`
+			Type             string `json:"type" enum:"movie,tv"`
+			TMDBID           int    `json:"tmdbId" minimum:"1"`
+			Seasons          []int  `json:"seasons,omitempty" doc:"TV only; empty means every season"`
+			QualityProfileID *int   `json:"qualityProfileId,omitempty" doc:"Radarr/Sonarr quality profile to use (omit for the default); see /requests/options"`
+			RootFolder       string `json:"rootFolder,omitempty" doc:"Root folder to use (omit for the default)"`
 		}
 	}) (*requestOutput, error) {
 		u, err := requireUser(ctx)
@@ -131,14 +132,14 @@ func registerRequests(api huma.API, d Deps) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "requestOptions", Method: http.MethodGet, Path: "/requests/options",
-		Summary:     "Quality profiles and root folders an admin can pick when requesting",
+		Summary:     "Quality profiles and root folders you can pick when requesting",
 		Description: "Read-only calls to the default Radarr (movie) or Sonarr (tv) instance.",
 		Tags:        []string{"requests"}, Security: sec,
-		Errors: []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusConflict, http.StatusBadGateway},
+		Errors: []int{http.StatusUnauthorized, http.StatusConflict, http.StatusBadGateway},
 	}, func(ctx context.Context, in *struct {
 		Type string `query:"type" enum:"movie,tv" required:"true"`
 	}) (*struct{ Body *requests.Options }, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireUser(ctx); err != nil {
 			return nil, err
 		}
 		o, err := d.Requests.Options(ctx, in.Type)
@@ -196,6 +197,25 @@ func registerRequests(api huma.API, d Deps) {
 	})
 
 	huma.Register(api, huma.Operation{
+		OperationID: "updateRequestOptions", Method: http.MethodPatch, Path: "/requests/{id}",
+		Summary: "Change the quality profile / root folder of a pending or failed request (requester or admin)", Tags: []string{"requests"}, Security: sec,
+		Errors: []int{http.StatusUnauthorized, http.StatusNotFound, http.StatusConflict},
+	}, func(ctx context.Context, in *struct {
+		ID   string `path:"id" maxLength:"32"`
+		Body struct {
+			QualityProfileID *int   `json:"qualityProfileId,omitempty" doc:"Omit for the instance default"`
+			RootFolder       string `json:"rootFolder,omitempty" doc:"Empty for the instance default"`
+		}
+	}) (*requestOutput, error) {
+		u, err := requireUser(ctx)
+		if err != nil {
+			return nil, err
+		}
+		v, err := d.Requests.UpdateOptions(ctx, u, in.ID, requests.Overrides{ProfileID: in.Body.QualityProfileID, RootFolder: in.Body.RootFolder})
+		return &requestOutput{Body: v}, reqErr(err)
+	})
+
+	huma.Register(api, huma.Operation{
 		OperationID: "retryRequest", Method: http.MethodPost, Path: "/requests/{id}/retry",
 		Summary: "Retry a failed request (admin)", Tags: []string{"requests"}, Security: sec,
 		Errors: []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusConflict},
@@ -228,8 +248,8 @@ func registerRequests(api huma.API, d Deps) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "deleteRequest", Method: http.MethodDelete, Path: "/requests/{id}",
-		Summary: "Delete a request (admin: any; owner: unfinished ones)", Tags: []string{"requests"}, Security: sec,
-		DefaultStatus: http.StatusNoContent, Errors: append(errs, http.StatusForbidden),
+		Summary: "Delete a request (admin: any; owner: unfinished ones). A request still waiting in Radarr/Sonarr is removed there too (files are kept)", Tags: []string{"requests"}, Security: sec,
+		DefaultStatus: http.StatusNoContent, Errors: append(errs, http.StatusForbidden, http.StatusBadGateway),
 	}, func(ctx context.Context, in *idIn) (*struct{}, error) {
 		u, err := requireUser(ctx)
 		if err != nil {

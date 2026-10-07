@@ -493,24 +493,42 @@ func TestRequestOptionsAndOverrides(t *testing.T) {
 		t.Fatalf("options without an instance = %d", resp.StatusCode)
 	}
 	addInstance(t, e, admin, "radarr", radarr)
-	if resp, _ := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", bob); resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("user options = %d", resp.StatusCode)
-	}
-	resp, body := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", admin)
+	resp, body := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", bob)
 	if resp.StatusCode != 200 || !strings.Contains(body, `"HD-1080p"`) || !strings.Contains(body, `"/data/media"`) || !strings.Contains(body, `"qualityProfileId":4`) {
 		t.Fatalf("options = %d %s", resp.StatusCode, body)
 	}
-	// users cannot pick a profile
-	if resp, _ := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"qualityProfileId":9}`, bob); resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("user override = %d", resp.StatusCode)
+	// a user's choice is remembered and used when an admin approves
+	resp, body = call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"qualityProfileId":9,"rootFolder":"/data/other"}`, bob)
+	v := decodeReq(t, body)
+	if resp.StatusCode != http.StatusCreated || v.Status != "pending" || !strings.Contains(body, `"qualityProfileId":9`) {
+		t.Fatalf("user create = %d %s", resp.StatusCode, body)
 	}
-	// an admin's choice reaches Radarr
-	resp, body = call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"qualityProfileId":9,"rootFolder":"/data/other"}`, admin)
-	if a := decodeReq(t, body); resp.StatusCode != http.StatusCreated || a.Status != "approved" {
-		t.Fatalf("admin create = %d %s", resp.StatusCode, body)
+	// ...and can be changed while it is pending, by the requester
+	resp, body = call(t, e.app, "PATCH", "/api/v1/requests/"+v.ID, `{"qualityProfileId":4,"rootFolder":"/data/media"}`, bob)
+	if resp.StatusCode != 200 || !strings.Contains(body, `"qualityProfileId":4`) {
+		t.Fatalf("patch = %d %s", resp.StatusCode, body)
+	}
+	call(t, e.app, "PATCH", "/api/v1/requests/"+v.ID, `{"qualityProfileId":9,"rootFolder":"/data/other"}`, bob)
+	if resp, _ := call(t, e.app, "POST", "/api/v1/requests/"+v.ID+"/approve", `{}`, admin); resp.StatusCode != 200 {
+		t.Fatalf("approve = %d", resp.StatusCode)
 	}
 	if radarr.posted["qualityProfileId"] != float64(9) || radarr.posted["rootFolderPath"] != "/data/other" {
 		t.Fatalf("radarr body = %v", radarr.posted)
+	}
+	// approved requests can no longer be edited
+	if resp, _ := call(t, e.app, "PATCH", "/api/v1/requests/"+v.ID, `{"qualityProfileId":4}`, bob); resp.StatusCode != http.StatusConflict {
+		t.Fatalf("patch after approval = %d", resp.StatusCode)
+	}
+	// deleting a request that is still waiting in Radarr removes it there too
+	if resp, _ := call(t, e.app, "DELETE", "/api/v1/requests/"+v.ID, "", admin); resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("delete = %d", resp.StatusCode)
+	}
+	found := false
+	for _, w := range radarr.writes() {
+		found = found || w == "DELETE /movie/42"
+	}
+	if !found {
+		t.Fatalf("radarr writes = %v, want DELETE /movie/42", radarr.writes())
 	}
 }
 

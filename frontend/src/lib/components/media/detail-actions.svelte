@@ -85,6 +85,11 @@
 		{#if watchlisted}<BookmarkCheckIcon class="size-4" /> {t('actions.on_watchlist')}{:else}<BookmarkIcon class="size-4" /> {t('actions.watchlist')}{/if}
 	</Button>
 
+	<Button variant="outline" onclick={() => (reporting = true)}>
+		<FlagIcon class="size-4" />
+		{t('actions.report_short')}
+	</Button>
+
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
@@ -94,9 +99,6 @@
 		<DropdownMenu.Content align="start" class="w-64">
 			<DropdownMenu.Item onclick={() => toggle('blocklist')}>
 				{#if blocklisted}<EyeIcon /> {t('actions.show_again')}{:else}<EyeOffIcon /> {t('actions.hide')}{/if}
-			</DropdownMenu.Item>
-			<DropdownMenu.Item onclick={() => (reporting = true)}>
-				<FlagIcon /> {t('actions.report')}
 			</DropdownMenu.Item>
 			<DropdownMenu.Separator />
 			{#if details.imdbId}

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.svelte';
-	import { api, unwrap, type Schemas } from '$lib/api/client';
-	import { auth } from '$lib/stores/auth.svelte';
+	import type { Schemas } from '$lib/api/client';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
@@ -13,6 +12,7 @@
 		type,
 		title = '',
 		seasons = [],
+		options = null,
 		busy = false,
 		error = null,
 		onsubmit,
@@ -21,6 +21,8 @@
 		type: 'movie' | 'tv';
 		title?: string;
 		seasons?: Schemas['Season'][];
+		/** Quality profiles and folders of the default Radarr/Sonarr; null when none is configured. */
+		options?: Schemas['Options'] | null;
 		busy?: boolean;
 		error?: string | null;
 		onsubmit: (choice: RequestChoice) => void;
@@ -29,23 +31,15 @@
 	const regular = $derived(seasons.filter((s) => s.number > 0));
 	const askSeasons = $derived(type === 'tv' && regular.length > 1);
 	let picked = $state<number[]>([]);
-	let options = $state<Schemas['Options'] | null>(null);
 	let profile = $state('');
 	let folder = $state('');
 
-	// every season starts selected, and the admin's choices start at the instance defaults
+	// every season starts selected, and the profile/folder start at the instance defaults
 	$effect(() => {
 		if (!open) return;
 		picked = regular.map((s) => s.number);
-		if (!auth.isAdmin) return;
-		options = null;
-		unwrap(api.GET('/requests/options', { params: { query: { type } } }))
-			.then((o) => {
-				options = o;
-				profile = String(o.qualityProfileId);
-				folder = o.rootFolder;
-			})
-			.catch(() => (options = null)); // no Radarr/Sonarr yet: the request simply stays pending
+		profile = options ? String(options.qualityProfileId) : '';
+		folder = options?.rootFolder ?? '';
 	});
 
 	function toggle(n: number) {

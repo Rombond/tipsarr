@@ -219,3 +219,12 @@ func (c *Client) Queue(ctx context.Context) ([]QueueItem, error) {
 	}
 	return out, nil
 }
+
+// DeleteMedia removes a movie (Radarr) or series (Sonarr) from the app. Files on disk are kept.
+// Like every write it goes through send, so dry-run blocks it.
+func (c *Client) DeleteMedia(ctx context.Context, id int) error {
+	if c.Kind == KindSonarr {
+		return c.send(ctx, http.MethodDelete, fmt.Sprintf("/series/%d?deleteFiles=false&addImportListExclusion=false", id), nil, nil)
+	}
+	return c.send(ctx, http.MethodDelete, fmt.Sprintf("/movie/%d?deleteFiles=false&addImportExclusion=false", id), nil, nil)
+}

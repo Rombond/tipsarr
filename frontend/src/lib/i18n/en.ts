@@ -557,8 +557,12 @@ export const en = {
 	"issue.describe_placeholder": "For example: the French subtitles are out of sync after 30 minutes.",
 	"issue.submit": "Report issue",
 	"issue.toast_reported": "Issue reported. Thank you!",
-	"actions.report": "Report an issue",
 	"settings.import_title": "Import from Radarr and Sonarr",
 	"settings.import_desc": "Movies and shows that Radarr/Sonarr already monitor but have not downloaded show up in Requests as “approved”, so you can follow them. This only reads from Radarr/Sonarr: nothing is requested or added, and dry-run does not matter. It runs hourly (job “servarr-import”).",
 	"settings.import_toggle": "Import what Radarr and Sonarr are waiting for",
+	"req.change_options": "Quality profile for {title}",
+	"req.change_options_short": "Change quality profile",
+	"requests.confirm_delete": "Delete the request for “{title}”?",
+	"requests.confirm_delete_arr": "Delete the request for “{title}”? It will also be removed from Radarr/Sonarr (files already on disk are kept).",
+	"actions.report_short": "Report issue",
 } as const;

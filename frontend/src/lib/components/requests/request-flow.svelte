@@ -7,7 +7,6 @@
 	// make (seasons of a show, or an admin picking a quality profile) and requests directly otherwise.
 	import { t } from '$lib/i18n/index.svelte';
 	import { api, unwrap, errorText, type Schemas } from '$lib/api/client';
-	import { auth } from '$lib/stores/auth.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import RequestDialog, { type RequestChoice } from './request-dialog.svelte';
 
@@ -31,6 +30,7 @@
 	let open = $state(false);
 	let error = $state<string | null>(null);
 	let loaded = $state<Schemas['Season'][] | null>(null);
+	let options = $state<Schemas['Options'] | null>(null);
 	const known = $derived(seasons ?? loaded ?? []);
 
 	async function submit(choice: RequestChoice) {
@@ -68,10 +68,14 @@
 			}
 			busy = false;
 		}
+		// quality profiles to choose from (none configured: the request just stays pending)
+		busy = true;
+		options = await unwrap(api.GET('/requests/options', { params: { query: { type } } })).catch(() => null);
+		busy = false;
 		const regular = known.filter((s) => s.number > 0);
-		if (auth.isAdmin || (type === 'tv' && regular.length > 1)) open = true;
+		if (options || (type === 'tv' && regular.length > 1)) open = true;
 		else submit(type === 'tv' ? { seasons: regular.map((s) => s.number) } : {});
 	}
 </script>
 
-<RequestDialog bind:open {type} {title} seasons={known} {busy} {error} onsubmit={submit} />
+<RequestDialog bind:open {type} {title} seasons={known} {options} {busy} {error} onsubmit={submit} />

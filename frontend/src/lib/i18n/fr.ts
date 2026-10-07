@@ -558,8 +558,12 @@ export const fr: Record<keyof typeof en, string> = {
 	"issue.describe_placeholder": "Par exemple : les sous-titres français sont décalés après 30 minutes.",
 	"issue.submit": "Signaler",
 	"issue.toast_reported": "Problème signalé. Merci !",
-	"actions.report": "Signaler un problème",
 	"settings.import_title": "Import depuis Radarr et Sonarr",
 	"settings.import_desc": "Les films et séries que Radarr/Sonarr surveillent déjà sans les avoir téléchargés apparaissent dans Demandes comme « approuvés », pour les suivre. Cela ne fait que lire Radarr/Sonarr : rien n’est demandé ni ajouté, le mode simulation n’y change rien. Exécuté chaque heure (tâche « servarr-import »).",
 	"settings.import_toggle": "Importer ce que Radarr et Sonarr attendent",
+	"req.change_options": "Profil de qualité pour {title}",
+	"req.change_options_short": "Changer le profil de qualité",
+	"requests.confirm_delete": "Supprimer la demande pour « {title} » ?",
+	"requests.confirm_delete_arr": "Supprimer la demande pour « {title} » ? Elle sera aussi retirée de Radarr/Sonarr (les fichiers déjà présents sont conservés).",
+	"actions.report_short": "Signaler un problème",
 };
