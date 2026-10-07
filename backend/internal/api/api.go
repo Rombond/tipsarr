@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/Rombond/tipsarr/backend/internal/auth"
+	"github.com/Rombond/tipsarr/backend/internal/avatars"
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/issues"
@@ -33,6 +34,7 @@ type Deps struct {
 	Library       *library.Service
 	Requests      *requests.Service
 	Issues        *issues.Service
+	Avatars       *avatars.Service
 	Suggestions   *suggestions.Service
 	BoxOffice     *boxoffice.Service
 	Marks         *marks.Service
@@ -85,6 +87,8 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		r.Get("/events", eventsHandler(d))
 		r.Get("/images/tmdb/{size}/{file}", imageHandler(d))
 		r.Get("/users/{id}/avatar", avatarHandler(d))
+		r.Post("/me/avatar", avatarUploadHandler(d))
+		r.Delete("/me/avatar", avatarUploadHandler(d))
 		r.Get("/auth/oidc/login", oidcLoginHandler(d))
 		r.Get("/auth/oidc/callback", oidcCallbackHandler(d))
 	})

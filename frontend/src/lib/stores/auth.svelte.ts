@@ -9,6 +9,8 @@ class AuthState {
 	dryRun = $state(false);
 	/** non-admins may choose the quality profile and folder when requesting */
 	userRequestOptions = $state(false);
+	/** bumped when a picture changes so browsers refetch it */
+	avatarV = $state(0);
 	/** the setup call needs the token from the server log (opt-in on the server) */
 	setupTokenRequired = $state(false);
 

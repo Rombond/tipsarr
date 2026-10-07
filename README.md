@@ -16,6 +16,7 @@ Tipsarr is one Go binary with a Svelte interface built in. It replaces the usual
 - **Import what Radarr and Sonarr already monitor** so the Requests page shows everything on its way, whoever added it.
 - **Netflix-style suggestions per user** built from their watch history ("Because you watched…", popular on your server), never added automatically.
 - **Box office**: weekend and full-week charts by region (Box Office Mojo), matched to TMDB, with availability.
+- **Profile pictures** from an uploaded image, the `jpegPhoto` of an LDAP/LLDAP account, or Jellyfin, in that order.
 - **Watchlist and "not interested"** per user, **issue reporting** (video, audio, subtitles) with comment threads, **user profiles** with statistics.
 - **Outgoing webhooks** (ntfy, Discord, anything that takes JSON) signed with HMAC, for requests and issues.
 - **SQLite by default**, or PostgreSQL / MySQL.
@@ -109,6 +110,14 @@ identity_providers:
 ```
 
 Tipsarr itself must be able to reach the provider's address (container to provider), not only your browser.
+
+### Requests: who chooses the quality profile
+
+By default only admins pick the quality profile and folder when requesting; everyone else gets the Radarr/Sonarr defaults. Settings → Quality profile and folder lets every user choose.
+
+### Profile pictures from LDAP (optional)
+
+Settings → Profile pictures from LDAP: the LDAP address (for LLDAP `ldap://host:3890`), a read-only bind account, and the users' base DN (for example `ou=people,dc=example,dc=com`). Tipsarr reads each user's `jpegPhoto` (matched on `uid` = their Jellyfin username), cached for 12 hours. People can also upload their own picture from their profile, which takes priority.
 
 ### Jellyfin webhook (optional)
 

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Rombond/tipsarr/backend/internal/auth"
+	"github.com/Rombond/tipsarr/backend/internal/avatars"
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/Rombond/tipsarr/backend/internal/media"
@@ -29,6 +30,10 @@ type settingsBody struct {
 	OIDCClientSecretSet      bool   `json:"oidcClientSecretConfigured"`
 	OIDCAdminGroup           string `json:"oidcAdminGroup" doc:"Members of this group become admins (optional)"`
 	OIDCGroupsClaim          string `json:"oidcGroupsClaim" doc:"Claim that lists the groups, default groups"`
+	LDAPURL                  string `json:"ldapUrl" doc:"LLDAP/LDAP address for profile pictures, e.g. ldap://lldap:3890"`
+	LDAPBindDN               string `json:"ldapBindDn"`
+	LDAPPasswordSet          bool   `json:"ldapBindPasswordConfigured"`
+	LDAPBaseDN               string `json:"ldapBaseDn" doc:"Where users live, e.g. ou=people,dc=example,dc=com"`
 	UserRequestOptions       bool   `json:"userRequestOptions" doc:"Non-admins may choose the quality profile and folder when requesting (default false)"`
 	ServarrAutoImport        bool   `json:"servarrAutoImport" doc:"Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only)"`
 }
@@ -43,6 +48,10 @@ type updateSettingsInput struct {
 		JellyfinAPIKey     *string `json:"jellyfinApiKey,omitempty" doc:"Jellyfin API key (Dashboard > API Keys); empty string clears it"`
 		ServarrAutoImport  *bool   `json:"servarrAutoImport,omitempty"`
 		UserRequestOptions *bool   `json:"userRequestOptions,omitempty"`
+		LDAPURL            *string `json:"ldapUrl,omitempty" doc:"Empty string turns LDAP pictures off; the connection is tested when saving"`
+		LDAPBindDN         *string `json:"ldapBindDn,omitempty"`
+		LDAPPassword       *string `json:"ldapBindPassword,omitempty" doc:"Write-only"`
+		LDAPBaseDN         *string `json:"ldapBaseDn,omitempty"`
 		OIDCIssuer         *string `json:"oidcIssuer,omitempty" doc:"Empty string turns single sign-on off. The provider is contacted when saving"`
 		OIDCClientID       *string `json:"oidcClientId,omitempty"`
 		OIDCClientSecret   *string `json:"oidcClientSecret,omitempty" doc:"Write-only; empty string clears it"`
@@ -78,6 +87,7 @@ func registerAdmin(api huma.API, d Deps) {
 		return settingsBody{
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
 			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, ServarrAutoImport: autoImport != "false", UserRequestOptions: d.Requests.UsersMayChoose(ctx),
+			LDAPURL: ldapGet(ctx, d, avatars.SettingLDAPURL), LDAPBindDN: ldapGet(ctx, d, avatars.SettingLDAPBindDN), LDAPBaseDN: ldapGet(ctx, d, avatars.SettingLDAPBaseDN), LDAPPasswordSet: ldapGet(ctx, d, avatars.SettingLDAPPassword) != "",
 			OIDCIssuer: oc.Issuer, OIDCClientID: oc.ClientID, OIDCClientSecretSet: oc.ClientSecret != "", OIDCAdminGroup: oc.AdminGroup, OIDCGroupsClaim: oc.GroupsClaim,
 		}, nil
 	}
@@ -148,6 +158,26 @@ func registerAdmin(api huma.API, d Deps) {
 				return nil, err
 			}
 		}
+		if in.Body.LDAPURL != nil || in.Body.LDAPBindDN != nil || in.Body.LDAPPassword != nil || in.Body.LDAPBaseDN != nil {
+			vals := map[string]*string{avatars.SettingLDAPURL: in.Body.LDAPURL, avatars.SettingLDAPBindDN: in.Body.LDAPBindDN, avatars.SettingLDAPPassword: in.Body.LDAPPassword, avatars.SettingLDAPBaseDN: in.Body.LDAPBaseDN}
+			next := map[string]string{}
+			for k := range vals {
+				next[k] = ldapGet(ctx, d, k)
+				if vals[k] != nil {
+					next[k] = strings.TrimSpace(*vals[k])
+				}
+			}
+			if next[avatars.SettingLDAPURL] != "" {
+				if err := avatars.CheckLDAP(ctx, next[avatars.SettingLDAPURL], next[avatars.SettingLDAPBindDN], next[avatars.SettingLDAPPassword]); err != nil {
+					return nil, fail(422, "ldap_unreachable", "cannot sign in to LDAP: "+err.Error())
+				}
+			}
+			for k, v := range next {
+				if err := d.Store.SetSetting(ctx, k, v); err != nil {
+					return nil, err
+				}
+			}
+		}
 		if in.Body.UserRequestOptions != nil {
 			v := "false"
 			if *in.Body.UserRequestOptions {
@@ -169,6 +199,11 @@ func registerAdmin(api huma.API, d Deps) {
 		b, err := read(ctx)
 		return &settingsOutput{Body: b}, err
 	})
+}
+
+func ldapGet(ctx context.Context, d Deps, key string) string {
+	v, _ := d.Store.GetSetting(ctx, key)
+	return v
 }
 
 const settingWebhookSecret = "hooks.jellyfin_secret"

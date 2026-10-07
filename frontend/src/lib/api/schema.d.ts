@@ -1520,6 +1520,8 @@ export interface components {
         ProfileView: {
             /** Format: int64 */
             createdAt: number;
+            /** @description The person uploaded their own picture */
+            hasUploadedAvatar: boolean;
             id: string;
             language: string;
             /** Format: int64 */
@@ -1661,6 +1663,12 @@ export interface components {
             /** @description Address browsers use to open Jellyfin (Play buttons); empty = same as jellyfinUrl */
             jellyfinPublicUrl: string;
             jellyfinUrl: string;
+            /** @description Where users live, e.g. ou=people,dc=example,dc=com */
+            ldapBaseDn: string;
+            ldapBindDn: string;
+            ldapBindPasswordConfigured: boolean;
+            /** @description LLDAP/LDAP address for profile pictures, e.g. ldap://lldap:3890 */
+            ldapUrl: string;
             /** @description Members of this group become admins (optional) */
             oidcAdminGroup: string;
             oidcClientId: string;
@@ -1749,6 +1757,12 @@ export interface components {
             jellyfinApiKey?: string;
             /** @description Empty string clears it */
             jellyfinPublicUrl?: string;
+            ldapBaseDn?: string;
+            ldapBindDn?: string;
+            /** @description Write-only */
+            ldapBindPassword?: string;
+            /** @description Empty string turns LDAP pictures off; the connection is tested when saving */
+            ldapUrl?: string;
             oidcAdminGroup?: string;
             oidcClientId?: string;
             /** @description Write-only; empty string clears it */

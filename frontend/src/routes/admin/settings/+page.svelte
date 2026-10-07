@@ -127,6 +127,44 @@
 		}
 	}
 
+	// LLDAP/LDAP profile pictures
+	let ldapUrl = $state('');
+	let ldapBindDn = $state('');
+	let ldapBaseDn = $state('');
+	let ldapPassword = $state('');
+	let ldapBusy = $state(false);
+
+	$effect(() => {
+		if (!settings) return;
+		ldapUrl = settings.ldapUrl;
+		ldapBindDn = settings.ldapBindDn;
+		ldapBaseDn = settings.ldapBaseDn;
+	});
+
+	async function saveLdap(e: SubmitEvent) {
+		e.preventDefault();
+		ldapBusy = true;
+		try {
+			settings = await unwrap(
+				api.PUT('/admin/settings', {
+					body: {
+						ldapUrl: ldapUrl.trim(),
+						ldapBindDn: ldapBindDn.trim(),
+						ldapBaseDn: ldapBaseDn.trim(),
+						...(ldapPassword ? { ldapBindPassword: ldapPassword } : {}),
+					},
+				}),
+			);
+			ldapPassword = '';
+			auth.avatarV++;
+			toast.success(t('common.saved'));
+		} catch (err) {
+			toast.error(errorText(err));
+		} finally {
+			ldapBusy = false;
+		}
+	}
+
 	async function toggleUserOptions(on: boolean) {
 		try {
 			settings = await unwrap(api.PUT('/admin/settings', { body: { userRequestOptions: on } }));
@@ -263,6 +301,22 @@
 						<Button type="submit" disabled={ssoBusy}>{ssoBusy ? t('common.saving') : t('common.save')}</Button>
 						<span class="text-xs text-muted-foreground">{t('settings.sso_fallback')} <code>/login?password=1</code></span>
 					</div>
+				</form>
+			</CardContent>
+		</Card>
+
+		<Card class="lg:col-span-2">
+			<CardHeader>
+				<CardTitle>{t('settings.ldap_title')}</CardTitle>
+				<CardDescription>{t('settings.ldap_desc')}</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<form class="grid gap-3 sm:grid-cols-2" onsubmit={saveLdap}>
+					<label class="grid gap-1 text-sm sm:col-span-2">{t('settings.ldap_url')}<Input bind:value={ldapUrl} placeholder="ldap://192.168.2.247:3890" autocomplete="off" /></label>
+					<label class="grid gap-1 text-sm">{t('settings.ldap_bind')}<Input bind:value={ldapBindDn} placeholder="uid=svc_ldap,ou=people,dc=example,dc=com" autocomplete="off" /></label>
+					<label class="grid gap-1 text-sm">{t('settings.ldap_password')}<Input bind:value={ldapPassword} type="password" autocomplete="off" placeholder={settings.ldapBindPasswordConfigured ? t('settings.sso_secret_saved') : ''} /></label>
+					<label class="grid gap-1 text-sm sm:col-span-2">{t('settings.ldap_base')}<Input bind:value={ldapBaseDn} placeholder="ou=people,dc=example,dc=com" autocomplete="off" /></label>
+					<div class="sm:col-span-2"><Button type="submit" disabled={ldapBusy}>{ldapBusy ? t('common.saving') : t('common.save')}</Button></div>
 				</form>
 			</CardContent>
 		</Card>

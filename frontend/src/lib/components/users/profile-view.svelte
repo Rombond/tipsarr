@@ -2,6 +2,8 @@
 	import { t } from '$lib/i18n/index.svelte';
 	import { fmtDate } from '$lib/i18n/format';
 	import { api, unwrap, errorText, type Schemas } from '$lib/api/client';
+	import { toast } from '$lib/toast.svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { auth } from '$lib/stores/auth.svelte';
 	import UserAvatar from './user-avatar.svelte';
 	import ProfileSettings from './profile-settings.svelte';
@@ -42,6 +44,40 @@
 			.finally(() => (loading = false));
 	});
 
+	let uploading = $state(false);
+	async function changePicture(e: Event & { currentTarget: HTMLInputElement }) {
+		const file = e.currentTarget.files?.[0];
+		e.currentTarget.value = '';
+		if (!file) return;
+		uploading = true;
+		try {
+			const res = await fetch('/api/v1/me/avatar', { method: 'POST', body: file, credentials: 'include' });
+			if (res.status === 413) throw new Error(t('profile.picture_too_large'));
+			if (res.status === 422) throw new Error(t('profile.picture_invalid'));
+			if (!res.ok) throw new Error(t('error.status_500'));
+			auth.avatarV++;
+			if (profile) profile = { ...profile, hasUploadedAvatar: true };
+			toast.success(t('profile.picture_saved'));
+		} catch (err) {
+			toast.error(errorText(err));
+		} finally {
+			uploading = false;
+		}
+	}
+	async function removePicture() {
+		uploading = true;
+		try {
+			const res = await fetch('/api/v1/me/avatar', { method: 'DELETE', credentials: 'include' });
+			if (!res.ok) throw new Error(t('error.status_500'));
+			auth.avatarV++;
+			if (profile) profile = { ...profile, hasUploadedAvatar: false };
+		} catch (err) {
+			toast.error(errorText(err));
+		} finally {
+			uploading = false;
+		}
+	}
+
 	type Tile = { label: string; value: number; dot?: string; icon?: typeof FilmIcon };
 	const tiles = $derived<Tile[]>(
 		profile
@@ -81,6 +117,15 @@
 					{#if profile.region}<span>{profile.region}</span>{/if}
 				</div>
 			</div>
+			{#if self}
+				<div class="ml-auto flex flex-wrap items-center gap-2">
+					<label class="inline-flex">
+						<input type="file" accept="image/png,image/jpeg,image/gif" class="sr-only peer" disabled={uploading} onchange={changePicture} />
+						<span class="inline-flex h-8 cursor-pointer items-center rounded-md border border-input bg-background px-3 text-sm shadow-xs hover:bg-accent peer-focus-visible:ring-[3px] peer-focus-visible:ring-ring/50 peer-disabled:opacity-50">{t('profile.change_picture')}</span>
+					</label>
+					{#if profile.hasUploadedAvatar}<Button size="sm" variant="ghost" disabled={uploading} onclick={removePicture}>{t('profile.remove_picture')}</Button>{/if}
+				</div>
+			{/if}
 			{#if !self && auth.isAdmin}
 				<a class="ml-auto text-sm underline" href="/admin/users">{t('profile.manage_user')}</a>
 			{/if}

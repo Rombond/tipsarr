@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Rombond/tipsarr/backend/internal/avatars"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -35,6 +37,7 @@ type profileView struct {
 	CreatedAt   int64        `json:"createdAt"`
 	LastLoginAt int64        `json:"lastLoginAt"`
 	Stats       profileStats `json:"stats"`
+	HasUpload   bool         `json:"hasUploadedAvatar" doc:"The person uploaded their own picture"`
 }
 
 func registerProfile(api huma.API, d Deps) {
@@ -73,6 +76,7 @@ func registerProfile(api huma.API, d Deps) {
 		out := profileView{ID: u.ID, Name: u.Name, Role: u.Role, Region: u.Region, Language: u.Language, CreatedAt: u.CreatedAt, LastLoginAt: u.LastLoginAt,
 			Stats: profileStats{Requests: rs.Total, Movies: rs.Movies, Shows: rs.Shows, Pending: rs.Pending, Approved: rs.Approved,
 				Available: rs.Available, Declined: rs.Declined, Failed: rs.Failed, Watchlist: len(marks), Watched: watched}}
+		out.HasUpload = d.Avatars != nil && d.Avatars.HasUpload(u.ID)
 		return &struct{ Body profileView }{out}, nil
 	})
 }
@@ -89,6 +93,18 @@ func avatarHandler(d Deps) http.HandlerFunc {
 			return
 		}
 		id := chiParam(r, "id")
+		// a picture uploaded in Tipsarr wins, then the LDAP one, then Jellyfin's
+		if d.Avatars != nil {
+			name := ""
+			if u, err := d.Store.GetUser(r.Context(), id); err == nil {
+				name = u.Name
+			}
+			if path := d.Avatars.Path(r.Context(), id, name); path != "" {
+				w.Header().Set("Cache-Control", "private, max-age=300")
+				http.ServeFile(w, r, path)
+				return
+			}
+		}
 		base, err := d.Store.GetSetting(r.Context(), "jellyfin.url")
 		if !avatarIDRe.MatchString(id) || err != nil || base == "" {
 			http.NotFound(w, r)
@@ -114,5 +130,37 @@ func avatarHandler(d Deps) http.HandlerFunc {
 		w.Header().Set("Content-Type", ct)
 		w.Header().Set("Cache-Control", "private, max-age=3600")
 		_, _ = io.Copy(w, io.LimitReader(resp.Body, 5<<20))
+	}
+}
+
+// avatarUploadHandler stores the picture sent in the request body for the signed-in user.
+func avatarUploadHandler(d Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		u := userFrom(r.Context())
+		if u == nil || d.Avatars == nil {
+			http.Error(w, "login required", http.StatusUnauthorized)
+			return
+		}
+		switch r.Method {
+		case http.MethodDelete:
+			if err := d.Avatars.Delete(u.ID); err != nil {
+				http.Error(w, "could not remove the picture", http.StatusInternalServerError)
+				return
+			}
+		default:
+			err := d.Avatars.Save(u.ID, http.MaxBytesReader(w, r.Body, 5<<20))
+			switch {
+			case errors.Is(err, avatars.ErrTooLarge):
+				http.Error(w, "picture_too_large", http.StatusRequestEntityTooLarge)
+				return
+			case errors.Is(err, avatars.ErrNotImage):
+				http.Error(w, "picture_invalid", http.StatusUnprocessableEntity)
+				return
+			case err != nil:
+				http.Error(w, "could not save the picture", http.StatusInternalServerError)
+				return
+			}
+		}
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
