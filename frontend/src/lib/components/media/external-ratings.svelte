@@ -33,38 +33,39 @@
 	const mcUrl = $derived(`https://www.metacritic.com/search/${q}/`);
 	const tmdbUrl = $derived(`https://www.themoviedb.org/${type}/${tmdbId}`);
 
-	const link = 'inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring';
+	const link = 'inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-1 whitespace-nowrap hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring';
+	const badge = 'rounded px-1 py-px text-[10px] leading-4 font-extrabold';
 </script>
 
 {#if tmdbScore || scores?.imdb || scores?.metacritic || scores?.rottenTomatoes || scores?.rottenTomatoesAudience}
-	<div class="flex flex-wrap items-center gap-x-1 gap-y-0.5 rounded-xl border border-border px-1.5 py-1 text-sm" role="group" aria-label={t('ratings.title')}>
+	<div class="flex flex-nowrap items-center justify-between gap-0.5 overflow-x-auto rounded-xl border border-border px-1 py-0.5 text-[13px]" role="group" aria-label={t('ratings.title')}>
 		{#if tmdbScore}
 			<a class={link} href={tmdbUrl} target="_blank" rel="noreferrer" title={tmdbVotes ? t('ratings.votes', { count: fmtNumber(tmdbVotes) }) : 'TMDB'}>
-				<span class="rounded bg-[#01b4e4] px-1.5 py-0.5 text-[11px] leading-4 font-extrabold text-white">TMDB</span>
+				<span class="{badge} bg-[#01b4e4] text-white">TMDB</span>
 				<span class="font-semibold tabular-nums">{tmdbScore.toFixed(1)}</span>
 			</a>
 		{/if}
 		{#if scores?.imdb}
 			<a class={link} href={scores.imdbUrl || `https://www.imdb.com/find/?q=${q}`} target="_blank" rel="noreferrer" title={scores.imdb.votes ? t('ratings.votes', { count: fmtNumber(scores.imdb.votes) }) : 'IMDb'}>
-				<span class="rounded bg-[#f5c518] px-1.5 py-0.5 text-[11px] leading-4 font-extrabold text-black">IMDb</span>
+				<span class="{badge} bg-[#f5c518] text-black">IMDb</span>
 				<span class="font-semibold tabular-nums">{scores.imdb.value.toFixed(1)}</span>
 			</a>
 		{/if}
 		{#if scores?.rottenTomatoes}
 			<a class={link} href={rtUrl} target="_blank" rel="noreferrer" title={t('ratings.rt_hint')}>
-				<span class="rounded px-1.5 py-0.5 text-[11px] leading-4 font-extrabold text-white {rtTone(scores.rottenTomatoes.value)}">RT</span>
+				<span class="{badge} text-white {rtTone(scores.rottenTomatoes.value)}">RT</span>
 				<span class="font-semibold tabular-nums">{Math.round(scores.rottenTomatoes.value)}%</span>
 			</a>
 		{/if}
 		{#if scores?.rottenTomatoesAudience}
 			<a class={link} href={rtUrl} target="_blank" rel="noreferrer" title={t('ratings.rt_audience_hint')}>
-				<span class="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[11px] leading-4 font-extrabold text-white {rtTone(scores.rottenTomatoesAudience.value)}"><PopcornIcon class="size-3" />RT</span>
+				<span class="inline-flex items-center gap-0.5 {badge} text-white {rtTone(scores.rottenTomatoesAudience.value)}"><PopcornIcon class="size-2.5" />RT</span>
 				<span class="font-semibold tabular-nums">{Math.round(scores.rottenTomatoesAudience.value)}%</span>
 			</a>
 		{/if}
 		{#if scores?.metacritic}
 			<a class={link} href={mcUrl} target="_blank" rel="noreferrer" title={t('ratings.mc_hint')}>
-				<span class="rounded px-1.5 py-0.5 text-[11px] leading-4 font-extrabold text-white {metaTone(scores.metacritic.value)}">MC</span>
+				<span class="{badge} text-white {metaTone(scores.metacritic.value)}">MC</span>
 				<span class="font-semibold tabular-nums">{Math.round(scores.metacritic.value)}</span>
 			</a>
 		{/if}
