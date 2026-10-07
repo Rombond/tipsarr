@@ -229,6 +229,14 @@
 					onclick={() => (type = tab.id)}
 				>{tab.label}{#if facets}<span class="ml-1 opacity-70">{tab.n}</span>{/if}</button>
 			{/each}
+			{#if auth.isAdmin}
+				<button
+					type="button"
+					aria-pressed={never}
+					class="cursor-pointer rounded-full border px-3 py-1 text-sm transition-colors {never ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'}"
+					onclick={() => setNever(!never)}
+				>{t('library.never_watched_chip')}</button>
+			{/if}
 			{#if activeFilters || text || type !== 'all'}
 				<button type="button" class="ml-1 flex cursor-pointer items-center gap-1 text-sm text-muted-foreground underline-offset-4 hover:underline" onclick={reset}><XIcon class="size-3.5" />{t('library.reset')}</button>
 			{/if}
@@ -297,7 +305,7 @@
 		<p class="text-xs text-muted-foreground" aria-live="polite">{t('library.count', { count: total })}</p>
 		<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 			{#each items as item (item.type + item.tmdbId)}
-				<MediaCard item={asMediaItem(item)} posterUrl={item.posterUrl} hideStatus watched={item.watched} note={never && item.addedAt ? t('library.added_on', { date: fmtDate(item.addedAt * 1000) }) : undefined} fluid />
+				<MediaCard item={asMediaItem(item)} posterUrl={item.posterUrl} hideStatus watched={item.watched} note={never && item.addedAt ? t('library.added_on', { date: fmtDate(item.addedAt) }) : undefined} fluid />
 			{/each}
 			{#if loading}
 				{#each { length: 8 } as _, i (i)}<Skeleton class="aspect-[2/3] w-full rounded-lg" />{/each}

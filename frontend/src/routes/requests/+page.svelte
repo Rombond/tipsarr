@@ -12,11 +12,12 @@
 
 	type Filter = 'all' | 'mine' | 'pending' | 'approved' | 'available' | 'declined' | 'failed' | 'unwatched';
 	const dot: Record<string, string> = { pending: 'bg-amber-500', approved: 'bg-sky-500', available: 'bg-emerald-500', declined: 'bg-rose-500', failed: 'bg-orange-600', unwatched: 'bg-violet-500' };
-	// "not watched" is an admin clean-up view: available requests their requester never watched
-	const filters = $derived<Filter[]>(['all', 'pending', 'approved', 'available', 'declined', 'failed', ...(auth.isAdmin ? (['unwatched'] as const) : [])]);
+	// "not watched": available requests their requester never watched (yours; an admin sees everyone's)
+	const filters: Filter[] = ['all', 'pending', 'approved', 'available', 'declined', 'failed', 'unwatched'];
 	const statusKeys = ['pending', 'approved', 'available', 'declined', 'failed'] as const;
 
-	let filter = $state<Filter>('all');
+	import { page } from '$app/state';
+	let filter = $state<Filter>((['unwatched', 'pending', 'approved', 'available', 'declined', 'failed'] as Filter[]).find((f) => f === page.url.searchParams.get('filter')) ?? 'all');
 	let tabCounts = $state<Schemas['RequestCountsResponse'] | null>(null);
 	let approvingAll = $state(false);
 	let items = $state<Schemas['View'][]>([]);
@@ -156,7 +157,7 @@
 		{/each}
 	</div>
 
-	{#if filter === 'unwatched'}<p class="text-sm text-muted-foreground">{t('requests.unwatched_hint')}</p>{/if}
+	{#if filter === 'unwatched'}<p class="text-sm text-muted-foreground">{auth.isAdmin ? t('requests.unwatched_hint') : t('requests.unwatched_hint_mine')}</p>{/if}
 	{#if error}<p class="text-sm text-destructive">{error}</p>{/if}
 
 	{#if loading}

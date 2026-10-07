@@ -1785,7 +1785,7 @@ export interface components {
             pending: number;
             /**
              * Format: int64
-             * @description Admins: available requests their requester never watched
+             * @description Available requests their requester never watched (yours; an admin sees everyone's)
              */
             unwatched: number;
         };

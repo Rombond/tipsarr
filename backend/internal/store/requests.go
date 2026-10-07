@@ -92,7 +92,7 @@ type RequestFilter struct {
 	Statuses    []string
 	MediaType   string
 	TMDBID      int64
-	// Unwatched keeps what is available but its requester never watched (admin clean-up view).
+	// Unwatched keeps what is available but its requester never watched.
 	Unwatched  bool
 	Take, Skip int
 }
@@ -103,9 +103,13 @@ const unwatchedByRequester = `?TableAlias.status = 'available' AND ?TableAlias.r
 	`AND NOT EXISTS (SELECT 1 FROM watch_history h WHERE h.user_id = ?TableAlias.requested_by AND h.media_type = ?TableAlias.media_type AND h.tmdb_id = ?TableAlias.tmdb_id) ` +
 	`AND NOT EXISTS (SELECT 1 FROM watch_events e WHERE e.user_id = ?TableAlias.requested_by AND e.media_type = ?TableAlias.media_type AND e.tmdb_id = ?TableAlias.tmdb_id AND e.seconds >= 60)`
 
-// CountUnwatchedRequests counts what the "not watched" view lists.
-func (s *Store) CountUnwatchedRequests(ctx context.Context) (int, error) {
-	n, err := s.DB.NewSelect().Model((*Request)(nil)).Where(unwatchedByRequester).Count(ctx)
+// CountUnwatchedRequests counts what the "not watched" view lists (one requester, or everyone when userID is empty).
+func (s *Store) CountUnwatchedRequests(ctx context.Context, userID string) (int, error) {
+	q := s.DB.NewSelect().Model((*Request)(nil)).Where(unwatchedByRequester)
+	if userID != "" {
+		q = q.Where("?TableAlias.requested_by = ?", userID)
+	}
+	n, err := q.Count(ctx)
 	return int(n), err
 }
 

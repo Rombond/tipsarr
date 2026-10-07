@@ -740,7 +740,7 @@ func TestDefaultLanguage(t *testing.T) {
 	}
 }
 
-// Admins can list available requests whose requester never watched the title.
+// A person can list their available requests they never watched; an admin everyone's.
 func TestUnwatchedRequests(t *testing.T) {
 	jfBoxed.Store(false)
 	e := newEnv(t, true)
@@ -767,9 +767,22 @@ func TestUnwatchedRequests(t *testing.T) {
 	if !strings.Contains(body, `"total":1`) || !strings.Contains(body, `"id":"r-bob"`) || strings.Contains(body, "r-alice") || strings.Contains(body, "r-import") {
 		t.Fatalf("unwatched = %s", body)
 	}
+	// a person sees their own, and only their own
 	_, body = call(t, e.app, "GET", "/api/v1/requests?filter=unwatched", "", bob)
+	if !strings.Contains(body, `"total":1`) || !strings.Contains(body, `"id":"r-bob"`) {
+		t.Fatalf("bob's own unwatched requests: %s", body)
+	}
+	_, body = call(t, e.app, "GET", "/api/v1/requests?filter=unwatched&user="+aliceID, "", admin)
 	if !strings.Contains(body, `"total":0`) {
-		t.Fatalf("a user sees no clean-up view: %s", body)
+		t.Fatalf("admin looking at alice: %s", body)
+	}
+	_, body = call(t, e.app, "GET", "/api/v1/requests?filter=unwatched&user="+bobID, "", admin)
+	if !strings.Contains(body, `"total":1`) {
+		t.Fatalf("admin looking at bob: %s", body)
+	}
+	_, body = call(t, e.app, "GET", "/api/v1/requests/counts", "", bob)
+	if !strings.Contains(body, `"unwatched":1`) {
+		t.Fatalf("bob's count: %s", body)
 	}
 	_, body = call(t, e.app, "GET", "/api/v1/requests/counts", "", admin)
 	if !strings.Contains(body, `"unwatched":1`) {

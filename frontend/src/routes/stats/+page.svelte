@@ -2,7 +2,8 @@
 	import { onMount } from 'svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { i18n } from '$lib/i18n/index.svelte';
-	import { api, unwrap, errorText, type Schemas } from '$lib/api/client';
+	import { api, unwrap, errorText, imageUrl, type Schemas } from '$lib/api/client';
+	import { fmtDate } from '$lib/i18n/format';
 	import { auth } from '$lib/stores/auth.svelte';
 	import BarChart from '$lib/components/stats/bar-chart.svelte';
 	import MediaCard from '$lib/components/media/media-card.svelte';
@@ -19,6 +20,8 @@
 	let user = $state(''); // '' = me, 'all' = everyone, else a user id (admins)
 	let period = $state<Period>('all');
 	let report = $state<Schemas['StatsReport'] | null>(null);
+	let unwatched = $state<Schemas['View'][]>([]);
+	let unwatchedTotal = $state(0);
 	let users = $state<Schemas['User'][]>([]);
 	let jellyfinLink = $state('');
 	let loading = $state(true);
@@ -29,6 +32,11 @@
 		error = null;
 		try {
 			report = await unwrap(api.GET('/stats', { params: { query: { user: user || undefined, period } } }));
+			// what they asked for, is available, and never watched: an admin looking at everyone sees everyone's
+			const who = user === 'all' ? undefined : user || auth.user?.id;
+			const mine = await unwrap(api.GET('/requests', { params: { query: { filter: 'unwatched', user: who, take: 30 } } })).catch(() => null);
+			unwatched = mine?.items ?? [];
+			unwatchedTotal = mine?.total ?? 0;
 		} catch (e) {
 			error = errorText(e);
 		} finally {
@@ -196,6 +204,37 @@
 				{/if}
 			</div>
 
+		{/if}
+
+		{#if unwatched.length}
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('stats.unwatched_title')}</CardTitle>
+					<CardDescription>{user === '' || !auth.isAdmin ? t('stats.unwatched_mine') : t('stats.unwatched_others')}</CardDescription>
+				</CardHeader>
+				<CardContent class="grid gap-2">
+					{#each unwatched as r (r.id)}
+						<a href="/media/{r.type}/{r.tmdbId}" class="flex items-center gap-3 rounded-lg border border-border p-2 hover:bg-accent">
+							<div class="h-14 w-10 shrink-0 overflow-hidden rounded bg-muted">
+								{#if r.posterPath}<img src={imageUrl(r.posterPath, 'w92')} alt="" loading="lazy" class="h-full w-full object-cover" />{/if}
+							</div>
+							<div class="min-w-0 flex-1">
+								<p class="truncate text-sm font-medium">{r.title}</p>
+								<p class="truncate text-xs text-muted-foreground">
+									{r.type === 'tv' ? t('type.tv_short') : t('type.movie')}
+									{#if user === 'all' || (auth.isAdmin && user !== '')} · {r.requestedBy?.name ?? ''}{/if}
+									· {t('stats.unwatched_since', { date: fmtDate(r.updatedAt) })}
+								</p>
+							</div>
+						</a>
+					{/each}
+					{#if unwatchedTotal > unwatched.length}
+						<a href="/requests?filter=unwatched" class="text-sm text-muted-foreground underline-offset-4 hover:underline">{t('stats.unwatched_more', { count: unwatchedTotal - unwatched.length })}</a>
+					{:else}
+						<a href="/requests?filter=unwatched" class="text-sm text-muted-foreground underline-offset-4 hover:underline">{t('stats.unwatched_open')}</a>
+					{/if}
+				</CardContent>
+			</Card>
 		{/if}
 	{/if}
 </div>
