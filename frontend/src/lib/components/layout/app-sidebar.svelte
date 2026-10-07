@@ -22,11 +22,13 @@
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import MonitorIcon from '@lucide/svelte/icons/monitor';
+	import LibraryIcon from '@lucide/svelte/icons/library-big';
 
 	type NavItem = { href: string; key: Key; icon: typeof CompassIcon };
 	const browse: NavItem[] = [
 		{ href: '/discover', key: 'nav.discover', icon: CompassIcon },
 		{ href: '/boxoffice', key: 'nav.boxoffice', icon: TicketIcon },
+		{ href: '/library', key: 'nav.library', icon: LibraryIcon },
 		{ href: '/requests', key: 'nav.requests', icon: ListIcon },
 		{ href: '/watchlist', key: 'nav.watchlist', icon: BookmarkIcon },
 		{ href: '/issues', key: 'nav.issues', icon: FlagIcon },
