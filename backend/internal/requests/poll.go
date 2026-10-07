@@ -37,10 +37,7 @@ func (s *Service) Poll(ctx context.Context) (int, error) {
 			}
 			continue
 		}
-		byMedia := map[int]servarr.QueueItem{}
-		for _, q := range queue {
-			byMedia[q.MediaID] = q
-		}
+		byMedia := servarr.AggregateQueue(queue)
 		for i := range reqs {
 			if err := s.pollOne(ctx, client, &reqs[i], byMedia); err != nil && firstErr == nil {
 				firstErr = err

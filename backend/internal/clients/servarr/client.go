@@ -228,3 +228,25 @@ func (c *Client) DeleteMedia(ctx context.Context, id int) error {
 	}
 	return c.send(ctx, http.MethodDelete, fmt.Sprintf("/movie/%d?deleteFiles=false&addImportExclusion=false", id), nil, nil)
 }
+
+// AggregateQueue folds the queue into one entry per movie/series: a show downloading several
+// episodes or season packs at once is one download as far as progress goes (sizes add up, the
+// ETA is the longest one). Without this the last queue record would win, and a record that has
+// just started shows the whole show at 0%.
+func AggregateQueue(items []QueueItem) map[int]QueueItem {
+	out := map[int]QueueItem{}
+	for _, q := range items {
+		cur, ok := out[q.MediaID]
+		if !ok {
+			out[q.MediaID] = q
+			continue
+		}
+		if q.ETASeconds() > cur.ETASeconds() {
+			cur.TimeLeft = q.TimeLeft
+		}
+		cur.Size += q.Size
+		cur.SizeLeft += q.SizeLeft
+		out[q.MediaID] = cur
+	}
+	return out
+}
