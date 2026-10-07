@@ -33,8 +33,7 @@
 	let flow: { start: () => void } | undefined = $state();
 	let flowBusy = $state(false);
 	function request(i: MediaItem) {
-		if (i.type === 'tv') return goto(`/media/tv/${i.tmdbId}`); // seasons are chosen on the details page
-		flow?.start(); // the same request dialog as everywhere (quality profile...)
+		flow?.start(); // the same request dialog as everywhere (seasons of a show, quality profile...)
 	}
 </script>
 
@@ -72,7 +71,7 @@
 			<div class="flex gap-2 pt-1">
 				<Button size="sm" onclick={() => goto(`/media/${current.type}/${current.tmdbId}`)}>{t('common.details')}</Button>
 				{#if current.availability !== 'available' && !status(current)}
-					<Button size="sm" variant="secondary" onclick={() => request(current)}>{current.type === 'tv' ? t('hero.choose_seasons') : t('media.request')}</Button>
+					<Button size="sm" variant="secondary" onclick={() => request(current)}>{t('media.request')}</Button>
 				{:else if status(current)}
 					<Button size="sm" variant="secondary" disabled>{status(current) === 'pending' ? t('media.requested') : t('media.approved')}</Button>
 				{/if}

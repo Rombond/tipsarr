@@ -174,6 +174,9 @@ export const en = {
 	"discover.popular_movies": "Popular movies",
 	"discover.popular_tv": "Popular TV",
 	"discover.upcoming": "Upcoming movies",
+	"discover.trending_hint": "What people are watching and searching for this week on TMDB, movies and shows together. It changes quickly.",
+	"discover.popular_hint": "The most popular titles on TMDB right now, a score that mixes views, votes, watchlists and release date. It moves slowly: the same titles stay for a while.",
+	"discover.upcoming_hint": "Movies that are about to be released.",
 
 	"hero.aria": "Featured titles",
 	"hero.show": "Show {title}",

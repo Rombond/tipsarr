@@ -68,12 +68,7 @@
 				<Dialog.Footer class="gap-2">
 					<Button variant="outline" href={detailsUrl} onclick={() => onclose?.()}>{t('modal.more_details')}</Button>
 					{#if item.availability !== 'available' && status === null}
-						{#if item.type === 'tv'}
-							<!-- seasons are picked on the details page: this only navigates -->
-							<Button href={detailsUrl} onclick={() => onclose?.()}>{t('hero.choose_seasons')}</Button>
-						{:else}
-							<Button disabled={busy} onclick={() => flow?.start()}>{busy ? t('media.requesting') : t('media.request')}</Button>
-						{/if}
+						<Button disabled={busy} onclick={() => flow?.start()}>{busy ? t('media.requesting') : t('media.request')}</Button>
 					{/if}
 				</Dialog.Footer>
 			</div>

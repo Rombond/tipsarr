@@ -17,8 +17,11 @@
 		onSelect,
 		onRetry,
 		onDismiss,
+		href,
 	}: {
 		title: string;
+		/** Makes the title a link to the full list. */
+		href?: string;
 		items?: MediaItem[];
 		loading?: boolean;
 		error?: Error | null;
@@ -46,7 +49,11 @@
 
 <section class="grid gap-2">
 	<div class="flex items-center justify-between">
-		<h2 class="font-semibold text-lg">{title}</h2>
+		<h2 class="font-semibold text-lg">
+			{#if href}
+				<a {href} class="group/title inline-flex items-center gap-1 hover:underline focus-visible:underline">{title}<ChevronRightIcon class="size-5 text-muted-foreground transition-transform group-hover/title:translate-x-0.5" /></a>
+			{:else}{title}{/if}
+		</h2>
 		<div class="flex gap-1 [@media(hover:none)]:hidden">
 			<Button variant="outline" size="icon-sm" aria-label={t('common.scroll_left')} onclick={() => scrollBy(-1)}>
 				<ChevronLeftIcon />
