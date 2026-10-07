@@ -78,6 +78,70 @@ func (s *Service) Movie(ctx context.Context, tmdbID int) MovieScores {
 	return scores
 }
 
+const (
+	batchLimit    = 40
+	batchWait     = 8 * time.Second // an answer is never held longer than this; slower lookups finish in the background
+	batchParallel = 4
+	lookupBudget  = 20 * time.Second
+)
+
+// Movies returns the scores of several movies at once (for the posters of a page). Scores that are
+// not remembered yet are looked up a few at a time; whatever is not ready within a few seconds is
+// left out of the answer, and keeps being fetched so the next request finds it.
+func (s *Service) Movies(ctx context.Context, ids []int) map[int]MovieScores {
+	out := map[int]MovieScores{}
+	if len(ids) > batchLimit {
+		ids = ids[:batchLimit]
+	}
+	var todo []int
+	s.mu.Lock()
+	for _, id := range ids {
+		if e, ok := s.cache[id]; ok && time.Since(e.at) < e.ttl {
+			out[id] = e.scores
+		} else {
+			todo = append(todo, id)
+		}
+	}
+	s.mu.Unlock()
+	if len(todo) == 0 {
+		return out
+	}
+
+	type result struct {
+		id     int
+		scores MovieScores
+	}
+	results := make(chan result, len(todo))
+	bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), lookupBudget)
+	go func() {
+		defer cancel()
+		sem := make(chan struct{}, batchParallel)
+		var wg sync.WaitGroup
+		for _, id := range todo {
+			wg.Add(1)
+			sem <- struct{}{}
+			go func() {
+				defer wg.Done()
+				defer func() { <-sem }()
+				results <- result{id, s.Movie(bg, id)}
+			}()
+		}
+		wg.Wait()
+	}()
+	timeout := time.After(batchWait)
+	for range todo {
+		select {
+		case r := <-results:
+			out[r.id] = r.scores
+		case <-timeout:
+			return out
+		case <-ctx.Done():
+			return out
+		}
+	}
+	return out
+}
+
 // Forget drops what is remembered about a movie (tests).
 func (s *Service) Forget(tmdbID int) {
 	s.mu.Lock()

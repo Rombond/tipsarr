@@ -775,6 +775,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ratings/movies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Scores of several movies at once, for the posters of a page
+         * @description `ids` is a comma-separated list of TMDB ids (at most 40). Movies whose scores are not ready within a few seconds are left out; ask again later.
+         */
+        get: operations["moviesRatings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/requests": {
         parameters: {
             query?: never;
@@ -1648,6 +1668,11 @@ export interface components {
         PrefsBody: {
             /** @description TMDB language, e.g. fr-FR or fr (empty = English) */
             language?: string;
+            /**
+             * @description Score shown on posters (empty = tmdb)
+             * @enum {string}
+             */
+            ratingSource?: "tmdb" | "imdb" | "metacritic" | "rottenTomatoes" | "";
             /** @description ISO 3166 country, e.g. FR (empty = none). Used for release dates and the box-office region */
             region?: string;
         };
@@ -1707,6 +1732,7 @@ export interface components {
             /** Format: int64 */
             lastLoginAt: number;
             name: string;
+            ratingSource: string;
             region: string;
             /** @enum {string} */
             role: "admin" | "user";
@@ -2077,6 +2103,7 @@ export interface components {
             /** Format: int64 */
             lastLoginAt: number;
             name: string;
+            ratingSource: string;
             region: string;
             role: string;
         };
@@ -5241,6 +5268,75 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    moviesRatings: {
+        parameters: {
+            query: {
+                ids: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["MovieScores"];
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -68,9 +68,9 @@ func (s *Store) CountAdmins(ctx context.Context) (int, error) {
 	return int(n), err
 }
 
-// UpdatePrefs changes only region and language (never the role, which a stale copy could revert).
+// UpdatePrefs changes only region, language and the rating source (never the role, which a stale copy could revert).
 func (s *Store) UpdatePrefs(ctx context.Context, u *User) error {
-	_, err := s.DB.NewUpdate().Model(u).Column("region", "language").WherePK().Exec(ctx)
+	_, err := s.DB.NewUpdate().Model(u).Column("region", "language", "rating_source").WherePK().Exec(ctx)
 	return err
 }
 

@@ -17,6 +17,8 @@ var (
 type prefsBody struct {
 	Region   *string `json:"region,omitempty" doc:"ISO 3166 country, e.g. FR (empty = none). Used for release dates and the box-office region"`
 	Language *string `json:"language,omitempty" doc:"TMDB language, e.g. fr-FR or fr (empty = English)"`
+	// RatingSource is the score shown on posters. Only movies have IMDb, Metacritic and Rotten Tomatoes scores (through Radarr); anything else shows TMDB.
+	RatingSource *string `json:"ratingSource,omitempty" enum:"tmdb,imdb,metacritic,rottenTomatoes," doc:"Score shown on posters (empty = tmdb)"`
 }
 
 func (b prefsBody) check() error {
@@ -26,7 +28,18 @@ func (b prefsBody) check() error {
 	if b.Language != nil && !languageRe.MatchString(*b.Language) {
 		return fail(422, "bad_language", "language must look like fr or fr-FR")
 	}
+	if b.RatingSource != nil && !validRatingSource(*b.RatingSource) {
+		return fail(422, "bad_rating_source", "ratingSource must be tmdb, imdb, metacritic or rottenTomatoes")
+	}
 	return nil
+}
+
+func validRatingSource(v string) bool {
+	switch v {
+	case "", "tmdb", "imdb", "metacritic", "rottenTomatoes":
+		return true
+	}
+	return false
 }
 
 func (b prefsBody) apply(u *store.User) {
@@ -35,6 +48,9 @@ func (b prefsBody) apply(u *store.User) {
 	}
 	if b.Language != nil {
 		u.Language = *b.Language
+	}
+	if b.RatingSource != nil {
+		u.RatingSource = *b.RatingSource
 	}
 }
 

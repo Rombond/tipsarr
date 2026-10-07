@@ -10,6 +10,8 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import StarIcon from '@lucide/svelte/icons/star';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { ratings, pick, type RatingSource } from '$lib/ratings.svelte';
 
 	let {
 		item,
@@ -54,6 +56,13 @@
 	const year = $derived(item.releaseDate?.slice(0, 4));
 	const shown = $derived(itemStatus({ availability: item.availability, requestStatus: requested ?? item.requestStatus }, { tracked: inRadarr, hasFile: radarrHasFile }));
 	const canQuickRequest = $derived(item.availability !== 'available' && shown === null);
+
+	// the score on the poster follows the person's choice (movies only; shows keep TMDB)
+	const source = $derived((auth.user?.ratingSource || 'tmdb') as RatingSource);
+	$effect(() => {
+		if (source !== 'tmdb' && item.type === 'movie') ratings.want(item.tmdbId);
+	});
+	const external = $derived(source !== 'tmdb' && item.type === 'movie' ? pick(source, ratings.scores[item.tmdbId]) : null);
 
 	function openDetails() {
 		goto(`/media/${item.type}/${item.tmdbId}`);
@@ -153,7 +162,11 @@
 	<p class="mt-1.5 truncate text-sm font-medium" title={item.title}>{item.title}</p>
 	<p class="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
 		{#if year}<span>{year}</span>{/if}
-		{#if item.voteAverage}<span class="inline-flex items-center gap-0.5" title={t('card.rating_hint')}><StarIcon class="size-3 fill-amber-400 text-amber-400" />{item.voteAverage.toFixed(1)}</span>{/if}
+		{#if external}
+			<span class="inline-flex items-center gap-1" title={t('card.rating_source_hint', { source: external.label })}><span class="rounded px-1 text-[9px] leading-4 font-extrabold {external.tone}">{external.label}</span>{external.text}</span>
+		{:else if item.voteAverage}
+			<span class="inline-flex items-center gap-0.5" title={t('card.rating_hint')}><StarIcon class="size-3 fill-amber-400 text-amber-400" />{item.voteAverage.toFixed(1)}</span>
+		{/if}
 	</p>
 	{#if note}<p class="truncate text-xs text-muted-foreground">{note}</p>{/if}
 </div>

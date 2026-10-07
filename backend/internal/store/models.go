@@ -10,13 +10,15 @@ const (
 type User struct {
 	bun.BaseModel `bun:"table:users"`
 
-	ID          string `bun:"id,pk" json:"id"` // Jellyfin user id
-	Name        string `bun:"name" json:"name"`
-	Role        string `bun:"role" json:"role"`
-	Region      string `bun:"region" json:"region"`
-	Language    string `bun:"language" json:"language"`
-	CreatedAt   int64  `bun:"created_at" json:"createdAt"`
-	LastLoginAt int64  `bun:"last_login_at" json:"lastLoginAt"`
+	ID       string `bun:"id,pk" json:"id"` // Jellyfin user id
+	Name     string `bun:"name" json:"name"`
+	Role     string `bun:"role" json:"role"`
+	Region   string `bun:"region" json:"region"`
+	Language string `bun:"language" json:"language"`
+	// RatingSource is the score shown on posters: tmdb, imdb, metacritic or rottenTomatoes ("" = tmdb)
+	RatingSource string `bun:"rating_source" json:"ratingSource"`
+	CreatedAt    int64  `bun:"created_at" json:"createdAt"`
+	LastLoginAt  int64  `bun:"last_login_at" json:"lastLoginAt"`
 }
 
 type Session struct {

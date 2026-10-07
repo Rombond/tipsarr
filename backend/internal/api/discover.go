@@ -6,6 +6,8 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/ratings"
 	"log/slog"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/danielgtaylor/huma/v2"
@@ -141,6 +143,34 @@ func registerDiscover(api huma.API, d Deps) {
 			return nil, err
 		}
 		return &struct{ Body ratings.MovieScores }{d.Ratings.Movie(ctx, in.ID)}, nil
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "moviesRatings", Method: http.MethodGet, Path: "/ratings/movies",
+		Summary:     "Scores of several movies at once, for the posters of a page",
+		Description: "`ids` is a comma-separated list of TMDB ids (at most 40). Movies whose scores are not ready within a few seconds are left out; ask again later.",
+		Tags:        []string{"media"}, Security: sec, Errors: errs,
+	}, func(ctx context.Context, in *struct {
+		IDs string `query:"ids" required:"true" maxLength:"400"`
+	}) (*struct {
+		Body map[string]ratings.MovieScores
+	}, error) {
+		if _, err := requireUser(ctx); err != nil {
+			return nil, err
+		}
+		var ids []int
+		for _, f := range strings.Split(in.IDs, ",") {
+			if n, err := strconv.Atoi(strings.TrimSpace(f)); err == nil && n > 0 {
+				ids = append(ids, n)
+			}
+		}
+		out := map[string]ratings.MovieScores{}
+		for id, sc := range d.Ratings.Movies(ctx, ids) {
+			out[strconv.Itoa(id)] = sc
+		}
+		return &struct {
+			Body map[string]ratings.MovieScores
+		}{out}, nil
 	})
 
 	huma.Register(api, huma.Operation{

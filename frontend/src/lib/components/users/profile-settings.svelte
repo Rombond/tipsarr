@@ -7,10 +7,12 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
+	import { RATING_SOURCES } from '$lib/ratings.svelte';
 
 	// the stored value is a TMDB language tag (fr-FR) or '' for "follow the browser"
 	let language = $state(auth.user?.language ? (LOCALES.find((l) => l.code === auth.user!.language.slice(0, 2))?.tag ?? '') : '');
 	let region = $state(auth.user?.region ?? '');
+	let ratingSource = $state(auth.user?.ratingSource || 'tmdb');
 	let error = $state<string | null>(null);
 	let saving = $state(false);
 	let hidden = $state<Schemas['Item'][]>([]);
@@ -28,7 +30,7 @@
 		saving = true;
 		error = null;
 		try {
-			auth.user = await unwrap(api.PATCH('/me', { body: { region: region.trim().toUpperCase(), language } }));
+			auth.user = await unwrap(api.PATCH('/me', { body: { region: region.trim().toUpperCase(), language, ratingSource: ratingSource === 'tmdb' ? '' : (ratingSource as 'imdb' | 'metacritic' | 'rottenTomatoes') } }));
 			// the interface follows immediately
 			if (language) i18n.set(LOCALES.find((l) => l.tag === language)!.code as Locale);
 			else i18n.useBrowser();
@@ -61,6 +63,11 @@
 				<div class="grid gap-1.5 text-sm">
 					{t('profile.language')}
 					<SimpleSelect label={t('profile.language')} value={language} options={languageOptions} onchange={(v) => (language = v)} class="w-full" />
+				</div>
+				<div class="grid gap-1.5 text-sm">
+					{t('profile.rating_source')}
+					<SimpleSelect label={t('profile.rating_source')} value={ratingSource} options={RATING_SOURCES} onchange={(v) => (ratingSource = v)} class="w-full" />
+					<span class="text-xs text-muted-foreground">{t('profile.rating_source_hint')}</span>
 				</div>
 				<label class="grid gap-1.5 text-sm">
 					{t('profile.region')}

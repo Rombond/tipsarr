@@ -31,3 +31,39 @@ func TestMovieRatingsFromRadarr(t *testing.T) {
 		t.Fatalf("a missing score must be left out: %s", body)
 	}
 }
+
+// Posters ask for many movies at once; the answer is keyed by TMDB id.
+func TestRatingsOfSeveralMovies(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	addInstance(t, e, admin, "radarr", newFakeArr(t, "radarr"))
+	resp, body := call(t, e.app, "GET", "/api/v1/ratings/movies?ids=5,6,x,0", "", bob)
+	if resp.StatusCode != 200 || !strings.Contains(body, `"5":{`) || !strings.Contains(body, `"imdb":{"value":7.8`) || !strings.Contains(body, `"6":{`) {
+		t.Fatalf("batch = %d %s", resp.StatusCode, body)
+	}
+	if resp, _ := call(t, e.app, "GET", "/api/v1/ratings/movies?ids=5", ""); resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("anonymous = %d", resp.StatusCode)
+	}
+}
+
+// Each person picks which score they see on posters; anything else is refused.
+func TestRatingSourcePreference(t *testing.T) {
+	e := newEnv(t, true)
+	_, _, bob := setupUsers(t, e)
+	resp, body := call(t, e.app, "PATCH", "/api/v1/me", `{"ratingSource":"imdb"}`, bob)
+	if resp.StatusCode != 200 || !strings.Contains(body, `"ratingSource":"imdb"`) {
+		t.Fatalf("set = %d %s", resp.StatusCode, body)
+	}
+	if resp, body := call(t, e.app, "PATCH", "/api/v1/me", `{"ratingSource":"letterboxd"}`, bob); resp.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("invalid = %d %s", resp.StatusCode, body)
+	}
+	_, body = call(t, e.app, "GET", "/api/v1/me", "", bob)
+	if !strings.Contains(body, `"ratingSource":"imdb"`) {
+		t.Fatalf("not kept: %s", body)
+	}
+	call(t, e.app, "PATCH", "/api/v1/me", `{"ratingSource":""}`, bob)
+	_, body = call(t, e.app, "GET", "/api/v1/me", "", bob)
+	if !strings.Contains(body, `"ratingSource":""`) {
+		t.Fatalf("not cleared: %s", body)
+	}
+}

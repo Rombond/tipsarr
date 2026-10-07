@@ -29,15 +29,16 @@ type profileStats struct {
 }
 
 type profileView struct {
-	ID          string       `json:"id"`
-	Name        string       `json:"name"`
-	Role        string       `json:"role" enum:"admin,user"`
-	Region      string       `json:"region"`
-	Language    string       `json:"language"`
-	CreatedAt   int64        `json:"createdAt"`
-	LastLoginAt int64        `json:"lastLoginAt"`
-	Stats       profileStats `json:"stats"`
-	HasUpload   bool         `json:"hasUploadedAvatar" doc:"The person uploaded their own picture"`
+	ID           string       `json:"id"`
+	Name         string       `json:"name"`
+	Role         string       `json:"role" enum:"admin,user"`
+	Region       string       `json:"region"`
+	Language     string       `json:"language"`
+	RatingSource string       `json:"ratingSource"`
+	CreatedAt    int64        `json:"createdAt"`
+	LastLoginAt  int64        `json:"lastLoginAt"`
+	Stats        profileStats `json:"stats"`
+	HasUpload    bool         `json:"hasUploadedAvatar" doc:"The person uploaded their own picture"`
 }
 
 func registerProfile(api huma.API, d Deps) {
@@ -73,7 +74,7 @@ func registerProfile(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
-		out := profileView{ID: u.ID, Name: u.Name, Role: u.Role, Region: u.Region, Language: u.Language, CreatedAt: u.CreatedAt, LastLoginAt: u.LastLoginAt,
+		out := profileView{ID: u.ID, Name: u.Name, Role: u.Role, Region: u.Region, Language: u.Language, RatingSource: u.RatingSource, CreatedAt: u.CreatedAt, LastLoginAt: u.LastLoginAt,
 			Stats: profileStats{Requests: rs.Total, Movies: rs.Movies, Shows: rs.Shows, Pending: rs.Pending, Approved: rs.Approved,
 				Available: rs.Available, Declined: rs.Declined, Failed: rs.Failed, Watchlist: len(marks), Watched: watched}}
 		out.HasUpload = d.Avatars != nil && d.Avatars.HasUpload(u.ID)
