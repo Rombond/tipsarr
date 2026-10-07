@@ -162,7 +162,12 @@ type QueueItem struct {
 	SizeLeft float64
 	TimeLeft string // "hh:mm:ss" as reported by the app
 	Status   string
+	Season   int // Sonarr: the season this record belongs to (0 = unknown)
 }
+
+// Downloading is true while the download client is really transferring it (not merely queued,
+// paused or waiting to be imported).
+func (q QueueItem) Downloading() bool { return q.Status == "downloading" }
 
 // Percent is the download progress 0-100.
 func (q QueueItem) Percent() int {
@@ -196,6 +201,11 @@ type queueResponse struct {
 		SizeLeft float64 `json:"sizeleft"`
 		TimeLeft string  `json:"timeleft"`
 		Status   string  `json:"status"`
+		// Sonarr: the season of the episode this record downloads (needs includeEpisode)
+		SeasonNumber int `json:"seasonNumber"`
+		Episode      struct {
+			SeasonNumber int `json:"seasonNumber"`
+		} `json:"episode"`
 	} `json:"records"`
 	TotalRecords int `json:"totalRecords"`
 }
@@ -203,7 +213,7 @@ type queueResponse struct {
 // Queue lists active downloads (first 500).
 func (c *Client) Queue(ctx context.Context) ([]QueueItem, error) {
 	var resp queueResponse
-	if err := c.get(ctx, "/queue?page=1&pageSize=500", &resp); err != nil {
+	if err := c.get(ctx, "/queue?page=1&pageSize=500&includeEpisode=true", &resp); err != nil {
 		return nil, err
 	}
 	out := make([]QueueItem, 0, len(resp.Records))
@@ -215,7 +225,11 @@ func (c *Client) Queue(ctx context.Context) ([]QueueItem, error) {
 		if id == 0 {
 			continue
 		}
-		out = append(out, QueueItem{MediaID: id, Title: r.Title, Size: r.Size, SizeLeft: r.SizeLeft, TimeLeft: r.TimeLeft, Status: r.Status})
+		season := r.SeasonNumber
+		if season == 0 {
+			season = r.Episode.SeasonNumber
+		}
+		out = append(out, QueueItem{MediaID: id, Title: r.Title, Size: r.Size, SizeLeft: r.SizeLeft, TimeLeft: r.TimeLeft, Status: r.Status, Season: season})
 	}
 	return out, nil
 }
@@ -227,26 +241,4 @@ func (c *Client) DeleteMedia(ctx context.Context, id int) error {
 		return c.send(ctx, http.MethodDelete, fmt.Sprintf("/series/%d?deleteFiles=false&addImportListExclusion=false", id), nil, nil)
 	}
 	return c.send(ctx, http.MethodDelete, fmt.Sprintf("/movie/%d?deleteFiles=false&addImportExclusion=false", id), nil, nil)
-}
-
-// AggregateQueue folds the queue into one entry per movie/series: a show downloading several
-// episodes or season packs at once is one download as far as progress goes (sizes add up, the
-// ETA is the longest one). Without this the last queue record would win, and a record that has
-// just started shows the whole show at 0%.
-func AggregateQueue(items []QueueItem) map[int]QueueItem {
-	out := map[int]QueueItem{}
-	for _, q := range items {
-		cur, ok := out[q.MediaID]
-		if !ok {
-			out[q.MediaID] = q
-			continue
-		}
-		if q.ETASeconds() > cur.ETASeconds() {
-			cur.TimeLeft = q.TimeLeft
-		}
-		cur.Size += q.Size
-		cur.SizeLeft += q.SizeLeft
-		out[q.MediaID] = cur
-	}
-	return out
 }

@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"slices"
 	"sort"
 	"strconv"
 	"sync"
@@ -48,10 +47,11 @@ type Service struct {
 
 	mu       sync.Mutex
 	progress map[string]Progress
+	seasons  map[string][]SeasonProgress // shows: per-season completion while in flight
 }
 
 func New(s *store.Store, m *media.Service, h *events.Hub, n *notify.Service, dryRun bool) *Service {
-	svc := &Service{store: s, media: m, hub: h, notify: n, dryRun: dryRun, progress: map[string]Progress{}}
+	svc := &Service{store: s, media: m, hub: h, notify: n, dryRun: dryRun, progress: map[string]Progress{}, seasons: map[string][]SeasonProgress{}}
 	svc.newServarr = func(in *store.ServarrInstance) *servarr.Client {
 		return servarr.New(in.Kind, in.URL, in.APIKey, dryRun)
 	}
@@ -60,17 +60,12 @@ func New(s *store.Store, m *media.Service, h *events.Hub, n *notify.Service, dry
 
 type SeasonProgress struct {
 	Season  int `json:"season"`
-	Percent int `json:"percent" doc:"Episodes Sonarr already has, as a percentage of the season"`
+	Percent int `json:"percent" doc:"Episodes Sonarr has plus what is being downloaded, as a percentage of the season"`
 }
 
 type Progress struct {
-	Percent    int              `json:"percent"`
-	ETASeconds int              `json:"etaSeconds"`
-	Seasons    []SeasonProgress `json:"seasons,omitempty" doc:"Shows only: per-season completion"`
-}
-
-func (p Progress) same(o Progress) bool {
-	return p.Percent == o.Percent && p.ETASeconds == o.ETASeconds && slices.Equal(p.Seasons, o.Seasons)
+	Percent    int `json:"percent"`
+	ETASeconds int `json:"etaSeconds"`
 }
 
 type UserRef struct {
@@ -80,26 +75,27 @@ type UserRef struct {
 
 // View is the API shape of a request.
 type View struct {
-	ID               string    `json:"id"`
-	Type             string    `json:"type" enum:"movie,tv"`
-	TMDBID           int       `json:"tmdbId"`
-	Title            string    `json:"title"`
-	PosterPath       string    `json:"posterPath,omitempty"`
-	ReleaseDate      string    `json:"releaseDate,omitempty"`
-	Seasons          []int     `json:"seasons,omitempty"`
-	Status           string    `json:"status" enum:"pending,approved,declined,failed,available"`
-	Stage            string    `json:"stage" enum:"requested,approved,searching,downloading,available,declined,failed" doc:"User-facing lifecycle step"`
-	RequestedBy      UserRef   `json:"requestedBy"`
-	DecidedBy        *UserRef  `json:"decidedBy,omitempty"`
-	DeclineReason    string    `json:"declineReason,omitempty"`
-	DryRun           bool      `json:"dryRun" doc:"Approved in dry-run mode: nothing was sent to Radarr/Sonarr"`
-	Error            string    `json:"error,omitempty"`
-	QualityProfileID int       `json:"qualityProfileId,omitempty" doc:"Chosen quality profile (absent = the instance default)"`
-	RootFolder       string    `json:"rootFolder,omitempty" doc:"Chosen root folder (absent = the instance default)"`
-	Source           string    `json:"source,omitempty" doc:"Set when the request was imported from what Radarr/Sonarr already monitor"`
-	Progress         *Progress `json:"progress,omitempty"`
-	CreatedAt        int64     `json:"createdAt"`
-	UpdatedAt        int64     `json:"updatedAt"`
+	ID               string           `json:"id"`
+	Type             string           `json:"type" enum:"movie,tv"`
+	TMDBID           int              `json:"tmdbId"`
+	Title            string           `json:"title"`
+	PosterPath       string           `json:"posterPath,omitempty"`
+	ReleaseDate      string           `json:"releaseDate,omitempty"`
+	Seasons          []int            `json:"seasons,omitempty"`
+	Status           string           `json:"status" enum:"pending,approved,declined,failed,available"`
+	Stage            string           `json:"stage" enum:"requested,approved,searching,downloading,available,declined,failed" doc:"User-facing lifecycle step"`
+	RequestedBy      UserRef          `json:"requestedBy"`
+	DecidedBy        *UserRef         `json:"decidedBy,omitempty"`
+	DeclineReason    string           `json:"declineReason,omitempty"`
+	DryRun           bool             `json:"dryRun" doc:"Approved in dry-run mode: nothing was sent to Radarr/Sonarr"`
+	Error            string           `json:"error,omitempty"`
+	QualityProfileID int              `json:"qualityProfileId,omitempty" doc:"Chosen quality profile (absent = the instance default)"`
+	RootFolder       string           `json:"rootFolder,omitempty" doc:"Chosen root folder (absent = the instance default)"`
+	Source           string           `json:"source,omitempty" doc:"Set when the request was imported from what Radarr/Sonarr already monitor"`
+	Progress         *Progress        `json:"progress,omitempty"`
+	SeasonProgress   []SeasonProgress `json:"seasonProgress,omitempty" doc:"Shows only: completion per season"`
+	CreatedAt        int64            `json:"createdAt"`
+	UpdatedAt        int64            `json:"updatedAt"`
 }
 
 func (s *Service) stage(r *store.Request) (string, *Progress) {
@@ -151,7 +147,7 @@ func (s *Service) views(ctx context.Context, rows []store.Request) ([]View, erro
 			ID: r.ID, Type: r.MediaType, TMDBID: int(r.TMDBID), Title: r.Title, PosterPath: r.PosterPath,
 			ReleaseDate: r.ReleaseDate, Seasons: seasons[r.ID], Status: r.Status, Stage: stage,
 			RequestedBy: UserRef{ID: r.RequestedBy, Name: names[r.RequestedBy]}, DeclineReason: r.DeclineReason,
-			DryRun: r.DryRun == 1, Error: r.Error, Source: r.Source, QualityProfileID: r.ProfileID, RootFolder: r.RootFolder, Progress: prog, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+			DryRun: r.DryRun == 1, Error: r.Error, Source: r.Source, QualityProfileID: r.ProfileID, RootFolder: r.RootFolder, Progress: prog, SeasonProgress: s.seasonProgress(r.ID), CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
 		}
 		if r.DecidedBy != "" {
 			v.DecidedBy = &UserRef{ID: r.DecidedBy, Name: names[r.DecidedBy]}
@@ -516,9 +512,7 @@ func (s *Service) Delete(ctx context.Context, u *store.User, id string) error {
 	if err := s.store.DeleteRequest(ctx, id); err != nil {
 		return err
 	}
-	s.mu.Lock()
-	delete(s.progress, id)
-	s.mu.Unlock()
+	s.clearProgress(id)
 	s.hub.Publish("request.updated", r.RequestedBy, map[string]any{"id": id, "status": "deleted", "stage": "deleted"}, false)
 	return nil
 }
@@ -636,4 +630,10 @@ func (s *Service) UpdateOptions(ctx context.Context, u *store.User, id string, o
 		redact(v, u)
 	}
 	return v, err
+}
+
+func (s *Service) seasonProgress(id string) []SeasonProgress {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.seasons[id]
 }

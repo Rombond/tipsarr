@@ -159,18 +159,3 @@ func TestBadKeyIsError(t *testing.T) {
 		t.Fatal("expected 401 error")
 	}
 }
-
-func TestAggregateQueue(t *testing.T) {
-	got := AggregateQueue([]QueueItem{
-		{MediaID: 7, Size: 1000, SizeLeft: 0, TimeLeft: "00:00:00"},
-		{MediaID: 7, Size: 1000, SizeLeft: 500, TimeLeft: "00:10:00"},
-		{MediaID: 7, Size: 1000, SizeLeft: 1000, TimeLeft: "00:30:00"}, // just started: used to win and show 0%
-		{MediaID: 8, Size: 10, SizeLeft: 5},
-	})
-	if g := got[7]; g.Percent() != 50 || g.ETASeconds() != 1800 {
-		t.Fatalf("series = %d%% eta %d", g.Percent(), g.ETASeconds())
-	}
-	if got[8].Percent() != 50 {
-		t.Fatalf("movie = %d%%", got[8].Percent())
-	}
-}

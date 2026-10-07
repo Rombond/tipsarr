@@ -56,9 +56,9 @@
 			clearTimeout(timer);
 			timer = setTimeout(() => load(false), 250); // coalesce bursts
 		});
-		const offProgress = onEvent('request.progress', (d: { id: string; percent: number; etaSeconds: number; seasons?: { season: number; percent: number }[] }) => {
+		const offProgress = onEvent('request.progress', (d: { id: string; percent: number; etaSeconds: number) => {
 			items = items.map((r) =>
-				r.id === d.id ? { ...r, stage: 'downloading', progress: { percent: d.percent, etaSeconds: d.etaSeconds, seasons: d.seasons } } : r,
+				r.id === d.id ? { ...r, stage: 'downloading', progress: { percent: d.percent, etaSeconds: d.etaSeconds } } : r,
 			);
 		});
 		return () => {

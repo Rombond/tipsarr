@@ -1507,8 +1507,6 @@ export interface components {
             etaSeconds: number;
             /** Format: int64 */
             percent: number;
-            /** @description Shows only: per-season completion */
-            seasons?: components["schemas"]["SeasonProgress"][];
         };
         QualityProfile: {
             /** Format: int64 */
@@ -1607,7 +1605,7 @@ export interface components {
         SeasonProgress: {
             /**
              * Format: int64
-             * @description Episodes Sonarr already has, as a percentage of the season
+             * @description Episodes Sonarr has plus what is being downloaded, as a percentage of the season
              */
             percent: number;
             /** Format: int64 */
@@ -1759,6 +1757,8 @@ export interface components {
             requestedBy: components["schemas"]["UserRef"];
             /** @description Chosen root folder (absent = the instance default) */
             rootFolder?: string;
+            /** @description Shows only: completion per season */
+            seasonProgress?: components["schemas"]["SeasonProgress"][];
             seasons?: number[];
             /** @description Set when the request was imported from what Radarr/Sonarr already monitor */
             source?: string;

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/servarr"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
@@ -37,7 +38,10 @@ func (s *Service) Poll(ctx context.Context) (int, error) {
 			}
 			continue
 		}
-		byMedia := servarr.AggregateQueue(queue)
+		byMedia := map[int][]servarr.QueueItem{}
+		for _, q := range queue {
+			byMedia[q.MediaID] = append(byMedia[q.MediaID], q)
+		}
 		for i := range reqs {
 			if err := s.pollOne(ctx, client, &reqs[i], byMedia); err != nil && firstErr == nil {
 				firstErr = err
@@ -47,9 +51,10 @@ func (s *Service) Poll(ctx context.Context) (int, error) {
 	return len(inflight), firstErr
 }
 
-func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Request, queue map[int]servarr.QueueItem) error {
+func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Request, queue map[int][]servarr.QueueItem) error {
 	done := false
-	seriesPct := 0 // shows: the episodes Sonarr already has, as a percentage
+	recs := queue[int(r.ServarrID)]
+	total := combine(recs) // percent / ETA of what the download client is transferring
 	var seasons []SeasonProgress
 	var err error
 	if r.MediaType == "movie" {
@@ -61,13 +66,10 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 		var sr *servarr.Series
 		if sr, err = c.Series(ctx, int(r.ServarrID)); err == nil {
 			done = sr.Complete()
-			for _, sn := range sr.Seasons {
-				if n := sn.Statistics.EpisodeCount; sn.SeasonNumber > 0 && n > 0 {
-					seasons = append(seasons, SeasonProgress{Season: sn.SeasonNumber, Percent: min(100, sn.Statistics.EpisodeFileCount*100/n)})
-				}
-			}
-			if n := sr.Statistics.EpisodeCount; n > 0 {
-				seriesPct = min(99, sr.Statistics.EpisodeFileCount*100/n)
+			var pct int
+			pct, seasons = showProgress(sr, recs)
+			if len(recs) > 0 {
+				total.Percent = pct
 			}
 		}
 	}
@@ -98,40 +100,93 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 		return nil
 	}
 
-	q, queued := queue[int(r.ServarrID)]
-	// A show is "downloading" while anything is in the queue or some episodes already arrived (the
-	// real count comes from Sonarr); it is only "searching" while it has neither.
-	downloading := queued || seriesPct > 0
-	next := Progress{Percent: q.Percent(), ETASeconds: q.ETASeconds()}
-	if !queued {
-		next.Percent, next.ETASeconds = 0, 0
+	// "downloading" means the download client is really transferring it; a show with only some
+	// episodes on disk, or still looking for releases, is "searching".
+	downloading := false
+	for _, q := range recs {
+		downloading = downloading || q.Downloading()
 	}
-	if seriesPct > 0 {
-		next.Percent = seriesPct
-	}
-	next.Seasons = seasons
 	s.mu.Lock()
 	prev, had := s.progress[r.ID]
 	if downloading {
-		s.progress[r.ID] = next
+		s.progress[r.ID] = total
 	} else {
 		delete(s.progress, r.ID)
 	}
 	cur := s.progress[r.ID]
+	prevSeasons := s.seasons[r.ID]
+	if r.MediaType == "tv" {
+		s.seasons[r.ID] = seasons
+	}
 	s.mu.Unlock()
-	if downloading && (!had || !prev.same(cur)) {
-		s.hub.Publish("request.progress", r.RequestedBy, map[string]any{"id": r.ID, "percent": cur.Percent, "etaSeconds": cur.ETASeconds, "seasons": cur.Seasons}, false)
+	seasonsChanged := r.MediaType == "tv" && !slices.Equal(prevSeasons, seasons)
+	if downloading && (!had || prev != cur) {
+		s.hub.Publish("request.progress", r.RequestedBy, map[string]any{"id": r.ID, "percent": cur.Percent, "etaSeconds": cur.ETASeconds}, false)
 		if !had {
 			s.changed(ctx, r) // searching -> downloading
 		}
 	} else if !downloading && had {
 		s.changed(ctx, r) // download finished or paused: back to searching until files appear
 	}
+	if seasonsChanged && !(downloading && !had) {
+		s.changed(ctx, r) // clients refetch the per-season percentages
+	}
 	return nil
+}
+
+// combine adds up the queue records of one title: sizes sum, the ETA is the longest.
+func combine(recs []servarr.QueueItem) Progress {
+	var size, left float64
+	eta := 0
+	for _, q := range recs {
+		size += q.Size
+		left += q.SizeLeft
+		eta = max(eta, q.ETASeconds())
+	}
+	if size <= 0 {
+		return Progress{}
+	}
+	return Progress{Percent: int((size - left) / size * 100), ETASeconds: eta}
+}
+
+// showProgress works out completion per season and overall from what Sonarr already has plus
+// what the download client has transferred so far. Sonarr lists one queue record per episode
+// (a season pack repeats its size on every episode), so each record counts as one episode
+// completed to its own fraction.
+func showProgress(sr *servarr.Series, recs []servarr.QueueItem) (int, []SeasonProgress) {
+	frac := map[int]float64{}
+	var fracAll float64
+	for _, q := range recs {
+		if q.Size <= 0 {
+			continue
+		}
+		f := 1 - q.SizeLeft/q.Size
+		frac[q.Season] += f
+		fracAll += f
+	}
+	var out []SeasonProgress
+	for _, sn := range sr.Seasons {
+		n := sn.Statistics.EpisodeCount
+		if sn.SeasonNumber <= 0 || n <= 0 {
+			continue
+		}
+		have := float64(sn.Statistics.EpisodeFileCount) + frac[sn.SeasonNumber]
+		pct := min(100, int(have*100/float64(n)))
+		if sn.Statistics.EpisodeFileCount < n {
+			pct = min(99, pct)
+		}
+		out = append(out, SeasonProgress{Season: sn.SeasonNumber, Percent: pct})
+	}
+	total := 0
+	if n := sr.Statistics.EpisodeCount; n > 0 {
+		total = min(99, int((float64(sr.Statistics.EpisodeFileCount)+fracAll)*100/float64(n)))
+	}
+	return total, out
 }
 
 func (s *Service) clearProgress(id string) {
 	s.mu.Lock()
 	delete(s.progress, id)
+	delete(s.seasons, id)
 	s.mu.Unlock()
 }
