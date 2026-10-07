@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -120,4 +122,31 @@ func (c *Client) do(ctx context.Context, method, path string, body []byte, out a
 		return &statusError{code: resp.StatusCode}
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
+}
+
+// Image downloads an item's primary image (at most maxWidth pixels wide) and returns its bytes and content type.
+func (c *Client) Image(ctx context.Context, itemID, tag string, maxWidth int) ([]byte, string, error) {
+	q := url.Values{"maxWidth": {strconv.Itoa(maxWidth)}, "quality": {"85"}}
+	if tag != "" {
+		q.Set("tag", tag)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/Items/"+url.PathEscape(itemID)+"/Images/Primary?"+q.Encode(), nil)
+	if err != nil {
+		return nil, "", err
+	}
+	hdr := authHeader
+	if c.token != "" {
+		hdr += `, Token="` + c.token + `"`
+	}
+	req.Header.Set("Authorization", hdr)
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, "", fmt.Errorf("jellyfin unreachable: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return nil, "", &statusError{code: resp.StatusCode}
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20))
+	return body, resp.Header.Get("Content-Type"), err
 }

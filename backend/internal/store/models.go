@@ -52,6 +52,12 @@ type LibraryItem struct {
 	TMDBID     int64  `bun:"tmdb_id,pk"`
 	JellyfinID string `bun:"jellyfin_id"`
 	Title      string `bun:"title"`
+	Year       int    `bun:"year"`
+	RuntimeMin int    `bun:"runtime_min"`
+	Rating10   int    `bun:"rating10"`  // community rating x 10
+	AddedAt    int64  `bun:"added_at"`  // when Jellyfin first saw it (unix)
+	Genres     string `bun:"genres"`    // |Action|Comedy|
+	ImageTag   string `bun:"image_tag"` // Jellyfin's primary image tag (cache key for the poster)
 }
 
 type LibrarySeason struct {

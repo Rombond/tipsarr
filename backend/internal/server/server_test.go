@@ -88,12 +88,20 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 		}
 		_, _ = w.Write([]byte(`{"Id":"` + id + `","Name":"` + name + `","Policy":{"IsAdministrator":` + strconv.FormatBool(id == aliceID) + `,"IsDisabled":` + strconv.FormatBool(jfDisabled.Load() == id) + `}}`))
 	}))
+	mux.HandleFunc("GET /Items/{id}/Images/Primary", keyed(func(w http.ResponseWriter, r *http.Request) {
+		if r.PathValue("id") != "aaaa0000000000000000000000000001" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "image/jpeg")
+		_, _ = w.Write([]byte("JFPOSTER"))
+	}))
 	mux.HandleFunc("/Items", keyed(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Query().Get("IncludeItemTypes") {
 		case "Movie,Series":
-			writeItems(w, `{"Id":"jm1","Name":"Movie One","Type":"Movie","ProviderIds":{"Tmdb":"1"}},
+			writeItems(w, `{"Id":"aaaa0000000000000000000000000001","Name":"Movie One","Type":"Movie","ProviderIds":{"Tmdb":"1"},"Genres":["Action","Drama"],"ProductionYear":2024,"RunTimeTicks":72000000000,"CommunityRating":7.5,"DateCreated":"2026-09-01T10:00:00Z","ImageTags":{"Primary":"tg1"}},
 				{"Id":"jm9","Name":"No Tmdb","Type":"Movie","ProviderIds":{}},
-				{"Id":"js1","Name":"Show Two","Type":"Series","ProviderIds":{"Tmdb":"2"}}`)
+				{"Id":"js1","Name":"Show Two","Type":"Series","ProviderIds":{"Tmdb":"2"},"Genres":["Drama"],"ProductionYear":2023,"RunTimeTicks":27000000000,"CommunityRating":8.1,"DateCreated":"2026-09-10T10:00:00Z"}`)
 		case "Episode":
 			var eps []string
 			for i := 1; i <= 10; i++ { // season 1 complete, season 2 absent
@@ -105,7 +113,7 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 		}
 	}))
 	mux.HandleFunc("/Users/"+aliceID+"/Items", keyed(func(w http.ResponseWriter, r *http.Request) {
-		writeItems(w, `{"Id":"jm1","Type":"Movie","ProviderIds":{"Tmdb":"1"},"UserData":{"Played":true,"PlayCount":2,"LastPlayedDate":"2026-09-01T10:00:00Z"}},
+		writeItems(w, `{"Id":"aaaa0000000000000000000000000001","Type":"Movie","ProviderIds":{"Tmdb":"1"},"UserData":{"Played":true,"PlayCount":2,"LastPlayedDate":"2026-09-01T10:00:00Z"}},
 			{"Id":"e1","Type":"Episode","SeriesId":"js1","UserData":{"Played":true,"PlayCount":1,"LastPlayedDate":"2026-09-02T10:00:00Z"}},
 			{"Id":"e2","Type":"Episode","SeriesId":"js1","UserData":{"Played":true,"PlayCount":1,"LastPlayedDate":"2026-09-03T10:00:00Z"}},
 			{"Id":"eX","Type":"Episode","SeriesId":"unknown-series","UserData":{"Played":true,"PlayCount":1,"LastPlayedDate":"2026-09-03T10:00:00Z"}}`)
@@ -619,13 +627,13 @@ func TestLibrarySyncAndAvailability(t *testing.T) {
 	if md.TrailerKey != "OFFICIAL1" || md.CollectionBackdropPath != "/sagab.jpg" {
 		t.Fatalf("trailer/collection backdrop = %q %q", md.TrailerKey, md.CollectionBackdropPath)
 	}
-	if want := jf.URL + "/web/#/details?id=jm1"; md.WatchURL != want {
+	if want := jf.URL + "/web/#/details?id=aaaa0000000000000000000000000001"; md.WatchURL != want {
 		t.Fatalf("watch url = %q, want %q", md.WatchURL, want)
 	}
 	// a public URL (what browsers can reach) replaces the internal one in links
 	call(t, app, "PUT", "/api/v1/admin/settings", `{"jellyfinPublicUrl":"https://jf.example.org/"}`, admin)
 	_, body = call(t, app, "GET", "/api/v1/media/movie/1", "", bob)
-	if !strings.Contains(body, `"watchUrl":"https://jf.example.org/web/#/details?id=jm1"`) {
+	if !strings.Contains(body, `"watchUrl":"https://jf.example.org/web/#/details?id=aaaa0000000000000000000000000001"`) {
 		t.Fatalf("public watch url: %s", body)
 	}
 	if resp, _ := call(t, app, "PUT", "/api/v1/admin/settings", `{"jellyfinPublicUrl":"ftp://x"}`, admin); resp.StatusCode != http.StatusUnprocessableEntity {

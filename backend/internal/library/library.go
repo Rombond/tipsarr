@@ -84,7 +84,7 @@ func (s *Service) SyncLibrary(ctx context.Context) (LibraryResult, error) {
 	items := map[string]store.LibraryItem{} // key: type+tmdb, dedupes multi-version items
 	showByJellyfin := map[string]int64{}
 	err = jf.Items(ctx, "", url.Values{
-		"IncludeItemTypes": {"Movie,Series"}, "Fields": {"ProviderIds"}, "EnableUserData": {"false"},
+		"IncludeItemTypes": {"Movie,Series"}, "Fields": {"ProviderIds,Genres,DateCreated"}, "EnableUserData": {"false"},
 	}, func(it jellyfin.Item) error {
 		mt := map[string]string{"Movie": "movie", "Series": "tv"}[it.Type]
 		id := it.TMDBID()
@@ -95,7 +95,7 @@ func (s *Service) SyncLibrary(ctx context.Context) (LibraryResult, error) {
 			res.Unmatched++
 			return nil
 		}
-		items[fmt.Sprintf("%s:%d", mt, id)] = store.LibraryItem{MediaType: mt, TMDBID: int64(id), JellyfinID: it.ID, Title: it.Name}
+		items[fmt.Sprintf("%s:%d", mt, id)] = libraryItem(mt, id, it)
 		if mt == "tv" {
 			showByJellyfin[it.ID] = int64(id)
 		}
@@ -133,6 +133,40 @@ func (s *Service) SyncLibrary(ctx context.Context) (LibraryResult, error) {
 		seasons = append(seasons, store.LibrarySeason{TMDBID: k[0], SeasonNumber: int(k[1]), EpisodeCount: n})
 	}
 	return res, s.store.ReplaceLibrary(ctx, rows, seasons)
+}
+
+// libraryItem maps a Jellyfin item to the row the Library page sorts and filters on.
+func libraryItem(mediaType string, tmdbID int, it jellyfin.Item) store.LibraryItem {
+	row := store.LibraryItem{
+		MediaType: mediaType, TMDBID: int64(tmdbID), JellyfinID: it.ID, Title: it.Name,
+		Year: it.ProductionYear, RuntimeMin: int(it.RunTimeTicks / 600_000_000), Rating10: int(it.CommunityRating*10 + 0.5),
+		ImageTag: it.ImageTags["Primary"],
+	}
+	if t, err := time.Parse(time.RFC3339, it.DateCreated); err == nil {
+		row.AddedAt = t.Unix()
+	}
+	var genres []string
+	for _, g := range it.Genres {
+		if g = strings.TrimSpace(strings.ReplaceAll(g, "|", " ")); g != "" {
+			genres = append(genres, g)
+		}
+	}
+	if len(genres) > 0 {
+		row.Genres = "|" + strings.Join(genres, "|") + "|"
+	}
+	if len(row.Genres) > 500 {
+		row.Genres = row.Genres[:strings.LastIndex(row.Genres[:500], "|")+1]
+	}
+	return row
+}
+
+// Image returns the poster Jellyfin has for an item (used by the Library page).
+func (s *Service) Image(ctx context.Context, itemID, tag string) ([]byte, string, error) {
+	jf, err := s.client(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	return jf.Image(ctx, itemID, tag, 342)
 }
 
 type HistoryResult struct {

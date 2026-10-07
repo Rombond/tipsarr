@@ -16,6 +16,12 @@ type Item struct {
 	SeriesID          string            `json:"SeriesId"`
 	ParentIndexNumber int               `json:"ParentIndexNumber"` // season number (episodes)
 	IndexNumber       int               `json:"IndexNumber"`       // episode number
+	Genres            []string          `json:"Genres"`
+	ProductionYear    int               `json:"ProductionYear"`
+	RunTimeTicks      int64             `json:"RunTimeTicks"` // 10 000 000 ticks = 1 s
+	CommunityRating   float64           `json:"CommunityRating"`
+	DateCreated       string            `json:"DateCreated"` // RFC 3339, when Jellyfin added it
+	ImageTags         map[string]string `json:"ImageTags"`
 	UserData          struct {
 		Played         bool   `json:"Played"`
 		PlayCount      int    `json:"PlayCount"`

@@ -632,6 +632,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Browse what is in Jellyfin, with filters and sorting
+         * @description Data comes from the library sync (genres, year, rating, runtime, date added from Jellyfin). `genre` may be repeated: a title must have all of them. `watched` is about the logged-in user.
+         */
+        get: operations["listLibrary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Genres (with counts), years and counts to build the Library filters */
+        get: operations["libraryFacets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me": {
         parameters: {
             query?: never;
@@ -1290,6 +1327,11 @@ export interface components {
             id: number;
             name: string;
         };
+        GenreCount: {
+            /** Format: int64 */
+            count: number;
+            name: string;
+        };
         HealthOutputBody: {
             ok: boolean;
         };
@@ -1445,6 +1487,68 @@ export interface components {
             ldapBaseDn: string;
             ldapBindDn: string;
             ldapUrl: string;
+        };
+        LibraryFacets: {
+            /** @description Most common first */
+            genres: components["schemas"]["GenreCount"][];
+            /** Format: int64 */
+            maxRuntimeMinutes: number;
+            /** Format: int64 */
+            movies: number;
+            /** Format: int64 */
+            shows: number;
+            /** Format: int64 */
+            yearMax: number;
+            /** Format: int64 */
+            yearMin: number;
+        };
+        LibraryItem: {
+            /**
+             * Format: int64
+             * @description When Jellyfin added it (unix seconds)
+             */
+            addedAt: number;
+            genres: string[];
+            /**
+             * Format: int64
+             * @description Total plays by everyone
+             */
+            plays: number;
+            /** @description Poster served from Jellyfin through Tipsarr */
+            posterUrl?: string;
+            /**
+             * Format: double
+             * @description Jellyfin community rating out of 10
+             */
+            rating?: number;
+            /**
+             * Format: int64
+             * @description Movie length, or typical episode length for a show
+             */
+            runtimeMinutes?: number;
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+            /** @enum {string} */
+            type: "movie" | "tv";
+            /**
+             * Format: int64
+             * @description People who watched it
+             */
+            viewers: number;
+            /** @description The logged-in user watched it */
+            watched: boolean;
+            /** Format: int64 */
+            year?: number;
+        };
+        LibraryList: {
+            items: components["schemas"]["LibraryItem"][];
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            totalPages: number;
         };
         List: {
             items: components["schemas"]["Item"][];
@@ -4478,6 +4582,108 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    listLibrary: {
+        parameters: {
+            query?: {
+                type?: "all" | "movie" | "tv";
+                /** @description Part of the title */
+                q?: string;
+                /** @description Repeat for several; all must match */
+                genre?: string[];
+                yearFrom?: number;
+                yearTo?: number;
+                minRating?: number;
+                /** @description Minutes */
+                maxRuntime?: number;
+                /** @description By the logged-in user */
+                watched?: "any" | "yes" | "no";
+                sort?: "added" | "title" | "year" | "rating" | "runtime" | "popular";
+                dir?: "asc" | "desc";
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryList"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    libraryFacets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFacets"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
