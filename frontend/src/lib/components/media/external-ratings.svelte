@@ -1,11 +1,12 @@
 <script lang="ts">
-	// IMDb, Metacritic and Rotten Tomatoes scores of a movie, read through Radarr. Nothing is shown
-	// while loading, when there is no Radarr, or when Radarr has no score: the page does not change.
+	// All the scores of a title on one line, each a link to its source (like Seerr): TMDB for every
+	// title, and for movies IMDb, Rotten Tomatoes and Metacritic as read through Radarr. Scores that
+	// are missing are left out; the box does not show while there is nothing to show.
 	import { t } from '$lib/i18n/index.svelte';
 	import { api, unwrap, type Schemas } from '$lib/api/client';
 	import { fmtNumber } from '$lib/i18n/format';
 
-	let { tmdbId, type, tmdbScore, tmdbVotes }: { tmdbId: number; type: 'movie' | 'tv'; tmdbScore?: number; tmdbVotes?: number } = $props();
+	let { tmdbId, type, title, tmdbScore, tmdbVotes }: { tmdbId: number; type: 'movie' | 'tv'; title: string; tmdbScore?: number; tmdbVotes?: number } = $props();
 
 	let scores = $state<Schemas['MovieScores'] | null>(null);
 
@@ -23,43 +24,40 @@
 	// Metacritic's own colour bands; Rotten Tomatoes: fresh from 60 %
 	const metaTone = (v: number) => (v >= 61 ? 'bg-emerald-600' : v >= 40 ? 'bg-amber-500' : 'bg-red-600');
 	const rtTone = (v: number) => (v >= 60 ? 'bg-red-600' : 'bg-emerald-700');
+	const q = $derived(encodeURIComponent(title));
+	// no ids exist for these two: their own search pages
+	const rtUrl = $derived(`https://www.rottentomatoes.com/search?search=${q}`);
+	const mcUrl = $derived(`https://www.metacritic.com/search/${q}/`);
+	const tmdbUrl = $derived(`https://www.themoviedb.org/${type}/${tmdbId}`);
+
+	const link = 'inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring';
 </script>
 
-{#if tmdbScore || (scores && (scores.imdb || scores.metacritic || scores.rottenTomatoes))}
-	<div class="flex flex-wrap items-stretch gap-2 rounded-xl border border-border p-3 text-sm" role="group" aria-label={t('ratings.title')}>
+{#if tmdbScore || scores?.imdb || scores?.metacritic || scores?.rottenTomatoes}
+	<div class="flex flex-wrap items-center gap-x-1 gap-y-0.5 rounded-xl border border-border px-1.5 py-1 text-sm" role="group" aria-label={t('ratings.title')}>
 		{#if tmdbScore}
-			<div class="flex items-center gap-2 px-1" title={tmdbVotes ? t('ratings.votes', { count: fmtNumber(tmdbVotes) }) : undefined}>
-				<span class="rounded bg-[#01b4e4] px-1.5 py-0.5 text-xs font-extrabold text-white">TMDB</span>
-				<span class="font-semibold tabular-nums">{tmdbScore.toFixed(1)}<span class="font-normal text-muted-foreground"> / 10</span></span>
-			</div>
+			<a class={link} href={tmdbUrl} target="_blank" rel="noreferrer" title={tmdbVotes ? t('ratings.votes', { count: fmtNumber(tmdbVotes) }) : 'TMDB'}>
+				<span class="rounded bg-[#01b4e4] px-1.5 py-0.5 text-[11px] leading-4 font-extrabold text-white">TMDB</span>
+				<span class="font-semibold tabular-nums">{tmdbScore.toFixed(1)}</span>
+			</a>
 		{/if}
 		{#if scores?.imdb}
-			{@const imdb = scores.imdb}
-			<svelte:element
-				this={scores.imdbUrl ? 'a' : 'div'}
-				href={scores.imdbUrl || undefined}
-				target={scores.imdbUrl ? '_blank' : undefined}
-				rel={scores.imdbUrl ? 'noreferrer' : undefined}
-				class="flex items-center gap-2 rounded-lg px-1 {scores.imdbUrl ? 'hover:bg-accent' : ''}"
-				title={imdb.votes ? t('ratings.votes', { count: fmtNumber(imdb.votes) }) : undefined}
-			>
-				<span class="rounded bg-[#f5c518] px-1.5 py-0.5 text-xs font-extrabold text-black">IMDb</span>
-				<span class="font-semibold tabular-nums">{imdb.value.toFixed(1)}<span class="font-normal text-muted-foreground"> / 10</span></span>
-			</svelte:element>
+			<a class={link} href={scores.imdbUrl || `https://www.imdb.com/find/?q=${q}`} target="_blank" rel="noreferrer" title={scores.imdb.votes ? t('ratings.votes', { count: fmtNumber(scores.imdb.votes) }) : 'IMDb'}>
+				<span class="rounded bg-[#f5c518] px-1.5 py-0.5 text-[11px] leading-4 font-extrabold text-black">IMDb</span>
+				<span class="font-semibold tabular-nums">{scores.imdb.value.toFixed(1)}</span>
+			</a>
 		{/if}
 		{#if scores?.rottenTomatoes}
-			{@const rt = scores.rottenTomatoes}
-			<div class="flex items-center gap-2 px-1" title={t('ratings.rt_hint')}>
-				<span class="rounded px-1.5 py-0.5 text-xs font-extrabold text-white {rtTone(rt.value)}">RT</span>
-				<span class="font-semibold tabular-nums">{Math.round(rt.value)}%</span>
-			</div>
+			<a class={link} href={rtUrl} target="_blank" rel="noreferrer" title={t('ratings.rt_hint')}>
+				<span class="rounded px-1.5 py-0.5 text-[11px] leading-4 font-extrabold text-white {rtTone(scores.rottenTomatoes.value)}">RT</span>
+				<span class="font-semibold tabular-nums">{Math.round(scores.rottenTomatoes.value)}%</span>
+			</a>
 		{/if}
 		{#if scores?.metacritic}
-			{@const mc = scores.metacritic}
-			<div class="flex items-center gap-2 px-1" title={t('ratings.mc_hint')}>
-				<span class="min-w-7 rounded px-1.5 py-0.5 text-center text-xs font-extrabold text-white tabular-nums {metaTone(mc.value)}">{Math.round(mc.value)}</span>
-				<span class="font-semibold">Metacritic</span>
-			</div>
+			<a class={link} href={mcUrl} target="_blank" rel="noreferrer" title={t('ratings.mc_hint')}>
+				<span class="rounded px-1.5 py-0.5 text-[11px] leading-4 font-extrabold text-white {metaTone(scores.metacritic.value)}">MC</span>
+				<span class="font-semibold tabular-nums">{Math.round(scores.metacritic.value)}</span>
+			</a>
 		{/if}
 	</div>
 {/if}

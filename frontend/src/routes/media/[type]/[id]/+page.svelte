@@ -208,7 +208,7 @@
 					</button>
 				{/if}
 
-				<ExternalRatings type={mediaType} {tmdbId} tmdbScore={details.voteAverage} tmdbVotes={details.voteCount} />
+				<ExternalRatings type={mediaType} {tmdbId} title={details.title} tmdbScore={details.voteAverage} tmdbVotes={details.voteCount} />
 
 				<dl class="rounded-xl border border-border text-sm">
 					{#each facts as [label, value] (label)}
