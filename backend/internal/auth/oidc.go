@@ -179,6 +179,22 @@ func (s *Service) CompleteOIDC(ctx context.Context, redirectURL, state, code, us
 	if err := idt.Claims(&claims); err != nil {
 		return "", nil, ErrSSOProvider
 	}
+	// Many providers (Authelia by default) keep profile and group claims out of the ID token and
+	// serve them from the userinfo endpoint: ask it for whatever the token lacks.
+	if firstString(claims, "preferred_username", "name", "nickname") == "" || claims[c.GroupsClaim] == nil {
+		if ui, err := p.UserInfo(ctx, oauth2.StaticTokenSource(tok)); err != nil {
+			slog.Warn("sso: userinfo request failed", "err", err)
+		} else {
+			var extra map[string]any
+			if err := ui.Claims(&extra); err == nil {
+				for k, v := range extra {
+					if _, have := claims[k]; !have {
+						claims[k] = v
+					}
+				}
+			}
+		}
+	}
 	username := firstString(claims, "preferred_username", "name", "nickname")
 	if username == "" {
 		return "", nil, ErrSSOUnmatched

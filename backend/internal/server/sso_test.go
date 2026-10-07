@@ -24,6 +24,8 @@ type fakeIdP struct {
 	username string
 	groups   []string
 	rejected bool // the token endpoint answers 400
+	// profile claims only through the userinfo endpoint, like Authelia by default
+	userinfoOnly bool
 }
 
 func newFakeIdP(t *testing.T) *fakeIdP {
@@ -41,7 +43,7 @@ func newFakeIdP(t *testing.T) *fakeIdP {
 	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"issuer": f.srv.URL, "authorization_endpoint": f.srv.URL + "/authorize", "token_endpoint": f.srv.URL + "/token",
-			"jwks_uri": f.srv.URL + "/jwks", "id_token_signing_alg_values_supported": []string{"RS256"},
+			"jwks_uri": f.srv.URL + "/jwks", "userinfo_endpoint": f.srv.URL + "/userinfo", "id_token_signing_alg_values_supported": []string{"RS256"},
 		})
 	})
 	mux.HandleFunc("/jwks", func(w http.ResponseWriter, _ *http.Request) {
@@ -56,6 +58,9 @@ func newFakeIdP(t *testing.T) *fakeIdP {
 			return
 		}
 		claims := map[string]any{"preferred_username": f.username, "groups": f.groups, "nonce": f.nonce}
+		if f.userinfoOnly {
+			claims = map[string]any{"nonce": f.nonce}
+		}
 		std := jwt.Claims{Issuer: f.srv.URL, Subject: "sub-" + f.username, Audience: jwt.Audience{"tipsarr"}, IssuedAt: jwt.NewNumericDate(time.Now()), Expiry: jwt.NewNumericDate(time.Now().Add(time.Hour))}
 		raw, err := jwt.Signed(signer).Claims(std).Claims(claims).Serialize()
 		if err != nil {
@@ -63,6 +68,15 @@ func newFakeIdP(t *testing.T) *fakeIdP {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"access_token": "at", "token_type": "Bearer", "id_token": raw})
+	})
+	mux.HandleFunc("/userinfo", func(w http.ResponseWriter, r *http.Request) {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		if r.Header.Get("Authorization") != "Bearer at" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"sub": "sub-" + f.username, "preferred_username": f.username, "groups": f.groups})
 	})
 	return f
 }
@@ -161,6 +175,18 @@ func TestSingleSignOn(t *testing.T) {
 	if _, b := call(t, e.app, "GET", "/api/v1/me", "", session); !strings.Contains(b, `"name":"carol"`) || !strings.Contains(b, `"role":"admin"`) {
 		t.Fatalf("carol = %s", b)
 	}
+
+	// providers that keep profile claims out of the ID token (Authelia): they come from userinfo
+	idp.mu.Lock()
+	idp.userinfoOnly = true
+	idp.mu.Unlock()
+	cb = ssoLogin(t, e, idp, "bob", []string{"users"})
+	if cb.StatusCode != http.StatusFound || cb.Header.Get("Location") != "/" {
+		t.Fatalf("userinfo-only provider = %d %s", cb.StatusCode, cb.Header.Get("Location"))
+	}
+	idp.mu.Lock()
+	idp.userinfoOnly = false
+	idp.mu.Unlock()
 
 	// refused: no Jellyfin account with that name -> back to the login page (classic form)
 	cb = ssoLogin(t, e, idp, "mallory", nil)
