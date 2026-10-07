@@ -118,3 +118,25 @@ func (s *Store) WatchTitles(ctx context.Context) (map[string]WatchTitle, error) 
 	}
 	return out, nil
 }
+
+// UnlinkedPlayedItems lists the Jellyfin items (type, id) of plays that have no TMDB title yet.
+func (s *Store) UnlinkedPlayedItems(ctx context.Context) ([][2]string, error) {
+	var rows []struct {
+		MediaType  string `bun:"media_type"`
+		JellyfinID string `bun:"jellyfin_id"`
+	}
+	err := s.DB.NewSelect().Model((*WatchEvent)(nil)).ColumnExpr("media_type, jellyfin_id").Where("tmdb_id = 0").GroupExpr("media_type, jellyfin_id").Scan(ctx, &rows)
+	out := make([][2]string, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, [2]string{r.MediaType, r.JellyfinID})
+	}
+	return out, err
+}
+
+// LinkWatchEvents points the not-yet-linked plays of a Jellyfin item at a library title.
+func (s *Store) LinkWatchEvents(ctx context.Context, mediaType, jellyfinID string, tmdbID int64, title, libraryJellyfinID string) error {
+	_, err := s.DB.NewUpdate().Model((*WatchEvent)(nil)).
+		Set("tmdb_id = ?", tmdbID).Set("title = ?", title).Set("jellyfin_id = ?", libraryJellyfinID).
+		Where("media_type = ?", mediaType).Where("jellyfin_id = ?", jellyfinID).Where("tmdb_id = 0").Exec(ctx)
+	return err
+}

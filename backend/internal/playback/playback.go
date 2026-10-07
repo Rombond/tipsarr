@@ -139,7 +139,11 @@ func (s *Service) Sync(ctx context.Context) (string, error) {
 			break
 		}
 	}
+	relinked := s.relink(ctx, jf, byJF)
 	resolved := s.resolveTitles(ctx)
+	if relinked > 0 {
+		return fmt.Sprintf("%d new plays, %d titles linked to the library, %d removed titles recognised", total, relinked, resolved), nil
+	}
 	if resolved > 0 {
 		return fmt.Sprintf("%d new plays, %d removed titles recognised", total, resolved), nil
 	}
@@ -266,9 +270,11 @@ func (s *Service) resolveTitles(ctx context.Context) int {
 // match finds the TMDB title for a Jellyfin title, in English first and then in the app's language
 // (Jellyfin names follow its own metadata language). Only a result whose title says the same counts.
 func (s *Service) match(ctx context.Context, typ, name, appLang string) (*media.Item, error) {
+	// Jellyfin names follow its metadata language, so the app's language goes first: in English
+	// "Là-haut" is the title of another, older film, while in French it is "Up".
 	langs := []string{""}
 	if appLang != "" && !strings.HasPrefix(appLang, "en") {
-		langs = append(langs, appLang)
+		langs = []string{appLang, ""}
 	}
 	want := normalise(name)
 	for _, lang := range langs {
@@ -277,7 +283,8 @@ func (s *Service) match(ctx context.Context, typ, name, appLang string) (*media.
 			return nil, err
 		}
 		for i := range items {
-			if got := normalise(items[i].Title); got != "" && got == want {
+			// the same title, and a picture: an entry TMDB has no poster for is rarely the film that was played
+			if got := normalise(items[i].Title); got != "" && got == want && items[i].PosterPath != "" {
 				return &items[i], nil
 			}
 		}
@@ -294,4 +301,42 @@ func normalise(s string) string {
 		}
 	}
 	return b.String()
+}
+
+// relink links plays that were imported before their title was in the library (a play is imported
+// once, but the library changes: a title added, or a collection that used to be hidden) to the
+// library title now. Episodes are mapped to their show through Jellyfin. It returns how many items were linked.
+func (s *Service) relink(ctx context.Context, jf *jellyfin.Client, byJF map[string]store.LibraryItem) int {
+	items, err := s.store.UnlinkedPlayedItems(ctx)
+	if err != nil || len(items) == 0 {
+		return 0
+	}
+	seriesOf := map[string]string{}
+	var episodes [][]string
+	for _, it := range items {
+		if it[0] == "tv" {
+			episodes = append(episodes, []string{"", "", "", it[1], "Episode", "", ""})
+		}
+	}
+	if len(episodes) > 0 {
+		if err := s.resolveEpisodes(ctx, jf, episodes, seriesOf); err != nil {
+			return 0
+		}
+	}
+	n := 0
+	for _, it := range items {
+		typ, id := it[0], it[1]
+		lookup := id
+		if typ == "tv" {
+			lookup = seriesOf[id]
+		}
+		lib, ok := byJF[lookup]
+		if !ok || lib.MediaType != typ {
+			continue
+		}
+		if err := s.store.LinkWatchEvents(ctx, typ, id, lib.TMDBID, lib.Title, lib.JellyfinID); err == nil {
+			n++
+		}
+	}
+	return n
 }

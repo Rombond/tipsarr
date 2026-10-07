@@ -188,3 +188,34 @@ func TestStatsKeepsPlaysOfRemovedTitles(t *testing.T) {
 		t.Fatalf("genres of the removed title are missing: %+v", r.Genres)
 	}
 }
+
+// Plays are imported once. When the title only reaches the library later (a collection that was
+// hidden, a movie added afterwards) the next sync links its old plays to it.
+func TestStatsRelinksPlaysWhenTheTitleReachesTheLibrary(t *testing.T) {
+	jfPlayback.Store(true)
+	t.Cleanup(func() { jfPlayback.Store(false) })
+	jf := fakeJellyfin(t)
+	app := newApp(t)
+	admin := loginAs(t, app, jf.URL, "alice", "secret")
+	call(t, app, "PUT", "/api/v1/admin/settings", `{"jellyfinApiKey":"jfkey"}`, admin)
+	adminCall := func(m, p string) (*http.Response, string) { return call(t, app, m, p, "", admin) }
+
+	runJobAndWait(t, app, adminCall, "playback-sync", "ok") // the library is still empty
+	var before statsResp
+	_, body := call(t, app, "GET", "/api/v1/stats", "", admin)
+	_ = json.Unmarshal([]byte(body), &before)
+	if len(before.Top) != 0 {
+		t.Fatalf("nothing can be linked yet: %+v", before.Top)
+	}
+
+	runJobAndWait(t, app, adminCall, "library-sync", "ok")
+	if resp, _ := adminCall("POST", "/api/v1/admin/sync/playback-sync"); resp.StatusCode != http.StatusAccepted {
+		t.Fatalf("second sync = %d", resp.StatusCode)
+	}
+	waitFor(t, "relink", func() bool {
+		_, b := call(t, app, "GET", "/api/v1/stats", "", admin)
+		var r statsResp
+		_ = json.Unmarshal([]byte(b), &r)
+		return len(r.TopMovies) == 1 && len(r.TopShows) == 1 && strings.Contains(r.Top[0].PosterURL, "aaaa0000000000000000000000000001")
+	})
+}
