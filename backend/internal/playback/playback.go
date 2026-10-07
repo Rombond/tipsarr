@@ -11,8 +11,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/jellyfin"
+	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
 
@@ -30,12 +32,21 @@ var (
 	episodeSuffix = regexp.MustCompile(`\s+-\s+s\d+e\d+.*$`)
 )
 
+// TMDB is the part of the metadata service used to recognise titles that left the library.
+type TMDB interface {
+	SearchTitle(ctx context.Context, mediaType, language, title string) ([]media.Item, error)
+	Detail(ctx context.Context, o media.Opts, mediaType string, id int) (*media.Detail, error)
+}
+
 type Service struct {
 	store       *store.Store
 	newJellyfin func(baseURL string) *jellyfin.Client
+	tmdb        TMDB // optional
 }
 
-func New(s *store.Store) *Service { return &Service{store: s, newJellyfin: jellyfin.New} }
+func New(s *store.Store, tmdb TMDB) *Service {
+	return &Service{store: s, newJellyfin: jellyfin.New, tmdb: tmdb}
+}
 
 func (s *Service) client(ctx context.Context) (*jellyfin.Client, error) {
 	base, _ := s.store.GetSetting(ctx, "jellyfin.url")
@@ -128,6 +139,10 @@ func (s *Service) Sync(ctx context.Context) (string, error) {
 			break
 		}
 	}
+	resolved := s.resolveTitles(ctx)
+	if resolved > 0 {
+		return fmt.Sprintf("%d new plays, %d removed titles recognised", total, resolved), nil
+	}
 	return fmt.Sprintf("%d new plays", total), nil
 }
 
@@ -196,4 +211,87 @@ func parseTime(v string) (time.Time, bool) {
 		}
 	}
 	return time.Time{}, false
+}
+
+const (
+	resolvePerRun = 150
+	retryAfter    = 7 * 24 * time.Hour
+)
+
+// resolveTitles looks up on TMDB the titles that were played but are no longer in the Jellyfin
+// library (clean-up tools remove them), so their plays can still be shown with a poster, year and
+// genres. A title is searched once; "no match" is retried after a week. It returns how many were found.
+func (s *Service) resolveTitles(ctx context.Context) int {
+	if s.tmdb == nil {
+		return 0
+	}
+	pending, err := s.store.UnknownPlayedTitles(ctx, time.Now().Add(-retryAfter).Unix(), resolvePerRun)
+	if err != nil || len(pending) == 0 {
+		return 0
+	}
+	appLang, _ := s.store.GetSetting(ctx, media.SettingDefaultLanguage)
+	found := 0
+	for _, p := range pending {
+		typ, name := p[0], p[1]
+		w := &store.WatchTitle{MediaType: typ, Title: name, CheckedAt: time.Now().Unix()}
+		hit, err := s.match(ctx, typ, name, appLang)
+		if errors.Is(err, media.ErrNotConfigured) {
+			return found
+		}
+		if err != nil {
+			continue // TMDB trouble: ask again on the next run
+		}
+		if hit != nil {
+			w.TMDBID = int64(hit.TMDBID)
+			w.Poster, w.Rating10 = hit.PosterPath, int(hit.VoteAverage*10+0.5)
+			if len(hit.ReleaseDate) >= 4 {
+				w.Year, _ = strconv.Atoi(hit.ReleaseDate[:4])
+			}
+			if d, err := s.tmdb.Detail(ctx, media.Opts{}, typ, hit.TMDBID); err == nil {
+				var g []string
+				for _, x := range d.Genres {
+					g = append(g, strings.ReplaceAll(x.Name, "|", " "))
+				}
+				if len(g) > 0 {
+					w.Genres = "|" + strings.Join(g, "|") + "|"
+				}
+			}
+			found++
+		}
+		_ = s.store.SaveWatchTitle(ctx, w)
+	}
+	return found
+}
+
+// match finds the TMDB title for a Jellyfin title, in English first and then in the app's language
+// (Jellyfin names follow its own metadata language). Only a result whose title says the same counts.
+func (s *Service) match(ctx context.Context, typ, name, appLang string) (*media.Item, error) {
+	langs := []string{""}
+	if appLang != "" && !strings.HasPrefix(appLang, "en") {
+		langs = append(langs, appLang)
+	}
+	want := normalise(name)
+	for _, lang := range langs {
+		items, err := s.tmdb.SearchTitle(ctx, typ, lang, name)
+		if err != nil {
+			return nil, err
+		}
+		for i := range items {
+			if got := normalise(items[i].Title); got != "" && got == want {
+				return &items[i], nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+// normalise lower-cases a title and keeps only its letters and digits ("Pacific Rim : Uprising" = "Pacific Rim: Uprising").
+func normalise(s string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(s) {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }

@@ -667,6 +667,19 @@ func (s *Service) SearchMovies(ctx context.Context, o Opts, title string) ([]Ite
 	return raw.toList("movie").Items, nil
 }
 
+// SearchTitle searches movies or shows ("movie" / "tv") by title (cached, unannotated).
+func (s *Service) SearchTitle(ctx context.Context, mediaType, language, title string) ([]Item, error) {
+	if mediaType != "tv" {
+		return s.SearchMovies(ctx, Opts{Language: language}, title)
+	}
+	q := url.Values{"language": {Opts{Language: language}.lang()}, "query": {title}, "include_adult": {"false"}, "page": {"1"}}
+	var raw rawList
+	if err := s.get(ctx, "/search/tv", q, ttlList, &raw); err != nil {
+		return nil, err
+	}
+	return raw.toList("tv").Items, nil
+}
+
 // TrendingItems returns trending titles without availability annotation.
 func (s *Service) TrendingItems(ctx context.Context, o Opts, page int) ([]Item, error) {
 	var raw rawList

@@ -92,6 +92,20 @@ type WatchEvent struct {
 	Seconds     int    `bun:"seconds"`
 }
 
+// WatchTitle is the TMDB match of a played title that is no longer in the Jellyfin library.
+type WatchTitle struct {
+	bun.BaseModel `bun:"table:watch_titles"`
+
+	MediaType string `bun:"media_type,pk"`
+	Title     string `bun:"title,pk"`
+	TMDBID    int64  `bun:"tmdb_id"` // 0 = no match
+	Poster    string `bun:"poster"`  // TMDB poster path
+	Year      int    `bun:"year"`
+	Rating10  int    `bun:"rating10"`
+	Genres    string `bun:"genres"` // |Action|Drama|
+	CheckedAt int64  `bun:"checked_at"`
+}
+
 type UserHistoryState struct {
 	bun.BaseModel `bun:"table:user_history_state"`
 

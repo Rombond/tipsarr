@@ -113,10 +113,13 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 			{"3", day(47), aliceID, "e2", "Episode", "Show Two - s01e02 - Next", "30"},
 			{"4", day(24), bobID, "aaaa0000000000000000000000000001", "Movie", "Movie One", "3600"},
 		}
+		if jfRemovedPlay.Load() { // a movie that was played and then deleted from Jellyfin
+			all = append(all, []string{"5", day(10), aliceID, "00000000000000000000000000dead1", "Movie", "Gone Movie", "5400"})
+		}
 		out := map[string]any{"colums": []string{"x"}, "results": [][]string{}, "message": ""}
 		switch {
 		case strings.Contains(q, "MAX(rowid)"):
-			out["results"] = [][]string{{"4"}}
+			out["results"] = [][]string{{strconv.Itoa(len(all))}}
 		case strings.Contains(q, "rowid > 0 "):
 			out["results"] = all
 		}
@@ -171,6 +174,9 @@ var tmdbHits atomic.Int32
 
 // jfPlayback makes the fake Jellyfin list the Playback Reporting plugin.
 var jfPlayback atomic.Bool
+
+// jfRemovedPlay adds a play of a movie that is not in the library (and is known to the fake TMDB).
+var jfRemovedPlay atomic.Bool
 
 // jfDisabled is the id of the one fake Jellyfin user currently reported as disabled.
 var jfDisabled atomic.Value
@@ -238,6 +244,8 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 			_, _ = w.Write([]byte(`{"results":[{"id":900,"title":"Verity","release_date":"2026-10-02","poster_path":"/v.jpg","vote_average":7.1,"overview":"A thriller."}]}`))
 		case "Resident Evil":
 			_, _ = w.Write([]byte(`{"results":[{"id":901,"title":"Resident Evil","release_date":"2002-03-15","poster_path":"/re1.jpg"},{"id":902,"title":"Resident Evil","release_date":"2026-08-28","poster_path":"/re2.jpg"}]}`))
+		case "Gone Movie":
+			_, _ = w.Write([]byte(`{"results":[{"id":77,"title":"Gone Movie","release_date":"2019-05-05","poster_path":"/gone.jpg","vote_average":7.1}]}`))
 		case "Heart of the Beast":
 			_, _ = w.Write([]byte(`{"results":[{"id":903,"title":"Heart of the Beast: Part One","release_date":"2026-09-18","poster_path":"/hb.jpg"}]}`))
 		default:
@@ -258,6 +266,9 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 	mux.HandleFunc("/movie/904", hit(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"id":904,"title":"Digger (2026)","release_date":"2026-10-02","poster_path":"/dg.jpg","vote_average":6.4,"overview":"Pinned by hand.",
 			"genres":[],"credits":{"cast":[],"crew":[]},"recommendations":{"results":[]},"similar":{"results":[]}}`))
+	}))
+	mux.HandleFunc("/movie/77", hit(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"id":77,"title":"Gone Movie","release_date":"2019-05-05","poster_path":"/gone.jpg","vote_average":7.1,"genres":[{"id":53,"name":"Thriller"}],"credits":{"cast":[],"crew":[]},"recommendations":{"results":[]},"similar":{"results":[]}}`))
 	}))
 	mux.HandleFunc("/movie/404", hit(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotFound) }))
 	srv := httptest.NewServer(mux)
@@ -366,7 +377,7 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	sugg.SetQueueDelay(20 * time.Millisecond)
 	lib.OnHistoryChanged = sugg.QueueRefresh
 	authSvc := auth.New(st)
-	pb := playback.New(st)
+	pb := playback.New(st, mediaSvc)
 	jm.Register(jobs.Job{Name: "playback-sync", Every: time.Hour, InitialDelay: time.Hour, Run: func(ctx context.Context) (string, error) {
 		msg, err := pb.Sync(ctx)
 		if errors.Is(err, playback.ErrNotInstalled) {

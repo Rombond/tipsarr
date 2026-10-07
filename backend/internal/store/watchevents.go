@@ -73,3 +73,48 @@ func (s *Store) RequestsByStatus(ctx context.Context, userID string, since int64
 	}
 	return out, nil
 }
+
+// UnknownPlayedTitles lists (type, title) of plays that are not linked to a TMDB title and have not
+// been looked up since `retryBefore` (unix); at most `limit`, most played first.
+func (s *Store) UnknownPlayedTitles(ctx context.Context, retryBefore int64, limit int) ([][2]string, error) {
+	var rows []struct {
+		MediaType string `bun:"media_type"`
+		Title     string `bun:"title"`
+	}
+	err := s.DB.NewSelect().TableExpr("watch_events AS e").ColumnExpr("e.media_type, e.title").
+		Join("LEFT JOIN watch_titles AS w ON w.media_type = e.media_type AND w.title = e.title").
+		Where("e.tmdb_id = 0").Where("e.seconds >= 60").Where("LENGTH(e.title) <= 191").
+		Where("w.title IS NULL OR (w.tmdb_id = 0 AND w.checked_at < ?)", retryBefore).
+		GroupExpr("e.media_type, e.title").OrderExpr("SUM(e.seconds) DESC").Limit(int64(limit)).Scan(ctx, &rows)
+	out := make([][2]string, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, [2]string{r.MediaType, r.Title})
+	}
+	return out, err
+}
+
+// SaveWatchTitle stores the outcome of a lookup (a zero TMDBID records "no match").
+func (s *Store) SaveWatchTitle(ctx context.Context, w *WatchTitle) error {
+	res, err := s.DB.NewUpdate().Model(w).Column("tmdb_id", "poster", "year", "rating10", "genres", "checked_at").WherePK().Exec(ctx)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		return nil
+	}
+	_, err = s.DB.NewInsert().Model(w).Exec(ctx)
+	return err
+}
+
+// WatchTitles returns every stored lookup keyed by type + "\x00" + title.
+func (s *Store) WatchTitles(ctx context.Context) (map[string]WatchTitle, error) {
+	var rows []WatchTitle
+	if err := s.DB.NewSelect().Model(&rows).Where("tmdb_id > 0").Scan(ctx); err != nil {
+		return nil, err
+	}
+	out := make(map[string]WatchTitle, len(rows))
+	for _, r := range rows {
+		out[r.MediaType+"\x00"+r.Title] = r
+	}
+	return out, nil
+}

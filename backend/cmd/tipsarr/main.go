@@ -115,7 +115,7 @@ func run(cfg config.Config) error {
 		}
 		return "purged", st.PurgeExpiredCache(ctx)
 	}})
-	pb := playback.New(st)
+	pb := playback.New(st, mediaSvc)
 	jm.Register(jobs.Job{Name: "playback-sync", Every: time.Hour, InitialDelay: 2*time.Minute + 30*time.Second, Run: func(ctx context.Context) (string, error) {
 		msg, err := pb.Sync(ctx)
 		switch {

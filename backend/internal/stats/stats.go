@@ -98,6 +98,7 @@ type title struct {
 	year   int
 	rating int // x 10
 	tag    string
+	poster string // TMDB poster path, for titles that left the library
 }
 
 // Compute returns the stats of one user ("" = everyone) for a period (30d, 12m or all).
@@ -187,6 +188,10 @@ func (s *Service) fromPlugin(ctx context.Context, res *StatsReport, userID strin
 	if err != nil {
 		return err
 	}
+	removed, err := s.store.WatchTitles(ctx) // played titles that are no longer in the library, matched on TMDB
+	if err != nil {
+		return err
+	}
 	// timeline buckets: the last 12 calendar months, oldest first
 	monthIdx := map[string]int{}
 	first := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local).AddDate(0, -11, 0)
@@ -209,12 +214,22 @@ func (s *Service) fromPlugin(ctx context.Context, res *StatsReport, userID strin
 		res.Weekdays[(int(t.Weekday())+6)%7] += hours // Monday first
 		res.Hours24[t.Hour()] += hours
 
-		k := key(e.MediaType, e.TMDBID, e.JellyfinID, e.Title)
+		tmdb := e.TMDBID
+		rm, gone := removed[e.MediaType+"\x00"+e.Title]
+		if tmdb == 0 && gone {
+			tmdb = rm.TMDBID
+		}
+		k := key(e.MediaType, tmdb, e.JellyfinID, e.Title)
 		ti := titles[k]
 		if ti == nil {
-			ti = &title{typ: e.MediaType, tmdb: e.TMDBID, name: e.Title, jf: e.JellyfinID}
-			if it, ok := meta[fmt.Sprintf("%s:%d", e.MediaType, e.TMDBID)]; ok {
+			ti = &title{typ: e.MediaType, tmdb: tmdb, name: e.Title, jf: e.JellyfinID}
+			if it, ok := meta[fmt.Sprintf("%s:%d", e.MediaType, tmdb)]; ok {
 				fill(ti, it)
+			} else if e.TMDBID == 0 && gone {
+				ti.jf, ti.year, ti.rating, ti.poster = "", rm.Year, rm.Rating10, rm.Poster
+				if g := strings.Trim(rm.Genres, "|"); g != "" {
+					ti.genres = strings.Split(g, "|")
+				}
 			}
 			titles[k] = ti
 		}
@@ -332,6 +347,8 @@ func aggregate(res *StatsReport, titles map[string]*title) {
 		top := StatsTop{Type: t.typ, TMDBID: t.tmdb, Title: t.name, Plays: t.plays, Hours: t.secs / 3600, Year: t.year, Rating: float64(t.rating) / 10}
 		if t.tag != "" && t.jf != "" {
 			top.PosterURL = "/api/v1/images/jellyfin/" + t.jf + "?tag=" + t.tag
+		} else if t.poster != "" {
+			top.PosterURL = "/api/v1/images/tmdb/w342" + t.poster
 		}
 		if len(res.Top) < topAll {
 			res.Top = append(res.Top, top)
