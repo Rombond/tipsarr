@@ -86,6 +86,47 @@
 		}
 	}
 
+	// single sign-on (OpenID Connect)
+	let ssoIssuer = $state('');
+	let ssoClientId = $state('');
+	let ssoSecret = $state('');
+	let ssoGroup = $state('');
+	let ssoClaim = $state('');
+	let ssoBusy = $state(false);
+	const callbackUrl = $derived(`${location.origin}/api/v1/auth/oidc/callback`);
+
+	$effect(() => {
+		if (!settings) return;
+		ssoIssuer = settings.oidcIssuer;
+		ssoClientId = settings.oidcClientId;
+		ssoGroup = settings.oidcAdminGroup;
+		ssoClaim = settings.oidcGroupsClaim;
+	});
+
+	async function saveSso(e: SubmitEvent) {
+		e.preventDefault();
+		ssoBusy = true;
+		try {
+			settings = await unwrap(
+				api.PUT('/admin/settings', {
+					body: {
+						oidcIssuer: ssoIssuer.trim(),
+						oidcClientId: ssoClientId.trim(),
+						oidcAdminGroup: ssoGroup.trim(),
+						oidcGroupsClaim: ssoClaim.trim(),
+						...(ssoSecret.trim() ? { oidcClientSecret: ssoSecret.trim() } : {}),
+					},
+				}),
+			);
+			ssoSecret = '';
+			toast.success(t('common.saved'));
+		} catch (err) {
+			toast.error(errorText(err));
+		} finally {
+			ssoBusy = false;
+		}
+	}
+
 	async function toggleImport(on: boolean) {
 		try {
 			settings = await unwrap(api.PUT('/admin/settings', { body: { servarrAutoImport: on } }));
@@ -187,6 +228,30 @@
 				<form class="flex gap-2" onsubmit={savePublicUrl}>
 					<Input bind:value={publicUrl} placeholder="https://jellyfin.example.org" type="url" autocomplete="off" />
 					<Button type="submit" variant="outline">{t('common.save')}</Button>
+				</form>
+			</CardContent>
+		</Card>
+
+		<Card class="lg:col-span-2">
+			<CardHeader>
+				<CardTitle>{t('settings.sso_title')}</CardTitle>
+				<CardDescription>{t('settings.sso_desc')}</CardDescription>
+			</CardHeader>
+			<CardContent class="grid gap-4">
+				<div class="grid gap-1 text-xs">
+					<span class="text-muted-foreground">{t('settings.sso_redirect')}</span>
+					<code class="break-all rounded bg-muted p-2">{callbackUrl}</code>
+				</div>
+				<form class="grid gap-3 sm:grid-cols-2" onsubmit={saveSso}>
+					<label class="grid gap-1 text-sm sm:col-span-2">{t('settings.sso_issuer')}<Input bind:value={ssoIssuer} placeholder="https://auth.example.org" type="url" autocomplete="off" /></label>
+					<label class="grid gap-1 text-sm">{t('settings.sso_client_id')}<Input bind:value={ssoClientId} placeholder="tipsarr" autocomplete="off" /></label>
+					<label class="grid gap-1 text-sm">{t('settings.sso_secret')}<Input bind:value={ssoSecret} type="password" autocomplete="off" placeholder={settings.oidcClientSecretConfigured ? t('settings.sso_secret_saved') : ''} /></label>
+					<label class="grid gap-1 text-sm">{t('settings.sso_group')}<Input bind:value={ssoGroup} placeholder="tipsarr-admins" autocomplete="off" /></label>
+					<label class="grid gap-1 text-sm">{t('settings.sso_claim')}<Input bind:value={ssoClaim} placeholder="groups" autocomplete="off" /></label>
+					<div class="flex items-center gap-3 sm:col-span-2">
+						<Button type="submit" disabled={ssoBusy}>{ssoBusy ? t('common.saving') : t('common.save')}</Button>
+						<span class="text-xs text-muted-foreground">{t('settings.sso_fallback')} <code>/login?password=1</code></span>
+					</div>
 				</form>
 			</CardContent>
 		</Card>

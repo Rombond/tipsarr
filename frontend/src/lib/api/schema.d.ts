@@ -274,6 +274,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How people can sign in
+         * @description The login page hides the password form when single sign-on is set up; it comes back if single sign-on refuses someone.
+         */
+        get: operations["authMethods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/blocklist": {
         parameters: {
             query?: never;
@@ -1007,6 +1027,14 @@ export interface components {
             qualityProfileId?: number;
             rootFolder?: string;
         };
+        AuthMethods: {
+            /** @description The Jellyfin username/password form works */
+            password: boolean;
+            /** @description Single sign-on (OpenID Connect) is set up */
+            sso: boolean;
+            /** @description Name of the provider for the button */
+            ssoLabel?: string;
+        };
         CastMember: {
             character?: string;
             /** Format: int64 */
@@ -1633,6 +1661,14 @@ export interface components {
             /** @description Address browsers use to open Jellyfin (Play buttons); empty = same as jellyfinUrl */
             jellyfinPublicUrl: string;
             jellyfinUrl: string;
+            /** @description Members of this group become admins (optional) */
+            oidcAdminGroup: string;
+            oidcClientId: string;
+            oidcClientSecretConfigured: boolean;
+            /** @description Claim that lists the groups, default groups */
+            oidcGroupsClaim: string;
+            /** @description OpenID Connect provider (Authelia), e.g. https://auth.example.org */
+            oidcIssuer: string;
             /** @description Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only) */
             servarrAutoImport: boolean;
             /** @description Secrets are write-only; this only says whether a key is saved */
@@ -1710,6 +1746,13 @@ export interface components {
             jellyfinApiKey?: string;
             /** @description Empty string clears it */
             jellyfinPublicUrl?: string;
+            oidcAdminGroup?: string;
+            oidcClientId?: string;
+            /** @description Write-only; empty string clears it */
+            oidcClientSecret?: string;
+            oidcGroupsClaim?: string;
+            /** @description Empty string turns single sign-on off. The provider is contacted when saving */
+            oidcIssuer?: string;
             servarrAutoImport?: boolean;
             /** @description Set or replace the TMDB key (empty string clears it) */
             tmdbApiKey?: string;
@@ -3047,6 +3090,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    authMethods: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthMethods"];
+                };
             };
             /** @description Error */
             default: {
