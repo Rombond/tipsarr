@@ -124,9 +124,9 @@
 		{#if request.declineReason}<p class="text-xs">{t('req.reason', { reason: request.declineReason })}</p>{/if}
 		{#if request.error}<p class="text-xs text-destructive">{request.error}</p>{/if}
 		{#if canDecide}
-			<div class="flex flex-wrap justify-end gap-2 pt-1">
-				<Button size="sm" class="bg-rose-600 text-white hover:bg-rose-600/90" disabled={busy} onclick={() => onDecline?.(request)}>{t('req.decline')}</Button>
-				<Button size="sm" class="bg-emerald-600 text-white hover:bg-emerald-600/90" disabled={busy} onclick={() => onApprove?.(request)}>
+			<div class="grid grid-cols-2 gap-2 pt-1">
+				<Button size="sm" class="w-full bg-rose-600 text-white hover:bg-rose-600/90" disabled={busy} onclick={() => onDecline?.(request)}>{t('req.decline')}</Button>
+				<Button size="sm" class="w-full bg-emerald-600 text-white hover:bg-emerald-600/90" disabled={busy} onclick={() => onApprove?.(request)}>
 					{request.status === 'failed' ? t('req.retry') : t('req.approve')}
 				</Button>
 			</div>
