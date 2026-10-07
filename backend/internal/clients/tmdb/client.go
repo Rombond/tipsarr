@@ -17,7 +17,10 @@ const (
 	DefaultImageURL = "https://image.tmdb.org/t/p"
 )
 
-var ErrNotFound = errors.New("tmdb: not found")
+var (
+	ErrNotFound   = errors.New("tmdb: not found")
+	ErrInvalidKey = errors.New("tmdb: invalid API key")
+)
 
 type Client struct {
 	BaseURL string
@@ -67,7 +70,7 @@ func (c *Client) Get(ctx context.Context, path string, q url.Values) ([]byte, er
 	case resp.StatusCode == http.StatusNotFound:
 		return nil, ErrNotFound
 	case resp.StatusCode == http.StatusUnauthorized:
-		return nil, errors.New("tmdb: invalid API key")
+		return nil, ErrInvalidKey
 	case resp.StatusCode >= 300:
 		return nil, fmt.Errorf("tmdb returned HTTP %d", resp.StatusCode)
 	}

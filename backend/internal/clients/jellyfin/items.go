@@ -50,6 +50,15 @@ func (c *Client) Users(ctx context.Context) ([]User, error) {
 	return out, err
 }
 
+// User returns one Jellyfin user (needs an API key); IsNotFound(err) is true when it was deleted.
+func (c *Client) User(ctx context.Context, id string) (*User, error) {
+	var out User
+	if err := c.do(ctx, http.MethodGet, "/Users/"+url.PathEscape(id), nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 const pageSize = 500
 
 // Items pages through /Items (or /Users/{id}/Items when userID is set), calling fn for each item.

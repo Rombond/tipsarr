@@ -88,6 +88,12 @@ type statusError struct{ code int }
 
 func (e *statusError) Error() string { return fmt.Sprintf("jellyfin returned HTTP %d", e.code) }
 
+// IsNotFound reports whether err is Jellyfin answering 404.
+func IsNotFound(err error) bool {
+	var se *statusError
+	return errors.As(err, &se) && se.code == http.StatusNotFound
+}
+
 func (c *Client) do(ctx context.Context, method, path string, body []byte, out any) error {
 	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, bytes.NewReader(body))
 	if err != nil {

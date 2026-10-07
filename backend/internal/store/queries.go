@@ -107,6 +107,20 @@ func (s *Store) GetCache(ctx context.Context, key string) ([]byte, bool, error) 
 	return []byte(body), true, nil
 }
 
+// GetCacheStale returns a cached body even when it has expired. It is the fallback used when
+// TMDB cannot be reached, so a TMDB outage shows older data instead of an error.
+func (s *Store) GetCacheStale(ctx context.Context, key string) ([]byte, bool, error) {
+	var body string
+	err := s.DB.NewSelect().Model((*TMDBCache)(nil)).Column("body").Where("ckey = ?", key).Scan(ctx, &body)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	return []byte(body), true, nil
+}
+
 func (s *Store) PutCache(ctx context.Context, key string, body []byte, ttl time.Duration) error {
 	now := time.Now()
 	row := &TMDBCache{Key: key, Body: string(body), FetchedAt: now.Unix(), ExpiresAt: now.Add(ttl).Unix()}
@@ -121,8 +135,11 @@ func (s *Store) PutCache(ctx context.Context, key string, body []byte, ttl time.
 	return err
 }
 
+// CacheStaleGrace is how long an expired entry is kept as an offline fallback (see GetCacheStale).
+const CacheStaleGrace = 7 * 24 * time.Hour
+
 func (s *Store) PurgeExpiredCache(ctx context.Context) error {
-	_, err := s.DB.NewDelete().Model((*TMDBCache)(nil)).Where("expires_at <= ?", time.Now().Unix()).Exec(ctx)
+	_, err := s.DB.NewDelete().Model((*TMDBCache)(nil)).Where("expires_at <= ?", time.Now().Add(-CacheStaleGrace).Unix()).Exec(ctx)
 	return err
 }
 

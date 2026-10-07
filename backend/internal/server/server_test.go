@@ -38,7 +38,7 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 	mux.HandleFunc("/System/Info/Public", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`{"ServerName":"Test","Version":"10.10.0","Id":"abc"}`))
 	})
-	mux.HandleFunc("/Users/AuthenticateByName", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /Users/AuthenticateByName", func(w http.ResponseWriter, r *http.Request) {
 		var in struct{ Username, Pw string }
 		_ = json.NewDecoder(r.Body).Decode(&in)
 		switch {
@@ -66,6 +66,17 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 	}
 	mux.HandleFunc("/Users", keyed(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`[{"Id":"` + aliceID + `","Name":"alice","Policy":{"IsAdministrator":true}},{"Id":"` + bobID + `","Name":"bob","Policy":{"IsAdministrator":false}},{"Id":"cccccccccccccccccccccccccccccccc","Name":"carol","Policy":{"IsAdministrator":false}}]`))
+	}))
+	// one user: used to re-check a session's account (jfDisabled lists ids answering "disabled")
+	mux.HandleFunc("GET /Users/{id}", keyed(func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		names := map[string]string{aliceID: "alice", bobID: "bob", "cccccccccccccccccccccccccccccccc": "carol"}
+		name, ok := names[id]
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		_, _ = w.Write([]byte(`{"Id":"` + id + `","Name":"` + name + `","Policy":{"IsAdministrator":` + strconv.FormatBool(id == aliceID) + `,"IsDisabled":` + strconv.FormatBool(jfDisabled.Load() == id) + `}}`))
 	}))
 	mux.HandleFunc("/Items", keyed(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Query().Get("IncludeItemTypes") {
@@ -97,6 +108,11 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 }
 
 var tmdbHits atomic.Int32
+
+// jfDisabled is the id of the one fake Jellyfin user currently reported as disabled.
+var jfDisabled atomic.Value
+
+func init() { jfDisabled.Store("") }
 
 // fakeTMDB serves just enough of the TMDB API for the handlers under test.
 func fakeTMDB(t *testing.T) *httptest.Server {
@@ -286,8 +302,10 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	sugg := suggestions.New(st, mediaSvc, hub)
 	sugg.SetQueueDelay(20 * time.Millisecond)
 	lib.OnHistoryChanged = sugg.QueueRefresh
+	authSvc := auth.New(st)
+	authSvc.SetRecheckEvery(0) // tests: ask the fake Jellyfin about the account on every request
 	h, _ := server.New(api.Deps{
-		Store: st, Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier,
+		Store: st, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier,
 		DryRun: dryRun, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)

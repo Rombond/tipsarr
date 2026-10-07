@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/url"
 	"sort"
 	"strconv"
@@ -70,6 +71,13 @@ func (s *Service) fetch(ctx context.Context, path string, q url.Values, ttl time
 	}
 	body, err := tmdb.New(s.baseURL, apiKey).Get(ctx, path, q)
 	if err != nil {
+		// TMDB down or unreachable: older data beats an error page (a 404 or a bad key is a real answer)
+		if !errors.Is(err, ErrNotFound) && !errors.Is(err, tmdb.ErrInvalidKey) {
+			if old, ok, serr := s.store.GetCacheStale(ctx, key); serr == nil && ok {
+				slog.Warn("tmdb unavailable, serving cached copy", "path", path, "err", err)
+				return old, nil
+			}
+		}
 		return nil, err
 	}
 	_ = s.store.PutCache(ctx, key, body, ttl) // a cache write failure must not fail the request

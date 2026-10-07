@@ -8,6 +8,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/jellyfin"
@@ -26,10 +28,20 @@ type Service struct {
 	// newJellyfin builds a client for a base URL; swapped in tests.
 	newJellyfin func(baseURL string) *jellyfin.Client
 	oidc        oidcState
+
+	// when each user's Jellyfin account is next checked (see stillAllowed)
+	mu      sync.Mutex
+	nextChk map[string]time.Time
+	recheck time.Duration
 }
 
+const (
+	recheckEvery = time.Hour       // a session proves its Jellyfin account still exists and is enabled this often
+	recheckRetry = 5 * time.Minute // when Jellyfin cannot be asked, try again later (the session keeps working)
+)
+
 func New(s *store.Store) *Service {
-	return &Service{store: s, newJellyfin: jellyfin.New}
+	return &Service{store: s, newJellyfin: jellyfin.New, nextChk: map[string]time.Time{}, recheck: recheckEvery}
 }
 
 // Login authenticates against Jellyfin and starts a session. It returns the raw
@@ -81,7 +93,53 @@ func (s *Service) Authenticate(ctx context.Context, token string) (*store.User, 
 	if token == "" {
 		return nil, store.ErrNotFound
 	}
-	return s.store.SessionUser(ctx, hash(token))
+	u, err := s.store.SessionUser(ctx, hash(token))
+	if err != nil {
+		return nil, err
+	}
+	if !s.stillAllowed(ctx, u) {
+		return nil, store.ErrNotFound
+	}
+	return u, nil
+}
+
+// SetRecheckEvery changes how often a session's Jellyfin account is checked (tests).
+func (s *Service) SetRecheckEvery(d time.Duration) { s.recheck = d }
+
+// stillAllowed asks Jellyfin (at most once per recheckEvery per user) whether the account behind
+// a session still exists and is enabled; if not, every session of that user is ended. It fails
+// open: no API key saved, or Jellyfin unreachable, never locks anyone out.
+func (s *Service) stillAllowed(ctx context.Context, u *store.User) bool {
+	s.mu.Lock()
+	if time.Now().Before(s.nextChk[u.ID]) {
+		s.mu.Unlock()
+		return true
+	}
+	s.nextChk[u.ID] = time.Now().Add(min(recheckRetry, s.recheck)) // also stops parallel requests from all checking
+	s.mu.Unlock()
+
+	url, _ := s.store.GetSetting(ctx, SettingJellyfinURL)
+	key, _ := s.store.GetSetting(ctx, SettingJellyfinAPIKey)
+	if url == "" || key == "" {
+		return true
+	}
+	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	ju, err := s.newJellyfin(url).WithToken(key).User(cctx, u.ID)
+	switch {
+	case jellyfin.IsNotFound(err) || (err == nil && ju.Policy.IsDisabled):
+		slog.Info("Jellyfin account removed or disabled, ending its sessions", "user", u.Name)
+		_ = s.store.DeleteUserSessions(context.WithoutCancel(ctx), u.ID)
+		s.mu.Lock()
+		delete(s.nextChk, u.ID)
+		s.mu.Unlock()
+		return false
+	case err == nil:
+		s.mu.Lock()
+		s.nextChk[u.ID] = time.Now().Add(s.recheck)
+		s.mu.Unlock()
+	}
+	return true
 }
 
 func (s *Service) Logout(ctx context.Context, token string) error {

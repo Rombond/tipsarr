@@ -69,20 +69,39 @@ func (m *Manager) Start(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			}
-			t := time.NewTicker(j.Every)
-			defer t.Stop()
+			failures := 0
 			for {
-				if err := m.run(ctx, j); err != nil && !errors.Is(err, ErrAlreadyRunning) {
-					slog.Warn("job failed", "job", j.Name, "err", err)
+				err := m.run(ctx, j)
+				if err != nil && !errors.Is(err, ErrAlreadyRunning) {
+					failures++
+					slog.Warn("job failed", "job", j.Name, "err", err, "attempt", failures)
+				} else {
+					failures = 0
 				}
 				select {
-				case <-t.C:
+				case <-time.After(nextWait(j.Every, failures)):
 				case <-ctx.Done():
 					return
 				}
 			}
 		}()
 	}
+}
+
+const (
+	retryFirst = 30 * time.Second
+	retryMax   = 10 * time.Minute
+)
+
+// nextWait is the pause before a job runs again: its normal interval after a success, and a
+// growing delay (30s, 1m, 2m, ... capped at 10 min and at the interval itself) after failures,
+// so a job that failed because a service was still starting does not stay stale for hours.
+func nextWait(every time.Duration, failures int) time.Duration {
+	if failures <= 0 {
+		return every
+	}
+	d := retryFirst << min(failures-1, 5)
+	return min(d, retryMax, every)
 }
 
 // RunNow starts a job in the background. It returns immediately.
