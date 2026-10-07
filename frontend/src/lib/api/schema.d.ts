@@ -1896,7 +1896,7 @@ export interface components {
              * @enum {string}
              */
             source: "plugin" | "estimate";
-            /** @description Everything watched at least once, most plays first (movies and shows together) */
+            /** @description Everything watched at least once, most time spent first (movies and shows together) */
             top: components["schemas"]["StatsTop"][];
             /** @description Most watched movies */
             topMovies: components["schemas"]["StatsTop"][];
