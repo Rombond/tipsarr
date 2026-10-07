@@ -1673,6 +1673,8 @@ export interface components {
             servarrAutoImport: boolean;
             /** @description Secrets are write-only; this only says whether a key is saved */
             tmdbConfigured: boolean;
+            /** @description Non-admins may choose the quality profile and folder when requesting (default false) */
+            userRequestOptions: boolean;
             /** @description Path (with secret token) for the Jellyfin webhook plugin to call */
             webhookPath: string;
         };
@@ -1713,6 +1715,7 @@ export interface components {
             db: string;
             /** @description When true nothing is ever sent to Radarr/Sonarr */
             dryRun: boolean;
+            userRequestOptions: boolean;
             version: string;
         };
         SyncStatusBody: {
@@ -1756,6 +1759,7 @@ export interface components {
             servarrAutoImport?: boolean;
             /** @description Set or replace the TMDB key (empty string clears it) */
             tmdbApiKey?: string;
+            userRequestOptions?: boolean;
         };
         UpdateUserRequest: {
             /** @description e.g. fr or fr-FR, empty to clear */
@@ -4921,6 +4925,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -135,12 +135,16 @@ func registerRequests(api huma.API, d Deps) {
 		Summary:     "Quality profiles and root folders you can pick when requesting",
 		Description: "Read-only calls to the default Radarr (movie) or Sonarr (tv) instance.",
 		Tags:        []string{"requests"}, Security: sec,
-		Errors: []int{http.StatusUnauthorized, http.StatusConflict, http.StatusBadGateway},
+		Errors: []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusConflict, http.StatusBadGateway},
 	}, func(ctx context.Context, in *struct {
 		Type string `query:"type" enum:"movie,tv" required:"true"`
 	}) (*struct{ Body *requests.Options }, error) {
-		if _, err := requireUser(ctx); err != nil {
+		u, err := requireUser(ctx)
+		if err != nil {
 			return nil, err
+		}
+		if u.Role != store.RoleAdmin && !d.Requests.UsersMayChoose(ctx) {
+			return nil, fail(403, "forbidden", "an admin chooses the quality profile and folder")
 		}
 		o, err := d.Requests.Options(ctx, in.Type)
 		if err != nil && !errors.Is(err, requests.ErrNoInstance) {

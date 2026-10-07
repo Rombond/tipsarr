@@ -493,6 +493,20 @@ func TestRequestOptionsAndOverrides(t *testing.T) {
 		t.Fatalf("options without an instance = %d", resp.StatusCode)
 	}
 	addInstance(t, e, admin, "radarr", radarr)
+	// by default only admins choose: users get the defaults
+	if resp, _ := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("user options while off = %d", resp.StatusCode)
+	}
+	if resp, _ := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"qualityProfileId":9}`, bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("user override while off = %d", resp.StatusCode)
+	}
+	if _, b := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(b, `"userRequestOptions":false`) {
+		t.Fatalf("status = %s", b)
+	}
+	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"userRequestOptions":true}`, admin)
+	if _, b := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(b, `"userRequestOptions":true`) {
+		t.Fatalf("status = %s", b)
+	}
 	resp, body := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", bob)
 	if resp.StatusCode != 200 || !strings.Contains(body, `"HD-1080p"`) || !strings.Contains(body, `"/data/media"`) || !strings.Contains(body, `"qualityProfileId":4`) {
 		t.Fatalf("options = %d %s", resp.StatusCode, body)

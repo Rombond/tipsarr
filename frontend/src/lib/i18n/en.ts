@@ -586,4 +586,7 @@ export const en = {
 	"settings.sso_claim": "Groups claim (default groups)",
 	"settings.sso_fallback": "Leave the address empty to turn it off. Password form at:",
 	"error.oidc_unreachable": "Cannot read the provider’s configuration. Check the address.",
+	"settings.useropts_title": "Quality profile and folder",
+	"settings.useropts_desc": "By default only admins choose the quality profile and folder when requesting: everyone else gets the Radarr/Sonarr defaults. Turn this on to let every user choose.",
+	"settings.useropts_toggle": "Let users choose the quality profile and folder",
 } as const;

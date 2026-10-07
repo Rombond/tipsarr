@@ -127,6 +127,17 @@
 		}
 	}
 
+	async function toggleUserOptions(on: boolean) {
+		try {
+			settings = await unwrap(api.PUT('/admin/settings', { body: { userRequestOptions: on } }));
+			auth.userRequestOptions = on;
+			toast.success(t('common.saved'));
+		} catch (err) {
+			toast.error(errorText(err));
+			settings = await unwrap(api.GET('/admin/settings'));
+		}
+	}
+
 	async function toggleImport(on: boolean) {
 		try {
 			settings = await unwrap(api.PUT('/admin/settings', { body: { servarrAutoImport: on } }));
@@ -253,6 +264,19 @@
 						<span class="text-xs text-muted-foreground">{t('settings.sso_fallback')} <code>/login?password=1</code></span>
 					</div>
 				</form>
+			</CardContent>
+		</Card>
+
+		<Card>
+			<CardHeader>
+				<CardTitle>{t('settings.useropts_title')}</CardTitle>
+				<CardDescription>{t('settings.useropts_desc')}</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<label class="flex cursor-pointer items-center gap-2 text-sm">
+					<input type="checkbox" checked={settings.userRequestOptions} onchange={(e) => toggleUserOptions(e.currentTarget.checked)} />
+					{t('settings.useropts_toggle')}
+				</label>
 			</CardContent>
 		</Card>
 

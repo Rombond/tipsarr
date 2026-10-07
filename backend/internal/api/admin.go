@@ -29,6 +29,7 @@ type settingsBody struct {
 	OIDCClientSecretSet      bool   `json:"oidcClientSecretConfigured"`
 	OIDCAdminGroup           string `json:"oidcAdminGroup" doc:"Members of this group become admins (optional)"`
 	OIDCGroupsClaim          string `json:"oidcGroupsClaim" doc:"Claim that lists the groups, default groups"`
+	UserRequestOptions       bool   `json:"userRequestOptions" doc:"Non-admins may choose the quality profile and folder when requesting (default false)"`
 	ServarrAutoImport        bool   `json:"servarrAutoImport" doc:"Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only)"`
 }
 
@@ -36,16 +37,17 @@ type settingsOutput struct{ Body settingsBody }
 
 type updateSettingsInput struct {
 	Body struct {
-		TMDBKey           *string `json:"tmdbApiKey,omitempty" doc:"Set or replace the TMDB key (empty string clears it)"`
-		BoxOfficeRegions  *string `json:"boxofficeRegions,omitempty" doc:"Comma-separated region codes; empty resets to US"`
-		JellyfinPublicURL *string `json:"jellyfinPublicUrl,omitempty" doc:"Empty string clears it"`
-		JellyfinAPIKey    *string `json:"jellyfinApiKey,omitempty" doc:"Jellyfin API key (Dashboard > API Keys); empty string clears it"`
-		ServarrAutoImport *bool   `json:"servarrAutoImport,omitempty"`
-		OIDCIssuer        *string `json:"oidcIssuer,omitempty" doc:"Empty string turns single sign-on off. The provider is contacted when saving"`
-		OIDCClientID      *string `json:"oidcClientId,omitempty"`
-		OIDCClientSecret  *string `json:"oidcClientSecret,omitempty" doc:"Write-only; empty string clears it"`
-		OIDCAdminGroup    *string `json:"oidcAdminGroup,omitempty"`
-		OIDCGroupsClaim   *string `json:"oidcGroupsClaim,omitempty"`
+		TMDBKey            *string `json:"tmdbApiKey,omitempty" doc:"Set or replace the TMDB key (empty string clears it)"`
+		BoxOfficeRegions   *string `json:"boxofficeRegions,omitempty" doc:"Comma-separated region codes; empty resets to US"`
+		JellyfinPublicURL  *string `json:"jellyfinPublicUrl,omitempty" doc:"Empty string clears it"`
+		JellyfinAPIKey     *string `json:"jellyfinApiKey,omitempty" doc:"Jellyfin API key (Dashboard > API Keys); empty string clears it"`
+		ServarrAutoImport  *bool   `json:"servarrAutoImport,omitempty"`
+		UserRequestOptions *bool   `json:"userRequestOptions,omitempty"`
+		OIDCIssuer         *string `json:"oidcIssuer,omitempty" doc:"Empty string turns single sign-on off. The provider is contacted when saving"`
+		OIDCClientID       *string `json:"oidcClientId,omitempty"`
+		OIDCClientSecret   *string `json:"oidcClientSecret,omitempty" doc:"Write-only; empty string clears it"`
+		OIDCAdminGroup     *string `json:"oidcAdminGroup,omitempty"`
+		OIDCGroupsClaim    *string `json:"oidcGroupsClaim,omitempty"`
 	}
 }
 
@@ -75,7 +77,7 @@ func registerAdmin(api huma.API, d Deps) {
 		oc, _ := d.Auth.OIDCConfig(ctx)
 		return settingsBody{
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
-			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, ServarrAutoImport: autoImport != "false",
+			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, ServarrAutoImport: autoImport != "false", UserRequestOptions: d.Requests.UsersMayChoose(ctx),
 			OIDCIssuer: oc.Issuer, OIDCClientID: oc.ClientID, OIDCClientSecretSet: oc.ClientSecret != "", OIDCAdminGroup: oc.AdminGroup, OIDCGroupsClaim: oc.GroupsClaim,
 		}, nil
 	}
@@ -143,6 +145,15 @@ func registerAdmin(api huma.API, d Deps) {
 				}
 			}
 			if err := d.Store.SetSetting(ctx, key, val); err != nil {
+				return nil, err
+			}
+		}
+		if in.Body.UserRequestOptions != nil {
+			v := "false"
+			if *in.Body.UserRequestOptions {
+				v = "true"
+			}
+			if err := d.Store.SetSetting(ctx, requests.SettingUserOptions, v); err != nil {
 				return nil, err
 			}
 		}

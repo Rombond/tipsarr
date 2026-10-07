@@ -259,6 +259,9 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 	if p.Type != "movie" && p.Type != "tv" || p.TMDBID <= 0 {
 		return nil, ErrInvalid
 	}
+	if p.Overrides != nil && !s.mayChoose(ctx, u) {
+		return nil, ErrForbidden
+	}
 	d, err := s.media.Detail(ctx, media.Opts{Language: u.Language, Region: u.Region}, p.Type, p.TMDBID)
 	if err != nil {
 		return nil, err // media.ErrNotFound / ErrNotConfigured pass through
@@ -617,6 +620,9 @@ func (s *Service) UpdateOptions(ctx context.Context, u *store.User, id string, o
 	if r.Status != store.StatusPending && r.Status != store.StatusFailed {
 		return nil, ErrBadState
 	}
+	if !s.mayChoose(ctx, u) {
+		return nil, ErrForbidden
+	}
 	r.ProfileID, r.RootFolder = 0, ov.RootFolder
 	if ov.ProfileID != nil {
 		r.ProfileID = *ov.ProfileID
@@ -636,4 +642,18 @@ func (s *Service) seasonProgress(id string) []SeasonProgress {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.seasons[id]
+}
+
+// SettingUserOptions lets every user pick the quality profile and folder when requesting.
+// Off by default: then only admins choose, everyone else gets the defaults.
+const SettingUserOptions = "requests.user_options"
+
+// UsersMayChoose reports whether non-admins may choose the quality profile and folder.
+func (s *Service) UsersMayChoose(ctx context.Context) bool {
+	v, _ := s.store.GetSetting(ctx, SettingUserOptions)
+	return v == "true"
+}
+
+func (s *Service) mayChoose(ctx context.Context, u *store.User) bool {
+	return u.Role == store.RoleAdmin || s.UsersMayChoose(ctx)
 }

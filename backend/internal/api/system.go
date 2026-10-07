@@ -18,6 +18,8 @@ type statusOutput struct {
 		Version string `json:"version"`
 		DB      string `json:"db" doc:"Database engine: sqlite, postgres or mysql"`
 		DryRun  bool   `json:"dryRun" doc:"When true nothing is ever sent to Radarr/Sonarr"`
+		// Whether non-admins may pick the quality profile and folder when requesting.
+		UserRequestOptions bool `json:"userRequestOptions"`
 	}
 }
 
@@ -39,6 +41,7 @@ func registerSystem(api huma.API, d Deps) {
 		out.Body.Version = Version
 		out.Body.DB = d.Store.Dialect
 		out.Body.DryRun = d.DryRun
+		out.Body.UserRequestOptions = d.Requests.UsersMayChoose(ctx)
 		return out, nil
 	})
 }

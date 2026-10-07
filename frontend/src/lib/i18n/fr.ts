@@ -587,4 +587,7 @@ export const fr: Record<keyof typeof en, string> = {
 	"settings.sso_claim": "Claim des groupes (par défaut groups)",
 	"settings.sso_fallback": "Laissez l’adresse vide pour la désactiver. Formulaire de mot de passe :",
 	"error.oidc_unreachable": "Impossible de lire la configuration du fournisseur. Vérifiez l’adresse.",
+	"settings.useropts_title": "Profil de qualité et dossier",
+	"settings.useropts_desc": "Par défaut, seuls les administrateurs choisissent le profil de qualité et le dossier lors d’une demande : les autres reçoivent les valeurs par défaut de Radarr/Sonarr. Activez pour laisser chaque utilisateur choisir.",
+	"settings.useropts_toggle": "Laisser les utilisateurs choisir le profil de qualité et le dossier",
 };
