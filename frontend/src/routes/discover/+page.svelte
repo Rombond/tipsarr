@@ -14,16 +14,16 @@
 
 {#snippet boxoffice()}<BoxofficeRow />{/snippet}
 {#snippet trending()}
-	<DiscoverRow href="/discover/trending" title={t('discover.trending')} onSelect={select} load={(page) => unwrap(api.GET('/discover/trending', { params: { query: { page } } }))} />
+	<DiscoverRow href="/discover/trending" description={t('discover.trending_desc')} title={t('discover.trending')} onSelect={select} load={(page) => unwrap(api.GET('/discover/trending', { params: { query: { page } } }))} />
 {/snippet}
 {#snippet popularMovies()}
-	<DiscoverRow href="/discover/popular-movies" title={t('discover.popular_movies')} onSelect={select} load={(page) => unwrap(api.GET('/discover/movies', { params: { query: { page } } }))} />
+	<DiscoverRow href="/discover/popular-movies" description={t('discover.popular_desc')} title={t('discover.popular_movies')} onSelect={select} load={(page) => unwrap(api.GET('/discover/movies', { params: { query: { page } } }))} />
 {/snippet}
 {#snippet popularTv()}
-	<DiscoverRow href="/discover/popular-tv" title={t('discover.popular_tv')} onSelect={select} load={(page) => unwrap(api.GET('/discover/tv', { params: { query: { page } } }))} />
+	<DiscoverRow href="/discover/popular-tv" description={t('discover.popular_desc')} title={t('discover.popular_tv')} onSelect={select} load={(page) => unwrap(api.GET('/discover/tv', { params: { query: { page } } }))} />
 {/snippet}
 {#snippet upcoming()}
-	<DiscoverRow href="/discover/upcoming" title={t('discover.upcoming')} onSelect={select} load={(page) => unwrap(api.GET('/discover/upcoming', { params: { query: { page } } }))} />
+	<DiscoverRow href="/discover/upcoming" description={t('discover.upcoming_desc')} title={t('discover.upcoming')} onSelect={select} load={(page) => unwrap(api.GET('/discover/upcoming', { params: { query: { page } } }))} />
 {/snippet}
 
 <svelte:head>

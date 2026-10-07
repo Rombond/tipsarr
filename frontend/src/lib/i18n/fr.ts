@@ -178,6 +178,9 @@ export const fr: Record<keyof typeof en, string> = {
 	"discover.trending_hint": "Ce que les gens regardent et recherchent cette semaine sur TMDB, films et séries confondus. Change vite.",
 	"discover.popular_hint": "Les titres les plus populaires de TMDB en ce moment, un score qui mêle vues, votes, listes de suivi et date de sortie. Bouge lentement : les mêmes titres restent un moment.",
 	"discover.upcoming_hint": "Les films qui vont bientôt sortir.",
+	"discover.trending_desc": "Ce que les gens regardent et cherchent cette semaine",
+	"discover.popular_desc": "Les plus populaires sur TMDB en ce moment",
+	"discover.upcoming_desc": "Bientôt au cinéma",
 
 	"hero.aria": "Titres à la une",
 	"hero.show": "Afficher {title}",

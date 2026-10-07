@@ -10,7 +10,8 @@
 		load,
 		onSelect,
 		href,
-	}: { title: string; load: (page: number) => Promise<Page>; onSelect?: (item: MediaItem) => void; href?: string } = $props();
+		description,
+	}: { description?: string; title: string; load: (page: number) => Promise<Page>; onSelect?: (item: MediaItem) => void; href?: string } = $props();
 
 	let items: MediaItem[] = $state([]);
 	let page = $state(0);
@@ -42,4 +43,4 @@
 	});
 </script>
 
-<Carousel {title} {href} {items} {loading} {error} hasMore={page < totalPages} onLoadMore={loadNext} {onSelect} onRetry={loadNext} />
+<Carousel {title} {href} {description} {items} {loading} {error} hasMore={page < totalPages} onLoadMore={loadNext} {onSelect} onRetry={loadNext} />

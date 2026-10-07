@@ -18,8 +18,11 @@
 		onRetry,
 		onDismiss,
 		href,
+		description,
 	}: {
 		title: string;
+		/** A short line next to the title (with a link: after the chevron). */
+		description?: string;
 		/** Makes the title a link to the full list. */
 		href?: string;
 		items?: MediaItem[];
@@ -49,10 +52,11 @@
 
 <section class="grid gap-2">
 	<div class="flex items-center justify-between">
-		<h2 class="font-semibold text-lg">
+		<h2 class="flex min-w-0 items-baseline gap-2 font-semibold text-lg">
 			{#if href}
-				<a {href} class="group/title inline-flex items-center gap-1 hover:underline focus-visible:underline">{title}<ChevronRightIcon class="size-5 text-muted-foreground transition-transform group-hover/title:translate-x-0.5" /></a>
-			{:else}{title}{/if}
+				<a {href} class="group/title inline-flex shrink-0 items-center gap-1 hover:underline focus-visible:underline">{title}<ChevronRightIcon class="size-5 self-center text-muted-foreground transition-transform group-hover/title:translate-x-0.5" /></a>
+			{:else}<span class="shrink-0">{title}</span>{/if}
+			{#if description}<span class="hidden min-w-0 truncate text-sm font-normal text-muted-foreground sm:inline" title={description}>{description}</span>{/if}
 		</h2>
 		<div class="flex gap-1 [@media(hover:none)]:hidden">
 			<Button variant="outline" size="icon-sm" aria-label={t('common.scroll_left')} onclick={() => scrollBy(-1)}>
