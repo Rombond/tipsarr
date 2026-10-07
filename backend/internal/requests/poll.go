@@ -49,6 +49,7 @@ func (s *Service) Poll(ctx context.Context) (int, error) {
 
 func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Request, queue map[int]servarr.QueueItem) error {
 	done := false
+	seriesPct := 0 // shows: the episodes Sonarr already has, as a percentage
 	var err error
 	if r.MediaType == "movie" {
 		var m *servarr.Movie
@@ -59,6 +60,9 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 		var sr *servarr.Series
 		if sr, err = c.Series(ctx, int(r.ServarrID)); err == nil {
 			done = sr.Complete()
+			if n := sr.Statistics.EpisodeCount; n > 0 {
+				seriesPct = min(99, sr.Statistics.EpisodeFileCount*100/n)
+			}
 		}
 	}
 	if err != nil {
@@ -88,11 +92,21 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 		return nil
 	}
 
-	q, downloading := queue[int(r.ServarrID)]
+	q, queued := queue[int(r.ServarrID)]
+	// A show is "downloading" while anything is in the queue or some episodes already arrived (the
+	// real count comes from Sonarr); it is only "searching" while it has neither.
+	downloading := queued || seriesPct > 0
+	next := Progress{Percent: q.Percent(), ETASeconds: q.ETASeconds()}
+	if !queued {
+		next.Percent, next.ETASeconds = 0, 0
+	}
+	if seriesPct > 0 {
+		next.Percent = seriesPct
+	}
 	s.mu.Lock()
 	prev, had := s.progress[r.ID]
 	if downloading {
-		s.progress[r.ID] = Progress{Percent: q.Percent(), ETASeconds: q.ETASeconds()}
+		s.progress[r.ID] = next
 	} else {
 		delete(s.progress, r.ID)
 	}
