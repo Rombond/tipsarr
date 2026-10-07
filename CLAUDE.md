@@ -1,9 +1,10 @@
 # Tipsarr
 
-Self-hosted media request + discovery app: one Go backend, one Svelte frontend. Rewrite in progress on branch `rewrite`; design docs live in the Obsidian vault (`Serveur/Dev/Tipsarr/`: Architecture, API, Data Model, Decisions, Feature Plan).
+Self-hosted media discovery and requests for Jellyfin: one Go backend, one Svelte frontend.
 
 - `backend/` Go (chi + huma + bun). See `backend/CLAUDE.md`.
-- `frontend/` SvelteKit SPA. See `frontend/CLAUDE.md`.
-- `make dev | test | generate | build`.
-- License MIT. **Never copy code from Boxarr (GPL-3)**; it is a behaviour reference only. Seerr and SuggestArr (MIT) may be adapted with their notice kept. Local reference clones live in `~/Documents/Dev/arrStack/` (outside this repo).
-- Product rules: never auto-request, never auto-add; Jellyfin is the only identity; webhook-only notifications.
+- `frontend/` SvelteKit SPA (Svelte 5, Tailwind 4, shadcn-svelte). See `frontend/CLAUDE.md`.
+- `make dev | test | generate | build`. `make test` is what CI runs (plus `gofmt`, `go vet`).
+- License MIT. Do not copy code from GPL projects (Boxarr); Seerr and SuggestArr are MIT and may be adapted with their notice kept.
+- Product rules: never auto-request and never auto-add anything to Radarr/Sonarr; Jellyfin is the only identity (password or OIDC single sign-on, both end in a Jellyfin account); notifications are outgoing webhooks only; dry-run is on by default and every write to Radarr/Sonarr goes through `servarr.Client.send`.
+- Every API change: run `make generate` (CI fails if the generated client drifted).

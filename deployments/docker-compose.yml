@@ -1,6 +1,5 @@
-# Production: runs the published image instead of building locally. There is no CI pipeline
-# yet, so build and tag the image yourself first (`docker build -t ghcr.io/rombond/tipsarr:latest .`)
-# or point `image:` at whatever tag you use.
+# Production: runs the published image (built by the release workflow when a v* tag is pushed).
+# To build it yourself instead: `docker build -t ghcr.io/rombond/tipsarr:latest .`
 #
 #   docker compose -f deployments/docker-compose.yml up -d
 #

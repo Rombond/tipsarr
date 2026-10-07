@@ -37,3 +37,9 @@ vite.config.ts.timestamp-*
 # Frontend (moved under frontend/)
 .svelte-kit
 /frontend/build
+
+# Local-only: AI tooling and third-party reference material (not part of the project)
+/.claude/
+/docs/
+/frontend/skills-lock.json
+/frontend/bun.lock
