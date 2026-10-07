@@ -22,6 +22,8 @@
 	let report = $state<Schemas['StatsReport'] | null>(null);
 	let unwatched = $state<Schemas['View'][]>([]);
 	let unwatchedTotal = $state(0);
+	let neverWatched = $state<Schemas['LibraryItem'][]>([]);
+	let neverTotal = $state(0);
 	let users = $state<Schemas['User'][]>([]);
 	let jellyfinLink = $state('');
 	let loading = $state(true);
@@ -34,9 +36,15 @@
 			report = await unwrap(api.GET('/stats', { params: { query: { user: user || undefined, period } } }));
 			// what they asked for, is available, and never watched: an admin looking at everyone sees everyone's
 			const who = user === 'all' ? undefined : user || auth.user?.id;
-			const mine = await unwrap(api.GET('/requests', { params: { query: { filter: 'unwatched', user: who, take: 30 } } })).catch(() => null);
+			const mine = await unwrap(api.GET('/requests', { params: { query: { filter: 'unwatched', user: who, take: 40 } } })).catch(() => null);
 			unwatched = mine?.items ?? [];
 			unwatchedTotal = mine?.total ?? 0;
+			// library clean-up (admins): titles nobody ever watched, oldest first
+			if (auth.isAdmin) {
+				const lib = await unwrap(api.GET('/library', { params: { query: { neverWatched: true, sort: 'added', dir: 'asc', pageSize: 30 } } })).catch(() => null);
+				neverWatched = lib?.items ?? [];
+				neverTotal = lib?.total ?? 0;
+			}
 		} catch (e) {
 			error = errorText(e);
 		} finally {
@@ -206,35 +214,59 @@
 
 		{/if}
 
-		{#if unwatched.length}
-			<Card>
-				<CardHeader>
-					<CardTitle>{t('stats.unwatched_title')}</CardTitle>
-					<CardDescription>{user === '' || !auth.isAdmin ? t('stats.unwatched_mine') : t('stats.unwatched_others')}</CardDescription>
-				</CardHeader>
-				<CardContent class="grid gap-2">
-					{#each unwatched as r (r.id)}
-						<a href="/media/{r.type}/{r.tmdbId}" class="flex items-center gap-3 rounded-lg border border-border p-2 hover:bg-accent">
-							<div class="h-14 w-10 shrink-0 overflow-hidden rounded bg-muted">
-								{#if r.posterPath}<img src={imageUrl(r.posterPath, 'w92')} alt="" loading="lazy" class="h-full w-full object-cover" />{/if}
-							</div>
-							<div class="min-w-0 flex-1">
-								<p class="truncate text-sm font-medium">{r.title}</p>
-								<p class="truncate text-xs text-muted-foreground">
-									{r.type === 'tv' ? t('type.tv_short') : t('type.movie')}
-									{#if user === 'all' || (auth.isAdmin && user !== '')} · {r.requestedBy?.name ?? ''}{/if}
-									· {t('stats.unwatched_since', { date: fmtDate(r.updatedAt) })}
-								</p>
-							</div>
-						</a>
+		<Card>
+			<CardHeader>
+				<CardTitle>{t('stats.unwatched_title')}</CardTitle>
+				<CardDescription>{user === '' || !auth.isAdmin ? t('stats.unwatched_mine') : t('stats.unwatched_others')}</CardDescription>
+			</CardHeader>
+			<CardContent class="grid gap-2">
+				{#each unwatched as r (r.id)}
+					<a href="/media/{r.type}/{r.tmdbId}" class="flex items-center gap-3 rounded-lg border border-border p-2 hover:bg-accent">
+						<div class="h-14 w-10 shrink-0 overflow-hidden rounded bg-muted">
+							{#if r.posterPath}<img src={imageUrl(r.posterPath, 'w92')} alt="" loading="lazy" class="h-full w-full object-cover" />{/if}
+						</div>
+						<div class="min-w-0 flex-1">
+							<p class="truncate text-sm font-medium">{r.title}</p>
+							<p class="truncate text-xs text-muted-foreground">
+								{r.type === 'tv' ? t('type.tv_short') : t('type.movie')}
+								{#if user === 'all' || (auth.isAdmin && user !== '')} · {r.requestedBy?.name ?? ''}{/if}
+								· {t('stats.unwatched_since', { date: fmtDate(r.updatedAt) })}
+							</p>
+						</div>
+					</a>
+				{:else}
+					<p class="text-sm text-muted-foreground">{t('stats.unwatched_none')}</p>
+				{/each}
+				{#if unwatchedTotal > unwatched.length}
+					<p class="text-xs text-muted-foreground">{t('stats.unwatched_more', { count: unwatchedTotal - unwatched.length })}</p>
+				{/if}
+			</CardContent>
+		</Card>
+
+		{#if auth.isAdmin}
+			{#if neverWatched.length}
+				<Scroller title={t('stats.never_title')}>
+					{#each neverWatched as item (item.type + item.tmdbId)}
+						<MediaCard
+							item={asMediaItem(item)}
+							posterUrl={item.posterUrl}
+							hideStatus
+							note={item.addedAt ? t('library.added_on', { date: fmtDate(item.addedAt) }) : undefined}
+						/>
 					{/each}
-					{#if unwatchedTotal > unwatched.length}
-						<a href="/requests?filter=unwatched" class="text-sm text-muted-foreground underline-offset-4 hover:underline">{t('stats.unwatched_more', { count: unwatchedTotal - unwatched.length })}</a>
-					{:else}
-						<a href="/requests?filter=unwatched" class="text-sm text-muted-foreground underline-offset-4 hover:underline">{t('stats.unwatched_open')}</a>
-					{/if}
-				</CardContent>
-			</Card>
+				</Scroller>
+				<p class="-mt-4 text-xs text-muted-foreground">
+					{t('stats.never_hint', { count: neverTotal })}
+					<a href="/library?never=1" class="underline-offset-4 hover:underline">{t('stats.never_open')}</a>
+				</p>
+			{:else}
+				<Card>
+					<CardHeader>
+						<CardTitle>{t('stats.never_title')}</CardTitle>
+						<CardDescription>{t('stats.never_none')}</CardDescription>
+					</CardHeader>
+				</Card>
+			{/if}
 		{/if}
 	{/if}
 </div>

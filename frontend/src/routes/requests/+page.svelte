@@ -10,14 +10,11 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
-	type Filter = 'all' | 'mine' | 'pending' | 'approved' | 'available' | 'declined' | 'failed' | 'unwatched';
-	const dot: Record<string, string> = { pending: 'bg-amber-500', approved: 'bg-sky-500', available: 'bg-emerald-500', declined: 'bg-rose-500', failed: 'bg-orange-600', unwatched: 'bg-violet-500' };
-	// "not watched": available requests their requester never watched (yours; an admin sees everyone's)
-	const filters: Filter[] = ['all', 'pending', 'approved', 'available', 'declined', 'failed', 'unwatched'];
-	const statusKeys = ['pending', 'approved', 'available', 'declined', 'failed'] as const;
+	type Filter = 'all' | 'mine' | 'pending' | 'approved' | 'available' | 'declined' | 'failed';
+	const dot: Record<string, string> = { pending: 'bg-amber-500', approved: 'bg-sky-500', available: 'bg-emerald-500', declined: 'bg-rose-500', failed: 'bg-orange-600' };
+	const filters: Filter[] = ['all', 'pending', 'approved', 'available', 'declined', 'failed'];
 
-	import { page } from '$app/state';
-	let filter = $state<Filter>((['unwatched', 'pending', 'approved', 'available', 'declined', 'failed'] as Filter[]).find((f) => f === page.url.searchParams.get('filter')) ?? 'all');
+	let filter = $state<Filter>('all');
 	let tabCounts = $state<Schemas['RequestCountsResponse'] | null>(null);
 	let approvingAll = $state(false);
 	let items = $state<Schemas['View'][]>([]);
@@ -142,7 +139,7 @@
 
 	<div class="flex gap-1 overflow-x-auto pb-1" role="tablist" aria-label={t('requests.tabs_aria')}>
 		{#each filters as f (f)}
-			{@const n = f === 'all' ? statusKeys.reduce((a, k) => a + (tabCounts?.[k] ?? 0), 0) : ((tabCounts as Record<string, number> | null)?.[f] ?? 0)}
+			{@const n = f === 'all' ? Object.values(tabCounts ?? {}).reduce((a, b) => a + b, 0) : ((tabCounts as Record<string, number> | null)?.[f] ?? 0)}
 			<button
 				type="button"
 				role="tab"
@@ -157,7 +154,6 @@
 		{/each}
 	</div>
 
-	{#if filter === 'unwatched'}<p class="text-sm text-muted-foreground">{auth.isAdmin ? t('requests.unwatched_hint') : t('requests.unwatched_hint_mine')}</p>{/if}
 	{#if error}<p class="text-sm text-destructive">{error}</p>{/if}
 
 	{#if loading}

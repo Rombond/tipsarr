@@ -243,9 +243,6 @@ func (s *Service) Counts(ctx context.Context, u *store.User) (map[string]int, er
 			c[k] = 0
 		}
 	}
-	if n, err := s.store.CountUnwatchedRequests(ctx, uid); err == nil {
-		c["unwatched"] = n
-	}
 	return c, nil
 }
 

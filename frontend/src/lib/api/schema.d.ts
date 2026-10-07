@@ -1783,11 +1783,6 @@ export interface components {
             failed: number;
             /** Format: int64 */
             pending: number;
-            /**
-             * Format: int64
-             * @description Available requests their requester never watched (yours; an admin sees everyone's)
-             */
-            unwatched: number;
         };
         RequestList: {
             items: components["schemas"]["View"][];

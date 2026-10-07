@@ -80,7 +80,6 @@ func registerRequests(api huma.API, d Deps) {
 			Available int `json:"available"`
 			Declined  int `json:"declined"`
 			Failed    int `json:"failed"`
-			Unwatched int `json:"unwatched" doc:"Available requests their requester never watched (yours; an admin sees everyone's)"`
 		}
 	}, error) {
 		u, err := requireUser(ctx)
@@ -98,12 +97,10 @@ func registerRequests(api huma.API, d Deps) {
 				Available int `json:"available"`
 				Declined  int `json:"declined"`
 				Failed    int `json:"failed"`
-				Unwatched int `json:"unwatched" doc:"Available requests their requester never watched (yours; an admin sees everyone's)"`
 			}
 		}{}
 		out.Body.Pending, out.Body.Approved, out.Body.Available = c[store.StatusPending], c[store.StatusApproved], c[store.StatusAvailable]
 		out.Body.Declined, out.Body.Failed = c[store.StatusDeclined], c[store.StatusFailed]
-		out.Body.Unwatched = c["unwatched"]
 		return out, nil
 	})
 

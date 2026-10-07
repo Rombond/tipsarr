@@ -780,12 +780,8 @@ func TestUnwatchedRequests(t *testing.T) {
 	if !strings.Contains(body, `"total":1`) {
 		t.Fatalf("admin looking at bob: %s", body)
 	}
-	_, body = call(t, e.app, "GET", "/api/v1/requests/counts", "", bob)
-	if !strings.Contains(body, `"unwatched":1`) {
-		t.Fatalf("bob's count: %s", body)
-	}
 	_, body = call(t, e.app, "GET", "/api/v1/requests/counts", "", admin)
-	if !strings.Contains(body, `"unwatched":1`) {
-		t.Fatalf("counts = %s", body)
+	if strings.Contains(body, "unwatched") {
+		t.Fatalf("the counts are about statuses only: %s", body)
 	}
 }
