@@ -6,6 +6,8 @@ import (
 	"image"
 	"image/color"
 	"image/jpeg"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -101,5 +103,32 @@ func TestNormaliseTurnsSidewaysPhotos(t *testing.T) {
 	_, _, bBottom, _ := img.At(128, 246).RGBA()
 	if rTop>>8 < 200 || bBottom>>8 < 200 {
 		t.Fatalf("orientation 6: top r=%d bottom b=%d, want red on top and blue at the bottom", rTop>>8, bBottom>>8)
+	}
+}
+
+// Pictures cached before the orientation fix must not be served again.
+func TestOldCachedLDAPPicturesAreDropped(t *testing.T) {
+	dir := t.TempDir()
+	av := filepath.Join(dir, "avatars")
+	if err := os.MkdirAll(av, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	id := "e46cfb49a22543178ccd22b52793b69c"
+	old := filepath.Join(av, "ldap-"+id+".jpg")
+	up := filepath.Join(av, id+".jpg") // an uploaded picture stays
+	for _, f := range []string{old, up} {
+		if err := os.WriteFile(f, []byte("x"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	svc := New(dir, nil)
+	if _, err := os.Stat(old); !os.IsNotExist(err) {
+		t.Fatal("the old cached LDAP picture is still there")
+	}
+	if _, err := os.Stat(up); err != nil {
+		t.Fatal("an uploaded picture must be kept")
+	}
+	if got := filepath.Base(svc.ldapFile(id)); got == "ldap-"+id+".jpg" {
+		t.Fatalf("cache name is not versioned: %s", got)
 	}
 }

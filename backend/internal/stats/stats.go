@@ -18,7 +18,8 @@ import (
 const (
 	minPlaySeconds = 60 // shorter sessions are skips, not plays
 	topGenres      = 12
-	topTitles      = 10
+	topAll         = 300 // the mixed list
+	topPerType     = 20
 )
 
 type Service struct{ store *store.Store }
@@ -41,8 +42,10 @@ type StatsTop struct {
 	Type      string  `json:"type" enum:"movie,tv"`
 	TMDBID    int64   `json:"tmdbId"`
 	Title     string  `json:"title"`
-	Plays     int     `json:"plays"`
+	Plays     int     `json:"plays" doc:"Play sessions; for a show every episode watched counts as one"`
 	Hours     float64 `json:"hours"`
+	Year      int     `json:"year,omitempty"`
+	Rating    float64 `json:"rating,omitempty"`
 	PosterURL string  `json:"posterUrl,omitempty"`
 }
 
@@ -68,18 +71,20 @@ type StatsPlugin struct {
 }
 
 type StatsReport struct {
-	Source   string        `json:"source" enum:"plugin,estimate" doc:"plugin = exact plays from Jellyfin's Playback Reporting; estimate = watch history x runtime"`
-	User     string        `json:"user" doc:"A user id, or all"`
-	Period   string        `json:"period" enum:"30d,12m,all"`
-	Totals   StatsTotals   `json:"totals"`
-	Genres   []StatsBucket `json:"genres"`
-	Decades  []StatsBucket `json:"decades"`
-	Months   []StatsMonth  `json:"months" doc:"Last 12 months, oldest first (plugin source only)"`
-	Weekdays []float64     `json:"weekdays" doc:"Hours per weekday, Monday first (plugin source only)"`
-	Hours24  []float64     `json:"hoursOfDay" doc:"Hours per hour of the day (plugin source only)"`
-	Top      []StatsTop    `json:"top"`
-	Requests StatsRequests `json:"requests"`
-	Plugin   StatsPlugin   `json:"plugin"`
+	Source    string        `json:"source" enum:"plugin,estimate" doc:"plugin = exact plays from Jellyfin's Playback Reporting; estimate = watch history x runtime"`
+	User      string        `json:"user" doc:"A user id, or all"`
+	Period    string        `json:"period" enum:"30d,12m,all"`
+	Totals    StatsTotals   `json:"totals"`
+	Genres    []StatsBucket `json:"genres"`
+	Decades   []StatsBucket `json:"decades"`
+	Months    []StatsMonth  `json:"months" doc:"Last 12 months, oldest first (plugin source only)"`
+	Weekdays  []float64     `json:"weekdays" doc:"Hours per weekday, Monday first (plugin source only)"`
+	Hours24   []float64     `json:"hoursOfDay" doc:"Hours per hour of the day (plugin source only)"`
+	Top       []StatsTop    `json:"top" doc:"Everything watched at least once, most plays first (movies and shows together)"`
+	TopMovies []StatsTop    `json:"topMovies" doc:"Most watched movies"`
+	TopShows  []StatsTop    `json:"topShows" doc:"Most watched shows"`
+	Requests  StatsRequests `json:"requests"`
+	Plugin    StatsPlugin   `json:"plugin"`
 }
 
 type title struct {
@@ -91,6 +96,7 @@ type title struct {
 	secs   float64
 	genres []string
 	year   int
+	rating int // x 10
 	tag    string
 }
 
@@ -115,7 +121,7 @@ func (s *Service) Compute(ctx context.Context, userID, period string, adminViewe
 		meta[fmt.Sprintf("%s:%d", it.MediaType, it.TMDBID)] = it
 	}
 
-	res := &StatsReport{User: userID, Period: period, Genres: []StatsBucket{}, Decades: []StatsBucket{}, Months: []StatsMonth{}, Weekdays: []float64{}, Hours24: []float64{}, Top: []StatsTop{}}
+	res := &StatsReport{User: userID, Period: period, Genres: []StatsBucket{}, Decades: []StatsBucket{}, Months: []StatsMonth{}, Weekdays: []float64{}, Hours24: []float64{}, Top: []StatsTop{}, TopMovies: []StatsTop{}, TopShows: []StatsTop{}}
 	if res.User == "" {
 		res.User = "all"
 	}
@@ -219,7 +225,7 @@ func (s *Service) fromPlugin(ctx context.Context, res *StatsReport, userID strin
 }
 
 func fill(t *title, it store.LibraryItem) {
-	t.name, t.jf, t.year, t.tag = it.Title, it.JellyfinID, it.Year, it.ImageTag
+	t.name, t.jf, t.year, t.rating, t.tag = it.Title, it.JellyfinID, it.Year, it.Rating10, it.ImageTag
 	if g := strings.Trim(it.Genres, "|"); g != "" {
 		t.genres = strings.Split(g, "|")
 	}
@@ -319,16 +325,20 @@ func aggregate(res *StatsReport, titles map[string]*title) {
 		return all[i].name < all[j].name
 	})
 	for _, t := range all {
-		if len(res.Top) == topTitles {
-			break
+		if t.tmdb == 0 || t.plays == 0 {
+			continue // cannot link to a details page / never watched
 		}
-		if t.tmdb == 0 {
-			continue // cannot link to a details page
-		}
-		top := StatsTop{Type: t.typ, TMDBID: t.tmdb, Title: t.name, Plays: t.plays, Hours: t.secs / 3600}
+		top := StatsTop{Type: t.typ, TMDBID: t.tmdb, Title: t.name, Plays: t.plays, Hours: t.secs / 3600, Year: t.year, Rating: float64(t.rating) / 10}
 		if t.tag != "" && t.jf != "" {
 			top.PosterURL = "/api/v1/images/jellyfin/" + t.jf + "?tag=" + t.tag
 		}
-		res.Top = append(res.Top, top)
+		if len(res.Top) < topAll {
+			res.Top = append(res.Top, top)
+		}
+		if t.typ == "movie" && len(res.TopMovies) < topPerType {
+			res.TopMovies = append(res.TopMovies, top)
+		} else if t.typ == "tv" && len(res.TopShows) < topPerType {
+			res.TopShows = append(res.TopShows, top)
+		}
 	}
 }

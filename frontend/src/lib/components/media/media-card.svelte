@@ -9,6 +9,7 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import StarIcon from '@lucide/svelte/icons/star';
+	import CheckIcon from '@lucide/svelte/icons/check';
 
 	let {
 		item,
@@ -19,6 +20,9 @@
 		radarrHasFile = false,
 		onDismiss,
 		fluid = false,
+		posterUrl,
+		hideStatus = false,
+		watched = false,
 	}: {
 		item: MediaItem;
 		onSelect?: (item: MediaItem) => void;
@@ -34,13 +38,19 @@
 		onDismiss?: (item: MediaItem) => void;
 		/** Fill the grid cell instead of a fixed poster width. */
 		fluid?: boolean;
+		/** A ready poster address (a Jellyfin poster in the Library and Stats pages) instead of the TMDB path. */
+		posterUrl?: string;
+		/** Library and Stats only list what is available: the "available" icon would be on every card. */
+		hideStatus?: boolean;
+		/** Shows a check when the signed-in person already watched it (Library). */
+		watched?: boolean;
 	} = $props();
 
 	let requested = $state<string | null>(null);
 	let requesting = $state(false);
 	let flow: { start: () => void } | undefined = $state();
 
-	const poster = $derived(imageUrl(item.posterPath, 'w342'));
+	const poster = $derived(posterUrl ?? imageUrl(item.posterPath, 'w342'));
 	const year = $derived(item.releaseDate?.slice(0, 4));
 	const shown = $derived(itemStatus({ availability: item.availability, requestStatus: requested ?? item.requestStatus }, { tracked: inRadarr, hasFile: radarrHasFile }));
 	const canQuickRequest = $derived(item.availability !== 'available' && shown === null);
@@ -74,8 +84,14 @@
 			{/if}
 		</button>
 
-		{#if shown}
+		{#if shown && !hideStatus}
 			<StatusIcon status={shown} class="absolute top-1.5 right-1.5" />
+		{/if}
+		{#if watched}
+			<span class="pointer-events-none absolute top-1.5 right-1.5 flex size-5 items-center justify-center rounded-full bg-emerald-500 text-white shadow" title={t('library.watched_by_me')}>
+				<CheckIcon class="size-3.5" />
+				<span class="sr-only">{t('library.watched_by_me')}</span>
+			</span>
 		{/if}
 
 		<span class="pointer-events-none absolute top-1.5 left-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white uppercase backdrop-blur-sm">

@@ -4,7 +4,8 @@
 	import { goto } from '$app/navigation';
 	import { t } from '$lib/i18n/index.svelte';
 	import { api, unwrap, errorText, type Schemas } from '$lib/api/client';
-	import LibraryCard from '$lib/components/library/library-card.svelte';
+	import MediaCard from '$lib/components/media/media-card.svelte';
+	import { asMediaItem } from '$lib/library-item';
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
@@ -274,7 +275,7 @@
 		<p class="text-xs text-muted-foreground" aria-live="polite">{t('library.count', { count: total })}</p>
 		<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 			{#each items as item (item.type + item.tmdbId)}
-				<LibraryCard {item} />
+				<MediaCard item={asMediaItem(item)} posterUrl={item.posterUrl} hideStatus watched={item.watched} fluid />
 			{/each}
 			{#if loading}
 				{#each { length: 8 } as _, i (i)}<Skeleton class="aspect-[2/3] w-full rounded-lg" />{/each}

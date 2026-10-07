@@ -1896,7 +1896,12 @@ export interface components {
              * @enum {string}
              */
             source: "plugin" | "estimate";
+            /** @description Everything watched at least once, most plays first (movies and shows together) */
             top: components["schemas"]["StatsTop"][];
+            /** @description Most watched movies */
+            topMovies: components["schemas"]["StatsTop"][];
+            /** @description Most watched shows */
+            topShows: components["schemas"]["StatsTop"][];
             totals: components["schemas"]["StatsTotals"];
             /** @description A user id, or all */
             user: string;
@@ -1920,14 +1925,21 @@ export interface components {
         StatsTop: {
             /** Format: double */
             hours: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Play sessions; for a show every episode watched counts as one
+             */
             plays: number;
             posterUrl?: string;
+            /** Format: double */
+            rating?: number;
             title: string;
             /** Format: int64 */
             tmdbId: number;
             /** @enum {string} */
             type: "movie" | "tv";
+            /** Format: int64 */
+            year?: number;
         };
         StatsTotals: {
             /** Format: double */

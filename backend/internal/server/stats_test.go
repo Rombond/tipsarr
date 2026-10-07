@@ -24,9 +24,17 @@ type statsResp struct {
 		Plays int `json:"plays"`
 	} `json:"months"`
 	Top []struct {
+		Type      string `json:"type"`
 		Title     string `json:"title"`
+		Plays     int    `json:"plays"`
 		PosterURL string `json:"posterUrl"`
 	} `json:"top"`
+	TopMovies []struct {
+		Title string `json:"title"`
+	} `json:"topMovies"`
+	TopShows []struct {
+		Title string `json:"title"`
+	} `json:"topShows"`
 	Plugin struct {
 		Hint bool `json:"hint"`
 	} `json:"plugin"`
@@ -82,6 +90,9 @@ func TestStatsFromPlaybackReporting(t *testing.T) {
 	}
 	if len(mine.Top) != 2 || mine.Top[0].Title != "Movie One" || !strings.Contains(mine.Top[0].PosterURL, "aaaa0000000000000000000000000001") {
 		t.Fatalf("top = %+v", mine.Top)
+	}
+	if len(mine.TopMovies) != 1 || mine.TopMovies[0].Title != "Movie One" || len(mine.TopShows) != 1 || mine.TopShows[0].Title != "Show Two" {
+		t.Fatalf("top per type = %+v / %+v", mine.TopMovies, mine.TopShows)
 	}
 	if mine.Plugin.Hint {
 		t.Fatal("no hint when the plugin is installed")

@@ -57,11 +57,26 @@ type Service struct {
 }
 
 func New(configDir string, s *store.Store) *Service {
-	return &Service{dir: filepath.Join(configDir, "avatars"), store: s, failed: map[string]time.Time{}}
+	svc := &Service{dir: filepath.Join(configDir, "avatars"), store: s, failed: map[string]time.Time{}}
+	// pictures cached by an older version are dropped (they are re-fetched on demand)
+	if old, _ := filepath.Glob(filepath.Join(svc.dir, "ldap-[0-9a-fA-F]*.jpg")); len(old) > 0 {
+		for _, f := range old {
+			_ = os.Remove(f)
+		}
+	}
+	return svc
 }
 
-func (s *Service) upload(id string) string   { return filepath.Join(s.dir, id+".jpg") }
-func (s *Service) ldapFile(id string) string { return filepath.Join(s.dir, "ldap-"+id+".jpg") }
+func (s *Service) upload(id string) string { return filepath.Join(s.dir, id+".jpg") }
+
+// cacheVersion is part of the cached LDAP file name: bump it when the way pictures are processed
+// changes, so pictures cached the old way are fetched again instead of staying wrong for 12 hours
+// (v2: EXIF orientation applied).
+const cacheVersion = "v2"
+
+func (s *Service) ldapFile(id string) string {
+	return filepath.Join(s.dir, "ldap-"+cacheVersion+"-"+id+".jpg")
+}
 
 // Path returns the file to serve for a user, or "" when Jellyfin's picture should be used.
 func (s *Service) Path(ctx context.Context, id, username string) string {

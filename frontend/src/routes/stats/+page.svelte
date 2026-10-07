@@ -5,6 +5,9 @@
 	import { api, unwrap, errorText, type Schemas } from '$lib/api/client';
 	import { auth } from '$lib/stores/auth.svelte';
 	import BarChart from '$lib/components/stats/bar-chart.svelte';
+	import MediaCard from '$lib/components/media/media-card.svelte';
+	import Scroller from '$lib/components/ui/scroller.svelte';
+	import { asMediaItem } from '$lib/library-item';
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
@@ -145,6 +148,25 @@
 				</div>
 			</div>
 
+			{#snippet carousel(title: string, list: Schemas['StatsTop'][])}
+				{#if list.length}
+					<Scroller {title}>
+						{#each list as item, i (item.type + item.tmdbId)}
+							<MediaCard
+								item={asMediaItem(item)}
+								posterUrl={item.posterUrl}
+								hideStatus
+								rank={i + 1}
+								note={item.type === 'tv' ? t('stats.n_episodes', { count: item.plays }) : t('stats.n_plays', { count: item.plays })}
+							/>
+						{/each}
+					</Scroller>
+				{/if}
+			{/snippet}
+			{@render carousel(t('stats.top'), report.top)}
+			{@render carousel(t('stats.top_movies'), report.topMovies)}
+			{@render carousel(t('stats.top_shows'), report.topShows)}
+
 			<div class="grid gap-4 lg:grid-cols-2">
 				{#if genreData.length}
 					<Card>
@@ -174,27 +196,6 @@
 				{/if}
 			</div>
 
-			{#if report.top.length}
-				<Card>
-					<CardHeader><CardTitle>{t('stats.top')}</CardTitle></CardHeader>
-					<CardContent>
-						<ol class="grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-4">
-							{#each report.top as item, i (item.type + item.tmdbId)}
-								<li class="min-w-0">
-									<a href="/media/{item.type}/{item.tmdbId}" class="group block">
-										<div class="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted ring-1 ring-border/50 transition group-hover:ring-border">
-											{#if item.posterUrl}<img src={item.posterUrl} alt="" loading="lazy" class="h-full w-full object-cover" />{:else}<div class="flex h-full items-center justify-center p-2 text-center text-xs text-muted-foreground">{item.title}</div>{/if}
-											<span class="absolute top-1.5 left-1.5 rounded-full bg-black/70 px-1.5 text-[11px] font-medium text-white">{i + 1}</span>
-										</div>
-										<p class="mt-1.5 truncate text-sm font-medium" title={item.title}>{item.title}</p>
-										<p class="truncate text-xs text-muted-foreground">{t('stats.n_plays', { count: item.plays })}{item.hours ? ` · ${hours(item.hours)}` : ''}</p>
-									</a>
-								</li>
-							{/each}
-						</ol>
-					</CardContent>
-				</Card>
-			{/if}
 		{/if}
 	{/if}
 </div>
