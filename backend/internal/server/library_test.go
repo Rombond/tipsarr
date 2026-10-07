@@ -124,3 +124,19 @@ func TestLibraryBrowse(t *testing.T) {
 		t.Fatalf("bad id = %d", resp.StatusCode)
 	}
 }
+
+// Movies that belong to a Jellyfin collection are listed too ("Up" was missing from the library
+// because Jellyfin hides collection members unless asked not to).
+func TestLibraryIncludesMoviesInCollections(t *testing.T) {
+	jfBoxed.Store(true)
+	t.Cleanup(func() { jfBoxed.Store(false) })
+	jf := fakeJellyfin(t)
+	app := newApp(t)
+	admin := loginAs(t, app, jf.URL, "alice", "secret")
+	call(t, app, "PUT", "/api/v1/admin/settings", `{"jellyfinApiKey":"jfkey"}`, admin)
+	runJobAndWait(t, app, func(m, p string) (*http.Response, string) { return call(t, app, m, p, "", admin) }, "library-sync", "ok")
+	_, body := call(t, app, "GET", "/api/v1/library?q=boxed", "", admin)
+	if !strings.Contains(body, `"title":"Boxed Movie"`) {
+		t.Fatalf("a movie in a collection is missing: %s", body)
+	}
+}

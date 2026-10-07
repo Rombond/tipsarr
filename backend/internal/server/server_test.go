@@ -144,6 +144,12 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 		}
 		switch r.URL.Query().Get("IncludeItemTypes") {
 		case "Movie,Series":
+			if jfBoxed.Load() && r.URL.Query().Get("CollapseBoxSetItems") == "false" {
+				writeItems(w, `{"Id":"bbbb0000000000000000000000000005","Name":"Boxed Movie","Type":"Movie","ProviderIds":{"Tmdb":"5"},"Genres":["Family"],"ProductionYear":2009,"RunTimeTicks":57600000000,"CommunityRating":8.3,"DateCreated":"2026-09-20T10:00:00Z"},
+					{"Id":"aaaa0000000000000000000000000001","Name":"Movie One","Type":"Movie","ProviderIds":{"Tmdb":"1"},"Genres":["Action","Drama"],"ProductionYear":2024,"RunTimeTicks":72000000000,"CommunityRating":7.5,"DateCreated":"2026-09-01T10:00:00Z","ImageTags":{"Primary":"tg1"}},
+					{"Id":"js1","Name":"Show Two","Type":"Series","ProviderIds":{"Tmdb":"2"},"Genres":["Drama"],"ProductionYear":2023,"RunTimeTicks":27000000000,"CommunityRating":8.1,"DateCreated":"2026-09-10T10:00:00Z"}`)
+				return
+			}
 			writeItems(w, `{"Id":"aaaa0000000000000000000000000001","Name":"Movie One","Type":"Movie","ProviderIds":{"Tmdb":"1"},"Genres":["Action","Drama"],"ProductionYear":2024,"RunTimeTicks":72000000000,"CommunityRating":7.5,"DateCreated":"2026-09-01T10:00:00Z","ImageTags":{"Primary":"tg1"}},
 				{"Id":"jm9","Name":"No Tmdb","Type":"Movie","ProviderIds":{}},
 				{"Id":"js1","Name":"Show Two","Type":"Series","ProviderIds":{"Tmdb":"2"},"Genres":["Drama"],"ProductionYear":2023,"RunTimeTicks":27000000000,"CommunityRating":8.1,"DateCreated":"2026-09-10T10:00:00Z"}`)
@@ -177,6 +183,10 @@ var jfPlayback atomic.Bool
 
 // jfRemovedPlay adds a play of a movie that is not in the library (and is known to the fake TMDB).
 var jfRemovedPlay atomic.Bool
+
+// jfBoxed adds a movie that sits in a Jellyfin collection: like the real server, the fake hides it
+// unless the request says CollapseBoxSetItems=false.
+var jfBoxed atomic.Bool
 
 // jfDisabled is the id of the one fake Jellyfin user currently reported as disabled.
 var jfDisabled atomic.Value

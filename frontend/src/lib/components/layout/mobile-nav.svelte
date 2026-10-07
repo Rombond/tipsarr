@@ -34,7 +34,7 @@
 			<tab.icon class="size-5" />
 			{t(tab.key)}
 			{#if tab.href === '/requests' && pending > 0}
-				<span class="absolute top-1 left-1/2 ml-2 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] leading-4 text-primary-foreground">{pending}</span>
+				<span class="absolute top-1 left-1/2 ml-2 min-w-5 rounded-full bg-primary px-1.5 text-center text-xs leading-5 font-semibold text-primary-foreground">{pending}</span>
 			{/if}
 		</a>
 	{/each}

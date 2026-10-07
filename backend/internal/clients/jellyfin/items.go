@@ -74,6 +74,11 @@ func (c *Client) Items(ctx context.Context, userID string, q url.Values, fn func
 		path = "/Users/" + url.PathEscape(userID) + "/Items"
 	}
 	q = cloneValues(q)
+	// Without this Jellyfin hides every movie that belongs to a collection (Pixar, X-Men...) behind
+	// the collection itself, so they would be missing from the library and the history.
+	if q.Get("CollapseBoxSetItems") == "" {
+		q.Set("CollapseBoxSetItems", "false")
+	}
 	q.Set("Recursive", "true")
 	q.Set("Limit", strconv.Itoa(pageSize))
 	for start := 0; ; start += pageSize {
