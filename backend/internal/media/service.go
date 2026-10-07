@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -495,6 +496,9 @@ func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) 
 	for _, c := range raw.ProductionCountries {
 		d.Countries = append(d.Countries, c.Name)
 	}
+	if d.Overview == "" && !isEnglish(o.lang()) {
+		d.Overview = s.englishOverview(ctx, mediaType, id)
+	}
 	d.TrailerKey = pickTrailer(raw)
 	d.Budget, d.Revenue = raw.Budget, raw.Revenue
 	if mediaType == "tv" {
@@ -754,4 +758,64 @@ func shorten(s string, n int) string {
 		return strings.TrimRight(string(cut)[:i], " ,.;:-") + "…"
 	}
 	return string(cut) + "…"
+}
+
+func isEnglish(lang string) bool { return lang == "" || strings.HasPrefix(strings.ToLower(lang), "en") }
+
+type basicInfo struct {
+	Title      string `json:"title"`
+	Name       string `json:"name"`
+	Overview   string `json:"overview"`
+	PosterPath string `json:"poster_path"`
+}
+
+func (s *Service) basic(ctx context.Context, mediaType string, id int, lang string) (basicInfo, error) {
+	var b basicInfo
+	err := s.get(ctx, "/"+mediaType+"/"+strconv.Itoa(id), url.Values{"language": {lang}}, ttlDetail, &b)
+	return b, err
+}
+
+// englishOverview is the fallback for titles TMDB has no translation for: the English text is
+// better than an empty box.
+func (s *Service) englishOverview(ctx context.Context, mediaType string, id int) string {
+	b, err := s.basic(ctx, mediaType, id, defaultLang)
+	if err != nil {
+		return ""
+	}
+	return b.Overview
+}
+
+// Localize rewrites title, overview and poster of items in the person's language. It is for
+// snapshots stored in English (the box-office charts); results come from TMDB's cached basic
+// details, a few at a time. Anything that fails keeps its snapshot values.
+func (s *Service) Localize(ctx context.Context, o Opts, items []Item) {
+	lang := o.lang()
+	if isEnglish(lang) || len(items) == 0 {
+		return
+	}
+	sem := make(chan struct{}, 6)
+	var wg sync.WaitGroup
+	for i := range items {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(it *Item) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			b, err := s.basic(ctx, it.Type, it.TMDBID, lang)
+			if err != nil {
+				return
+			}
+			if t := firstNonEmpty(b.Title, b.Name); t != "" {
+				it.Title = t
+			}
+			if b.PosterPath != "" {
+				it.PosterPath = b.PosterPath
+			}
+			it.Overview = b.Overview
+			if it.Overview == "" {
+				it.Overview = s.englishOverview(ctx, it.Type, it.TMDBID)
+			}
+		}(&items[i])
+	}
+	wg.Wait()
 }

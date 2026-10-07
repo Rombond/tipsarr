@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
+	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -62,7 +63,7 @@ func registerBoxOffice(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
-		c, err := d.BoxOffice.Chart(ctx, u.Region, in.Region, in.Week, in.Weekly)
+		c, err := d.BoxOffice.Chart(ctx, media.Opts{Language: u.Language, Region: u.Region}, in.Region, in.Week, in.Weekly)
 		if errors.Is(err, store.ErrNotFound) {
 			return nil, fail(404, "chart_not_found", "no chart stored for that week")
 		}

@@ -16,10 +16,20 @@
 	}: { open?: boolean; item?: MediaItem | null; onclose?: () => void } = $props();
 
 	let requested = $state<string | null>(null);
+	// list results often lack an overview in the person's language: the details carry the English fallback
+	let fetchedOverview = $state('');
 	let busy = $state(false);
 
 	$effect(() => {
-		if (open) requested = null;
+		if (!open) return;
+		requested = null;
+		fetchedOverview = '';
+		const it = item;
+		if (it && !it.overview) {
+			unwrap(api.GET('/media/{type}/{id}', { params: { path: { type: it.type, id: it.tmdbId } } }))
+				.then((d) => (fetchedOverview = d.overview ?? ''))
+				.catch(() => {});
+		}
 	});
 
 	const status = $derived(requested ?? item?.requestStatus ?? null);
@@ -66,7 +76,7 @@
 					</div>
 					<Dialog.Title class="text-xl">{item.title}</Dialog.Title>
 				</Dialog.Header>
-				{#if item.overview}<p class="line-clamp-6 text-sm text-muted-foreground">{item.overview}</p>{/if}
+				{#if item.overview || fetchedOverview}<p class="line-clamp-6 text-sm text-muted-foreground">{item.overview || fetchedOverview}</p>{/if}
 				<Dialog.Footer class="gap-2">
 					<Button variant="outline" href={detailsUrl} onclick={() => onclose?.()}>{t('modal.more_details')}</Button>
 					{#if item.availability !== 'available' && status === null}

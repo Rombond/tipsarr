@@ -329,12 +329,12 @@ type Chart struct {
 
 // Chart returns a stored chart. region/week may be empty: the first configured region (or the
 // user's preferred one if configured) and the latest stored week are used.
-func (s *Service) Chart(ctx context.Context, preferred, region, week string, weekly bool) (*Chart, error) {
+func (s *Service) Chart(ctx context.Context, o media.Opts, region, week string, weekly bool) (*Chart, error) {
 	regions := s.Regions(ctx)
 	if region == "" {
 		region = regions[0]
 		for _, r := range regions {
-			if r == strings.ToUpper(preferred) {
+			if r == strings.ToUpper(o.Region) {
 				region = r
 			}
 		}
@@ -397,6 +397,7 @@ func (s *Service) Chart(ctx context.Context, preferred, region, week string, wee
 			VoteAverage: float64(e.VoteTenths) / 10, Overview: e.Overview, Availability: media.AvailabilityNone,
 		})
 	}
+	s.media.Localize(ctx, o, items) // the stored snapshot is English
 	s.media.Annotate(ctx, items)
 	radarr := s.radarrMovies(ctx)
 	for i, e := range entries {
