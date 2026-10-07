@@ -84,6 +84,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerUsers(api, d)
 		registerServarr(api, d)
 		registerWebhooks(api, d)
+		registerLDAPImport(api, d)
 		r.Get("/events", eventsHandler(d))
 		r.Get("/images/tmdb/{size}/{file}", imageHandler(d))
 		r.Get("/users/{id}/avatar", avatarHandler(d))

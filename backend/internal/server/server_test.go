@@ -67,6 +67,16 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 	mux.HandleFunc("/Users", keyed(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`[{"Id":"` + aliceID + `","Name":"alice","Policy":{"IsAdministrator":true}},{"Id":"` + bobID + `","Name":"bob","Policy":{"IsAdministrator":false}},{"Id":"cccccccccccccccccccccccccccccccc","Name":"carol","Policy":{"IsAdministrator":false}}]`))
 	}))
+	mux.HandleFunc("GET /Plugins", keyed(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`[{"Id":"p1","Name":"Webhook","Status":"Active"},{"Id":"958aad66378d4a2db89ba76f0ee1b06a","Name":"LDAP Authentication","Status":"Active"}]`))
+	}))
+	mux.HandleFunc("GET /Plugins/{id}/Configuration", keyed(func(w http.ResponseWriter, r *http.Request) {
+		if r.PathValue("id") != "958aad66378d4a2db89ba76f0ee1b06a" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		_, _ = w.Write([]byte(`{"LdapServer":"127.0.0.1","LdapPort":1,"UseSsl":false,"LdapBindUser":"uid=svc,ou=people,dc=x,dc=com","LdapBindPassword":"pw","LdapBaseDn":"ou=people,dc=x,dc=com"}`))
+	}))
 	// one user: used to re-check a session's account (jfDisabled lists ids answering "disabled")
 	mux.HandleFunc("GET /Users/{id}", keyed(func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")

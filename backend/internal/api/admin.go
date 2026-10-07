@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -137,6 +138,13 @@ func registerAdmin(api huma.API, d Deps) {
 		if in.Body.JellyfinAPIKey != nil {
 			if err := d.Store.SetSetting(ctx, library.SettingJellyfinAPIKey, strings.TrimSpace(*in.Body.JellyfinAPIKey)); err != nil {
 				return nil, err
+			}
+			// Jellyfin is now linked: prefill the LDAP settings from its LDAP plugin, if there is one
+			// and LDAP is not configured yet (best effort, never blocks saving the key).
+			if strings.TrimSpace(*in.Body.JellyfinAPIKey) != "" && in.Body.LDAPURL == nil && ldapGet(ctx, d, avatars.SettingLDAPURL) == "" {
+				if _, err := importLDAPFromJellyfin(ctx, d); err != nil {
+					slog.Info("LDAP prefill from Jellyfin skipped", "err", err)
+				}
 			}
 		}
 		for key, v := range map[string]*string{
