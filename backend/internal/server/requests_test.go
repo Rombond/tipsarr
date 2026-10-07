@@ -78,7 +78,7 @@ func newFakeArr(t *testing.T, kind string) *fakeArr {
 			}
 			out(`[]`)
 		case kind == "radarr" && p == "/movie/lookup/tmdb":
-			out(`{"title":"Request Me","tmdbId":5,"year":2025}`)
+			out(`{"title":"Request Me","tmdbId":5,"year":2025,"imdbId":"tt1234567","ratings":{"imdb":{"votes":1200,"value":7.8,"type":"user"},"tmdb":{"votes":50,"value":7.1,"type":"user"},"metacritic":{"votes":0,"value":71,"type":"user"},"rottenTomatoes":{"votes":0,"value":0,"type":"user"}}}`)
 		case kind == "radarr" && p == "/movie/42":
 			if f.hasFile.Load() {
 				out(`{"id":42,"tmdbId":5,"hasFile":true}`)

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"github.com/Rombond/tipsarr/backend/internal/ratings"
 	"log/slog"
 	"net/http"
 
@@ -126,6 +127,20 @@ func registerDiscover(api huma.API, d Deps) {
 		}
 		r, err := d.Media.Search(ctx, o, in.Query, in.Page, in.Tags)
 		return &struct{ Body *media.SearchResult }{r}, mediaErr(err)
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "movieRatings", Method: http.MethodGet, Path: "/media/movie/{id}/ratings",
+		Summary:     "IMDb, Metacritic and Rotten Tomatoes scores of a movie, from Radarr",
+		Description: "Empty when no Radarr is configured or Radarr has no score. Shows have none.",
+		Tags:        []string{"media"}, Security: sec, Errors: errs,
+	}, func(ctx context.Context, in *struct {
+		ID int `path:"id" minimum:"1"`
+	}) (*struct{ Body ratings.MovieScores }, error) {
+		if _, err := requireUser(ctx); err != nil {
+			return nil, err
+		}
+		return &struct{ Body ratings.MovieScores }{d.Ratings.Movie(ctx, in.ID)}, nil
 	})
 
 	huma.Register(api, huma.Operation{

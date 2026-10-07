@@ -10,6 +10,7 @@
 	import Carousel from '$lib/components/media/carousel.svelte';
 	import Scroller from '$lib/components/ui/scroller.svelte';
 	import DetailActions from '$lib/components/media/detail-actions.svelte';
+	import ExternalRatings from '$lib/components/media/external-ratings.svelte';
 	import SeasonList from '$lib/components/media/season-list.svelte';
 	import StatusIcon from '$lib/components/ui/status-icon.svelte';
 	import { itemStatus } from '$lib/status';
@@ -206,6 +207,8 @@
 						</div>
 					</button>
 				{/if}
+
+				{#if mediaType === 'movie'}<ExternalRatings {tmdbId} />{/if}
 
 				<dl class="rounded-xl border border-border text-sm">
 					{#each facts as [label, value] (label)}

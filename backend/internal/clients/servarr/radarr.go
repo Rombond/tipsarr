@@ -69,3 +69,40 @@ func (c *Client) Movies(ctx context.Context) ([]Movie, error) {
 	var out []Movie
 	return out, c.get(ctx, "/movie", &out)
 }
+
+// Rating is one score Radarr knows about a movie. Value is out of 10 for IMDb and TMDB, out of 100
+// for Metacritic and Rotten Tomatoes.
+type Rating struct {
+	Votes int     `json:"votes"`
+	Value float64 `json:"value"`
+}
+
+type MovieRatings struct {
+	IMDbID         string
+	IMDb           *Rating
+	Metacritic     *Rating
+	RottenTomatoes *Rating
+}
+
+// RatingsByTMDB asks Radarr (a read) for what its metadata service knows about a movie: IMDb,
+// Metacritic and Rotten Tomatoes scores. A score Radarr does not have is nil.
+func (c *Client) RatingsByTMDB(ctx context.Context, tmdbID int) (*MovieRatings, error) {
+	var out struct {
+		IMDbID  string `json:"imdbId"`
+		Ratings struct {
+			IMDb           *Rating `json:"imdb"`
+			Metacritic     *Rating `json:"metacritic"`
+			RottenTomatoes *Rating `json:"rottenTomatoes"`
+		} `json:"ratings"`
+	}
+	if err := c.get(ctx, fmt.Sprintf("/movie/lookup/tmdb?tmdbId=%d", tmdbID), &out); err != nil {
+		return nil, err
+	}
+	keep := func(r *Rating) *Rating {
+		if r == nil || r.Value <= 0 {
+			return nil
+		}
+		return r
+	}
+	return &MovieRatings{IMDbID: out.IMDbID, IMDb: keep(out.Ratings.IMDb), Metacritic: keep(out.Ratings.Metacritic), RottenTomatoes: keep(out.Ratings.RottenTomatoes)}, nil
+}

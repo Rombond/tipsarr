@@ -687,6 +687,26 @@ export interface paths {
         patch: operations["updateMe"];
         trace?: never;
     };
+    "/media/movie/{id}/ratings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * IMDb, Metacritic and Rotten Tomatoes scores of a movie, from Radarr
+         * @description Empty when no Radarr is configured or Radarr has no score. Shows have none.
+         */
+        get: operations["movieRatings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/media/tv/{id}/seasons/{season}": {
         parameters: {
             query?: never;
@@ -1586,6 +1606,13 @@ export interface components {
             password: string;
             username: string;
         };
+        MovieScores: {
+            imdb?: components["schemas"]["Score"];
+            imdbUrl?: string;
+            metacritic?: components["schemas"]["Score"];
+            /** @description Critics score in percent */
+            rottenTomatoes?: components["schemas"]["Score"];
+        };
         Options: {
             instanceName: string;
             profiles: components["schemas"]["QualityProfile"][];
@@ -1754,6 +1781,15 @@ export interface components {
              * @enum {string}
              */
             variant: "personal" | "server" | "trending" | "because";
+        };
+        Score: {
+            /**
+             * Format: double
+             * @description IMDb: out of 10. Metacritic and Rotten Tomatoes: out of 100
+             */
+            value: number;
+            /** Format: int64 */
+            votes?: number;
         };
         SearchResult: {
             items: components["schemas"]["Item"][];
@@ -4894,6 +4930,73 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    movieRatings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovieScores"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

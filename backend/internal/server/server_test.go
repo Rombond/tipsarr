@@ -27,6 +27,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/playback"
+	"github.com/Rombond/tipsarr/backend/internal/ratings"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/server"
 	"github.com/Rombond/tipsarr/backend/internal/stats"
@@ -339,6 +340,7 @@ type env struct {
 	box      *boxoffice.Service
 	hub      *events.Hub
 	notifier *notify.Service
+	ratings  *ratings.Service
 }
 
 func newApp(t *testing.T) *httptest.Server {
@@ -386,6 +388,7 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	sugg := suggestions.New(st, mediaSvc, hub)
 	sugg.SetQueueDelay(20 * time.Millisecond)
 	lib.OnHistoryChanged = sugg.QueueRefresh
+	ratingsSvc := ratings.New(st)
 	authSvc := auth.New(st)
 	pb := playback.New(st, mediaSvc)
 	jm.Register(jobs.Job{Name: "playback-sync", Every: time.Hour, InitialDelay: time.Hour, Run: func(ctx context.Context) (string, error) {
@@ -397,12 +400,12 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	}})
 	authSvc.SetRecheckEvery(0) // tests: ask the fake Jellyfin about the account on every request
 	h, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier,
+		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier,
 		DryRun: dryRun, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)
 	t.Cleanup(app.Close)
-	return &env{app: app, st: st, lib: lib, reqs: reqs, sugg: sugg, box: box, hub: hub, notifier: notifier}
+	return &env{app: app, st: st, lib: lib, reqs: reqs, sugg: sugg, box: box, hub: hub, notifier: notifier, ratings: ratingsSvc}
 }
 
 func call(t *testing.T, app *httptest.Server, method, path, body string, cookies ...*http.Cookie) (*http.Response, string) {

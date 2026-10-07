@@ -17,6 +17,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/marks"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
+	"github.com/Rombond/tipsarr/backend/internal/ratings"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/stats"
 	"github.com/Rombond/tipsarr/backend/internal/store"
@@ -30,6 +31,7 @@ const Version = "0.1.0"
 
 type Deps struct {
 	Stats         *stats.Service
+	Ratings       *ratings.Service
 	Store         *store.Store
 	Auth          *auth.Service
 	Media         *media.Service
