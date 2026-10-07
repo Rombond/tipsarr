@@ -954,6 +954,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Watching and request statistics
+         * @description Exact when Jellyfin's Playback Reporting plugin is installed (its plays are copied into Tipsarr), otherwise estimated from the watch history. People see their own numbers; `user` and `all` are admin only.
+         */
+        get: operations["getStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/status": {
         parameters: {
             query?: never;
@@ -1841,6 +1861,86 @@ export interface components {
             /** @description The setup call needs the token printed in the server log (TIPSARR_SETUP_TOKEN=true) */
             tokenRequired: boolean;
         };
+        StatsBucket: {
+            /** Format: double */
+            hours: number;
+            name: string;
+            /** Format: int64 */
+            titles: number;
+        };
+        StatsMonth: {
+            /** Format: double */
+            hours: number;
+            /** @description YYYY-MM */
+            month: string;
+            /** Format: int64 */
+            plays: number;
+        };
+        StatsPlugin: {
+            /** @description Admins only: the Playback Reporting plugin is missing and would make these numbers exact */
+            hint: boolean;
+        };
+        StatsReport: {
+            decades: components["schemas"]["StatsBucket"][];
+            genres: components["schemas"]["StatsBucket"][];
+            /** @description Hours per hour of the day (plugin source only) */
+            hoursOfDay: number[];
+            /** @description Last 12 months, oldest first (plugin source only) */
+            months: components["schemas"]["StatsMonth"][];
+            /** @enum {string} */
+            period: "30d" | "12m" | "all";
+            plugin: components["schemas"]["StatsPlugin"];
+            requests: components["schemas"]["StatsRequests"];
+            /**
+             * @description plugin = exact plays from Jellyfin's Playback Reporting; estimate = watch history x runtime
+             * @enum {string}
+             */
+            source: "plugin" | "estimate";
+            top: components["schemas"]["StatsTop"][];
+            totals: components["schemas"]["StatsTotals"];
+            /** @description A user id, or all */
+            user: string;
+            /** @description Hours per weekday, Monday first (plugin source only) */
+            weekdays: number[];
+        };
+        StatsRequests: {
+            /** Format: int64 */
+            approved: number;
+            /** Format: int64 */
+            available: number;
+            /** Format: int64 */
+            declined: number;
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            made: number;
+            /** Format: int64 */
+            pending: number;
+        };
+        StatsTop: {
+            /** Format: double */
+            hours: number;
+            /** Format: int64 */
+            plays: number;
+            posterUrl?: string;
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+            /** @enum {string} */
+            type: "movie" | "tv";
+        };
+        StatsTotals: {
+            /** Format: double */
+            hours: number;
+            /** Format: int64 */
+            movies: number;
+            /** Format: int64 */
+            plays: number;
+            /** Format: int64 */
+            shows: number;
+            /** Format: int64 */
+            titles: number;
+        };
         Status: {
             /** Format: int64 */
             everySeconds: number;
@@ -2672,7 +2772,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                job: "library-sync" | "history-sync" | "boxoffice-refresh" | "servarr-import";
+                job: "library-sync" | "history-sync" | "boxoffice-refresh" | "servarr-import" | "playback-sync";
             };
             cookie?: never;
         };
@@ -5946,6 +6046,66 @@ export interface operations {
             };
             /** @description Error */
             default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    getStats: {
+        parameters: {
+            query?: {
+                /** @description A user id, or all (admins). Default: yourself */
+                user?: string;
+                period?: "30d" | "12m" | "all";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatsReport"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

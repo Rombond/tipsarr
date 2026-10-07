@@ -13,7 +13,7 @@
 	const settings = $derived(admin.settings);
 	const sync = $derived(admin.sync);
 
-	type JobName = 'library-sync' | 'history-sync' | 'boxoffice-refresh' | 'servarr-import';
+	type JobName = 'library-sync' | 'history-sync' | 'boxoffice-refresh' | 'servarr-import' | 'playback-sync';
 
 	async function runJob(job: JobName) {
 		admin.error = null;
