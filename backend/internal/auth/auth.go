@@ -25,6 +25,7 @@ type Service struct {
 	store *store.Store
 	// newJellyfin builds a client for a base URL; swapped in tests.
 	newJellyfin func(baseURL string) *jellyfin.Client
+	oidc        oidcState
 }
 
 func New(s *store.Store) *Service {
@@ -50,23 +51,29 @@ func (s *Service) Login(ctx context.Context, username, password, userAgent strin
 		return "", nil, err
 	}
 
+	token, err = s.startSession(ctx, user, userAgent)
+	return token, user, err
+}
+
+// startSession stores a new session for the user and returns the raw cookie token.
+func (s *Service) startSession(ctx context.Context, user *store.User, userAgent string) (string, error) {
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {
-		return "", nil, err
+		return "", err
 	}
-	token = base64.RawURLEncoding.EncodeToString(raw)
+	token := base64.RawURLEncoding.EncodeToString(raw)
 	now := time.Now()
 	if len(userAgent) > 255 {
 		userAgent = userAgent[:255]
 	}
-	err = s.store.CreateSession(ctx, &store.Session{
+	err := s.store.CreateSession(ctx, &store.Session{
 		ID:        hash(token),
 		UserID:    user.ID,
 		UserAgent: userAgent,
 		CreatedAt: now.Unix(),
 		ExpiresAt: now.Add(SessionTTL).Unix(),
 	})
-	return token, user, err
+	return token, err
 }
 
 // Authenticate resolves a cookie token to its user; store.ErrNotFound if invalid or expired.

@@ -77,6 +77,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerBoxOffice(api, d)
 		registerProfile(api, d)
 		registerIssues(api, d)
+		registerOIDC(api, d)
 		registerMarks(api, d)
 		registerUsers(api, d)
 		registerServarr(api, d)
@@ -84,6 +85,8 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		r.Get("/events", eventsHandler(d))
 		r.Get("/images/tmdb/{size}/{file}", imageHandler(d))
 		r.Get("/users/{id}/avatar", avatarHandler(d))
+		r.Get("/auth/oidc/login", oidcLoginHandler(d))
+		r.Get("/auth/oidc/callback", oidcCallbackHandler(d))
 	})
 	return api
 }

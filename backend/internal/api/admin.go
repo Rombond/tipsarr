@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/Rombond/tipsarr/backend/internal/auth"
@@ -23,6 +24,11 @@ type settingsBody struct {
 	BoxOfficeRegions         string `json:"boxofficeRegions" doc:"Comma-separated box-office region codes, e.g. US,GB,FR"`
 	WebhookPath              string `json:"webhookPath" doc:"Path (with secret token) for the Jellyfin webhook plugin to call"`
 	DryRun                   bool   `json:"dryRun" doc:"When true nothing is ever sent to Radarr/Sonarr"`
+	OIDCIssuer               string `json:"oidcIssuer" doc:"OpenID Connect provider (Authelia), e.g. https://auth.example.org"`
+	OIDCClientID             string `json:"oidcClientId"`
+	OIDCClientSecretSet      bool   `json:"oidcClientSecretConfigured"`
+	OIDCAdminGroup           string `json:"oidcAdminGroup" doc:"Members of this group become admins (optional)"`
+	OIDCGroupsClaim          string `json:"oidcGroupsClaim" doc:"Claim that lists the groups, default groups"`
 	ServarrAutoImport        bool   `json:"servarrAutoImport" doc:"Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only)"`
 }
 
@@ -35,6 +41,11 @@ type updateSettingsInput struct {
 		JellyfinPublicURL *string `json:"jellyfinPublicUrl,omitempty" doc:"Empty string clears it"`
 		JellyfinAPIKey    *string `json:"jellyfinApiKey,omitempty" doc:"Jellyfin API key (Dashboard > API Keys); empty string clears it"`
 		ServarrAutoImport *bool   `json:"servarrAutoImport,omitempty"`
+		OIDCIssuer        *string `json:"oidcIssuer,omitempty" doc:"Empty string turns single sign-on off. The provider is contacted when saving"`
+		OIDCClientID      *string `json:"oidcClientId,omitempty"`
+		OIDCClientSecret  *string `json:"oidcClientSecret,omitempty" doc:"Write-only; empty string clears it"`
+		OIDCAdminGroup    *string `json:"oidcAdminGroup,omitempty"`
+		OIDCGroupsClaim   *string `json:"oidcGroupsClaim,omitempty"`
 	}
 }
 
@@ -61,9 +72,11 @@ func registerAdmin(api huma.API, d Deps) {
 		regions := strings.Join(d.BoxOffice.Regions(ctx), ",")
 		publicURL, _ := d.Store.GetSetting(ctx, media.SettingJellyfinPublicURL)
 		autoImport, _ := d.Store.GetSetting(ctx, requests.SettingAutoImport)
+		oc, _ := d.Auth.OIDCConfig(ctx)
 		return settingsBody{
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
 			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, ServarrAutoImport: autoImport != "false",
+			OIDCIssuer: oc.Issuer, OIDCClientID: oc.ClientID, OIDCClientSecretSet: oc.ClientSecret != "", OIDCAdminGroup: oc.AdminGroup, OIDCGroupsClaim: oc.GroupsClaim,
 		}, nil
 	}
 
@@ -109,6 +122,27 @@ func registerAdmin(api huma.API, d Deps) {
 		}
 		if in.Body.JellyfinAPIKey != nil {
 			if err := d.Store.SetSetting(ctx, library.SettingJellyfinAPIKey, strings.TrimSpace(*in.Body.JellyfinAPIKey)); err != nil {
+				return nil, err
+			}
+		}
+		for key, v := range map[string]*string{
+			auth.SettingOIDCIssuer: in.Body.OIDCIssuer, auth.SettingOIDCClientID: in.Body.OIDCClientID,
+			auth.SettingOIDCClientSecret: in.Body.OIDCClientSecret, auth.SettingOIDCAdminGroup: in.Body.OIDCAdminGroup,
+			auth.SettingOIDCGroupsClaim: in.Body.OIDCGroupsClaim,
+		} {
+			if v == nil {
+				continue
+			}
+			val := strings.TrimSpace(*v)
+			if key == auth.SettingOIDCIssuer && val != "" {
+				if u, err := url.Parse(val); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+					return nil, fail(422, "url_invalid", "oidcIssuer must start with http:// or https://")
+				}
+				if err := d.Auth.CheckOIDC(ctx, val); err != nil {
+					return nil, fail(422, "oidc_unreachable", "cannot read the provider's configuration: "+err.Error())
+				}
+			}
+			if err := d.Store.SetSetting(ctx, key, val); err != nil {
 				return nil, err
 			}
 		}

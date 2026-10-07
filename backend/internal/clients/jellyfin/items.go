@@ -39,6 +39,7 @@ type User struct {
 	Name   string `json:"Name"`
 	Policy struct {
 		IsAdministrator bool `json:"IsAdministrator"`
+		IsDisabled      bool `json:"IsDisabled"`
 	} `json:"Policy"`
 }
 
