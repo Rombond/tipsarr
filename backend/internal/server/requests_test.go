@@ -676,3 +676,38 @@ func TestImportFromServarr(t *testing.T) {
 		t.Fatalf("import wrote to radarr: %v", w)
 	}
 }
+
+// A profile without a saved language follows the language the app sends, in memory only.
+func TestLanguageHint(t *testing.T) {
+	e := newEnv(t, true)
+	_, _, bob := setupUsers(t, e)
+	get := func(path, lang string) string {
+		req, _ := http.NewRequest("GET", e.app.URL+path, nil)
+		req.AddCookie(bob)
+		if lang != "" {
+			req.Header.Set("X-Tipsarr-Language", lang)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		b, _ := io.ReadAll(resp.Body)
+		return string(b)
+	}
+	// /me always shows the stored profile (language empty), hint or not
+	if b := get("/api/v1/me", "fr-FR"); !strings.Contains(b, `"language":""`) {
+		t.Fatalf("me with hint = %s", b)
+	}
+	// a PATCH that only changes the region must not save the hinted language
+	req, _ := http.NewRequest("PATCH", e.app.URL+"/api/v1/me", strings.NewReader(`{"region":"FR"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Tipsarr-Language", "fr-FR")
+	req.AddCookie(bob)
+	if resp, err := http.DefaultClient.Do(req); err != nil || resp.StatusCode != 200 {
+		t.Fatalf("patch = %v %v", resp, err)
+	}
+	if b := get("/api/v1/me", ""); !strings.Contains(b, `"language":""`) || !strings.Contains(b, `"region":"FR"`) {
+		t.Fatalf("me after patch = %s", b)
+	}
+}

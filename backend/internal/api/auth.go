@@ -97,6 +97,10 @@ func registerAuth(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
+		// the stored profile, without the per-request language hint
+		if stored, err := d.Store.GetUser(ctx, u.ID); err == nil {
+			u = stored
+		}
 		return &meOutput{Body: u}, nil
 	})
 }

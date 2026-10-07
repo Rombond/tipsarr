@@ -102,6 +102,11 @@ func sessionMiddleware(a *auth.Service) func(http.Handler) http.Handler {
 			r = r.WithContext(context.WithValue(r.Context(), ipCtxKey{}, remoteIP(r)))
 			if c, err := r.Cookie(auth.CookieName); err == nil {
 				if u, err := a.Authenticate(r.Context(), c.Value); err == nil {
+					// A profile without a saved language follows the language the interface shows
+					// (sent by the app), so titles and overviews match the screen. In-memory only.
+					if h := r.Header.Get("X-Tipsarr-Language"); u.Language == "" && languageRe.MatchString(h) {
+						u.Language = h
+					}
 					r = r.WithContext(context.WithValue(r.Context(), userCtxKey{}, u))
 				}
 			}

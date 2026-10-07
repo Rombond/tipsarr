@@ -2,7 +2,7 @@
 // spec (`make generate` -> schema.d.ts); never hand-edit schema.d.ts.
 import createClient from 'openapi-fetch';
 import type { components, paths } from './schema';
-import { hasKey, t } from '$lib/i18n/index.svelte';
+import { hasKey, i18n, t } from '$lib/i18n/index.svelte';
 
 export type Schemas = components['schemas'];
 export type MediaItem = Schemas['Item'];
@@ -12,6 +12,15 @@ export type User = Schemas['User'];
 export type Genre = Schemas['Genre'];
 
 export const api = createClient<paths>({ baseUrl: '/api/v1', credentials: 'include' });
+
+// Tell the server which language the screen is in: a profile with no saved language then gets
+// titles and overviews in that language too.
+api.use({
+	onRequest({ request }) {
+		request.headers.set('X-Tipsarr-Language', i18n.tag);
+		return request;
+	},
+});
 
 export class ApiError extends Error {
 	constructor(

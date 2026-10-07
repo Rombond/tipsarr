@@ -54,6 +54,12 @@ func registerUsers(api huma.API, d Deps) {
 		if err := in.Body.check(); err != nil {
 			return nil, err
 		}
+		// work on the stored row: the request's user may carry a language hint that must not be saved
+		stored, err := d.Store.GetUser(ctx, u.ID)
+		if err != nil {
+			return nil, err
+		}
+		u = stored
 		before := u.Language
 		in.Body.apply(u)
 		if err := d.Store.UpdatePrefs(ctx, u); err != nil {
