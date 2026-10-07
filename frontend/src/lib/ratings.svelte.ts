@@ -12,20 +12,36 @@ export const RATING_SOURCES: { value: RatingSource; label: string }[] = [
 	{ value: 'rottenTomatoes', label: 'Rotten Tomatoes' },
 ];
 
-export type Shown = { label: string; tone: string; text: string };
+import imdbIcon from '$lib/assets/ratings/imdb.svg';
+import tmdbIcon from '$lib/assets/ratings/tmdb_logo.svg';
+import rtFresh from '$lib/assets/ratings/rt_fresh.svg';
+import rtRotten from '$lib/assets/ratings/rt_rotten.svg';
+import rtAudFresh from '$lib/assets/ratings/rt_aud_fresh.svg';
+import rtAudRotten from '$lib/assets/ratings/rt_aud_rotten.svg';
+
+/** The logos of the sources; Rotten Tomatoes has a fresh and a rotten one (critics from 60 %, audience too). */
+export const icons = {
+	tmdb: tmdbIcon,
+	imdb: imdbIcon,
+	rt: (percent: number) => (percent >= 60 ? rtFresh : rtRotten),
+	rtAudience: (percent: number) => (percent >= 60 ? rtAudFresh : rtAudRotten),
+};
+
+/** `icon` is a logo to show instead of the text label when there is one. */
+export type Shown = { label: string; tone: string; text: string; icon?: string };
 
 /** The score of one source for display, or null when there is none. */
 export function pick(source: RatingSource, scores: Scores | undefined): Shown | null {
 	switch (source) {
 		case 'imdb':
-			return scores?.imdb ? { label: 'IMDb', tone: 'bg-[#f5c518] text-black', text: scores.imdb.value.toFixed(1) } : null;
+			return scores?.imdb ? { label: 'IMDb', tone: 'bg-[#f5c518] text-black', text: scores.imdb.value.toFixed(1), icon: icons.imdb } : null;
 		case 'metacritic': {
 			const v = scores?.metacritic?.value;
 			return v ? { label: 'MC', tone: `${v >= 61 ? 'bg-emerald-600' : v >= 40 ? 'bg-amber-500' : 'bg-red-600'} text-white`, text: String(Math.round(v)) } : null;
 		}
 		case 'rottenTomatoes': {
 			const v = scores?.rottenTomatoes?.value;
-			return v ? { label: 'RT', tone: `${v >= 60 ? 'bg-red-600' : 'bg-emerald-700'} text-white`, text: `${Math.round(v)}%` } : null;
+			return v ? { label: 'RT', tone: `${v >= 60 ? 'bg-red-600' : 'bg-emerald-700'} text-white`, text: `${Math.round(v)}%`, icon: icons.rt(v) } : null;
 		}
 		default:
 			return null;

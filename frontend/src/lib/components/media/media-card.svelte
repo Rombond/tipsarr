@@ -163,7 +163,7 @@
 	<p class="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
 		{#if year}<span>{year}</span>{/if}
 		{#if external}
-			<span class="inline-flex items-center gap-1" title={t('card.rating_source_hint', { source: external.label })}><span class="rounded px-1 text-[9px] leading-4 font-extrabold {external.tone}">{external.label}</span>{external.text}</span>
+			<span class="inline-flex items-center gap-1" title={t('card.rating_source_hint', { source: external.label })}>{#if external.icon}<img src={external.icon} alt={external.label} class="h-3.5 w-auto max-w-5" />{:else}<span class="rounded px-1 text-[9px] leading-4 font-extrabold {external.tone}">{external.label}</span>{/if}{external.text}</span>
 		{:else if item.voteAverage}
 			<span class="inline-flex items-center gap-0.5" title={t('card.rating_hint')}><StarIcon class="size-3 fill-amber-400 text-amber-400" />{item.voteAverage.toFixed(1)}</span>
 		{/if}
