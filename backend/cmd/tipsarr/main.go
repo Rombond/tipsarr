@@ -51,6 +51,9 @@ func run(cfg config.Config) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	if err := dropPrivileges(cfg.ConfigDir); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(cfg.ConfigDir, 0o755); err != nil {
 		return err
 	}

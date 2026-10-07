@@ -21,9 +21,9 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags=
 RUN mkdir /config-empty
 
 # 3) tiny runtime
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/static-debian12
 COPY --from=backend /tipsarr /tipsarr
-# the distroless user (65532) must own /config so the SQLite file and caches can be created
+# Starts as root only to give /config to PUID:PGID (default 65532), then runs as that user
 COPY --from=backend --chown=65532:65532 /config-empty /config
 ENV TIPSARR_CONFIG_DIR=/config TIPSARR_PORT=8080
 VOLUME /config

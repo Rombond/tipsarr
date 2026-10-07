@@ -33,10 +33,12 @@ services:
     ports:
       - '8080:8080'
     environment:
+      PUID: '911'                                # the user/group that owns ./tipsarr-config (default 65532)
+      PGID: '911'
       TIPSARR_DRY_RUN: 'true'                    # keep true until you have tried one real request
       # TIPSARR_JELLYFIN_URL: http://jellyfin:8096
     volumes:
-      - ./tipsarr-config:/config                 # the folder must be writable by uid 65532
+      - ./tipsarr-config:/config
 ```
 
 ```bash
@@ -71,6 +73,7 @@ Environment variables (all optional):
 | `TIPSARR_COOKIE_SECURE` | `false` | Always mark the session cookie `Secure` (otherwise only behind a proxy sending `X-Forwarded-Proto: https`) |
 | `TIPSARR_SETUP_TOKEN` | `false` | `true` makes the first-run setup require a one-time token printed in the log; useful if a fresh install is reachable by strangers |
 | `TIPSARR_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
+| `PUID` / `PGID` | `65532` | User and group the container runs as, like the `*arr` images. It starts as root, gives `/config` to `PUID:PGID`, then drops to them, so the folder never needs a manual `chown` |
 
 Everything else (API keys, services, regions, single sign-on) is set in the interface and stored in the database. Secrets are write-only: the interface never shows them again.
 

@@ -17,6 +17,9 @@ services:
     ports:
       - '8080:8080'
     environment:
+      # PUID/PGID: the user the container runs as (default 65532); /config is given to it at start
+      # PUID: 911
+      # PGID: 911
       TIPSARR_DRY_RUN: ${TIPSARR_DRY_RUN:-true}
       # TIPSARR_JELLYFIN_URL: http://jellyfin:8096   # optional: skips the Jellyfin step of the setup page
       # TIPSARR_DB_URL: postgres://user:pass@host:5432/tipsarr?sslmode=disable   # default: SQLite in /config
