@@ -206,10 +206,34 @@ func (s *Service) Refresh(ctx context.Context) (string, error) {
 		}
 	}
 	msg := fmt.Sprintf("%d charts stored", saved)
+	if n := s.rematch(ctx); n > 0 {
+		msg += fmt.Sprintf(", %d titles matched in older charts", n)
+	}
 	if failed > 0 {
 		msg += fmt.Sprintf(", %d failed", failed)
 	}
 	return msg, firstErr
+}
+
+// rematch tries again the titles that had no TMDB match when their chart was stored. Older charts
+// are stored once and never re-read, so a TMDB key that was missing or a TMDB hiccup at that moment
+// would otherwise leave them without posters for good. Searches are cached, so this is cheap.
+func (s *Service) rematch(ctx context.Context) int {
+	titles, err := s.store.UnmatchedBoxOfficeTitles(ctx)
+	if err != nil || len(titles) == 0 {
+		return 0
+	}
+	n := 0
+	for _, title := range titles {
+		m := s.match(ctx, title)
+		if m == nil {
+			continue
+		}
+		if err := s.store.SetBoxOfficeMatch(ctx, title, entrySnapshot(m)); err == nil {
+			n++
+		}
+	}
+	return n
 }
 
 func (s *Service) saveWeek(ctx context.Context, region, key, label string, entries []Entry) error {

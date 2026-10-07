@@ -89,3 +89,10 @@ func (s *Store) SetBoxOfficeMatch(ctx context.Context, title string, e BoxOffice
 		Where("LOWER(title) = ?", AliasKey(title)).Exec(ctx)
 	return err
 }
+
+// UnmatchedBoxOfficeTitles lists the distinct chart titles with no TMDB match yet.
+func (s *Store) UnmatchedBoxOfficeTitles(ctx context.Context) ([]string, error) {
+	var titles []string
+	err := s.DB.NewSelect().Model((*BoxOfficeEntry)(nil)).ColumnExpr("DISTINCT title").Where("tmdb_id = 0").Scan(ctx, &titles)
+	return titles, err
+}

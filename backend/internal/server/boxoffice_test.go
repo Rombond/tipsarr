@@ -256,3 +256,44 @@ func TestBoxOfficeAlias(t *testing.T) {
 		t.Fatal("Digger should be unmatched again")
 	}
 }
+
+// Older charts are stored once and never re-read: titles that had no TMDB match then (key missing,
+// TMDB hiccup) must be matched later, or those weeks keep their grey cards for good.
+func TestBoxOfficeRematchesOlderCharts(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	refresh := func() {
+		t.Helper()
+		call(t, e.app, "POST", "/api/v1/admin/sync/boxoffice-refresh", "", admin)
+		waitFor(t, "refresh", func() bool {
+			_, b := call(t, e.app, "GET", "/api/v1/admin/sync", "", admin)
+			i := strings.Index(b, `"name":"boxoffice-refresh"`)
+			return i >= 0 && strings.Contains(b[i:min(len(b), i+300)], `"status":"ok"`)
+		})
+	}
+	posters := func(week string) int {
+		ch, _ := getChart(t, e, bob, "?week="+week)
+		n := 0
+		for _, en := range ch.Entries {
+			if en.Item != nil && en.Item.PosterPath != "" {
+				n++
+			}
+		}
+		return n
+	}
+
+	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"tmdbApiKey":"wrong-key"}`, admin) // TMDB answers 401
+	refresh()
+	ch, _ := getChart(t, e, bob, "")
+	if len(ch.Weeks) < 4 {
+		t.Fatalf("weeks = %v", ch.Weeks)
+	}
+	oldest := ch.Weeks[len(ch.Weeks)-1].Key
+	if posters(oldest) != 0 {
+		t.Fatalf("no poster expected without a working TMDB key in %s", oldest)
+	}
+
+	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"tmdbApiKey":"k123"}`, admin)
+	call(t, e.app, "POST", "/api/v1/admin/sync/boxoffice-refresh", "", admin)
+	waitFor(t, "rematch", func() bool { return posters(oldest) > 0 })
+}
