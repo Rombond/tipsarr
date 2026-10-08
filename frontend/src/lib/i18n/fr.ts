@@ -740,4 +740,13 @@ export const fr: Record<keyof typeof en, string> = {
 	"settings.lang_desc": "La langue de l’interface, des titres et des descriptions pour toutes les personnes qui n’en ont pas choisi une. Chacun peut toujours choisir la sienne dans son profil ou sur la page de connexion.",
 	"settings.lang_browser": "La langue du navigateur",
 	"lang.auto": "Par défaut (réglage de l’app ou navigateur)",
+	"profile.devices_title": "Appareils connectés",
+	"profile.devices_desc": "Navigateurs et applications où vous êtes connecté. Déconnecter un appareil termine sa session : il devra se reconnecter.",
+	"profile.device_current": "Cet appareil",
+	"profile.device_last_used": "Dernière utilisation {date}",
+	"profile.device_web": "Navigateur web",
+	"profile.device_sign_out": "Déconnecter",
+	"profile.devices_sign_out_others": "Déconnecter partout ailleurs",
+	"profile.device_signed_out": "Appareil déconnecté.",
+	"profile.devices_signed_out_others": "Déconnecté partout ailleurs.",
 };

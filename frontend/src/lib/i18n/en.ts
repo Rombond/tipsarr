@@ -739,4 +739,13 @@ export const en = {
 	"settings.lang_desc": "The language of the interface and of titles and descriptions for everyone who has not chosen one. Each person can still pick their own in their profile or on the login page.",
 	"settings.lang_browser": "The browser’s language",
 	"lang.auto": "Default (app setting or browser)",
+	"profile.devices_title": "Signed-in devices",
+	"profile.devices_desc": "Browsers and apps where you are signed in. Signing a device out ends its session; it has to log in again.",
+	"profile.device_current": "This device",
+	"profile.device_last_used": "Last used {date}",
+	"profile.device_web": "Web browser",
+	"profile.device_sign_out": "Sign out",
+	"profile.devices_sign_out_others": "Sign out everywhere else",
+	"profile.device_signed_out": "Device signed out.",
+	"profile.devices_signed_out_others": "Signed out everywhere else.",
 } as const;

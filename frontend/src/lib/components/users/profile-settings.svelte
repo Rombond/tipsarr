@@ -3,6 +3,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { t, i18n, LOCALES, type Locale } from '$lib/i18n/index.svelte';
 	import { toast } from '$lib/toast.svelte';
+	import { fmtDateTime } from '$lib/i18n/format';
 	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
@@ -22,6 +23,40 @@
 			.then((r) => (hidden = r))
 			.catch(() => {});
 	});
+
+	let devices = $state<Schemas['DeviceSession'][]>([]);
+
+	function loadDevices() {
+		unwrap(api.GET('/me/sessions'))
+			.then((r) => (devices = r))
+			.catch(() => {});
+	}
+	$effect(loadDevices);
+
+	function deviceLabel(d: Schemas['DeviceSession']) {
+		const name = d.deviceName || (d.platform === 'web' ? t('profile.device_web') : d.platform);
+		return d.platform === 'web' ? name : `${name}${d.appVersion ? ` · ${d.appVersion}` : ''}`;
+	}
+
+	async function signOutDevice(d: Schemas['DeviceSession']) {
+		try {
+			await expectOk(api.DELETE('/me/sessions/{id}', { params: { path: { id: d.id } } }));
+			toast.success(t('profile.device_signed_out'));
+			loadDevices();
+		} catch (e) {
+			error = errorText(e);
+		}
+	}
+
+	async function signOutOthers() {
+		try {
+			await expectOk(api.DELETE('/me/sessions'));
+			toast.success(t('profile.devices_signed_out_others'));
+			loadDevices();
+		} catch (e) {
+			error = errorText(e);
+		}
+	}
 
 	const languageOptions = $derived([{ value: '', label: t('lang.auto') }, ...LOCALES.map((l) => ({ value: l.tag, label: l.name }))]);
 
@@ -93,6 +128,30 @@
 			{:else}
 				<p class="text-muted-foreground">{t('profile.nothing_hidden')}</p>
 			{/each}
+		</CardContent>
+	</Card>
+
+	<Card class="lg:col-span-2">
+		<CardHeader>
+			<CardTitle>{t('profile.devices_title')}</CardTitle>
+			<CardDescription>{t('profile.devices_desc')}</CardDescription>
+		</CardHeader>
+		<CardContent class="grid gap-1.5 text-sm">
+			{#each devices as d (d.id)}
+				<div class="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
+					<div class="min-w-0">
+						<p class="truncate font-medium">
+							{deviceLabel(d)}
+							{#if d.current}<span class="ml-1 text-xs font-normal text-muted-foreground">· {t('profile.device_current')}</span>{/if}
+						</p>
+						<p class="truncate text-xs text-muted-foreground">{t('profile.device_last_used', { date: fmtDateTime(d.lastSeenAt * 1000) })}{#if d.platform === 'web' && d.userAgent} · {d.userAgent}{/if}</p>
+					</div>
+					{#if !d.current}<Button size="sm" variant="ghost" onclick={() => signOutDevice(d)}>{t('profile.device_sign_out')}</Button>{/if}
+				</div>
+			{/each}
+			{#if devices.length > 1}
+				<div><Button size="sm" variant="outline" onclick={signOutOthers}>{t('profile.devices_sign_out_others')}</Button></div>
+			{/if}
 		</CardContent>
 	</Card>
 </div>
