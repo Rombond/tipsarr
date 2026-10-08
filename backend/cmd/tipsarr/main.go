@@ -39,7 +39,7 @@ func main() {
 	setupLogging(cfg.LogLevel)
 
 	if len(os.Args) > 1 && os.Args[1] == "openapi" {
-		if err := printSpec(); err != nil {
+		if err := printSpec(len(os.Args) > 2 && os.Args[2] == "yaml"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -166,9 +166,17 @@ func run(cfg config.Config) error {
 }
 
 // printSpec writes the OpenAPI spec to stdout without opening a DB.
-func printSpec() error {
+// printSpec writes the OpenAPI spec: JSON 3.1 for the web client, or (yaml) the OpenAPI 3.0.3 YAML
+// that the mobile client generators read, which every generator supports.
+func printSpec(yaml bool) error {
 	_, a := server.New(api.Deps{})
-	b, err := a.OpenAPI().MarshalJSON()
+	var b []byte
+	var err error
+	if yaml {
+		b, err = a.OpenAPI().DowngradeYAML()
+	} else {
+		b, err = a.OpenAPI().MarshalJSON()
+	}
 	if err != nil {
 		return err
 	}

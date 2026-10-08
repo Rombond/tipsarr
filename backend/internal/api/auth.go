@@ -119,6 +119,7 @@ func registerAuth(api huma.API, d Deps) {
 	huma.Register(api, huma.Operation{
 		OperationID: "logout", Method: http.MethodPost, Path: "/auth/logout",
 		Summary: "End the current session", Tags: []string{"auth"}, DefaultStatus: http.StatusNoContent,
+		Security: []map[string][]string{{"session": {}}, {"bearer": {}}},
 	}, func(ctx context.Context, _ *struct{}) (*logoutOutput, error) {
 		if sess := sessionFrom(ctx); sess != nil {
 			if err := d.Store.DeleteSession(ctx, sess.ID); err != nil {

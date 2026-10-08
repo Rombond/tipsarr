@@ -60,7 +60,7 @@ jobs:
       - run: npm run build
 
   generated-api-is-current:
-    # The TypeScript client is generated from the backend's OpenAPI spec; fail if they drifted.
+    # The TypeScript client and the mobile spec (api/openapi.yaml) are generated from the backend's OpenAPI spec; fail if they drifted.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +72,7 @@ jobs:
         with:
           node-version: 25
       - run: make generate
-      - run: git diff --exit-code -- frontend/src/lib/api
+      - run: git diff --exit-code -- frontend/src/lib/api api
 
   docker:
     runs-on: ubuntu-latest

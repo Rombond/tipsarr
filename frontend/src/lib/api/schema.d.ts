@@ -2119,12 +2119,20 @@ export interface components {
             running: boolean;
             status: string;
         };
+        StatusFeatures: {
+            /** @description Push notifications are set up on this server */
+            push: boolean;
+        };
         StatusOutputBody: {
+            /** Format: int64 */
+            apiVersion: number;
             /** @description Database engine: sqlite, postgres or mysql */
             db: string;
             defaultLanguage: string;
             /** @description When true nothing is ever sent to Radarr/Sonarr */
             dryRun: boolean;
+            features: components["schemas"]["StatusFeatures"];
+            minAppVersion: string;
             userFolderChoice: boolean;
             version: string;
         };

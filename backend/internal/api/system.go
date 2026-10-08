@@ -14,6 +14,11 @@ type healthOutput struct {
 	}
 }
 
+// statusFeatures tells an app which optional parts this server has.
+type statusFeatures struct {
+	Push bool `json:"push" doc:"Push notifications are set up on this server"`
+}
+
 type statusOutput struct {
 	Body struct {
 		Version string `json:"version"`
@@ -23,6 +28,11 @@ type statusOutput struct {
 		UserFolderChoice bool `json:"userFolderChoice"`
 		// The app-wide default language (a TMDB tag such as fr-FR); empty means the browser decides.
 		DefaultLanguage string `json:"defaultLanguage"`
+		// APIVersion counts breaking changes of /api/v1: it only grows when an app must be updated.
+		APIVersion int `json:"apiVersion"`
+		// The oldest app version still allowed to talk to this server ("" = any); apps older than this ask the user to update.
+		MinAppVersion string         `json:"minAppVersion"`
+		Features      statusFeatures `json:"features"`
 	}
 }
 
@@ -46,6 +56,8 @@ func registerSystem(api huma.API, d Deps) {
 		out.Body.DryRun = d.DryRun
 		out.Body.UserFolderChoice = d.Requests.UsersMayChooseFolder(ctx)
 		out.Body.DefaultLanguage, _ = d.Store.GetSetting(ctx, media.SettingDefaultLanguage)
+		out.Body.APIVersion = APIVersion
+		out.Body.MinAppVersion, _ = d.Store.GetSetting(ctx, SettingMinAppVersion)
 		return out, nil
 	})
 }

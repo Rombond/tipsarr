@@ -6,6 +6,10 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/Rombond/tipsarr/backend/internal/api"
+	"github.com/Rombond/tipsarr/backend/internal/server"
+	"github.com/danielgtaylor/huma/v2"
 )
 
 // bearerCall is call() with an Authorization header instead of a cookie.
@@ -208,5 +212,91 @@ func TestWebCookieRenewedWhenUsed(t *testing.T) {
 	c := sessionCookie(resp)
 	if resp.StatusCode != 200 || c == nil || c.Value != web.Value || c.MaxAge <= 0 {
 		t.Fatalf("renewed cookie missing: %d %+v", resp.StatusCode, c)
+	}
+}
+
+// TestAppContract signs in the way an app does and walks the endpoints the v1 screens use, so a
+// change that breaks bearer auth or one of those responses is caught here before an app is.
+func TestAppContract(t *testing.T) {
+	jf := fakeJellyfin(t)
+	e := newEnv(t, true)
+	admin := loginAs(t, e.app, jf.URL, "alice", "secret")
+	if resp, _ := call(t, e.app, "PUT", "/api/v1/admin/settings", `{"tmdbApiKey":"k123"}`, admin); resp.StatusCode != 200 {
+		t.Fatalf("settings = %d", resp.StatusCode)
+	}
+	base := e.app.URL
+	user := appLogin(t, base, "bob", "hunter2", "iPhone")
+	adm := appLogin(t, base, "alice", "secret", "iPad")
+
+	// status is public and tells an app what it is talking to
+	resp, body := bearerCall(t, base, "GET", "/api/v1/status", "", "")
+	var st struct {
+		APIVersion    int
+		MinAppVersion *string
+		Features      *struct{ Push *bool }
+	}
+	if err := json.Unmarshal([]byte(body), &st); resp.StatusCode != 200 || err != nil || st.APIVersion != 1 || st.MinAppVersion == nil || st.Features == nil || st.Features.Push == nil {
+		t.Fatalf("status = %d %s", resp.StatusCode, body)
+	}
+
+	for _, path := range []string{
+		"/me", "/me/sessions", "/discover/trending", "/media/movie/1", "/media/tv/2", "/search?q=movie",
+		"/requests", "/requests/counts", "/issues", "/issues/counts",
+		"/library", "/library/facets", "/suggestions", "/watchlist", "/blocklist", "/stats", "/auth/methods",
+	} {
+		resp, body := bearerCall(t, base, "GET", "/api/v1"+path, "", user)
+		if resp.StatusCode != 200 || !json.Valid([]byte(body)) {
+			t.Errorf("GET %s as user = %d %.200s", path, resp.StatusCode, body)
+		}
+	}
+	for _, path := range []string{"/admin/sync", "/admin/users", "/admin/settings"} {
+		if resp, _ := bearerCall(t, base, "GET", "/api/v1"+path, "", user); resp.StatusCode != 403 {
+			t.Errorf("GET %s as user = %d, want 403", path, resp.StatusCode)
+		}
+		if resp, body := bearerCall(t, base, "GET", "/api/v1"+path, "", adm); resp.StatusCode != 200 || !json.Valid([]byte(body)) {
+			t.Errorf("GET %s as admin = %d %.200s", path, resp.StatusCode, body)
+		}
+	}
+
+	// no Radarr/Sonarr yet: a clear, coded refusal (the app shows its own text)
+	if resp, body := bearerCall(t, base, "GET", "/api/v1/requests/options?type=movie", "", user); resp.StatusCode != 409 || !strings.Contains(body, "no_instance") {
+		t.Errorf("options without instance = %d %.200s", resp.StatusCode, body)
+	}
+
+	// every error an app must localize carries a machine-readable code
+	resp, body = bearerCall(t, base, "GET", "/api/v1/media/movie/404", "", user)
+	if resp.StatusCode != 404 || !strings.Contains(body, `"code"`) {
+		t.Errorf("error shape = %d %s", resp.StatusCode, body)
+	}
+	resp, body = bearerCall(t, base, "GET", "/api/v1/me", "", "")
+	if resp.StatusCode != 401 || !strings.Contains(body, "login_required") {
+		t.Errorf("anon shape = %d %s", resp.StatusCode, body)
+	}
+}
+
+// TestSpecEveryProtectedOperationAcceptsBearer keeps the generated mobile spec honest: an operation
+// that needs a login must list the bearer scheme next to the cookie one.
+func TestSpecEveryProtectedOperationAcceptsBearer(t *testing.T) {
+	_, a := server.New(api.Deps{})
+	n := 0
+	for path, item := range a.OpenAPI().Paths {
+		for method, op := range map[string]*huma.Operation{"GET": item.Get, "POST": item.Post, "PUT": item.Put, "PATCH": item.Patch, "DELETE": item.Delete} {
+			if op == nil || len(op.Security) == 0 {
+				continue
+			}
+			n++
+			ok := false
+			for _, req := range op.Security {
+				if _, has := req["bearer"]; has {
+					ok = true
+				}
+			}
+			if !ok {
+				t.Errorf("%s %s: security lists no bearer scheme", method, path)
+			}
+		}
+	}
+	if n < 50 {
+		t.Fatalf("only %d protected operations found, the spec walk is broken", n)
 	}
 }

@@ -30,6 +30,12 @@ import (
 
 const Version = "0.1.0"
 
+// APIVersion is bumped only for a breaking change to /api/v1 (apps then need an update); additions never bump it.
+const APIVersion = 1
+
+// SettingMinAppVersion is the oldest mobile app version allowed (a settings key, empty = any).
+const SettingMinAppVersion = "app.min_version"
+
 type Deps struct {
 	Stats         *stats.Service
 	Ratings       *ratings.Service
