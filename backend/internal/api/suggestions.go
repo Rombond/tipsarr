@@ -10,7 +10,7 @@ import (
 )
 
 func registerSuggestions(api huma.API, d Deps) {
-	sec := []map[string][]string{{"session": {}}}
+	sec := []map[string][]string{{"session": {}}, {"bearer": {}}}
 
 	huma.Register(api, huma.Operation{
 		OperationID: "suggestions", Method: http.MethodGet, Path: "/suggestions",

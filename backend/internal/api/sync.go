@@ -28,7 +28,7 @@ type webhookInput struct {
 }
 
 func registerSync(api huma.API, d Deps) {
-	sec := []map[string][]string{{"session": {}}}
+	sec := []map[string][]string{{"session": {}}, {"bearer": {}}}
 	adminErrs := []int{http.StatusUnauthorized, http.StatusForbidden}
 
 	huma.Register(api, huma.Operation{

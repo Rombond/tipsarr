@@ -34,7 +34,7 @@ type issueCounts struct {
 }
 
 func registerIssues(api huma.API, d Deps) {
-	sec := []map[string][]string{{"session": {}}}
+	sec := []map[string][]string{{"session": {}}, {"bearer": {}}}
 	errs := []int{http.StatusUnauthorized, http.StatusNotFound}
 
 	huma.Register(api, huma.Operation{

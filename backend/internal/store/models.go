@@ -29,7 +29,18 @@ type Session struct {
 	UserAgent string `bun:"user_agent"`
 	CreatedAt int64  `bun:"created_at"`
 	ExpiresAt int64  `bun:"expires_at"`
+
+	Platform   string `bun:"platform"` // web, ios or android
+	DeviceName string `bun:"device_name"`
+	AppVersion string `bun:"app_version"`
+	LastSeenAt int64  `bun:"last_seen_at"`
+
+	Renewed bool `bun:"-"` // set by auth when this request pushed ExpiresAt forward
 }
+
+// PublicID is what the API shows of a session: a prefix of its hash, enough to address it
+// without ever exposing the full lookup key.
+func (s *Session) PublicID() string { return s.ID[:16] }
 
 type Setting struct {
 	bun.BaseModel `bun:"table:settings"`

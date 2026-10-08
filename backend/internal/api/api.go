@@ -6,6 +6,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"strings"
 
 	"github.com/Rombond/tipsarr/backend/internal/auth"
 	"github.com/Rombond/tipsarr/backend/internal/avatars"
@@ -56,6 +57,7 @@ type Deps struct {
 
 type userCtxKey struct{}
 type ipCtxKey struct{}
+type sessionCtxKey struct{}
 
 // NewHuma mounts the API on r under /api/v1 and returns the huma API (used to export the spec).
 func NewHuma(r chi.Router, d Deps) huma.API {
@@ -66,6 +68,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 	cfg.DocsPath = ""     // spec only; no bundled docs UI
 	cfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
 		"session": {Type: "apiKey", In: "cookie", Name: auth.CookieName},
+		"bearer":  {Type: "http", Scheme: "bearer"}, // the same token, for apps (from POST /auth/token)
 	}
 
 	var api huma.API
@@ -82,6 +85,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerSuggestions(api, d)
 		registerBoxOffice(api, d)
 		registerProfile(api, d)
+		registerSessions(api, d)
 		registerIssues(api, d)
 		registerOIDC(api, d)
 		registerMarks(api, d)
@@ -108,8 +112,13 @@ func sessionMiddleware(a *auth.Service, st *store.Store) func(http.Handler) http
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r = r.WithContext(context.WithValue(r.Context(), ipCtxKey{}, remoteIP(r)))
-			if c, err := r.Cookie(auth.CookieName); err == nil {
-				if u, err := a.Authenticate(r.Context(), c.Value); err == nil {
+			token, fromCookie := requestToken(r)
+			if token != "" {
+				if u, sess, err := a.Authenticate(r.Context(), token); err == nil {
+					if sess.Renewed && fromCookie {
+						setSessionCookie(w, r, token, int(auth.SessionTTL.Seconds()))
+					}
+					r = r.WithContext(context.WithValue(r.Context(), sessionCtxKey{}, sess))
 					// A profile without a saved language follows the language the interface shows
 					// (sent by the app), so titles and overviews match the screen. In-memory only.
 					if h := r.Header.Get("X-Tipsarr-Language"); u.Language == "" && languageRe.MatchString(h) {
@@ -124,6 +133,30 @@ func sessionMiddleware(a *auth.Service, st *store.Store) func(http.Handler) http
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// requestToken is the session token of a request: an `Authorization: Bearer` header (apps) or the
+// session cookie (browsers).
+func requestToken(r *http.Request) (token string, fromCookie bool) {
+	if h := r.Header.Get("Authorization"); len(h) > 7 && strings.EqualFold(h[:7], "bearer ") {
+		return strings.TrimSpace(h[7:]), false
+	}
+	if c, err := r.Cookie(auth.CookieName); err == nil {
+		return c.Value, true
+	}
+	return "", false
+}
+
+func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, maxAge int) {
+	http.SetCookie(w, &http.Cookie{
+		Name: auth.CookieName, Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode,
+		Secure: r.Header.Get("X-Forwarded-Proto") == "https" || r.TLS != nil, MaxAge: maxAge,
+	})
+}
+
+func sessionFrom(ctx context.Context) *store.Session {
+	s, _ := ctx.Value(sessionCtxKey{}).(*store.Session)
+	return s
 }
 
 func userFrom(ctx context.Context) *store.User {

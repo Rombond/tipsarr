@@ -64,7 +64,7 @@ type updateSettingsInput struct {
 }
 
 func registerAdmin(api huma.API, d Deps) {
-	sec := []map[string][]string{{"session": {}}}
+	sec := []map[string][]string{{"session": {}}, {"bearer": {}}}
 
 	read := func(ctx context.Context) (settingsBody, error) {
 		url, err := d.Store.GetSetting(ctx, auth.SettingJellyfinURL)

@@ -12,7 +12,7 @@ import (
 )
 
 func registerBoxOffice(api huma.API, d Deps) {
-	adminSec := []map[string][]string{{"session": {}}}
+	adminSec := []map[string][]string{{"session": {}}, {"bearer": {}}}
 	huma.Register(api, huma.Operation{
 		OperationID: "setBoxOfficeAlias", Method: http.MethodPut, Path: "/admin/boxoffice/alias",
 		Summary:     "Pin a box-office title to a TMDB movie (admin)",
@@ -52,7 +52,7 @@ func registerBoxOffice(api huma.API, d Deps) {
 		OperationID: "boxOffice", Method: http.MethodGet, Path: "/boxoffice",
 		Summary:     "Box-office chart (top 10): weekend or full week with availability and Radarr status",
 		Description: "Global, not personalised: one chart per region and week. Defaults to your region (if configured) and the latest stored week. Display only: nothing is added automatically.",
-		Tags:        []string{"boxoffice"}, Security: []map[string][]string{{"session": {}}},
+		Tags:        []string{"boxoffice"}, Security: []map[string][]string{{"session": {}}, {"bearer": {}}},
 		Errors: []int{http.StatusUnauthorized, http.StatusNotFound},
 	}, func(ctx context.Context, in *struct {
 		Region string `query:"region" maxLength:"3" doc:"Region code, e.g. US, GB, FR"`

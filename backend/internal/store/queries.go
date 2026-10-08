@@ -61,6 +61,50 @@ func (s *Store) SessionUser(ctx context.Context, sessionID string) (*User, error
 	return s.GetUser(ctx, sess.UserID)
 }
 
+// LiveSession returns an unexpired session, or ErrNotFound.
+func (s *Store) LiveSession(ctx context.Context, sessionID string) (*Session, error) {
+	sess := new(Session)
+	err := s.DB.NewSelect().Model(sess).Where("id = ?", sessionID).Where("expires_at > ?", time.Now().Unix()).Scan(ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	return sess, err
+}
+
+// TouchSession records a use of the session and moves its expiry.
+func (s *Store) TouchSession(ctx context.Context, sessionID string, lastSeen, expiresAt int64) error {
+	_, err := s.DB.NewUpdate().Model((*Session)(nil)).
+		Set("last_seen_at = ?", lastSeen).Set("expires_at = ?", expiresAt).Where("id = ?", sessionID).Exec(ctx)
+	return err
+}
+
+// ListUserSessions returns a user's live sessions, most recently used first.
+func (s *Store) ListUserSessions(ctx context.Context, userID string) ([]Session, error) {
+	out := []Session{}
+	err := s.DB.NewSelect().Model(&out).Where("user_id = ?", userID).Where("expires_at > ?", time.Now().Unix()).
+		OrderExpr("last_seen_at DESC").Scan(ctx)
+	return out, err
+}
+
+// DeleteUserSession ends one of the user's sessions by its public id; ErrNotFound if it is not theirs.
+func (s *Store) DeleteUserSession(ctx context.Context, userID, publicID string) error {
+	res, err := s.DB.NewDelete().Model((*Session)(nil)).
+		Where("user_id = ?", userID).Where("substr(id, 1, 16) = ?", publicID).Exec(ctx)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// DeleteOtherUserSessions ends every session of the user except keepID.
+func (s *Store) DeleteOtherUserSessions(ctx context.Context, userID, keepID string) error {
+	_, err := s.DB.NewDelete().Model((*Session)(nil)).Where("user_id = ?", userID).Where("id <> ?", keepID).Exec(ctx)
+	return err
+}
+
 func (s *Store) DeleteSession(ctx context.Context, sessionID string) error {
 	_, err := s.DB.NewDelete().Model((*Session)(nil)).Where("id = ?", sessionID).Exec(ctx)
 	return err

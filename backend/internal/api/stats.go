@@ -14,7 +14,7 @@ func registerStats(api huma.API, d Deps) {
 		Summary: "Watching and request statistics",
 		Description: "Exact when Jellyfin's Playback Reporting plugin is installed (its plays are copied into Tipsarr), " +
 			"otherwise estimated from the watch history. People see their own numbers; `user` and `all` are admin only.",
-		Tags: []string{"stats"}, Security: []map[string][]string{{"session": {}}},
+		Tags: []string{"stats"}, Security: []map[string][]string{{"session": {}}, {"bearer": {}}},
 		Errors: []int{http.StatusUnauthorized, http.StatusForbidden},
 	}, func(ctx context.Context, in *struct {
 		User   string `query:"user" maxLength:"64" doc:"A user id, or all (admins). Default: yourself"`

@@ -235,7 +235,7 @@ func (s *Service) CompleteOIDC(ctx context.Context, redirectURL, state, code, us
 	if err != nil {
 		return "", nil, err
 	}
-	token, err := s.startSession(ctx, user, userAgent)
+	token, err := s.startSession(ctx, user, userAgent, Device{Platform: "web"})
 	return token, user, err
 }
 

@@ -54,7 +54,7 @@ var (
 )
 
 func registerLibrary(api huma.API, d Deps) {
-	sec := []map[string][]string{{"session": {}}}
+	sec := []map[string][]string{{"session": {}}, {"bearer": {}}}
 
 	huma.Register(api, huma.Operation{
 		OperationID: "listLibrary", Method: http.MethodGet, Path: "/library",

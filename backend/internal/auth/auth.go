@@ -18,8 +18,18 @@ import (
 
 const (
 	CookieName = "tipsarr_session"
-	SessionTTL = 30 * 24 * time.Hour
+	// SessionTTL is a sliding window: every use older than renewEvery moves the expiry to now+SessionTTL,
+	// so a device that is opened at least every 10 days stays signed in.
+	SessionTTL = 10 * 24 * time.Hour
+	renewEvery = time.Hour
 )
+
+// Device says which client a session belongs to.
+type Device struct {
+	Platform   string // web, ios or android
+	Name       string
+	AppVersion string
+}
 
 var ErrNotConfigured = errors.New("Jellyfin is not configured yet")
 
@@ -46,7 +56,7 @@ func New(s *store.Store) *Service {
 
 // Login authenticates against Jellyfin and starts a session. It returns the raw
 // cookie token (only its hash is stored) and the user.
-func (s *Service) Login(ctx context.Context, username, password, userAgent string) (token string, user *store.User, err error) {
+func (s *Service) Login(ctx context.Context, username, password, userAgent string, dev Device) (token string, user *store.User, err error) {
 	jfURL, err := s.store.GetSetting(ctx, SettingJellyfinURL)
 	if err != nil {
 		return "", nil, err
@@ -63,12 +73,12 @@ func (s *Service) Login(ctx context.Context, username, password, userAgent strin
 		return "", nil, err
 	}
 
-	token, err = s.startSession(ctx, user, userAgent)
+	token, err = s.startSession(ctx, user, userAgent, dev)
 	return token, user, err
 }
 
 // startSession stores a new session for the user and returns the raw cookie token.
-func (s *Service) startSession(ctx context.Context, user *store.User, userAgent string) (string, error) {
+func (s *Service) startSession(ctx context.Context, user *store.User, userAgent string, dev Device) (string, error) {
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {
 		return "", err
@@ -84,23 +94,39 @@ func (s *Service) startSession(ctx context.Context, user *store.User, userAgent 
 		UserAgent: userAgent,
 		CreatedAt: now.Unix(),
 		ExpiresAt: now.Add(SessionTTL).Unix(),
+
+		Platform: cmpOr(dev.Platform, "web"), DeviceName: dev.Name, AppVersion: dev.AppVersion, LastSeenAt: now.Unix(),
 	})
 	return token, err
 }
 
-// Authenticate resolves a cookie token to its user; store.ErrNotFound if invalid or expired.
-func (s *Service) Authenticate(ctx context.Context, token string) (*store.User, error) {
+// Authenticate resolves a token (cookie or Bearer) to its user and session; store.ErrNotFound if
+// invalid or expired. A session used again more than renewEvery after its last use gets its
+// expiry pushed forward (sess.Renewed tells the caller).
+func (s *Service) Authenticate(ctx context.Context, token string) (*store.User, *store.Session, error) {
 	if token == "" {
-		return nil, store.ErrNotFound
+		return nil, nil, store.ErrNotFound
 	}
-	u, err := s.store.SessionUser(ctx, hash(token))
+	sess, err := s.store.LiveSession(ctx, hash(token))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+	u, err := s.store.GetUser(ctx, sess.UserID)
+	if err != nil {
+		return nil, nil, err
 	}
 	if !s.stillAllowed(ctx, u) {
-		return nil, store.ErrNotFound
+		return nil, nil, store.ErrNotFound
 	}
-	return u, nil
+	if now := time.Now(); now.Unix()-sess.LastSeenAt >= int64(renewEvery.Seconds()) {
+		exp := now.Add(SessionTTL).Unix()
+		if err := s.store.TouchSession(ctx, sess.ID, now.Unix(), exp); err != nil {
+			slog.Warn("renew session", "err", err) // the session itself is still valid
+		} else {
+			sess.LastSeenAt, sess.ExpiresAt, sess.Renewed = now.Unix(), exp, true
+		}
+	}
+	return u, sess, nil
 }
 
 // SetRecheckEvery changes how often a session's Jellyfin account is checked (tests).
@@ -149,4 +175,11 @@ func (s *Service) Logout(ctx context.Context, token string) error {
 func hash(token string) string {
 	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
+}
+
+func cmpOr(v, def string) string {
+	if v == "" {
+		return def
+	}
+	return v
 }

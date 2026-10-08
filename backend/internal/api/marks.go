@@ -11,7 +11,7 @@ import (
 )
 
 func registerMarks(api huma.API, d Deps) {
-	sec := []map[string][]string{{"session": {}}}
+	sec := []map[string][]string{{"session": {}}, {"bearer": {}}}
 
 	mapErr := func(err error) error {
 		if errors.Is(err, marks.ErrInvalid) {

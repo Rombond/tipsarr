@@ -46,7 +46,7 @@ func registerProfile(api huma.API, d Deps) {
 		OperationID: "userProfile", Method: http.MethodGet, Path: "/users/{id}",
 		Summary:     "A user's profile and request statistics",
 		Description: "Everyone can read their own profile; admins can read anyone's.",
-		Tags:        []string{"users"}, Security: []map[string][]string{{"session": {}}},
+		Tags:        []string{"users"}, Security: []map[string][]string{{"session": {}}, {"bearer": {}}},
 		Errors: []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound},
 	}, func(ctx context.Context, in *struct {
 		ID string `path:"id" maxLength:"64"`

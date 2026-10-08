@@ -43,7 +43,7 @@ func mediaErr(err error) error {
 }
 
 func registerDiscover(api huma.API, d Deps) {
-	sec := []map[string][]string{{"session": {}}}
+	sec := []map[string][]string{{"session": {}}, {"bearer": {}}}
 	errs := []int{http.StatusUnauthorized, http.StatusBadGateway, http.StatusServiceUnavailable}
 
 	huma.Register(api, huma.Operation{
