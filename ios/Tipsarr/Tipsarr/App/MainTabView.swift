@@ -18,6 +18,8 @@ struct MainTabView: View {
     @State private var pendingCount = 0
     @State private var ratings: RatingProvider
     @State private var live = LiveUpdates()
+    /// Tabs opened at least once; wide windows keep them alive so each tab keeps its navigation and scroll position.
+    @State private var visited: Set<AppTab> = [.discover]
 
     init(account: Account, profile: Profile) {
         self.account = account
@@ -80,27 +82,42 @@ struct MainTabView: View {
         }
     }
 
-    private func tabs(_ style: ShellStyle) -> some View {
-        TabView(selection: $router.tab) {
-            Tab("m.tab.discover", systemImage: "safari", value: AppTab.discover) {
-                DiscoverView(api: api, path: $router.discoverPath) { router.tab = .search }
+    @ViewBuilder private func tabs(_ style: ShellStyle) -> some View {
+        if style == .system {
+            // iPhone and narrow windows: the system tab bar.
+            TabView(selection: $router.tab) {
+                Tab("m.tab.discover", systemImage: "safari", value: AppTab.discover) { content(.discover) }
+                // The separate search tab (field at the top right of the bar) is for the system bar on iPhone only.
+                Tab("m.tab.search", systemImage: "magnifyingglass", value: AppTab.search, role: sizeClass == .compact ? .search : nil) { content(.search) }
+                Tab("m.tab.requests", systemImage: "checklist", value: AppTab.requests) { content(.requests) }
+                    .badge(profile.isAdmin ? pendingCount : 0)
+                Tab("m.tab.library", systemImage: "books.vertical", value: AppTab.library) { content(.library) }
+                Tab("m.tab.profile", systemImage: "person.crop.circle", value: AppTab.profile) { content(.profile) }
             }
-            // The separate search tab (field at the top right of the bar) is for the system bar only; wide windows put the field in the page.
-            Tab("m.tab.search", systemImage: "magnifyingglass", value: AppTab.search, role: style == .system && sizeClass == .compact ? .search : nil) {
-                SearchView(api: api)
+        } else {
+            // Wide windows draw their own bar (sidebar or floating bar), so no TabView: the system bar cannot be hidden on iPad.
+            ZStack {
+                ForEach(AppTab.ordered, id: \.self) { tab in
+                    if visited.contains(tab) {
+                        content(tab)
+                            .opacity(router.tab == tab ? 1 : 0)
+                            .allowsHitTesting(router.tab == tab)
+                            .accessibilityHidden(router.tab != tab)
+                    }
+                }
             }
-            Tab("m.tab.requests", systemImage: "checklist", value: AppTab.requests) {
-                RequestsView(api: api, isAdmin: profile.isAdmin, path: $router.requestsPath) { router.tab = .discover }
-            }
-            .badge(profile.isAdmin ? pendingCount : 0)
-            Tab("m.tab.library", systemImage: "books.vertical", value: AppTab.library) {
-                LibraryView(api: api, path: $router.libraryPath)
-            }
-            Tab("m.tab.profile", systemImage: "person.crop.circle", value: AppTab.profile) {
-                ProfileView(account: account, profile: profile, api: api) { router.tab = .requests }
-            }
+            .onChange(of: router.tab, initial: true) { _, tab in visited.insert(tab) }
         }
-        .toolbarVisibility(style == .system ? .automatic : .hidden, for: .tabBar)
+    }
+
+    @ViewBuilder private func content(_ tab: AppTab) -> some View {
+        switch tab {
+        case .discover: DiscoverView(api: api, path: $router.discoverPath) { router.tab = .search }
+        case .search: SearchView(api: api)
+        case .requests: RequestsView(api: api, isAdmin: profile.isAdmin, path: $router.requestsPath) { router.tab = .discover }
+        case .library: LibraryView(api: api, path: $router.libraryPath)
+        case .profile: ProfileView(account: account, profile: profile, api: api) { router.tab = .requests }
+        }
     }
 
     private var api: TipsarrAPI { TipsarrAPI(serverURL: account.serverURL, token: account.token) }
