@@ -21,7 +21,8 @@ extension AppTab {
         }
     }
 
-    static let ordered: [AppTab] = [.discover, .search, .requests, .library, .profile]
+    /// Same order as the iPhone bar, where Search is the separate last tab.
+    static let ordered: [AppTab] = [.discover, .requests, .library, .profile, .search]
 }
 
 /// The tab bar of a portrait iPad window: a floating pill at the bottom, as in the Penpot iPad page.

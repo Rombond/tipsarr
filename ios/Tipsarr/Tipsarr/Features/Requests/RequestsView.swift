@@ -8,43 +8,81 @@ struct RequestsView: View {
     @Environment(ToastCenter.self) private var toast
     @Environment(\.liveUpdates) private var live
     @Binding var path: NavigationPath
+    /// Selected request id in the two-column layout.
+    @Binding var selection: String?
+    @State private var width: CGFloat = 0
     var openDiscover: () -> Void = {}
 
-    init(api: TipsarrAPI, isAdmin: Bool, path: Binding<NavigationPath>, openDiscover: @escaping () -> Void = {}) {
+    init(api: TipsarrAPI, isAdmin: Bool, path: Binding<NavigationPath>, selection: Binding<String?>, openDiscover: @escaping () -> Void = {}) {
         _model = State(initialValue: RequestsModel(api: api, isAdmin: isAdmin))
         _path = path
+        _selection = selection
         self.openDiscover = openDiscover
     }
 
+    /// Two columns (list and detail) when the screen is wide enough, a stack otherwise.
+    private var split: Bool { width >= 700 }
+
     var body: some View {
+        Group {
+            if split { splitBody } else { stackBody }
+        }
+        .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
+        .task(id: filter) { await model.load(filter) }
+        .onChange(of: live?.requestsTick) { Task { await model.load(filter) } }
+        .sheet(item: $declining) { record in
+            DeclineSheet(title: record.title) { reason in
+                try await model.decline(record, reason: reason)
+                declining = nil
+            }
+            .tipsarrSheet(detents: [.medium])
+        }
+        .confirmationDialog(
+            Text(verbatim: L10n.string("m.request.cancel_confirm", deleting?.title ?? "")),
+            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+            titleVisibility: .visible, presenting: deleting
+        ) { record in
+            Button("m.request.cancel", role: .destructive) {
+                Task { await run { try await model.delete(record) } }
+            }
+            Button("m.request.keep", role: .cancel) {}
+        }
+    }
+
+    private var stackBody: some View {
         NavigationStack(path: $path) {
-            content
+            list(selecting: nil)
                 .background(Tokens.palette.bg)
                 .navigationTitle("requests.title")
-                .task(id: filter) { await model.load(filter) }
-                .refreshable { await model.load(filter) }
-                .onChange(of: live?.requestsTick) { Task { await model.load(filter) } }
                 .navigationDestination(for: RequestRecord.self) { record in
                     RequestDetailScreen(record: record, model: model)
                 }
                 .mediaDestinations()
-                .sheet(item: $declining) { record in
-                    DeclineSheet(title: record.title) { reason in
-                        try await model.decline(record, reason: reason)
-                        declining = nil
-                    }
-                    .tipsarrSheet(detents: [.medium])
+        }
+    }
+
+    private var selectedRecord: RequestRecord? { model.items.first { $0.id == selection } }
+
+    private var splitBody: some View {
+        NavigationSplitView(columnVisibility: .constant(.all)) {
+            list(selecting: $selection)
+                .background(Tokens.palette.bg)
+                .navigationTitle("requests.title")
+                .navigationSplitViewColumnWidth(min: 340, ideal: 400, max: 460)
+        } detail: {
+            NavigationStack {
+                if let record = selectedRecord {
+                    RequestDetailView(initial: record, model: model).id(record.id)
+                } else {
+                    StateView(symbol: "checklist", title: "m.requests.select").background(Tokens.palette.bg)
                 }
-                .confirmationDialog(
-                    Text(verbatim: L10n.string("m.request.cancel_confirm", deleting?.title ?? "")),
-                    isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
-                    titleVisibility: .visible, presenting: deleting
-                ) { record in
-                    Button("m.request.cancel", role: .destructive) {
-                        Task { await run { try await model.delete(record) } }
-                    }
-                    Button("m.request.keep", role: .cancel) {}
-                }
+            }
+            .mediaDestinations()
+        }
+        .navigationSplitViewStyle(.balanced)
+        // The first request is shown as soon as the list arrives.
+        .onChange(of: model.items.first?.id) { _, first in
+            if selection == nil || !model.items.contains(where: { $0.id == selection }) { selection = first }
         }
     }
 
@@ -71,8 +109,8 @@ struct RequestsView: View {
             .listRowSeparator(.hidden)
     }
 
-    private var content: some View {
-        List {
+    private func list(selecting: Binding<String?>?) -> some View {
+        List(selection: selecting ?? .constant(nil)) {
             filters
             switch model.phase {
             case .idle, .loading:
@@ -103,7 +141,7 @@ struct RequestsView: View {
             case .loaded:
                 ForEach(model.items) { record in
                     RequestRow(record: record, showRequester: model.isAdmin, busy: model.busy.contains(record.id),
-                               progress: live?.progress[record.id],
+                               progress: live?.progress[record.id], link: selecting == nil,
                                onApprove: { Task { await approve(record) } },
                                onDecline: { declining = record })
                         .listRowInsets(.init(top: Tokens.Spacing.md, leading: Tokens.Spacing.lg, bottom: Tokens.Spacing.md, trailing: Tokens.Spacing.lg))
@@ -115,12 +153,14 @@ struct RequestsView: View {
                                 }
                             }
                         }
+                        .tag(record.id)
                         .task { await model.loadMore(after: record) }
                 }
                 if model.loadingMore { ProgressView().frame(maxWidth: .infinity).listRowBackground(Color.clear) }
             }
         }
         .listStyle(.plain)
+        .refreshable { await model.load(filter) }
     }
 
     private func approve(_ record: RequestRecord) async {
@@ -141,48 +181,56 @@ struct RequestRow: View {
     var busy = false
     /// Newer progress pushed by the server.
     var progress: LiveProgress?
+    /// A tappable link to the detail (stack); off in the two-column layout where the list selection does it.
+    var link = true
     var onApprove: () -> Void = {}
     var onDecline: () -> Void = {}
 
     var body: some View {
-        NavigationLink(value: record) {
-            HStack(alignment: .top, spacing: Tokens.Spacing.md) {
-                RemoteImage(path: record.posterPath, size: .w185) {
-                    Image(systemName: "film").foregroundStyle(Tokens.palette.mutedFg)
+        if link {
+            NavigationLink(value: record) { rowContent }
+        } else {
+            rowContent
+        }
+    }
+
+    private var rowContent: some View {
+        HStack(alignment: .top, spacing: Tokens.Spacing.md) {
+            RemoteImage(path: record.posterPath, size: .w185) {
+                Image(systemName: "film").foregroundStyle(Tokens.palette.mutedFg)
+            }
+            .frame(width: 64, height: 96)
+            .background(Tokens.palette.muted)
+            .clipShape(.rect(cornerRadius: Tokens.Radius.sm))
+            .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
+                HStack(alignment: .top) {
+                    Text(verbatim: record.title).font(.body.weight(.semibold)).lineLimit(2)
+                    Spacer(minLength: Tokens.Spacing.sm)
+                    StatusBadge(state: record.state)
                 }
-                .frame(width: 64, height: 96)
-                .background(Tokens.palette.muted)
-                .clipShape(.rect(cornerRadius: Tokens.Radius.sm))
-                .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
-                    HStack(alignment: .top) {
-                        Text(verbatim: record.title).font(.body.weight(.semibold)).lineLimit(2)
-                        Spacer(minLength: Tokens.Spacing.sm)
-                        StatusBadge(state: record.state)
-                    }
-                    Text(choose(record.type == .tv, "type.tv", "type.movie")).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
-                    Text(verbatim: when).font(.caption).foregroundStyle(Tokens.palette.mutedFg)
-                    if record.state == .downloading, let percent = progress?.percent ?? record.progressPercent {
-                        ProgressBar(percent: percent).padding(.top, Tokens.Spacing.xs)
-                    }
-                    if showRequester && record.state == .requested {
-                        HStack(spacing: Tokens.Spacing.sm) {
-                            Button(action: onApprove) {
-                                HStack(spacing: Tokens.Spacing.xs) { Image(systemName: "checkmark"); Text("req.approve") }
-                            }
-                            .buttonStyle(.tipsarr(.primary, compact: true))
-                            Button(action: onDecline) {
-                                HStack(spacing: Tokens.Spacing.xs) { Image(systemName: "xmark"); Text("req.decline") }
-                            }
-                            .buttonStyle(.tipsarr(.secondary, compact: true))
+                Text(choose(record.type == .tv, "type.tv", "type.movie")).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+                Text(verbatim: when).font(.caption).foregroundStyle(Tokens.palette.mutedFg)
+                if record.state == .downloading, let percent = progress?.percent ?? record.progressPercent {
+                    ProgressBar(percent: percent).padding(.top, Tokens.Spacing.xs)
+                }
+                if showRequester && record.state == .requested {
+                    HStack(spacing: Tokens.Spacing.sm) {
+                        Button(action: onApprove) {
+                            HStack(spacing: Tokens.Spacing.xs) { Image(systemName: "checkmark"); Text("req.approve") }
                         }
-                        .disabled(busy)
-                        .padding(.top, Tokens.Spacing.xs)
+                        .buttonStyle(.tipsarr(.primary, compact: true))
+                        Button(action: onDecline) {
+                            HStack(spacing: Tokens.Spacing.xs) { Image(systemName: "xmark"); Text("req.decline") }
+                        }
+                        .buttonStyle(.tipsarr(.secondary, compact: true))
                     }
+                    .disabled(busy)
+                    .padding(.top, Tokens.Spacing.xs)
                 }
             }
-            .opacity(busy ? 0.6 : 1)
         }
+        .opacity(busy ? 0.6 : 1)
     }
 
     private var when: String {

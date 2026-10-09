@@ -5380,6 +5380,22 @@
         }
       }
     },
+    "m.requests.select": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select a request"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez une demande"
+          }
+        }
+      }
+    },
     "m.requests.sent_to_only": {
       "localizations": {
         "en": {
@@ -5456,6 +5472,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recherches récentes"
+          }
+        }
+      }
+    },
+    "m.search.select": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select a result"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez un résultat"
+          }
+        }
+      }
+    },
+    "m.search.start": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search for a movie, a show or a person"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cherchez un film, une série ou une personne"
           }
         }
       }

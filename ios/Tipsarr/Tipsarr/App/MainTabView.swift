@@ -114,7 +114,7 @@ struct MainTabView: View {
         switch tab {
         case .discover: DiscoverView(api: api, path: $router.discoverPath) { router.tab = .search }
         case .search: SearchView(api: api)
-        case .requests: RequestsView(api: api, isAdmin: profile.isAdmin, path: $router.requestsPath) { router.tab = .discover }
+        case .requests: RequestsView(api: api, isAdmin: profile.isAdmin, path: $router.requestsPath, selection: $router.requestsSelection) { router.tab = .discover }
         case .library: LibraryView(api: api, path: $router.libraryPath)
         case .profile: ProfileView(account: account, profile: profile, api: api) { router.tab = .requests }
         }

@@ -665,7 +665,10 @@
   "m.users.movies": "Movies requested",
   "m.users.shows": "Shows requested",
   "m.users.watchlist": "Watchlist",
-  "m.users.watched": "Watched"
+  "m.users.watched": "Watched",
+  "m.requests.select": "Select a request",
+  "m.search.select": "Select a result",
+  "m.search.start": "Search for a movie, a show or a person"
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -1333,6 +1336,9 @@
   "m.users.movies": "Films demandés",
   "m.users.shows": "Séries demandées",
   "m.users.watchlist": "Liste de suivi",
-  "m.users.watched": "Vus"
+  "m.users.watched": "Vus",
+  "m.requests.select": "Choisissez une demande",
+  "m.search.select": "Choisissez un résultat",
+  "m.search.start": "Cherchez un film, une série ou une personne"
  }
 }

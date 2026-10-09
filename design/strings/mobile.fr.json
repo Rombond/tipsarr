@@ -162,5 +162,8 @@
   "m.users.movies": "Films demandés",
   "m.users.shows": "Séries demandées",
   "m.users.watchlist": "Liste de suivi",
-  "m.users.watched": "Vus"
+  "m.users.watched": "Vus",
+  "m.requests.select": "Choisissez une demande",
+  "m.search.select": "Choisissez un résultat",
+  "m.search.start": "Cherchez un film, une série ou une personne"
 }
