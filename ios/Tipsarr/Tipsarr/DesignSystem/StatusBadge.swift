@@ -3,6 +3,8 @@ import SwiftUI
 struct StatusBadge: View {
     let state: RequestState
     var compact = false
+    /// Pill with a tinted background (default) or just the coloured icon and word, with no padding.
+    var plain = false
 
     var body: some View {
         Label {
@@ -12,9 +14,9 @@ struct StatusBadge: View {
         }
         .font(.caption.weight(.semibold))
         .foregroundStyle(state.color)
-        .padding(.horizontal, compact ? Tokens.Spacing.xs : Tokens.Spacing.sm)
-        .padding(.vertical, Tokens.Spacing.xs)
-        .background(state.color.opacity(0.15), in: .capsule)
+        .padding(.horizontal, plain ? 0 : (compact ? Tokens.Spacing.xs : Tokens.Spacing.sm))
+        .padding(.vertical, plain ? 0 : Tokens.Spacing.xs)
+        .background(plain ? Color.clear : state.color.opacity(0.15), in: .capsule)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(state.title))
     }
