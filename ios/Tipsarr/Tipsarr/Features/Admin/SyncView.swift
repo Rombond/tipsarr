@@ -49,6 +49,7 @@ struct SyncView: View {
             }
         }
         .listStyle(.plain)
+        .readableColumn()
     }
 
     private func load() async {

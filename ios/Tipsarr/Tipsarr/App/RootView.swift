@@ -26,6 +26,21 @@ struct RootView: View {
             }
         }
         .environment(session)
+        #if DEBUG
+        // Debug aid for the iPhone Duo: print the fold (division) regions and the window size.
+        .background {
+            GeometryReader { proxy in
+                Color.clear.task(id: proxy.size) {
+                    if #available(iOS 27.1, *) {
+                        let regions = proxy.reservedRegions(kind: .division, options: .includeInactive)
+                        print("[fold] size=\(proxy.size) regions=\(regions.map { "\($0.frame) active=\($0.isActive) margins=\($0.margins)" })")
+                    } else {
+                        print("[fold] size=\(proxy.size) (no fold API)")
+                    }
+                }
+            }
+        }
+        #endif
         .onOpenURL { url in Task { await session.handle(url) } }
         .animation(.easeOut(duration: Tokens.Motion.normal), value: session.phase)
         .task { await session.start() }

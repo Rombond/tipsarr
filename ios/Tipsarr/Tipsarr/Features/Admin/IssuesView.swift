@@ -45,6 +45,7 @@ struct IssuesView: View {
             }
         }
         .listStyle(.plain)
+        .readableColumn()
         .task(id: filter) { await model.load(filter) }
         .refreshable { await model.load(filter) }
         .onChange(of: live?.issuesTick) { Task { await model.load(filter) } }

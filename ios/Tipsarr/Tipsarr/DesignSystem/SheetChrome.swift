@@ -12,3 +12,10 @@ extension View {
             .presentationBackground(Tokens.palette.bg)
     }
 }
+
+extension View {
+    /// Keeps a list or form a readable width on iPad and the Duo inner display, centred in the screen.
+    func readableColumn(_ width: CGFloat = 720) -> some View {
+        frame(maxWidth: width).frame(maxWidth: .infinity)
+    }
+}

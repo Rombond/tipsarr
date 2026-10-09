@@ -144,6 +144,7 @@ struct SettingsView: View {
             }
         }
         .scrollContentBackground(.hidden)
+        .readableColumn()
         .background(Tokens.palette.bg)
         .navigationTitle("m.settings.title")
         .navigationBarTitleDisplayMode(.inline)

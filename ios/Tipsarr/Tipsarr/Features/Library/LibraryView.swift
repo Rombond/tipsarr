@@ -56,19 +56,29 @@ struct LibraryView: View {
     // MARK: Chips
 
     private var chips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Tokens.Spacing.sm) {
-                Chip(title: "library.all", isSelected: model.filters.kind == .all && model.filters.watched != .no) {
-                    model.filters.kind = .all
-                    model.filters.watched = .any
+        HStack(spacing: Tokens.Spacing.md) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Tokens.Spacing.sm) {
+                    Chip(title: "library.all", isSelected: model.filters.kind == .all && model.filters.watched != .no) {
+                        model.filters.kind = .all
+                        model.filters.watched = .any
+                    }
+                    Chip(title: "type.movies", isSelected: model.filters.kind == .movie) { model.filters.kind = .movie }
+                    Chip(title: "type.shows", isSelected: model.filters.kind == .tv) { model.filters.kind = .tv }
+                    Chip(title: "m.library.unwatched", isSelected: model.filters.watched == .no) {
+                        model.filters.watched = model.filters.watched == .no ? .any : .no
+                    }
                 }
-                Chip(title: "type.movies", isSelected: model.filters.kind == .movie) { model.filters.kind = .movie }
-                Chip(title: "type.shows", isSelected: model.filters.kind == .tv) { model.filters.kind = .tv }
-                Chip(title: "m.library.unwatched", isSelected: model.filters.watched == .no) {
-                    model.filters.watched = model.filters.watched == .no ? .any : .no
-                }
+                .padding(.leading, Tokens.Spacing.lg)
             }
-            .padding(.horizontal, Tokens.Spacing.lg)
+            // Wide screens have room for the count and the sort order, as in Penpot.
+            if sizeClass == .regular, model.phase == .loaded {
+                Text(verbatim: L10n.string("library.count", String(model.total)) + " · " + model.filters.sort.title.resolved)
+                    .font(.footnote)
+                    .foregroundStyle(Tokens.palette.mutedFg)
+                    .lineLimit(1)
+                    .padding(.trailing, Tokens.Spacing.lg)
+            }
         }
     }
 

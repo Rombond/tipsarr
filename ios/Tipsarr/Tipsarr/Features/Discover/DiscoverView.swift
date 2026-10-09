@@ -46,7 +46,7 @@ struct DiscoverView: View {
                 VStack(alignment: .leading, spacing: Tokens.Spacing.lg) {
                     // Landscape iPad home: a hero and rails (Penpot page 10) instead of chips on top.
                     if wide && chip == .forYou {
-                        WideHome(model: model, seeAll: { chip = $0 }) { chips }
+                        WideHome(model: model) { chips }
                     } else {
                         chips
                     }
@@ -123,25 +123,19 @@ private struct ForYouContent: View {
 struct Rail: View {
     let title: LText
     let items: [MediaItem]
-    var posterWidth: CGFloat = 120
-    var onSeeAll: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
-            HStack {
-                Text(title).font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
-                Spacer()
-                if let onSeeAll {
-                    Button(action: onSeeAll) { Text("m.discover.see_all").font(.subheadline) }.foregroundStyle(Tokens.palette.mutedFg)
-                }
-            }
-            .padding(.horizontal, Tokens.Spacing.lg)
+            Text(title)
+                .font(.title3.weight(.semibold))
+                .accessibilityAddTraits(.isHeader)
+                .padding(.horizontal, Tokens.Spacing.lg)
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: Tokens.Spacing.md) {
                     ForEach(items) { item in
                         NavigationLink(value: item.route) {
                             PosterCard(item: item)
-                                .frame(width: posterWidth)
+                                .frame(width: 120)
                         }
                         .buttonStyle(.plain)
                     }
@@ -222,34 +216,18 @@ struct ErrorState: View {
     }
 }
 
-/// Landscape iPad "For you": a hero with the top trending title, the chips, then Trending now and Upcoming rails.
+/// Landscape iPad "For you": a hero on the first recommendation, the chips, then the suggestion rows below.
+/// Trending and Upcoming are chips of their own, so they are not repeated here.
 private struct WideHome<Chips: View>: View {
     let model: DiscoverModel
-    let seeAll: (DiscoverChip) -> Void
     @ViewBuilder var chips: Chips
 
     var body: some View {
-        let trending = model.list(.trending), upcoming = model.list(.upcoming)
         VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
-            if let first = trending.items.first { Hero(item: first) }
+            if let first = model.home.rows.first?.items.first { Hero(item: first) }
             chips
-            if !trending.items.isEmpty {
-                Rail(title: "discover.trending", items: Array(trending.items.dropFirst().prefix(20)), posterWidth: 132) { seeAll(.trending) }
-            }
-            if !upcoming.items.isEmpty {
-                Rail(title: "discover.upcoming", items: Array(upcoming.items.prefix(20)), posterWidth: 132) { seeAll(.upcoming) }
-            }
         }
-        .task {
-            await trending.loadIfNeeded()
-            await upcoming.loadIfNeeded()
-        }
-    }
-}
-
-private extension Rail {
-    init(title: LText, items: [MediaItem], posterWidth: CGFloat, onSeeAll: @escaping () -> Void) {
-        self.init(title: title, items: items, posterWidth: posterWidth, onSeeAll: Optional(onSeeAll))
+        .task { await model.home.loadIfNeeded() }
     }
 }
 

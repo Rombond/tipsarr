@@ -46,6 +46,7 @@ struct DevicesView: View {
             }
         }
         .scrollContentBackground(.hidden)
+        .readableColumn()
         .background(Tokens.palette.bg)
         .navigationTitle("profile.devices_title")
         .navigationBarTitleDisplayMode(.inline)

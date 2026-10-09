@@ -45,6 +45,7 @@ struct AccountsView: View {
             }
         }
         .scrollContentBackground(.hidden)
+        .readableColumn()
         .background(Tokens.palette.bg)
         .navigationTitle("m.accounts.title")
         .navigationBarTitleDisplayMode(.inline)

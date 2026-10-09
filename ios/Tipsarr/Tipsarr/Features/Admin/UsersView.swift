@@ -25,6 +25,7 @@ struct UsersView: View {
             }
         }
         .scrollContentBackground(.hidden)
+        .readableColumn()
         .background(Tokens.palette.bg)
         .navigationTitle("users.title")
         .navigationBarTitleDisplayMode(.inline)
