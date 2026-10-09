@@ -59,5 +59,11 @@
   "m.request.sent_to": "sent to {service} · {date}",
   "m.request.cancel_confirm": "Cancel your request for {title}?",
   "m.request.keep": "Keep request",
-  "m.fold.hint": "Controls move to the lower half when the device is partly folded."
+  "m.fold.hint": "Controls move to the lower half when the device is partly folded.",
+  "m.discover.chip_upcoming": "Upcoming",
+  "m.discover.chip_movies": "Movies",
+  "m.discover.chip_tv": "TV",
+  "m.discover.trending_week": "Trending this week",
+  "m.discover.see_all": "See all",
+  "m.discover.search": "Search"
 }

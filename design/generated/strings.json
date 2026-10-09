@@ -562,7 +562,13 @@
   "m.request.sent_to": "sent to {service} · {date}",
   "m.request.cancel_confirm": "Cancel your request for {title}?",
   "m.request.keep": "Keep request",
-  "m.fold.hint": "Controls move to the lower half when the device is partly folded."
+  "m.fold.hint": "Controls move to the lower half when the device is partly folded.",
+  "m.discover.chip_upcoming": "Upcoming",
+  "m.discover.chip_movies": "Movies",
+  "m.discover.chip_tv": "TV",
+  "m.discover.trending_week": "Trending this week",
+  "m.discover.see_all": "See all",
+  "m.discover.search": "Search"
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -1127,6 +1133,12 @@
   "m.request.sent_to": "envoyé à {service} · {date}",
   "m.request.cancel_confirm": "Annuler votre demande pour {title} ?",
   "m.request.keep": "Garder la demande",
-  "m.fold.hint": "Les commandes passent dans la moitié basse quand l’appareil est partiellement plié."
+  "m.fold.hint": "Les commandes passent dans la moitié basse quand l’appareil est partiellement plié.",
+  "m.discover.chip_upcoming": "À venir",
+  "m.discover.chip_movies": "Films",
+  "m.discover.chip_tv": "Séries",
+  "m.discover.trending_week": "Tendances de la semaine",
+  "m.discover.see_all": "Tout voir",
+  "m.discover.search": "Rechercher"
  }
 }

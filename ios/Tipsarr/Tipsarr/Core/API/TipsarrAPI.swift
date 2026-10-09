@@ -8,6 +8,11 @@ struct TipsarrAPI: Sendable {
 
     private var client: Client { TipsarrClient.make(server: serverURL, token: token) }
 
+    /// Runs one generated-client call and maps every failure to `APIError`.
+    func load<T>(_ call: (Client) async throws -> T) async throws -> T {
+        do { return try await call(client) } catch { throw APIError.from(error) }
+    }
+
     func status() async throws -> ServerStatus {
         do {
             guard case .ok(let ok) = try await client.status() else { throw APIError.unexpected }

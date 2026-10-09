@@ -59,5 +59,11 @@
   "m.request.sent_to": "envoyé à {service} · {date}",
   "m.request.cancel_confirm": "Annuler votre demande pour {title} ?",
   "m.request.keep": "Garder la demande",
-  "m.fold.hint": "Les commandes passent dans la moitié basse quand l’appareil est partiellement plié."
+  "m.fold.hint": "Les commandes passent dans la moitié basse quand l’appareil est partiellement plié.",
+  "m.discover.chip_upcoming": "À venir",
+  "m.discover.chip_movies": "Films",
+  "m.discover.chip_tv": "Séries",
+  "m.discover.trending_week": "Tendances de la semaine",
+  "m.discover.see_all": "Tout voir",
+  "m.discover.search": "Rechercher"
 }

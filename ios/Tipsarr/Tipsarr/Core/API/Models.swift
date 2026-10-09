@@ -34,3 +34,41 @@ struct Server: Sendable, Equatable {
 
     var host: String { url.host() ?? url.absoluteString }
 }
+
+enum MediaType: String, Sendable, Hashable, Codable {
+    case movie, tv
+}
+
+/// A title in a list (discover, search, suggestions).
+struct MediaItem: Sendable, Hashable, Identifiable {
+    var type: MediaType
+    var tmdbId: Int
+    var title: String
+    var posterPath: String?
+    var releaseYear: String?
+    var voteAverage: Double
+    var state: RequestState?
+
+    var id: String { "\(type.rawValue)-\(tmdbId)" }
+    var route: MediaRoute { MediaRoute(type: type, tmdbId: tmdbId, title: title) }
+}
+
+/// Navigation value for the media detail screen (step 4).
+struct MediaRoute: Hashable, Sendable {
+    var type: MediaType
+    var tmdbId: Int
+    var title: String
+}
+
+struct MediaPage: Sendable {
+    var items: [MediaItem]
+    var page: Int
+    var totalPages: Int
+    var hasMore: Bool { page < totalPages }
+}
+
+struct SuggestionRow: Sendable, Identifiable {
+    var id: String
+    var title: String
+    var items: [MediaItem]
+}
