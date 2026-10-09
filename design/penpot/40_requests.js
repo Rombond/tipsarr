@@ -30,7 +30,7 @@ const detailTop = (b, T, i, title) => {
   const it = C.items[i]; H.text(b, it.t, 128, 114, { size: 20, weight: 700, color: T.fg, w: 249, lh: 1.15 }); H.text(b, `${it.y}  ·  ${it.k === 'tv' ? 'TV show' : 'Movie'}`, 128, 168, { size: 13, color: T.mutedFg });
 };
 const facts = (b, T, y, rows) => { rows.forEach(([k, v], j) => { H.text(b, k, 16, y + j * 34, { size: 15, color: T.mutedFg }); H.text(b, v, 16, y + j * 34, { size: 15, weight: 500, color: T.fg, w: 361, align: 'right' }); H.rect(b, 'divider', 16, y + j * 34 + 26, 361, 1, T.border); }); };
-const st5 = [['Requested', 'Mar 3, 18:02'], ['Approved', 'Mar 3, 18:05'], ['Searching', 'Mar 3, 18:05'], ['Downloading', 'in progress'], ['Available', 'waiting']];
+const st5 = [['Requested', 'Mar 3, 18:02'], ['Approved', 'by Alice'], ['Searching', 'sent to Sonarr · Mar 3, 18:05'], ['Downloading', 'in progress'], ['Available', ' ']];
 S.requestsList = [
   ['Requests · mine', (T, x, y) => { const b = C.screen(T, `Requests · mine · ${T.name}`, x, y); C.largeTitle(b, T, 'Requests', { y: 62 }); tabs(b, T, 0);
     [[1, 'requested', '2 days ago'], [3, 'downloading', '3 days ago'], [0, 'available', '1 week ago'], [8, 'declined', '2 weeks ago'], [10, 'failed', '3 weeks ago']].forEach(([i, s, w], k) => { C.requestRow(b, T, 16, 176 + k * 116, 361, i, { status: s, when: w }); H.rect(b, 'divider', 16, 176 + k * 116 + 100, 361, 1, T.border); });
@@ -50,19 +50,19 @@ S.requestsList = [
     C.btn(b, T, 16, 770, 361, 'Cancel request', { h: 46, v: 'secondary' }); C.homeIndicator(b, T); return b; }],
   ['Request detail · pending (admin)', (T, x, y) => { const b = C.screen(T, `Request detail · pending admin · ${T.name}`, x, y); detailTop(b, T, 1, 'Request'); C.badge(b, T, 128, 196, 'requested', {});
     H.text(b, 'Requested by', 16, 262, { size: 13, weight: 600, color: T.mutedFg, upper: true, ls: 0.4 }); C.avatarSm(b, T, 16, 288, 'Bob', 2, 36); H.text(b, 'Bob', 62, 288, { size: 16, weight: 600, color: T.fg }); H.text(b, '2 hours ago', 62, 308, { size: 13, color: T.mutedFg });
-    H.text(b, 'Progress', 16, 366, { size: 20, weight: 700, color: T.fg }); C.timeline(b, T, 20, 410, [['Requested', 'today, 16:02'], ['Approved', 'waiting'], ['Searching', ''], ['Downloading', ''], ['Available', '']], 0);
+    H.text(b, 'Progress', 16, 366, { size: 20, weight: 700, color: T.fg }); C.timeline(b, T, 20, 410, [['Requested', 'today, 16:02'], ['Approved', ' '], ['Searching', ' '], ['Downloading', ' '], ['Available', ' ']], 0);
     H.text(b, 'Details', 16, 700, { size: 20, weight: 700, color: T.fg }); facts(b, T, 738, [['Quality profile', 'HD - 1080p']]);
     C.btn(b, T, 16, 770, 176, 'Approve', { h: 50, icon: 'check' }); C.btn(b, T, 201, 770, 176, 'Decline', { h: 50, v: 'secondary', icon: 'x' }); C.homeIndicator(b, T); return b; }],
   ['Request detail · declined', (T, x, y) => { const b = C.screen(T, `Request detail · declined · ${T.name}`, x, y); detailTop(b, T, 8, 'Request'); C.badge(b, T, 128, 196, 'declined', {});
     C.banner(b, T, 16, 272, 361, 'error', 'Declined by Alice: we already have a better version coming.');
-    H.text(b, 'Progress', 16, 366, { size: 20, weight: 700, color: T.fg }); C.timeline(b, T, 20, 410, [['Requested', 'Feb 20, 11:40'], ['Declined', 'Feb 21, 09:12']], 1, { failedAt: 1 });
+    H.text(b, 'Progress', 16, 366, { size: 20, weight: 700, color: T.fg }); C.timeline(b, T, 20, 410, [['Requested', 'Feb 20, 11:40'], ['Declined', 'by Alice · Feb 21, 09:12']], 1, { failedAt: 1 });
     C.btn(b, T, 16, 770, 361, 'Request again', { h: 50, icon: 'rotate-ccw' }); C.homeIndicator(b, T); return b; }],
   ['Request detail · failed (admin)', (T, x, y) => { const b = C.screen(T, `Request detail · failed admin · ${T.name}`, x, y); detailTop(b, T, 10, 'Request'); C.badge(b, T, 128, 196, 'failed', {});
     C.banner(b, T, 16, 272, 361, 'warn', 'Radarr could not find a release for this title after 3 tries.');
-    H.text(b, 'Progress', 16, 366, { size: 20, weight: 700, color: T.fg }); C.timeline(b, T, 20, 410, [['Requested', 'Mar 1, 20:15'], ['Approved', 'Mar 1, 20:15'], ['Searching', 'Mar 1, 20:16'], ['Failed', 'Mar 2, 08:00']], 3, { failedAt: 3 });
+    H.text(b, 'Progress', 16, 366, { size: 20, weight: 700, color: T.fg }); C.timeline(b, T, 20, 410, [['Requested', 'Mar 1, 20:15'], ['Approved', 'by Alice'], ['Searching', 'sent to Radarr · Mar 1, 20:16'], ['Failed', 'Mar 2, 08:00']], 3, { failedAt: 3 });
     C.btn(b, T, 16, 770, 361, 'Retry', { h: 50, icon: 'refresh-cw' }); C.homeIndicator(b, T); return b; }],
   ['Request detail · available', (T, x, y) => { const b = C.screen(T, `Request detail · available · ${T.name}`, x, y); detailTop(b, T, 0, 'Request'); C.badge(b, T, 128, 196, 'available', {});
-    H.text(b, 'Progress', 16, 276, { size: 20, weight: 700, color: T.fg }); C.timeline(b, T, 20, 320, [['Requested', 'Feb 20, 11:40'], ['Approved', 'Feb 20, 11:41'], ['Searching', 'Feb 20, 11:41'], ['Downloading', 'Feb 20, 11:43'], ['Available', 'Feb 20, 12:20']], 5);
+    H.text(b, 'Progress', 16, 276, { size: 20, weight: 700, color: T.fg }); C.timeline(b, T, 20, 320, [['Requested', 'Feb 20, 11:40'], ['Approved', 'by Alice'], ['Searching', 'sent to Radarr · Feb 20, 11:41'], ['Downloading', ' '], ['Available', ' ']], 5);
     C.btn(b, T, 16, 700, 361, 'Open in Jellyfin', { h: 50, icon: 'play', v: 'success' }); C.btn(b, T, 16, 760, 361, 'View details', { h: 46, v: 'secondary' }); C.homeIndicator(b, T); return b; }],
   ['Decline sheet (admin)', (T, x, y) => { const b = C.screen(T, `Decline sheet · ${T.name}`, x, y); detailTop(b, T, 1, 'Request'); const s = C.sheet(b, T, 470, 'Decline request');
     H.text(s, 'Optionally tell Bob why.', 20, 62, { size: 15, color: T.mutedFg }); const ta = H.board(s, 'textarea', 20, 100, 353, 130, { fill: T.muted, r: 14, clip: false }); H.text(ta, 'Reason (optional)…', 16, 14, { size: 16, color: T.mutedFg });

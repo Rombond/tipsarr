@@ -4,6 +4,7 @@
 30_detail.js
 40_requests.js
 50_library.js
+55_accounts.js
 60_admin.js
 70_ipad.js
 75_duo.js

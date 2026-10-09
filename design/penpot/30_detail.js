@@ -1,4 +1,10 @@
 const H = storage.H, C = storage.C, S = storage.S;
+C.ratingsStrip = (p, T, x, y, w, kind = 'movie') => {
+  const items = kind === 'tv' ? [['TMDB', '8.7']] : [['TMDB', '8.2'], ['IMDb', '8.5'], ['RT', '92%'], ['Metacritic', '79']];
+  const s = H.board(p, 'ratings', x, y, w, 48, { fill: T.muted, r: 14, clip: false }); const cw = w / items.length;
+  items.forEach(([n, v], i) => { if (i) H.rect(s, 'divider', i * cw, 10, 1, 28, T.border); H.text(s, n, i * cw, 7, { size: 10, weight: 600, color: T.mutedFg, upper: true, ls: 0.3, w: cw, align: 'center', name: 'source ' + n }); H.text(s, v, i * cw, 21, { size: 16, weight: 700, color: T.fg, w: cw, align: 'center', name: 'score ' + n }); });
+  return s;
+};
 S.detailAction = (b, T, y, st, kind) => {
   if (st === 'none') C.btn(b, T, 16, y, 295, kind === 'tv' ? 'Request…' : 'Request', { icon: 'plus', h: 50 });
   if (st === 'requested') C.btn(b, T, 16, y, 295, 'Requested', { icon: 'clock', h: 50, v: 'secondary' });
@@ -12,21 +18,21 @@ S.detailAction = (b, T, y, st, kind) => {
 const synopsis = 'Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family. Facing a choice between the love of his life and the fate of the known universe, he endeavors to prevent a terrible future only he can foresee.';
 S.detailFull = (T, x, y, o = {}) => {
   const kind = o.kind || 'movie', st = o.st || 'none', tall = o.tall; const i = o.i ?? (kind === 'tv' ? 3 : 0); const it = C.items[i];
-  const b = C.screen(T, `${kind === 'tv' ? 'TV' : 'Movie'} detail · ${st}${tall ? ' · full scroll' : ''} · ${T.name}`, x, y, { h: tall ? (kind === 'tv' ? 1880 : 1560) : 852, status: false });
+  const b = C.screen(T, `${kind === 'tv' ? 'TV' : 'Movie'} detail · ${st}${tall ? ' · full scroll' : ''} · ${T.name}`, x, y, { h: tall ? (kind === 'tv' ? 1800 : 1480) : 852, status: false });
   const pal = C.pal[i];
   H.board(b, 'backdrop', 0, 0, 393, 300, { fill: [H.grad([[pal[0], 0], [pal[1], 0.65], [T.bg, 1]])], clip: true });
   C.statusBar(b, { ...T, fg: '#FFFFFF' }); S.heroNav(b, T);
   C.poster(b, T, 16, 186, 120, i, { badge: false, noTitle: true, r: 12 });
   H.text(b, it.t, 152, 222, { size: 24, weight: 700, color: T.fg, w: 225, lh: 1.15, name: 'title', ls: -0.2 });
   H.text(b, kind === 'tv' ? `${it.y}  ·  3 seasons  ·  TV-MA` : `${it.y}  ·  2h 46m  ·  PG-13`, 152, 290, { size: 13, color: T.mutedFg, w: 225, name: 'meta' });
-  const rb = H.board(b, 'rating', 152, 316, 54, 26, { fill: T.muted, r: 13, clip: false }); H.icon(rb, 'star', 8, 6, 14, '#F59E0B', 2, true); H.text(rb, it.r.toFixed(1), 27, 5, { size: 13, weight: 600, color: T.fg });
+  C.ratingsStrip(b, T, 16, 382, 361, kind);
   const stKey = { none: it.s, requested: 'requested', approved: 'approved', downloading: 'downloading', available: 'available', declined: 'declined', failed: 'failed' }[st];
-  if (st !== 'none' && stKey) C.badge(b, T, 214, 318, stKey, {});
-  S.detailAction(b, T, 396, st, kind);
+  if (stKey) C.badge(b, T, 152, 322, stKey, {});
+  S.detailAction(b, T, 446, st, kind);
   const off = st === 'downloading' ? 46 : 0;
-  if (st === 'declined') C.banner(b, T, 16, 462, 361, 'error', 'Declined by an admin: not available in this quality.');
-  if (st === 'failed') C.banner(b, T, 16, 462, 361, 'warn', 'The download failed. An admin can retry it.');
-  const base = 470 + off + (st === 'declined' || st === 'failed' ? 62 : 0);
+  if (st === 'declined') C.banner(b, T, 16, 512, 361, 'error', 'Declined by an admin: not available in this quality.');
+  if (st === 'failed') C.banner(b, T, 16, 512, 361, 'warn', 'The download failed. An admin can retry it.');
+  const base = 520 + off + (st === 'declined' || st === 'failed' ? 62 : 0);
   H.text(b, 'Overview', 16, base, { size: 20, weight: 700, color: T.fg });
   H.text(b, synopsis, 16, base + 34, { size: 15, color: T.fg, w: 361, lh: 1.4, op: 0.85, name: 'overview' });
   let cx = 16; ['Sci-Fi', 'Adventure', 'Drama'].forEach(g => { const c = C.chip(b, T, cx, base + 164, g, {}); cx += c.width + 8; });
@@ -37,9 +43,6 @@ S.detailFull = (T, x, y, o = {}) => {
       [['Season 1', '9 episodes · 2022', 'available'], ['Season 2', '10 episodes · 2025', 'downloading'], ['Season 3', '10 episodes · 2026', null]].forEach(([s, m, k], j) => { const r = H.board(b, 'season ' + (j + 1), 16, y0 + j * 72, 361, 64, { fill: T.card, r: 14, stroke: [T.border, 1], clip: false }); H.text(r, s, 16, 12, { size: 16, weight: 600, color: T.fg }); H.text(r, m, 16, 34, { size: 13, color: T.mutedFg }); if (k) { const bd = C.badge(r, T, 0, 20, k, {}); bd.x = r.x + 361 - 44 - bd.width; } H.icon(r, 'chevron-right', 361 - 34, 20, 22, T.mutedFg, 2); });
       y0 += 3 * 72 + 24;
     }
-    H.text(b, 'Ratings', 16, y0, { size: 20, weight: 700, color: T.fg }); y0 += 36;
-    [['TMDB', '8.2'], ['IMDb', '8.5'], ['Rotten Tomatoes', '92%'], ['Metacritic', '79']].forEach(([s, v], j) => { const c = H.board(b, 'rating ' + s, 16 + (j % 2) * 184, y0 + Math.floor(j / 2) * 56, 177, 48, { fill: T.muted, r: 12, clip: false }); H.text(c, s, 12, 8, { size: 11, weight: 600, color: T.mutedFg, upper: true, ls: 0.3 }); H.text(c, v, 12, 24, { size: 16, weight: 700, color: T.fg }); });
-    y0 += 124;
     H.text(b, 'Details', 16, y0, { size: 20, weight: 700, color: T.fg }); y0 += 36;
     [['Status', 'Released'], ['Release date', 'March 1, 2024'], ['Runtime', '2h 46m'], ['Original language', 'English'], [kind === 'tv' ? 'Network' : 'Budget', kind === 'tv' ? 'Apple TV+' : '$190,000,000']].forEach(([k, v], j) => { H.text(b, k, 16, y0 + j * 34, { size: 15, color: T.mutedFg }); H.text(b, v, 16, y0 + j * 34, { size: 15, weight: 500, color: T.fg, w: 361, align: 'right' }); H.rect(b, 'divider', 16, y0 + j * 34 + 26, 361, 1, T.border); });
     y0 += 5 * 34 + 24;
