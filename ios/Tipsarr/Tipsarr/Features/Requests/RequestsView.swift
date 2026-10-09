@@ -18,7 +18,6 @@ struct RequestsView: View {
             content
                 .background(Tokens.palette.bg)
                 .navigationTitle("requests.title")
-                .safeAreaBar(edge: .top, spacing: 0) { filters }
                 .task(id: filter) { await model.load(filter) }
                 .refreshable { await model.load(filter) }
                 .navigationDestination(for: RequestRecord.self) { record in
@@ -45,6 +44,7 @@ struct RequestsView: View {
         }
     }
 
+    /// First row of the list, so it scrolls with the content and nothing is laid over it.
     private var filters: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Tokens.Spacing.sm) {
@@ -53,14 +53,25 @@ struct RequestsView: View {
                 }
             }
             .padding(.horizontal, Tokens.Spacing.lg)
-            .padding(.vertical, Tokens.Spacing.sm)
         }
+        .listRowInsets(.init())
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
 
-    @ViewBuilder private var content: some View {
-        switch model.phase {
-        case .idle, .loading:
-            List {
+    private func stateRow<S: View>(@ViewBuilder _ state: () -> S) -> some View {
+        state()
+            .frame(minHeight: 360)
+            .listRowInsets(.init())
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+    }
+
+    private var content: some View {
+        List {
+            filters
+            switch model.phase {
+            case .idle, .loading:
                 ForEach(0..<6, id: \.self) { _ in
                     HStack(alignment: .top, spacing: Tokens.Spacing.md) {
                         RoundedRectangle(cornerRadius: Tokens.Radius.sm).fill(Tokens.palette.border).frame(width: 64, height: 96)
@@ -73,21 +84,19 @@ struct RequestsView: View {
                     .skeleton()
                     .listRowBackground(Color.clear)
                 }
-            }
-            .listStyle(.plain)
-            .scrollDisabled(true)
-        case .failed(let error):
-            ErrorState(error: error) { await model.load(filter) }
-        case .loaded where model.items.isEmpty:
-            if filter == .all {
-                StateView(symbol: "checklist", title: "requests.empty_all", message: "requests.empty_hint",
-                          actionTitle: "m.requests.empty_cta", action: openDiscover)
-            } else {
-                StateView(symbol: "checklist",
-                          title: LocalizedStringResource(stringLiteral: L10n.string("requests.empty_tab", String(localized: filter.title))))
-            }
-        case .loaded:
-            List {
+            case .failed(let error):
+                stateRow { ErrorState(error: error) { await model.load(filter) } }
+            case .loaded where model.items.isEmpty:
+                stateRow {
+                    if filter == .all {
+                        StateView(symbol: "checklist", title: "requests.empty_all", message: "requests.empty_hint",
+                                  actionTitle: "m.requests.empty_cta", action: openDiscover)
+                    } else {
+                        StateView(symbol: "checklist",
+                                  title: LocalizedStringResource(stringLiteral: L10n.string("requests.empty_tab", String(localized: filter.title))))
+                    }
+                }
+            case .loaded:
                 ForEach(model.items) { record in
                     RequestRow(record: record, showRequester: model.isAdmin, busy: model.busy.contains(record.id),
                                onApprove: { Task { await approve(record) } },
@@ -105,8 +114,8 @@ struct RequestsView: View {
                 }
                 if model.loadingMore { ProgressView().frame(maxWidth: .infinity).listRowBackground(Color.clear) }
             }
-            .listStyle(.plain)
         }
+        .listStyle(.plain)
     }
 
     private func approve(_ record: RequestRecord) async {
