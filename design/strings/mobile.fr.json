@@ -96,5 +96,13 @@
   "m.requests.approve_all_confirm": "Tout approuver",
   "m.requests.decline_title": "Refuser la demande",
   "m.requests.decline_send": "Refuser",
-  "m.requests.empty_cta": "Parcourir Découvrir"
+  "m.requests.empty_cta": "Parcourir Découvrir",
+  "m.library.unwatched": "Non vus",
+  "m.library.apply": "Appliquer",
+  "m.library.grid": "Vue grille",
+  "m.library.list": "Vue liste",
+  "m.library.hidden_title": "Masqués des suggestions",
+  "m.library.hidden_hint": "Les titres marqués « pas intéressé ».",
+  "m.library.show_again": "Réafficher",
+  "m.library.remove": "Retirer"
 }

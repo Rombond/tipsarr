@@ -7,6 +7,9 @@ struct PosterCard: View {
     var subtitle: String?
     var posterPath: String?
     var posterSize: TMDBSize = .w342
+    /// Poster served by the Tipsarr server itself (library titles come from Jellyfin); wins over `posterPath`.
+    var serverPosterPath: String?
+    var watched = false
     var state: RequestState?
 
     var body: some View {
@@ -16,6 +19,16 @@ struct PosterCard: View {
                 .overlay(alignment: .topTrailing) {
                     if let state {
                         StatusBadge(state: state, compact: true).padding(Tokens.Spacing.sm)
+                    }
+                }
+                .overlay(alignment: .topLeading) {
+                    if watched {
+                        Image(systemName: "eye.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.white)
+                            .padding(Tokens.Spacing.xs + 2)
+                            .background(.black.opacity(0.55), in: .circle)
+                            .padding(Tokens.Spacing.sm)
                     }
                 }
                 .clipShape(.rect(cornerRadius: Tokens.Radius.md))
@@ -36,15 +49,23 @@ struct PosterCard: View {
     }
 
     private var poster: some View {
-        RemoteImage(path: posterPath, size: posterSize) {
-            ZStack {
-                Tokens.palette.muted
-                Image(systemName: "film")
-                    .font(.title2)
-                    .foregroundStyle(Tokens.palette.mutedFg)
+        Group {
+            if let serverPosterPath {
+                RemoteImage(serverPath: serverPosterPath) { placeholder }
+            } else {
+                RemoteImage(path: posterPath, size: posterSize) { placeholder }
             }
         }
         .background(Tokens.palette.muted)
+    }
+
+    private var placeholder: some View {
+        ZStack {
+            Tokens.palette.muted
+            Image(systemName: "film")
+                .font(.title2)
+                .foregroundStyle(Tokens.palette.mutedFg)
+        }
     }
 
     private var accessibilityText: Text {

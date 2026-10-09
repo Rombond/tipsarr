@@ -26,7 +26,7 @@ struct MainTabView: View {
             }
             .badge(profile.isAdmin ? pendingCount : 0)
             Tab("m.tab.library", systemImage: "books.vertical", value: AppTab.library) {
-                TabPlaceholder(title: "m.tab.library", symbol: "books.vertical")
+                LibraryView(api: api)
             }
             Tab("m.tab.profile", systemImage: "person.crop.circle", value: AppTab.profile) {
                 ProfilePlaceholder(account: account, profile: profile)

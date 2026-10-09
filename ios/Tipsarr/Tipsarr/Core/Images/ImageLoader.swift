@@ -7,6 +7,11 @@ struct ImageSource: Sendable, Equatable {
     var serverURL: URL
     var token: String
 
+    /// A path on the Tipsarr server itself, e.g. `/api/v1/images/jellyfin/<id>?tag=<tag>`.
+    func serverURL(path: String) -> URL? {
+        URL(string: serverURL.absoluteString + (path.hasPrefix("/") ? path : "/" + path))
+    }
+
     /// `path` is a TMDB path such as `/abc.jpg`.
     func tmdbURL(size: TMDBSize, path: String) -> URL? {
         let file = path.hasPrefix("/") ? path : "/" + path
@@ -75,9 +80,24 @@ extension EnvironmentValues {
 
 /// Loads a TMDB image; shows `placeholder` until it arrives or when it fails.
 struct RemoteImage<Placeholder: View>: View {
-    let path: String?
-    let size: TMDBSize
+    enum Reference: Equatable {
+        case tmdb(path: String?, size: TMDBSize)
+        case server(path: String?)
+    }
+
+    let reference: Reference
     @ViewBuilder var placeholder: Placeholder
+
+    init(path: String?, size: TMDBSize, @ViewBuilder placeholder: () -> Placeholder) {
+        reference = .tmdb(path: path, size: size)
+        self.placeholder = placeholder()
+    }
+
+    /// For images the server serves from its own path (Jellyfin posters of the library).
+    init(serverPath: String?, @ViewBuilder placeholder: () -> Placeholder) {
+        reference = .server(path: serverPath)
+        self.placeholder = placeholder()
+    }
 
     @Environment(\.imageSource) private var source
     @State private var image: UIImage?
@@ -95,8 +115,8 @@ struct RemoteImage<Placeholder: View>: View {
             }
             .clipped()
         .animation(.easeOut(duration: Tokens.Motion.normal), value: image)
-        .task(id: TaskKey(path: path, source: source)) {
-            guard let path, let source, let url = source.tmdbURL(size: size, path: path) else {
+        .task(id: TaskKey(reference: reference, source: source)) {
+            guard let source, let url = url(for: source) else {
                 image = nil
                 return
             }
@@ -104,8 +124,16 @@ struct RemoteImage<Placeholder: View>: View {
         }
     }
 
+    private func url(for source: ImageSource) -> URL? {
+        switch reference {
+        case .tmdb(let path?, let size): source.tmdbURL(size: size, path: path)
+        case .server(let path?): source.serverURL(path: path)
+        default: nil
+        }
+    }
+
     private struct TaskKey: Equatable {
-        var path: String?
+        var reference: Reference
         var source: ImageSource?
     }
 }

@@ -96,5 +96,13 @@
   "m.requests.approve_all_confirm": "Approve all",
   "m.requests.decline_title": "Decline request",
   "m.requests.decline_send": "Decline",
-  "m.requests.empty_cta": "Browse Discover"
+  "m.requests.empty_cta": "Browse Discover",
+  "m.library.unwatched": "Unwatched",
+  "m.library.apply": "Apply",
+  "m.library.grid": "Grid view",
+  "m.library.list": "List view",
+  "m.library.hidden_title": "Hidden from suggestions",
+  "m.library.hidden_hint": "Titles you marked “not interested”.",
+  "m.library.show_again": "Show again",
+  "m.library.remove": "Remove"
 }
