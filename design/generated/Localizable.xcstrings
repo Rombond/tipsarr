@@ -3953,22 +3953,6 @@
         }
       }
     },
-    "m.admin.pending_requests": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pending requests"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Demandes en attente"
-          }
-        }
-      }
-    },
     "m.admin.reported_by": {
       "localizations": {
         "en": {

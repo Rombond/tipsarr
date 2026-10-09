@@ -76,9 +76,30 @@ extension TipsarrAPI {
                 decades: r.decades.map { StatsBucket(name: $0.name, hours: $0.hours, titles: Int($0.titles)) },
                 months: r.months.map { StatsMonth(month: $0.month, hours: $0.hours, plays: Int($0.plays)) },
                 weekdays: r.weekdays, hoursOfDay: r.hoursOfDay,
-                topMovies: top(r.topMovies), topShows: top(r.topShows),
+                top: top(r.top), topMovies: top(r.topMovies), topShows: top(r.topShows),
                 exact: r.source == .plugin, pluginHint: r.plugin.hint
             )
+        }
+    }
+}
+
+extension TipsarrAPI {
+    /// Available requests whose requester has not watched them. `user` nil = everyone.
+    func unwatchedRequests(user: String?) async throws -> RequestPage {
+        try await load { client in
+            guard case .ok(let ok) = try await client.listRequests(query: .init(filter: .unwatched, user: user, take: 40)) else { throw APIError.unexpected }
+            let list = try ok.body.json
+            return RequestPage(items: list.items.map(RequestRecord.init), total: Int(list.total))
+        }
+    }
+
+    /// Library titles nobody ever played, oldest first (admins).
+    func neverWatched() async throws -> LibraryPage {
+        try await load { client in
+            let query = Operations.listLibrary.Input.Query(neverWatched: true, sort: .added, dir: .asc, page: 1, pageSize: 30)
+            guard case .ok(let ok) = try await client.listLibrary(query: query) else { throw APIError.unexpected }
+            let body = try ok.body.json
+            return LibraryPage(items: body.items.map(LibraryItem.init), page: Int(body.page), totalPages: Int(body.totalPages), total: Int(body.total))
         }
     }
 }

@@ -80,6 +80,7 @@ struct StatsReport: Sendable {
     var months: [StatsMonth]
     var weekdays: [Double]
     var hoursOfDay: [Double]
+    var top: [StatsTop]
     var topMovies: [StatsTop]
     var topShows: [StatsTop]
     /// True when the numbers come from Jellyfin's Playback Reporting plugin; false means estimated.

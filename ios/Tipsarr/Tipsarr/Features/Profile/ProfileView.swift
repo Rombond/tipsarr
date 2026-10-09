@@ -4,7 +4,6 @@ struct ProfileView: View {
     let account: Account
     let profile: Profile
     var openRequests: () -> Void = {}
-    var openPending: () -> Void = {}
 
     @Environment(\.appContext) private var context
     @Environment(\.liveUpdates) private var live
@@ -12,11 +11,10 @@ struct ProfileView: View {
     @State private var model: ProfileModel
     @State private var showPicture = false
 
-    init(account: Account, profile: Profile, api: TipsarrAPI, openRequests: @escaping () -> Void = {}, openPending: @escaping () -> Void = {}) {
+    init(account: Account, profile: Profile, api: TipsarrAPI, openRequests: @escaping () -> Void = {}) {
         self.account = account
         self.profile = profile
         self.openRequests = openRequests
-        self.openPending = openPending
         let model = ProfileModel(api: api)
         model.isAdmin = profile.isAdmin
         _model = State(initialValue: model)
@@ -28,21 +26,9 @@ struct ProfileView: View {
                 VStack(spacing: Tokens.Spacing._2xl) {
                     header
                     stats
-                    if !profile.isAdmin {
-                        NavigationLink(value: ProfileRoute.stats) {
-                            HStack {
-                                Label { Text("nav.stats") } icon: { Image(systemName: "chart.bar") }
-                                Spacer()
-                                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg)
-                            }
-                            .padding(.horizontal, Tokens.Spacing.md)
-                            .frame(minHeight: Tokens.Size.touchTarget + Tokens.Spacing.sm)
-                            .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
-                            .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    if profile.isAdmin { AdminGroup(pendingCount: model.pendingCount, openIssues: model.openIssues, openRequests: openPending) }
+                    MostWatchedCarousel(title: "stats.top", titleKey: "stats.top", items: model.topWatched)
+                    statsRow
+                    if profile.isAdmin { AdminGroup(openIssues: model.openIssues) }
                     recentRequests
                 }
                 .padding(Tokens.Spacing.lg)
@@ -71,6 +57,7 @@ struct ProfileView: View {
                 case .user(let id): UserDetailView(id: id)
                 case .sync: SyncView()
                 case .stats: StatsView()
+                case .topList(let route): MostWatchedList(route: route)
                 }
             }
             .mediaDestinations()
@@ -133,6 +120,21 @@ struct ProfileView: View {
         }
     }
 
+    private var statsRow: some View {
+        NavigationLink(value: ProfileRoute.stats) {
+            HStack {
+                Label { Text("nav.stats") } icon: { Image(systemName: "chart.bar") }
+                Spacer()
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg)
+            }
+            .padding(.horizontal, Tokens.Spacing.md)
+            .frame(minHeight: Tokens.Size.touchTarget + Tokens.Spacing.sm)
+            .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
+            .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: Recent requests
 
     @ViewBuilder private var recentRequests: some View {
@@ -174,7 +176,7 @@ struct ProfileView: View {
     }
 }
 
-enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts, appIcon, issues, issue(String), users, user(String), sync, stats }
+enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts, appIcon, issues, issue(String), users, user(String), sync, stats, topList(TopListRoute) }
 
 /// Number with an icon and a label.
 private struct StatTile: View {
@@ -213,17 +215,12 @@ private struct StatCard: View {
 
 /// Administrator tools: one grouped card of rows, like the Administration group in Penpot.
 private struct AdminGroup: View {
-    let pendingCount: Int?
     let openIssues: Int?
-    let openRequests: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
             Text("m.admin.title").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg).padding(.horizontal, Tokens.Spacing.xs)
             VStack(spacing: 0) {
-                Button(action: openRequests) { row("clock", Tokens.Status.requested, "m.admin.pending_requests", pendingCount) }
-                    .buttonStyle(.plain)
-                Divider().padding(.leading, 52)
                 NavigationLink(value: ProfileRoute.issues) { row("exclamationmark.bubble", Tokens.Status.failed, "nav.issues", openIssues) }
                     .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
@@ -231,9 +228,6 @@ private struct AdminGroup: View {
                     .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
                 NavigationLink(value: ProfileRoute.sync) { row("arrow.triangle.2.circlepath", Tokens.Status.searching, "m.admin.sync", nil) }
-                    .buttonStyle(.plain)
-                Divider().padding(.leading, 52)
-                NavigationLink(value: ProfileRoute.stats) { row("chart.bar", Tokens.Status.downloading, "nav.stats", nil) }
                     .buttonStyle(.plain)
             }
             .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))

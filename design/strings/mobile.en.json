@@ -127,7 +127,6 @@
   "m.settings.faceid_signin_footer": "Your password is kept in the iPhone’s Keychain, protected by Face ID or your passcode. It is only used to sign you back in when your session ends.",
   "m.detail.share": "Share",
   "m.admin.title": "Administration",
-  "m.admin.pending_requests": "Pending requests",
   "m.admin.sync": "Sync & jobs",
   "m.admin.reported_by": "Reported by %@",
   "m.admin.comments": "%@ comments",

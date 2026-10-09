@@ -7,8 +7,6 @@ final class AppRouter {
     var discoverPath = NavigationPath()
     var requestsPath = NavigationPath()
     var libraryPath = NavigationPath()
-    /// Filter the Requests tab should show next (set by the admin shortcut, consumed there).
-    var requestsFilter: RequestFilter?
 
     /// Shows the screen of a link. Titles open at the root of their tab with the new screen on top.
     func open(_ target: DeepLinkTarget, api: TipsarrAPI) async {
