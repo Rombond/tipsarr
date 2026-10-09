@@ -10,6 +10,7 @@ struct MainTabView: View {
     let account: Account
     let profile: Profile
     @State private var selection: AppTab = .discover
+    @State private var toast = ToastCenter()
 
     var body: some View {
         TabView(selection: $selection) {
@@ -30,6 +31,9 @@ struct MainTabView: View {
             }
         }
         .environment(\.imageSource, ImageSource(serverURL: account.serverURL, token: account.token))
+        .environment(\.appContext, AppContext(api: api, profile: profile, userFolderChoice: session.serverStatus?.userFolderChoice ?? false))
+        .environment(toast)
+        .modifier(ToastOverlay(center: toast))
         .id(account.id)
     }
 

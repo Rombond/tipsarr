@@ -18,6 +18,8 @@ enum SessionPhase: Equatable {
 final class SessionManager {
     private(set) var phase: SessionPhase = .launching
     let accounts = AccountStore()
+    /// Status of the active server, read at launch or sign-in.
+    private(set) var serverStatus: ServerStatus?
 
     /// Launch: resume the active account, or ask for a server.
     func start() async {
@@ -48,6 +50,7 @@ final class SessionManager {
         }
         do {
             let profile = try await TipsarrAPI(serverURL: account.serverURL, token: account.token).me()
+            serverStatus = server.status
             accounts.add(account)
             phase = .ready(account, profile)
         } catch let error as APIError where error.isUnauthorized {
@@ -81,6 +84,7 @@ final class SessionManager {
         let account = Account(serverURL: server.url, userID: result.profile.id, name: result.profile.name,
                               token: result.token, lastUsed: .now)
         accounts.add(account)
+        serverStatus = server.status
         phase = .ready(account, result.profile)
     }
 

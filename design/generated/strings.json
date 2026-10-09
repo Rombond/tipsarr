@@ -577,7 +577,8 @@
   "m.request.selected": "%@ selected",
   "m.request.cancel": "Cancel request",
   "m.issue.send": "Send report",
-  "m.detail.no_overview": "No overview available."
+  "m.detail.no_overview": "No overview available.",
+  "m.detail.seasons_count": "%1$@ season | %1$@ seasons"
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -1157,6 +1158,7 @@
   "m.request.selected": "%@ sélectionnée(s)",
   "m.request.cancel": "Annuler la demande",
   "m.issue.send": "Envoyer le signalement",
-  "m.detail.no_overview": "Aucun résumé disponible."
+  "m.detail.no_overview": "Aucun résumé disponible.",
+  "m.detail.seasons_count": "%1$@ saison | %1$@ saisons"
  }
 }

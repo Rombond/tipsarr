@@ -4113,6 +4113,22 @@
         }
       }
     },
+    "m.detail.seasons_count": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ season | %1$@ seasons"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ saison | %1$@ saisons"
+          }
+        }
+      }
+    },
     "m.discover.chip_for_you": {
       "localizations": {
         "en": {

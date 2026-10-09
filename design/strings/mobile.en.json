@@ -74,5 +74,6 @@
   "m.request.selected": "%@ selected",
   "m.request.cancel": "Cancel request",
   "m.issue.send": "Send report",
-  "m.detail.no_overview": "No overview available."
+  "m.detail.no_overview": "No overview available.",
+  "m.detail.seasons_count": "%1$@ season | %1$@ seasons"
 }

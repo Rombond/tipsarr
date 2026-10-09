@@ -11,3 +11,10 @@ enum Plural {
         return form.replacingOccurrences(of: "%1$@", with: String(count)).replacingOccurrences(of: "%@", with: String(count))
     }
 }
+
+enum L10n {
+    /// Localized string for a dynamic key with `%@` / `%1$@` arguments (SwiftUI cannot do this with a runtime key).
+    static func string(_ key: String, _ args: CVarArg...) -> String {
+        String(format: Bundle.main.localizedString(forKey: key, value: nil, table: nil), arguments: args)
+    }
+}

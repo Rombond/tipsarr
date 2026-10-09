@@ -55,7 +55,7 @@ struct DiscoverView: View {
                         .accessibilityLabel(Text("m.discover.search"))
                 }
             }
-            .navigationDestination(for: MediaRoute.self) { MediaRoutePlaceholder(route: $0) }
+            .navigationDestination(for: MediaRoute.self) { MediaDetailScreen(route: $0) }
         }
     }
 
@@ -200,20 +200,5 @@ struct ErrorState: View {
             }
         }
         .frame(minHeight: 360)
-    }
-}
-
-/// Replaced by the real detail screen in step 4.
-struct MediaRoutePlaceholder: View {
-    let route: MediaRoute
-
-    var body: some View {
-        Text(verbatim: route.title)
-            .font(.title.weight(.bold))
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Tokens.palette.bg)
-            .navigationTitle(Text(verbatim: route.title))
-            .navigationBarTitleDisplayMode(.inline)
     }
 }

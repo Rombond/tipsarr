@@ -74,5 +74,6 @@
   "m.request.selected": "%@ sélectionnée(s)",
   "m.request.cancel": "Annuler la demande",
   "m.issue.send": "Envoyer le signalement",
-  "m.detail.no_overview": "Aucun résumé disponible."
+  "m.detail.no_overview": "Aucun résumé disponible.",
+  "m.detail.seasons_count": "%1$@ saison | %1$@ saisons"
 }
