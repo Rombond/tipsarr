@@ -10,6 +10,7 @@ struct PosterCard: View {
     /// Poster served by the Tipsarr server itself (library titles come from Jellyfin); wins over `posterPath`.
     var serverPosterPath: String?
     var watched = false
+    var rating: RatingInput?
     var state: RequestState?
 
     var body: some View {
@@ -36,16 +37,40 @@ struct PosterCard: View {
                 .font(.subheadline.weight(.medium))
                 .lineLimit(1)
                 .foregroundStyle(Tokens.palette.fg)
-            if let subtitle {
-                Text(subtitle)
-                    .font(.footnote)
-                    .foregroundStyle(Tokens.palette.mutedFg)
-                    .lineLimit(1)
+            if subtitle != nil || rating != nil {
+                HStack(spacing: Tokens.Spacing.xs) {
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.footnote)
+                            .foregroundStyle(Tokens.palette.mutedFg)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                    if let rating { RatingLabel(input: rating) }
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
+    }
+
+    init(title: String, subtitle: String? = nil, posterPath: String? = nil, posterSize: TMDBSize = .w342,
+         serverPosterPath: String? = nil, watched: Bool = false, rating: RatingInput? = nil, state: RequestState? = nil) {
+        self.title = title
+        self.subtitle = subtitle
+        self.posterPath = posterPath
+        self.posterSize = posterSize
+        self.serverPosterPath = serverPosterPath
+        self.watched = watched
+        self.rating = rating
+        self.state = state
+    }
+
+    /// Standard card for a list item: year, score and request state.
+    init(item: MediaItem, posterSize: TMDBSize = .w342) {
+        self.init(title: item.title, subtitle: item.releaseYear, posterPath: item.posterPath, posterSize: posterSize,
+                  rating: RatingInput(type: item.type, tmdbId: item.tmdbId, tmdb: item.voteAverage), state: item.state)
     }
 
     private var poster: some View {

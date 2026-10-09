@@ -1,49 +1,42 @@
 import SwiftUI
 
 struct ProfileView: View {
-    @Environment(SessionManager.self) private var session
     let account: Account
     let profile: Profile
+    var openRequests: () -> Void = {}
+
+    @Environment(\.appContext) private var context
     @AppStorage("avatarVersion") private var avatarVersion = 0
+    @State private var model: ProfileModel
     @State private var showPicture = false
+
+    init(account: Account, profile: Profile, api: TipsarrAPI, openRequests: @escaping () -> Void = {}) {
+        self.account = account
+        self.profile = profile
+        self.openRequests = openRequests
+        _model = State(initialValue: ProfileModel(api: api))
+    }
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    HStack(spacing: Tokens.Spacing.lg) {
-                        Button { showPicture = true } label: {
-                            AvatarView(userID: profile.id, name: profile.name, size: 72, version: avatarVersion)
-                                .overlay(alignment: .bottomTrailing) {
-                                    Image(systemName: "camera.fill")
-                                        .font(.caption2)
-                                        .foregroundStyle(Tokens.palette.primaryFg)
-                                        .padding(6)
-                                        .background(Tokens.palette.primary, in: .circle)
-                                }
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Text("profile.change_picture"))
-                        VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
-                            Text(verbatim: profile.name).font(.title2.weight(.bold))
-                            Text(choose(profile.isAdmin, "nav.administrator", "nav.member")).font(.subheadline).foregroundStyle(Tokens.palette.mutedFg)
-                            Text(verbatim: account.serverURL.host() ?? account.serverURL.absoluteString)
-                                .font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
-                        }
-                    }
-                    .listRowBackground(Color.clear)
+            ScrollView {
+                VStack(spacing: Tokens.Spacing._2xl) {
+                    header
+                    stats
+                    recentRequests
                 }
-                Section {
-                    NavigationLink(value: ProfileRoute.watchlist) { Label { Text("watchlist.title") } icon: { Image(systemName: "bookmark") } }
-                    NavigationLink(value: ProfileRoute.hidden) { Label { Text("profile.hidden_title") } icon: { Image(systemName: "eye.slash") } }
-                }
-                Section {
-                    NavigationLink(value: ProfileRoute.settings) { Label { Text("nav.settings") } icon: { Image(systemName: "gearshape") } }
-                }
+                .padding(Tokens.Spacing.lg)
+                .frame(maxWidth: 720)
+                .frame(maxWidth: .infinity)
             }
-            .scrollContentBackground(.hidden)
             .background(Tokens.palette.bg)
             .navigationTitle("profile.title")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink(value: ProfileRoute.settings) { Image(systemName: "gearshape") }
+                        .accessibilityLabel(Text("nav.settings"))
+                }
+            }
             .navigationDestination(for: ProfileRoute.self) { route in
                 switch route {
                 case .watchlist: WatchlistScreen()
@@ -54,12 +47,138 @@ struct ProfileView: View {
                 }
             }
             .mediaDestinations()
+            .task { await model.load() }
+            .refreshable { await model.load() }
             .sheet(isPresented: $showPicture) {
                 PictureSheet(profile: profile) { avatarVersion += 1 }
                     .tipsarrSheet(detents: [.medium])
             }
         }
     }
+
+    // MARK: Header
+
+    private var header: some View {
+        VStack(spacing: Tokens.Spacing.md) {
+            Button { showPicture = true } label: {
+                AvatarView(userID: profile.id, name: profile.name, size: 88, version: avatarVersion)
+                    .overlay(alignment: .bottomTrailing) {
+                        Image(systemName: "camera.fill")
+                            .font(.caption2)
+                            .foregroundStyle(Tokens.palette.primaryFg)
+                            .padding(7)
+                            .background(Tokens.palette.primary, in: .circle)
+                    }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("profile.change_picture"))
+            Text(verbatim: profile.name).font(.title.weight(.bold))
+            if let line = memberLine {
+                Text(verbatim: line).font(.footnote).foregroundStyle(Tokens.palette.mutedFg).multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    /// "Member since Oct 2025 · last seen today"
+    private var memberLine: String? {
+        var parts: [String] = []
+        if let created = profile.createdAt, created.timeIntervalSince1970 > 0 {
+            parts.append(L10n.string("profile.member_since", created.formatted(.dateTime.month(.abbreviated).year())))
+        }
+        if let seen = profile.lastLoginAt, seen.timeIntervalSince1970 > 0 {
+            parts.append(L10n.string("profile.last_seen", seen.formatted(.relative(presentation: .named))))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    // MARK: Stats
+
+    private var stats: some View {
+        HStack(spacing: Tokens.Spacing.md) {
+            StatCard(symbol: "checklist", value: model.requestCount, label: "profile.stat_requests") { openRequests() }
+            NavigationLink(value: ProfileRoute.watchlist) {
+                StatTile(symbol: "bookmark", value: model.watchlistCount, label: "profile.stat_watchlist")
+            }
+            .buttonStyle(.plain)
+            StatCard(symbol: "eye", value: model.watchedCount, label: "profile.stat_watched")
+        }
+    }
+
+    // MARK: Recent requests
+
+    @ViewBuilder private var recentRequests: some View {
+        if !model.recent.isEmpty {
+            VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
+                HStack {
+                    Text("profile.recent_requests").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
+                    Spacer()
+                    Button(action: openRequests) { Text("requests.tab.all").font(.subheadline) }
+                        .foregroundStyle(Tokens.palette.mutedFg)
+                }
+                VStack(spacing: 0) {
+                    ForEach(model.recent) { record in
+                        NavigationLink(value: MediaRoute(type: record.type, tmdbId: record.tmdbId, title: record.title)) {
+                            HStack(spacing: Tokens.Spacing.md) {
+                                RemoteImage(path: record.posterPath, size: .w92) {
+                                    Image(systemName: "film").foregroundStyle(Tokens.palette.mutedFg)
+                                }
+                                .frame(width: 44, height: 66)
+                                .background(Tokens.palette.muted)
+                                .clipShape(.rect(cornerRadius: Tokens.Radius.sm - 2))
+                                .accessibilityHidden(true)
+                                VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
+                                    Text(verbatim: record.title).font(.body.weight(.semibold)).lineLimit(1)
+                                    StatusBadge(state: record.state)
+                                }
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.vertical, Tokens.Spacing.sm)
+                            .contentShape(.rect)
+                            .accessibilityElement(children: .combine)
+                        }
+                        .buttonStyle(.plain)
+                        Divider()
+                    }
+                }
+            }
+        }
+    }
 }
 
 enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts }
+
+/// Number with an icon and a label.
+private struct StatTile: View {
+    let symbol: String
+    let value: Int?
+    let label: LText
+
+    var body: some View {
+        VStack(spacing: Tokens.Spacing.xs) {
+            Image(systemName: symbol).foregroundStyle(Tokens.palette.mutedFg)
+            Text(verbatim: value.map(String.init) ?? "–").font(.title2.weight(.bold))
+            Text(label).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Tokens.Spacing.md)
+        .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
+        .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct StatCard: View {
+    let symbol: String
+    let value: Int?
+    let label: LText
+    var action: (() -> Void)?
+
+    var body: some View {
+        if let action {
+            Button(action: action) { StatTile(symbol: symbol, value: value, label: label) }.buttonStyle(.plain)
+        } else {
+            StatTile(symbol: symbol, value: value, label: label)
+        }
+    }
+}

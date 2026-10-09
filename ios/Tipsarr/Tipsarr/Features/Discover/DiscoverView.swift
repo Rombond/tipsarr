@@ -120,8 +120,7 @@ private struct Rail: View {
                 LazyHStack(alignment: .top, spacing: Tokens.Spacing.md) {
                     ForEach(items) { item in
                         NavigationLink(value: item.route) {
-                            PosterCard(title: item.title, subtitle: item.releaseYear, posterPath: item.posterPath,
-                                       posterSize: .w342, state: item.state)
+                            PosterCard(item: item)
                                 .frame(width: 120)
                         }
                         .buttonStyle(.plain)
@@ -168,7 +167,7 @@ struct MediaGrid: View {
                 LazyVGrid(columns: Self.columns, spacing: Tokens.Spacing.lg) {
                     ForEach(model.items) { item in
                         NavigationLink(value: item.route) {
-                            PosterCard(title: item.title, subtitle: item.releaseYear, posterPath: item.posterPath, state: item.state)
+                            PosterCard(item: item)
                         }
                         .buttonStyle(.plain)
                         .task { await model.loadMore(after: item) }

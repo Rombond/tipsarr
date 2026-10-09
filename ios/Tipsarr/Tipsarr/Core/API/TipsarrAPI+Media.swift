@@ -237,3 +237,14 @@ extension TipsarrAPI {
         }
     }
 }
+
+extension TipsarrAPI {
+    /// The signed-in user's own requests, newest first.
+    func myRequests(take: Int) async throws -> RequestPage {
+        try await load { client in
+            guard case .ok(let ok) = try await client.listRequests(query: .init(filter: .mine, take: Int64(take))) else { throw APIError.unexpected }
+            let list = try ok.body.json
+            return RequestPage(items: list.items.map(RequestRecord.init), total: Int(list.total))
+        }
+    }
+}

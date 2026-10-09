@@ -64,7 +64,7 @@ struct PersonScreen: View {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 104, maximum: 180), spacing: Tokens.Spacing.md, alignment: .top)], spacing: Tokens.Spacing.lg) {
                             ForEach(person.credits) { item in
                                 NavigationLink(value: item.route) {
-                                    PosterCard(title: item.title, subtitle: item.releaseYear, posterPath: item.posterPath, state: item.state)
+                                    PosterCard(item: item)
                                 }
                                 .buttonStyle(.plain)
                             }

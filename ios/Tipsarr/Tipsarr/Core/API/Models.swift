@@ -18,6 +18,8 @@ struct Profile: Sendable, Equatable, Codable {
     var region: String
     var language: String
     var ratingSource: String
+    var createdAt: Date?
+    var lastLoginAt: Date?
 
     var isAdmin: Bool { role == "admin" }
 }

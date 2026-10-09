@@ -182,7 +182,7 @@ struct SearchView: View {
         LazyVGrid(columns: Self.columns, spacing: Tokens.Spacing.lg) {
             ForEach(titles) { item in
                 NavigationLink(value: item.route) {
-                    PosterCard(title: item.title, subtitle: item.releaseYear, posterPath: item.posterPath, state: item.state)
+                    PosterCard(item: item)
                 }
                 .buttonStyle(.plain)
                 .simultaneousGesture(TapGesture().onEnded { model.remember(query) })

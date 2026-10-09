@@ -93,7 +93,8 @@ struct LibraryView: View {
         LazyVGrid(columns: Self.columns, spacing: Tokens.Spacing.lg) {
             ForEach(model.items) { item in
                 NavigationLink(value: item.route) {
-                    PosterCard(title: item.title, subtitle: item.year.map(String.init), serverPosterPath: item.posterPath, watched: item.watched)
+                    PosterCard(title: item.title, subtitle: item.year.map(String.init), serverPosterPath: item.posterPath, watched: item.watched,
+                               rating: RatingInput(type: item.type, tmdbId: item.tmdbId, tmdb: item.rating))
                 }
                 .buttonStyle(.plain)
                 .task { await model.loadMore(after: item) }
@@ -139,9 +140,7 @@ private struct LibraryRow: View {
                 }
             }
             Spacer(minLength: 0)
-            if let rating = item.rating, rating > 0 {
-                Text(rating, format: .number.precision(.fractionLength(1))).font(.subheadline.weight(.semibold))
-            }
+            RatingLabel(input: RatingInput(type: item.type, tmdbId: item.tmdbId, tmdb: item.rating))
         }
         .padding(.vertical, Tokens.Spacing.sm)
         .frame(minHeight: Tokens.Size.touchTarget)

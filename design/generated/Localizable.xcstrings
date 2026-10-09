@@ -5476,6 +5476,70 @@
         }
       }
     },
+    "m.settings.region": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Region"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Région"
+          }
+        }
+      }
+    },
+    "m.settings.security": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Security"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sécurité"
+          }
+        }
+      }
+    },
+    "m.settings.server": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serveur"
+          }
+        }
+      }
+    },
+    "m.settings.server_version": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipsarr %@ · connected"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipsarr %@ · connecté"
+          }
+        }
+      }
+    },
     "m.settings.sign_out": {
       "localizations": {
         "en": {

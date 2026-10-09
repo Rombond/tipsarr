@@ -623,7 +623,11 @@
   "m.profile.take_photo": "Photo library",
   "m.profile.picture_title": "Profile picture",
   "m.profile.about": "About",
-  "m.profile.version": "Version"
+  "m.profile.version": "Version",
+  "m.settings.region": "Region",
+  "m.settings.security": "Security",
+  "m.settings.server": "Server",
+  "m.settings.server_version": "Tipsarr %@ · connected"
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -1249,6 +1253,10 @@
   "m.profile.take_photo": "Photothèque",
   "m.profile.picture_title": "Photo de profil",
   "m.profile.about": "À propos",
-  "m.profile.version": "Version"
+  "m.profile.version": "Version",
+  "m.settings.region": "Région",
+  "m.settings.security": "Sécurité",
+  "m.settings.server": "Serveur",
+  "m.settings.server_version": "Tipsarr %@ · connecté"
  }
 }

@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import UIKit
+import UserNotifications
 
 /// What the root view shows. Launch flow of the behaviour spec, section 1.
 enum SessionPhase: Equatable {
@@ -92,6 +93,7 @@ final class SessionManager {
     func signOut(_ account: Account) async {
         await TipsarrAPI(serverURL: account.serverURL, token: account.token).logout()
         accounts.remove(account)
+        try? await UNUserNotificationCenter.current().setBadgeCount(0)
         await start()
     }
 

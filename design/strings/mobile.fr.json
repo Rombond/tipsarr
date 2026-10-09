@@ -120,5 +120,9 @@
   "m.profile.take_photo": "Photothèque",
   "m.profile.picture_title": "Photo de profil",
   "m.profile.about": "À propos",
-  "m.profile.version": "Version"
+  "m.profile.version": "Version",
+  "m.settings.region": "Région",
+  "m.settings.security": "Sécurité",
+  "m.settings.server": "Serveur",
+  "m.settings.server_version": "Tipsarr %@ · connecté"
 }

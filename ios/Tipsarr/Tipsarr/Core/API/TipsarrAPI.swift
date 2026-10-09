@@ -69,6 +69,8 @@ struct TipsarrAPI: Sendable {
 extension Profile {
     init(_ user: Components.Schemas.User) {
         self.init(id: user.id, name: user.name, role: user.role, region: user.region,
-                  language: user.language, ratingSource: user.ratingSource)
+                  language: user.language, ratingSource: user.ratingSource,
+                  createdAt: Date(timeIntervalSince1970: TimeInterval(user.createdAt)),
+                  lastLoginAt: Date(timeIntervalSince1970: TimeInterval(user.lastLoginAt)))
     }
 }

@@ -71,3 +71,19 @@ extension LibraryItem {
         )
     }
 }
+
+extension TipsarrAPI {
+    /// Scores for several movies at once, keyed by TMDB id.
+    func movieScores(_ ids: [Int], source: RatingSource) async throws -> [Int: RatingsSummary] {
+        try await load { client in
+            let query = Operations.moviesRatings.Input.Query(ids: ids.map(String.init).joined(separator: ","), source: .init(rawValue: source.rawValue))
+            guard case .ok(let ok) = try await client.moviesRatings(query: query) else { throw APIError.unexpected }
+            var result: [Int: RatingsSummary] = [:]
+            for (key, scores) in try ok.body.json.additionalProperties {
+                guard let id = Int(key) else { continue }
+                result[id] = RatingsSummary(tmdb: nil, imdb: scores.imdb?.value, rottenTomatoes: scores.rottenTomatoes?.value, metacritic: scores.metacritic?.value)
+            }
+            return result
+        }
+    }
+}

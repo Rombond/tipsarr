@@ -336,7 +336,7 @@ struct MediaDetailView: View {
                 LazyHStack(alignment: .top, spacing: Tokens.Spacing.md) {
                     ForEach(detail.recommendations.prefix(15)) { item in
                         NavigationLink(value: item.route) {
-                            PosterCard(title: item.title, subtitle: item.releaseYear, posterPath: item.posterPath, state: item.state)
+                            PosterCard(item: item)
                                 .frame(width: 110)
                         }
                         .buttonStyle(.plain)
