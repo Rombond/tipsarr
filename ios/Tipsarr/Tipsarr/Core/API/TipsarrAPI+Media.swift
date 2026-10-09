@@ -193,3 +193,47 @@ extension TipsarrAPI {
         }
     }
 }
+
+extension TipsarrAPI {
+    func requests(_ filter: RequestFilter, skip: Int, take: Int = 20) async throws -> RequestPage {
+        try await load { client in
+            guard case .ok(let ok) = try await client.listRequests(
+                query: .init(filter: .init(rawValue: filter.rawValue), take: Int64(take), skip: Int64(skip))
+            ) else { throw APIError.unexpected }
+            let list = try ok.body.json
+            return RequestPage(items: list.items.map(RequestRecord.init), total: Int(list.total))
+        }
+    }
+
+    func requestCounts() async throws -> RequestCounts {
+        try await load { client in
+            guard case .ok(let ok) = try await client.requestCounts() else { throw APIError.unexpected }
+            let body = try ok.body.json
+            return RequestCounts(pending: Int(body.pending), approved: Int(body.approved), available: Int(body.available),
+                                 declined: Int(body.declined), failed: Int(body.failed))
+        }
+    }
+
+    func approve(id: String) async throws -> RequestRecord {
+        try await load { client in
+            guard case .ok(let ok) = try await client.approveRequest(path: .init(id: id), body: .json(.init())) else { throw APIError.unexpected }
+            return RequestRecord(try ok.body.json)
+        }
+    }
+
+    func decline(id: String, reason: String) async throws -> RequestRecord {
+        try await load { client in
+            guard case .ok(let ok) = try await client.declineRequest(path: .init(id: id), body: .json(.init(reason: reason.isEmpty ? nil : reason))) else { throw APIError.unexpected }
+            return RequestRecord(try ok.body.json)
+        }
+    }
+}
+
+extension TipsarrAPI {
+    func request(id: String) async throws -> RequestRecord {
+        try await load { client in
+            guard case .ok(let ok) = try await client.getRequest(path: .init(id: id)) else { throw APIError.unexpected }
+            return RequestRecord(try ok.body.json)
+        }
+    }
+}

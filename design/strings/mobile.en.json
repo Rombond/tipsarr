@@ -85,5 +85,16 @@
   "m.person.born": "Born %@",
   "m.person.died": "Died %@",
   "m.common.more": "More",
-  "m.common.less": "Less"
+  "m.common.less": "Less",
+  "m.requests.requested_ago": "Requested %@",
+  "m.requests.by_ago": "%1$@ · %2$@",
+  "m.requests.progress": "Progress",
+  "m.requests.details": "Details",
+  "m.requests.requested_by": "Requested by",
+  "m.requests.sent_to_only": "sent to %@",
+  "m.requests.cancel_swipe": "Cancel",
+  "m.requests.approve_all_confirm": "Approve all",
+  "m.requests.decline_title": "Decline request",
+  "m.requests.decline_send": "Decline",
+  "m.requests.empty_cta": "Browse Discover"
 }

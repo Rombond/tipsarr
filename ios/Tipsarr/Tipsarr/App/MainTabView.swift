@@ -11,6 +11,7 @@ struct MainTabView: View {
     let profile: Profile
     @State private var selection: AppTab = .discover
     @State private var toast = ToastCenter()
+    @State private var pendingCount = 0
 
     var body: some View {
         TabView(selection: $selection) {
@@ -21,8 +22,9 @@ struct MainTabView: View {
                 SearchView(api: api)
             }
             Tab("m.tab.requests", systemImage: "checklist", value: AppTab.requests) {
-                TabPlaceholder(title: "m.tab.requests", symbol: "checklist")
+                RequestsView(api: api, isAdmin: profile.isAdmin) { selection = .discover }
             }
+            .badge(profile.isAdmin ? pendingCount : 0)
             Tab("m.tab.library", systemImage: "books.vertical", value: AppTab.library) {
                 TabPlaceholder(title: "m.tab.library", symbol: "books.vertical")
             }
@@ -34,6 +36,10 @@ struct MainTabView: View {
         .environment(\.appContext, AppContext(api: api, profile: profile, userFolderChoice: session.serverStatus?.userFolderChoice ?? false))
         .environment(toast)
         .modifier(ToastOverlay(center: toast))
+        .task(id: selection) {
+            // Keeps the admin's pending badge fresh whenever the tab changes.
+            if profile.isAdmin, let counts = try? await api.requestCounts() { pendingCount = counts.pending }
+        }
         .id(account.id)
     }
 

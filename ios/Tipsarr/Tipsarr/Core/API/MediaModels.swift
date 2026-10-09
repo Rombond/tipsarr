@@ -120,3 +120,38 @@ enum IssueKind: String, CaseIterable, Sendable {
         }
     }
 }
+
+enum RequestFilter: String, CaseIterable, Sendable {
+    case all, pending, approved, available, declined, failed
+
+    var title: LocalizedStringResource {
+        switch self {
+        case .all: "requests.tab.all"
+        case .pending: "requests.tab.pending"
+        case .approved: "requests.tab.approved"
+        case .available: "requests.tab.available"
+        case .declined: "requests.tab.declined"
+        case .failed: "requests.tab.failed"
+        }
+    }
+}
+
+struct RequestCounts: Sendable, Equatable {
+    var pending = 0, approved = 0, available = 0, declined = 0, failed = 0
+
+    func count(_ filter: RequestFilter) -> Int {
+        switch filter {
+        case .all: pending + approved + available + declined + failed
+        case .pending: pending
+        case .approved: approved
+        case .available: available
+        case .declined: declined
+        case .failed: failed
+        }
+    }
+}
+
+struct RequestPage: Sendable {
+    var items: [RequestRecord]
+    var total: Int
+}
