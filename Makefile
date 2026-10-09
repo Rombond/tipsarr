@@ -20,6 +20,7 @@ test:
 generate:
 	cd backend && go run ./cmd/tipsarr openapi > ../frontend/src/lib/api/openapi.json
 	mkdir -p api && cd backend && go run ./cmd/tipsarr openapi yaml > ../api/openapi.yaml
+	node design/build-tokens.mjs
 	cd frontend && npx openapi-typescript@7.13.0 src/lib/api/openapi.json -o src/lib/api/schema.d.ts
 
 lint:
