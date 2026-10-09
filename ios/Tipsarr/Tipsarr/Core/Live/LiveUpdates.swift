@@ -14,6 +14,7 @@ final class LiveUpdates {
     private(set) var requestsTick = 0
     private(set) var suggestionsTick = 0
     private(set) var issuesTick = 0
+    private(set) var syncTick = 0
     /// Latest progress per request id; cleared when the request changes state.
     private(set) var progress: [String: LiveProgress] = [:]
     private(set) var connected = false
@@ -55,6 +56,7 @@ final class LiveUpdates {
         requestsTick += 1
         suggestionsTick += 1
         issuesTick += 1
+        syncTick += 1
     }
 
     private func handle(_ event: LiveEvent) {
@@ -75,6 +77,8 @@ final class LiveUpdates {
             suggestionsTick += 1
         case "issue.updated":
             issuesTick += 1
+        case "sync.status":
+            syncTick += 1
         default:
             break
         }

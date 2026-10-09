@@ -53,6 +53,9 @@ struct ProfileView: View {
                 case .appIcon: AppIconPicker()
                 case .issues: IssuesView()
                 case .issue(let id): IssueDetailView(id: id)
+                case .users: UsersView()
+                case .user(let id): UserDetailView(id: id)
+                case .sync: SyncView()
                 }
             }
             .mediaDestinations()
@@ -156,7 +159,7 @@ struct ProfileView: View {
     }
 }
 
-enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts, appIcon, issues, issue(String) }
+enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts, appIcon, issues, issue(String), users, user(String), sync }
 
 /// Number with an icon and a label.
 private struct StatTile: View {
@@ -207,6 +210,12 @@ private struct AdminGroup: View {
                     .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
                 NavigationLink(value: ProfileRoute.issues) { row("exclamationmark.bubble", Tokens.Status.failed, "nav.issues", openIssues) }
+                    .buttonStyle(.plain)
+                Divider().padding(.leading, 52)
+                NavigationLink(value: ProfileRoute.users) { row("person.2", Tokens.Status.approved, "nav.users", nil) }
+                    .buttonStyle(.plain)
+                Divider().padding(.leading, 52)
+                NavigationLink(value: ProfileRoute.sync) { row("arrow.triangle.2.circlepath", Tokens.Status.searching, "m.admin.sync", nil) }
                     .buttonStyle(.plain)
             }
             .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
