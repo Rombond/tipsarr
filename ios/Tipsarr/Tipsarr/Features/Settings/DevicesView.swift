@@ -35,7 +35,9 @@ struct DevicesView: View {
             }
             if devices.contains(where: { !$0.current }) {
                 Section {
-                    Button(role: .destructive) { confirmOthers = true } label: { Text("profile.devices_sign_out_others") }
+                    Button(role: .destructive) { confirmOthers = true } label: {
+                        Text("profile.devices_sign_out_others").frame(maxWidth: .infinity, alignment: .center)
+                    }
                         .confirmationDialog(Text("profile.devices_sign_out_others"), isPresented: $confirmOthers, titleVisibility: .visible) {
                             Button("profile.devices_sign_out_others", role: .destructive) { Task { await revokeOthers() } }
                             Button("common.cancel", role: .cancel) {}

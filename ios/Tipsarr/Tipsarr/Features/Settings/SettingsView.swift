@@ -130,7 +130,9 @@ struct SettingsView: View {
             }
             Section {
                 Button(role: .destructive) { confirmSignOut = true } label: {
+                    // Full row width: the dialog points at the middle of the row, right above the text.
                     Label { Text("m.settings.sign_out") } icon: { Image(systemName: "rectangle.portrait.and.arrow.right") }
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
                 // On the button itself, so the dialog appears next to it.
                 .confirmationDialog(Text("m.settings.sign_out_confirm"), isPresented: $confirmSignOut, titleVisibility: .visible) {
