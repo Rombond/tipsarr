@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// Poster with title, year and request state. Image loading goes through
-/// `AsyncImage` for now; Core/Images swaps in the bearer-aware loader.
+/// Poster with title, year and request state. The image is loaded with the
+/// active account's token (see `RemoteImage`).
 struct PosterCard: View {
     let title: String
     var subtitle: String?
-    var imageURL: URL?
+    var posterPath: String?
+    var posterSize: TMDBSize = .w342
     var state: RequestState?
 
     var body: some View {
@@ -35,17 +36,12 @@ struct PosterCard: View {
     }
 
     private var poster: some View {
-        AsyncImage(url: imageURL) { phase in
-            switch phase {
-            case .success(let image):
-                image.resizable().scaledToFill()
-            default:
-                ZStack {
-                    Tokens.palette.muted
-                    Image(systemName: "film")
-                        .font(.title2)
-                        .foregroundStyle(Tokens.palette.mutedFg)
-                }
+        RemoteImage(path: posterPath, size: posterSize) {
+            ZStack {
+                Tokens.palette.muted
+                Image(systemName: "film")
+                    .font(.title2)
+                    .foregroundStyle(Tokens.palette.mutedFg)
             }
         }
         .background(Tokens.palette.muted)
