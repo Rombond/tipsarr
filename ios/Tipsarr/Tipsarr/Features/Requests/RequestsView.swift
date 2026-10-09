@@ -160,10 +160,14 @@ struct RequestRow: View {
                     }
                     if showRequester && record.state == .requested {
                         HStack(spacing: Tokens.Spacing.sm) {
-                            Button(action: onApprove) { Label { Text("req.approve") } icon: { Image(systemName: "checkmark") } }
-                                .buttonStyle(.tipsarr(.primary))
-                            Button(action: onDecline) { Label { Text("req.decline") } icon: { Image(systemName: "xmark") } }
-                                .buttonStyle(.tipsarr(.secondary))
+                            Button(action: onApprove) {
+                                HStack(spacing: Tokens.Spacing.xs) { Image(systemName: "checkmark"); Text("req.approve") }
+                            }
+                            .buttonStyle(.tipsarr(.primary, compact: true))
+                            Button(action: onDecline) {
+                                HStack(spacing: Tokens.Spacing.xs) { Image(systemName: "xmark"); Text("req.decline") }
+                            }
+                            .buttonStyle(.tipsarr(.secondary, compact: true))
                         }
                         .disabled(busy)
                         .padding(.top, Tokens.Spacing.xs)

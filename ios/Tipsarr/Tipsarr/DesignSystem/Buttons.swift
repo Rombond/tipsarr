@@ -7,14 +7,16 @@ enum TipsarrButtonKind: Sendable {
 struct TipsarrButtonStyle: ButtonStyle {
     var kind: TipsarrButtonKind = .primary
     var fullWidth = false
+    /// Smaller button for use inside list rows (design: 32 pt tall, 14 pt text).
+    var compact = false
 
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.headline)
-            .padding(.horizontal, Tokens.Spacing.lg)
-            .frame(minHeight: Tokens.Size.touchTarget)
+            .font(compact ? .subheadline.weight(.semibold) : .headline)
+            .padding(.horizontal, compact ? Tokens.Spacing.md : Tokens.Spacing.lg)
+            .frame(minHeight: compact ? 36 : Tokens.Size.touchTarget)
             .frame(maxWidth: fullWidth ? .infinity : nil)
             .foregroundStyle(foreground)
             .background(background, in: .rect(cornerRadius: Tokens.Radius.md))
@@ -48,8 +50,8 @@ struct TipsarrButtonStyle: ButtonStyle {
 
 extension ButtonStyle where Self == TipsarrButtonStyle {
     static var tipsarr: TipsarrButtonStyle { .init() }
-    static func tipsarr(_ kind: TipsarrButtonKind, fullWidth: Bool = false) -> TipsarrButtonStyle {
-        .init(kind: kind, fullWidth: fullWidth)
+    static func tipsarr(_ kind: TipsarrButtonKind, fullWidth: Bool = false, compact: Bool = false) -> TipsarrButtonStyle {
+        .init(kind: kind, fullWidth: fullWidth, compact: compact)
     }
 }
 
