@@ -61,13 +61,6 @@ struct MediaDetailView: View {
                 .tipsarrSheet(detents: [.medium, .large])
             }
         }
-        .confirmationDialog(
-            Text(verbatim: L10n.string("m.request.cancel_confirm", model.route.title)),
-            isPresented: $confirmCancel, titleVisibility: .visible
-        ) {
-            Button("m.request.cancel", role: .destructive) { Task { await run { try await model.cancelRequest() } } }
-            Button("m.request.keep", role: .cancel) {}
-        }
     }
 
     // MARK: Content
@@ -118,6 +111,13 @@ struct MediaDetailView: View {
                 .foregroundStyle(Tokens.palette.mutedFg)
             }
         }
+            .confirmationDialog(
+                Text(verbatim: L10n.string("m.request.cancel_confirm", model.route.title)),
+                isPresented: $confirmCancel, titleVisibility: .visible
+            ) {
+                Button("m.request.cancel", role: .destructive) { Task { await run { try await model.cancelRequest() } } }
+                Button("m.request.keep", role: .cancel) {}
+            }
     }
 
     @ViewBuilder private var mainButton: some View {

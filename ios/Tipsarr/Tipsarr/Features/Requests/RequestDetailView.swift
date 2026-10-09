@@ -53,17 +53,6 @@ struct RequestDetailView: View {
             }
             .tipsarrSheet(detents: [.medium])
         }
-        .confirmationDialog(Text(verbatim: L10n.string("m.request.cancel_confirm", record.title)), isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("m.request.cancel", role: .destructive) {
-                Task {
-                    await run {
-                        try await model.delete(record)
-                        dismiss()
-                    }
-                }
-            }
-            Button("m.request.keep", role: .cancel) {}
-        }
     }
 
     // MARK: Sections
@@ -168,6 +157,17 @@ struct RequestDetailView: View {
                 Button { confirmDelete = true } label: { Text("m.request.cancel") }
                     .buttonStyle(.tipsarr(.ghost, fullWidth: true))
                     .foregroundStyle(Tokens.palette.destructive)
+                    .confirmationDialog(Text(verbatim: L10n.string("m.request.cancel_confirm", record.title)), isPresented: $confirmDelete, titleVisibility: .visible) {
+                        Button("m.request.cancel", role: .destructive) {
+                            Task {
+                                await run {
+                                    try await model.delete(record)
+                                    dismiss()
+                                }
+                            }
+                        }
+                        Button("m.request.keep", role: .cancel) {}
+                    }
             }
         }
         .disabled(model.busy.contains(record.id))

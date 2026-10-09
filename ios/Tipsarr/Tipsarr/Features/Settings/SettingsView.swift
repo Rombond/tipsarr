@@ -132,6 +132,11 @@ struct SettingsView: View {
                 Button(role: .destructive) { confirmSignOut = true } label: {
                     Label { Text("m.settings.sign_out") } icon: { Image(systemName: "rectangle.portrait.and.arrow.right") }
                 }
+                // On the button itself, so the dialog appears next to it.
+                .confirmationDialog(Text("m.settings.sign_out_confirm"), isPresented: $confirmSignOut, titleVisibility: .visible) {
+                    Button("m.settings.sign_out", role: .destructive) { Task { await session.signOut(account) } }
+                    Button("common.cancel", role: .cancel) {}
+                }
             } footer: {
                 Text("m.accounts.footer_signout")
             }
@@ -147,10 +152,6 @@ struct SettingsView: View {
         .sheet(isPresented: $showPicture) {
             PictureSheet(profile: profile) { avatarVersion += 1 }
                 .tipsarrSheet(detents: [.medium])
-        }
-        .confirmationDialog(Text("m.settings.sign_out_confirm"), isPresented: $confirmSignOut, titleVisibility: .visible) {
-            Button("m.settings.sign_out", role: .destructive) { Task { await session.signOut(account) } }
-            Button("common.cancel", role: .cancel) {}
         }
     }
 
