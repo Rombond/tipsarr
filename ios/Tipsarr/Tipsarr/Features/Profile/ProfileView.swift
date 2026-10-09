@@ -46,23 +46,7 @@ struct ProfileView: View {
                         .accessibilityLabel(Text("nav.settings"))
                 }
             }
-            .navigationDestination(for: ProfileRoute.self) { route in
-                switch route {
-                case .watchlist: WatchlistScreen()
-                case .hidden: HiddenScreen()
-                case .settings: SettingsView(account: account, profile: profile)
-                case .devices: DevicesView()
-                case .accounts: AccountsView()
-                case .appIcon: AppIconPicker()
-                case .issues: IssuesView()
-                case .issue(let id): IssueDetailView(id: id)
-                case .users: UsersView()
-                case .user(let id): UserDetailView(id: id)
-                case .sync: SyncView()
-                case .stats: StatsView()
-                case .posterList(let route): PosterList(route: route)
-                }
-            }
+            .navigationDestination(for: ProfileRoute.self) { ProfileDestination(route: $0, account: account, profile: profile) }
             .mediaDestinations()
             .task { await model.load() }
             .refreshable { await model.load() }
@@ -127,7 +111,7 @@ struct ProfileView: View {
     private var stats: some View {
         HStack(spacing: Tokens.Spacing.md) {
             StatCard(symbol: "checklist", value: model.requestCount, label: "profile.stat_requests") { openRequests() }
-            NavigationLink(value: ProfileRoute.watchlist) {
+            ProfileLink(route: .watchlist) {
                 StatTile(symbol: "bookmark", value: model.watchlistCount, label: "profile.stat_watchlist")
             }
             .buttonStyle(.plain)
@@ -242,13 +226,13 @@ private struct AdminGroup: View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
             Text("m.admin.title").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg).padding(.horizontal, Tokens.Spacing.xs)
             VStack(spacing: 0) {
-                NavigationLink(value: ProfileRoute.issues) { row("exclamationmark.bubble", Tokens.Status.failed, "nav.issues", openIssues) }
+                ProfileLink(route: .issues) { row("exclamationmark.bubble", Tokens.Status.failed, "nav.issues", openIssues) }
                     .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
-                NavigationLink(value: ProfileRoute.users) { row("person.2", Tokens.Status.approved, "nav.users", nil) }
+                ProfileLink(route: .users) { row("person.2", Tokens.Status.approved, "nav.users", nil) }
                     .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
-                NavigationLink(value: ProfileRoute.sync) { row("arrow.triangle.2.circlepath", Tokens.Status.searching, "m.admin.sync", nil) }
+                ProfileLink(route: .sync) { row("arrow.triangle.2.circlepath", Tokens.Status.searching, "m.admin.sync", nil) }
                     .buttonStyle(.plain)
             }
             .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
@@ -271,5 +255,30 @@ private struct AdminGroup: View {
         .padding(.horizontal, Tokens.Spacing.md)
         .frame(minHeight: Tokens.Size.touchTarget + Tokens.Spacing.sm)
         .contentShape(.rect)
+    }
+}
+
+/// The screen of a `ProfileRoute`; used by the Profile stack and by the Duo's right pane.
+struct ProfileDestination: View {
+    let route: ProfileRoute
+    let account: Account
+    let profile: Profile
+
+    var body: some View {
+        switch route {
+        case .watchlist: WatchlistScreen()
+        case .hidden: HiddenScreen()
+        case .settings: SettingsView(account: account, profile: profile)
+        case .devices: DevicesView()
+        case .accounts: AccountsView()
+        case .appIcon: AppIconPicker()
+        case .issues: IssuesView()
+        case .issue(let id): IssueDetailView(id: id)
+        case .users: UsersView()
+        case .user(let id): UserDetailView(id: id)
+        case .sync: SyncView()
+        case .stats: StatsView()
+        case .posterList(let route): PosterList(route: route)
+        }
     }
 }

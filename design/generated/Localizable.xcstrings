@@ -4929,6 +4929,22 @@
         }
       }
     },
+    "m.pane.trending": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trending now"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tendances"
+          }
+        }
+      }
+    },
     "m.person.biography": {
       "localizations": {
         "en": {

@@ -7,6 +7,7 @@ final class DetailPane {
     enum Content: Hashable {
         case media(MediaRoute)
         case request(RequestRecord)
+        case profile(ProfileRoute)
     }
 
     var content: Content?
@@ -52,5 +53,38 @@ struct RequestLink<Label: View>: View {
         } else {
             NavigationLink(value: record) { label }
         }
+    }
+}
+
+/// Opens a Profile or Settings screen: pushed on the current stack, or shown in the right pane on the Duo.
+/// `chevron` adds the disclosure arrow that a list row gets from a NavigationLink.
+struct ProfileLink<Label: View>: View {
+    let route: ProfileRoute
+    var chevron = false
+    @ViewBuilder var label: Label
+    @Environment(\.detailPane) private var pane
+
+    var body: some View {
+        if let pane {
+            Button { pane.content = .profile(route) } label: {
+                HStack {
+                    label
+                    if chevron { Spacer(minLength: 0); Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg) }
+                }
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+        } else {
+            NavigationLink(value: route) { label }
+        }
+    }
+}
+
+/// Pickers push a list on iPhone; next to a detail pane they open a menu in place instead.
+struct AdaptivePickerStyle: ViewModifier {
+    @Environment(\.detailPane) private var pane
+
+    func body(content: Content) -> some View {
+        if pane != nil { content.pickerStyle(.menu) } else { content.pickerStyle(.navigationLink) }
     }
 }

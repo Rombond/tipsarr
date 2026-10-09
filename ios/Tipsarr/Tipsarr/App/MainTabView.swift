@@ -89,11 +89,11 @@ struct MainTabView: View {
                     .environment(\.detailPane, pane)
                     .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 88) }
                     .overlay(alignment: .bottom) {
-                        FloatingTabBar(selection: $router.tab, badges: badges, showsTitles: false).padding(.bottom, Tokens.Spacing.sm)
+                        FloatingTabBar(selection: Binding(get: { router.tab }, set: { router.tab = $0; pane.content = nil }), badges: badges, showsTitles: false).padding(.bottom, Tokens.Spacing.sm)
                     }
                     .frame(width: max(hinge.leftWidth, 0))
                 Color.clear.frame(width: max(hinge.rightStart - hinge.leftWidth, 0))
-                DetailPaneView(pane: pane)
+                DetailPaneView(pane: pane, tab: router.tab, account: account, profile: profile)
                     .frame(maxWidth: .infinity)
             }
         } else {
@@ -117,12 +117,12 @@ struct MainTabView: View {
             // iPhone and narrow windows: the system tab bar.
             TabView(selection: $router.tab) {
                 Tab("m.tab.discover", systemImage: "safari", value: AppTab.discover) { content(.discover) }
-                // The separate search tab (field at the top right of the bar) is for the system bar on iPhone only.
-                Tab("m.tab.search", systemImage: "magnifyingglass", value: AppTab.search, role: sizeClass == .compact ? .search : nil) { content(.search) }
                 Tab("m.tab.requests", systemImage: "checklist", value: AppTab.requests) { content(.requests) }
                     .badge(profile.isAdmin ? pendingCount : 0)
                 Tab("m.tab.library", systemImage: "books.vertical", value: AppTab.library) { content(.library) }
                 Tab("m.tab.profile", systemImage: "person.crop.circle", value: AppTab.profile) { content(.profile) }
+                // A normal last tab, not the separate search tab: its field stays visible under the title.
+                Tab("m.tab.search", systemImage: "magnifyingglass", value: AppTab.search) { content(.search) }
             }
         } else {
             // Wide windows draw their own bar (sidebar or floating bar), so no TabView: the system bar cannot be hidden on iPad.

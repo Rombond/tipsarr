@@ -669,7 +669,8 @@
   "m.requests.select": "Select a request",
   "m.search.select": "Select a result",
   "m.search.start": "Search for a movie, a show or a person",
-  "m.pane.select": "Pick a title to see it here"
+  "m.pane.select": "Pick a title to see it here",
+  "m.pane.trending": "Trending now"
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -1341,6 +1342,7 @@
   "m.requests.select": "Choisissez une demande",
   "m.search.select": "Choisissez un résultat",
   "m.search.start": "Cherchez un film, une série ou une personne",
-  "m.pane.select": "Choisissez un titre pour le voir ici"
+  "m.pane.select": "Choisissez un titre pour le voir ici",
+  "m.pane.trending": "Tendances"
  }
 }

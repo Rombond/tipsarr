@@ -115,7 +115,7 @@ extension ProfileView {
     func statTiles(vertical: Bool) -> some View {
         HStack(spacing: vertical ? Tokens.Spacing.md : Tokens.Spacing.lg) {
             StatCard(symbol: "checklist", value: model.requestCount, label: "profile.stat_requests", horizontal: !vertical) { openRequests() }
-            NavigationLink(value: ProfileRoute.watchlist) {
+            ProfileLink(route: .watchlist) {
                 StatTile(symbol: "bookmark", value: model.watchlistCount, label: "profile.stat_watchlist", horizontal: !vertical)
             }
             .buttonStyle(.plain)
@@ -186,7 +186,7 @@ struct AdminTiles: View {
     }
 
     private func tile(_ symbol: String, _ color: Color, _ title: LText, _ route: ProfileRoute, _ count: Int?) -> some View {
-        NavigationLink(value: route) {
+        ProfileLink(route: route) {
             VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
                 HStack {
                     Image(systemName: symbol).foregroundStyle(color)

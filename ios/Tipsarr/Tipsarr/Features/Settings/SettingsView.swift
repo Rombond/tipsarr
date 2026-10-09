@@ -42,7 +42,7 @@ struct SettingsView: View {
         @Bindable var settings = settings
         List {
             Section("m.settings.account") {
-                NavigationLink(value: ProfileRoute.accounts) {
+                ProfileLink(route: .accounts, chevron: true) {
                     LabeledContent {
                         Text(verbatim: String(session.accounts.accounts.count))
                     } label: {
@@ -64,13 +64,13 @@ struct SettingsView: View {
                 } label: {
                     Label { Text("lang.title") } icon: { Image(systemName: "character.bubble") }
                 }
-                .pickerStyle(.navigationLink)
+                .modifier(AdaptivePickerStyle())
                 Picker(selection: region) {
                     ForEach(regions, id: \.code) { item in Text(verbatim: item.name).tag(item.code) }
                 } label: {
                     Label { Text("m.settings.region") } icon: { Image(systemName: "globe") }
                 }
-                .pickerStyle(.navigationLink)
+                .modifier(AdaptivePickerStyle())
                 Picker(selection: ratingSource) {
                     Text("m.settings.rating_tmdb").tag(RatingSource.tmdb)
                     Text("m.settings.rating_imdb").tag(RatingSource.imdb)
@@ -79,8 +79,8 @@ struct SettingsView: View {
                 } label: {
                     Label { Text("profile.rating_source") } icon: { Image(systemName: "star") }
                 }
-                .pickerStyle(.navigationLink)
-                NavigationLink(value: ProfileRoute.hidden) {
+                .modifier(AdaptivePickerStyle())
+                ProfileLink(route: .hidden, chevron: true) {
                     Label { Text("profile.hidden_title") } icon: { Image(systemName: "eye.slash") }
                 }
             }
@@ -92,8 +92,8 @@ struct SettingsView: View {
                 } label: {
                     Label { Text("theme.title") } icon: { Image(systemName: "paintpalette") }
                 }
-                .pickerStyle(.navigationLink)
-                NavigationLink(value: ProfileRoute.appIcon) {
+                .modifier(AdaptivePickerStyle())
+                ProfileLink(route: .appIcon, chevron: true) {
                     Label { Text("m.settings.app_icon") } icon: { Image(systemName: "app.badge") }
                 }
             }
@@ -105,7 +105,7 @@ struct SettingsView: View {
                         Label { Text("m.settings.faceid_signin") } icon: { Image(systemName: "key.viewfinder") }
                     }
                 }
-                NavigationLink(value: ProfileRoute.devices) {
+                ProfileLink(route: .devices, chevron: true) {
                     LabeledContent {
                         if let deviceCount { Text(verbatim: String(deviceCount)) }
                     } label: {

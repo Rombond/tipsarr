@@ -36,7 +36,7 @@ struct PosterCarousel: View {
                 HStack {
                     Text(title).font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
                     Spacer()
-                    NavigationLink(value: seeAll ?? .posterList(PosterListRoute(title: titleKey, rows: rows, ranked: ranked))) {
+                    ProfileLink(route: seeAll ?? .posterList(PosterListRoute(title: titleKey, rows: rows, ranked: ranked))) {
                         Text("m.discover.see_all").font(.subheadline)
                     }
                     .foregroundStyle(Tokens.palette.mutedFg)

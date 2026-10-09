@@ -46,7 +46,7 @@ struct SearchView: View {
 
     private var stackBody: some View {
         NavigationStack {
-            searchable(pane, placement: sizeClass == .regular ? .navigationBarDrawer(displayMode: .always) : .automatic)
+            searchable(pane, placement: .navigationBarDrawer(displayMode: .always))
                 .mediaDestinations()
         }
     }

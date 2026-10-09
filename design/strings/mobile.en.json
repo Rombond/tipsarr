@@ -166,5 +166,6 @@
   "m.requests.select": "Select a request",
   "m.search.select": "Select a result",
   "m.search.start": "Search for a movie, a show or a person",
-  "m.pane.select": "Pick a title to see it here"
+  "m.pane.select": "Pick a title to see it here",
+  "m.pane.trending": "Trending now"
 }
