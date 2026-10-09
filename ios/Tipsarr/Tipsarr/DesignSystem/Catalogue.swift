@@ -12,7 +12,7 @@ struct Catalogue: View {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Tokens.Spacing.md), count: 3), spacing: Tokens.Spacing.lg) {
                         PosterCard(title: "Blade Runner 2049", subtitle: "2017", state: .available)
                         PosterCard(title: "Severance", subtitle: "2022", state: .downloading)
-                        PosterCard(title: "A very long title that wraps onto two lines", subtitle: "1999", state: .partial)
+                        PosterCard(title: "A very long title that gets truncated", subtitle: "1999", state: .partial)
                         PosterSkeleton()
                     }
                 }
