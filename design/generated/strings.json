@@ -607,7 +607,23 @@
   "m.library.hidden_title": "Hidden from suggestions",
   "m.library.hidden_hint": "Titles you marked “not interested”.",
   "m.library.show_again": "Show again",
-  "m.library.remove": "Remove"
+  "m.library.remove": "Remove",
+  "m.profile.admin_soon": "Admin tools",
+  "m.settings.title": "Settings",
+  "m.settings.appearance": "Appearance",
+  "m.settings.account": "Account",
+  "m.settings.sign_out": "Sign out",
+  "m.settings.rating_tmdb": "TMDB",
+  "m.settings.rating_imdb": "IMDb",
+  "m.settings.rating_metacritic": "Metacritic",
+  "m.settings.rating_rt": "Rotten Tomatoes",
+  "m.settings.rating_movies_only": "Movies only",
+  "m.accounts.active": "Active",
+  "m.accounts.remove": "Sign out of this account",
+  "m.profile.take_photo": "Photo library",
+  "m.profile.picture_title": "Profile picture",
+  "m.profile.about": "About",
+  "m.profile.version": "Version"
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -1217,6 +1233,22 @@
   "m.library.hidden_title": "Masqués des suggestions",
   "m.library.hidden_hint": "Les titres marqués « pas intéressé ».",
   "m.library.show_again": "Réafficher",
-  "m.library.remove": "Retirer"
+  "m.library.remove": "Retirer",
+  "m.profile.admin_soon": "Outils admin",
+  "m.settings.title": "Réglages",
+  "m.settings.appearance": "Apparence",
+  "m.settings.account": "Compte",
+  "m.settings.sign_out": "Se déconnecter",
+  "m.settings.rating_tmdb": "TMDB",
+  "m.settings.rating_imdb": "IMDb",
+  "m.settings.rating_metacritic": "Metacritic",
+  "m.settings.rating_rt": "Rotten Tomatoes",
+  "m.settings.rating_movies_only": "Films uniquement",
+  "m.accounts.active": "Actif",
+  "m.accounts.remove": "Se déconnecter de ce compte",
+  "m.profile.take_photo": "Photothèque",
+  "m.profile.picture_title": "Photo de profil",
+  "m.profile.about": "À propos",
+  "m.profile.version": "Version"
  }
 }

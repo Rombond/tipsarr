@@ -22,6 +22,10 @@ struct ConnectView: View {
                 }
                 .buttonStyle(.tipsarr(.primary, fullWidth: true))
                 .disabled(checking || address.trimmingCharacters(in: .whitespaces).isEmpty)
+                if session.accounts.active != nil {
+                    Button("common.cancel") { Task { await session.cancelAddAccount() } }
+                        .buttonStyle(.tipsarr(.ghost, fullWidth: true))
+                }
                 Text("m.connect.footer").font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
             }
         }

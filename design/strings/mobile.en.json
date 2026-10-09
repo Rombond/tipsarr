@@ -104,5 +104,21 @@
   "m.library.hidden_title": "Hidden from suggestions",
   "m.library.hidden_hint": "Titles you marked “not interested”.",
   "m.library.show_again": "Show again",
-  "m.library.remove": "Remove"
+  "m.library.remove": "Remove",
+  "m.profile.admin_soon": "Admin tools",
+  "m.settings.title": "Settings",
+  "m.settings.appearance": "Appearance",
+  "m.settings.account": "Account",
+  "m.settings.sign_out": "Sign out",
+  "m.settings.rating_tmdb": "TMDB",
+  "m.settings.rating_imdb": "IMDb",
+  "m.settings.rating_metacritic": "Metacritic",
+  "m.settings.rating_rt": "Rotten Tomatoes",
+  "m.settings.rating_movies_only": "Movies only",
+  "m.accounts.active": "Active",
+  "m.accounts.remove": "Sign out of this account",
+  "m.profile.take_photo": "Photo library",
+  "m.profile.picture_title": "Profile picture",
+  "m.profile.about": "About",
+  "m.profile.version": "Version"
 }

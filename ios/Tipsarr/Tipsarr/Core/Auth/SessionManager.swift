@@ -96,4 +96,25 @@ final class SessionManager {
     }
 
     func backToConnect() { phase = .connect }
+
+    /// Profile changed on the server (language, score source): keep the signed-in screens in sync.
+    func update(profile: Profile) {
+        if case .ready(let account, _) = phase { phase = .ready(account, profile) }
+    }
+
+    /// Switches to another stored account (no password asked).
+    func switchTo(_ account: Account) async {
+        guard account.id != accounts.activeID else { return }
+        accounts.setActive(account.id)
+        await resume(account)
+    }
+
+    /// Add account: same server first (login), the login screen offers another server.
+    func beginAddAccount() {
+        guard let account = accounts.active, let status = serverStatus else { return backToConnect() }
+        phase = .login(Server(url: account.serverURL, status: status), prefillUsername: nil)
+    }
+
+    /// Leaves the add-account flow without signing in.
+    func cancelAddAccount() async { await start() }
 }

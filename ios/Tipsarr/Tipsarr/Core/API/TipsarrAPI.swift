@@ -66,7 +66,7 @@ struct TipsarrAPI: Sendable {
     }
 }
 
-private extension Profile {
+extension Profile {
     init(_ user: Components.Schemas.User) {
         self.init(id: user.id, name: user.name, role: user.role, region: user.region,
                   language: user.language, ratingSource: user.ratingSource)

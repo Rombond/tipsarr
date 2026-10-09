@@ -29,7 +29,7 @@ struct MainTabView: View {
                 LibraryView(api: api)
             }
             Tab("m.tab.profile", systemImage: "person.crop.circle", value: AppTab.profile) {
-                ProfilePlaceholder(account: account, profile: profile)
+                ProfileView(account: account, profile: profile)
             }
         }
         .environment(\.imageSource, ImageSource(serverURL: account.serverURL, token: account.token))
@@ -55,28 +55,6 @@ private struct TabPlaceholder: View {
             StateView(symbol: symbol, title: title)
                 .background(Tokens.palette.bg)
                 .navigationTitle(Text(title))
-        }
-    }
-}
-
-/// Replaced by the Profile screen in step 6.
-private struct ProfilePlaceholder: View {
-    @Environment(SessionManager.self) private var session
-    let account: Account
-    let profile: Profile
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: Tokens.Spacing.lg) {
-                Text(verbatim: profile.name).font(.title.weight(.bold))
-                Text(verbatim: account.serverURL.absoluteString).foregroundStyle(Tokens.palette.mutedFg)
-                Button("m.settings.sign_out_confirm") { Task { await session.signOut(account) } }
-                    .buttonStyle(.tipsarr(.secondary))
-            }
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Tokens.palette.bg)
-            .navigationTitle("m.tab.profile")
         }
     }
 }

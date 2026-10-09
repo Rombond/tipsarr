@@ -46,7 +46,7 @@ enum APIError: Error, Sendable, Equatable {
     }
 
     private static func lookup(_ key: String) -> String? {
-        let text = Bundle.main.localizedString(forKey: key, value: nil, table: nil)
+        let text = AppLanguage.bundle.localizedString(forKey: key, value: nil, table: nil)
         return text == key ? nil : text
     }
 }

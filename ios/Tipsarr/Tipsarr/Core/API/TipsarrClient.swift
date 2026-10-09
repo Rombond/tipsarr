@@ -30,6 +30,6 @@ enum TipsarrClient {
 
     /// e.g. `fr-FR`; the profile language, when set, wins on the server.
     static var currentLanguage: String {
-        (Locale.preferredLanguages.first ?? "en").replacingOccurrences(of: "_", with: "-")
+        (AppLanguage.override ?? Locale.preferredLanguages.first ?? "en").replacingOccurrences(of: "_", with: "-")
     }
 }

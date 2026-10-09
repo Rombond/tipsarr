@@ -276,7 +276,7 @@ struct MediaDetailView: View {
             VStack(spacing: 0) {
                 if let status = detail.status, !status.isEmpty {
                     let key = "status.\(status)"
-                    let text = Bundle.main.localizedString(forKey: key, value: status, table: nil)
+                    let text = AppLanguage.bundle.localizedString(forKey: key, value: status, table: nil)
                     FactRow(label: "fact.status", value: text)
                 }
                 if let date = detail.releaseDate.flatMap(Self.parseDate) {

@@ -40,8 +40,14 @@ struct LoginView: View {
                 }
                 .buttonStyle(.tipsarr(.primary, fullWidth: true))
                 .disabled(signingIn || username.isEmpty || password.isEmpty)
-                Button("m.accounts.other_server") { session.backToConnect() }
-                    .buttonStyle(.tipsarr(.ghost))
+                HStack {
+                    Button("m.accounts.other_server") { session.backToConnect() }
+                    if session.accounts.active != nil {
+                        Spacer()
+                        Button("common.cancel") { Task { await session.cancelAddAccount() } }
+                    }
+                }
+                .buttonStyle(.tipsarr(.ghost))
             }
         }
         .onAppear { focus = username.isEmpty ? .username : .password }
