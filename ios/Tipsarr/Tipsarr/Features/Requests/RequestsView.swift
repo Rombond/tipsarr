@@ -18,7 +18,7 @@ struct RequestsView: View {
             content
                 .background(Tokens.palette.bg)
                 .navigationTitle("requests.title")
-                .safeAreaInset(edge: .top, spacing: 0) { filters }
+                .safeAreaBar(edge: .top, spacing: 0) { filters }
                 .task(id: filter) { await model.load(filter) }
                 .refreshable { await model.load(filter) }
                 .navigationDestination(for: RequestRecord.self) { record in
@@ -55,7 +55,6 @@ struct RequestsView: View {
             .padding(.horizontal, Tokens.Spacing.lg)
             .padding(.vertical, Tokens.Spacing.sm)
         }
-        .background(.bar)
     }
 
     @ViewBuilder private var content: some View {
