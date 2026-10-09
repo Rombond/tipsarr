@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend build test generate lint
+.PHONY: dev dev-backend dev-frontend build test generate lint ios-strings
 
 dev:
 	$(MAKE) -j2 dev-backend dev-frontend
@@ -20,9 +20,15 @@ test:
 generate:
 	cd backend && go run ./cmd/tipsarr openapi > ../frontend/src/lib/api/openapi.json
 	mkdir -p api && cd backend && go run ./cmd/tipsarr openapi yaml > ../api/openapi.yaml
+	cp api/openapi.yaml ios/Tipsarr/Tipsarr/Core/API/openapi.yaml
 	node design/build-tokens.mjs
+	cp design/generated/Tokens.swift ios/Tipsarr/Tipsarr/DesignSystem/Tokens.swift
 	node design/build-strings.mjs
 	cd frontend && npx openapi-typescript@7.13.0 src/lib/api/openapi.json -o src/lib/api/schema.d.ts
 
 lint:
 	cd backend && go vet ./...
+
+# Xcode reformats the catalog it owns, so it is copied on demand, not by `generate` and not checked in CI.
+ios-strings:
+	cp design/generated/Localizable.xcstrings ios/Tipsarr/Tipsarr/Localizable.xcstrings
