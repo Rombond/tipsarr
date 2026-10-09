@@ -56,3 +56,29 @@ extension TipsarrAPI {
         }
     }
 }
+
+extension TipsarrAPI {
+    /// `user`: nil is the signed-in person, "all" everyone (admins), or a user id (admins).
+    func stats(period: StatsPeriod, user: String?) async throws -> StatsReport {
+        try await load { client in
+            guard case .ok(let ok) = try await client.getStats(query: .init(user: user, period: .init(rawValue: period.rawValue))) else { throw APIError.unexpected }
+            let r = try ok.body.json
+            func top(_ list: [Components.Schemas.StatsTop]) -> [StatsTop] {
+                list.map {
+                    StatsTop(type: $0._type == .tv ? .tv : .movie, tmdbId: Int($0.tmdbId), title: $0.title, year: $0.year.map(Int.init),
+                             plays: Int($0.plays), hours: $0.hours, posterPath: $0.posterUrl.flatMap { $0.isEmpty ? nil : $0 })
+                }
+            }
+            return StatsReport(
+                hours: r.totals.hours, plays: Int(r.totals.plays), titles: Int(r.totals.titles), movies: Int(r.totals.movies), shows: Int(r.totals.shows),
+                requestsMade: Int(r.requests.made), requestsAvailable: Int(r.requests.available), requestsDeclined: Int(r.requests.declined),
+                genres: r.genres.map { StatsBucket(name: $0.name, hours: $0.hours, titles: Int($0.titles)) },
+                decades: r.decades.map { StatsBucket(name: $0.name, hours: $0.hours, titles: Int($0.titles)) },
+                months: r.months.map { StatsMonth(month: $0.month, hours: $0.hours, plays: Int($0.plays)) },
+                weekdays: r.weekdays, hoursOfDay: r.hoursOfDay,
+                topMovies: top(r.topMovies), topShows: top(r.topShows),
+                exact: r.source == .plugin, pluginHint: r.plugin.hint
+            )
+        }
+    }
+}

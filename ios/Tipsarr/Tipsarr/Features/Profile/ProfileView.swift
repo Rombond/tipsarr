@@ -28,6 +28,20 @@ struct ProfileView: View {
                 VStack(spacing: Tokens.Spacing._2xl) {
                     header
                     stats
+                    if !profile.isAdmin {
+                        NavigationLink(value: ProfileRoute.stats) {
+                            HStack {
+                                Label { Text("nav.stats") } icon: { Image(systemName: "chart.bar") }
+                                Spacer()
+                                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg)
+                            }
+                            .padding(.horizontal, Tokens.Spacing.md)
+                            .frame(minHeight: Tokens.Size.touchTarget + Tokens.Spacing.sm)
+                            .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
+                            .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
+                        }
+                        .buttonStyle(.plain)
+                    }
                     if profile.isAdmin { AdminGroup(pendingCount: model.pendingCount, openIssues: model.openIssues, openRequests: openPending) }
                     recentRequests
                 }
@@ -56,6 +70,7 @@ struct ProfileView: View {
                 case .users: UsersView()
                 case .user(let id): UserDetailView(id: id)
                 case .sync: SyncView()
+                case .stats: StatsView()
                 }
             }
             .mediaDestinations()
@@ -159,7 +174,7 @@ struct ProfileView: View {
     }
 }
 
-enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts, appIcon, issues, issue(String), users, user(String), sync }
+enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts, appIcon, issues, issue(String), users, user(String), sync, stats }
 
 /// Number with an icon and a label.
 private struct StatTile: View {
@@ -216,6 +231,9 @@ private struct AdminGroup: View {
                     .buttonStyle(.plain)
                 Divider().padding(.leading, 52)
                 NavigationLink(value: ProfileRoute.sync) { row("arrow.triangle.2.circlepath", Tokens.Status.searching, "m.admin.sync", nil) }
+                    .buttonStyle(.plain)
+                Divider().padding(.leading, 52)
+                NavigationLink(value: ProfileRoute.stats) { row("chart.bar", Tokens.Status.downloading, "nav.stats", nil) }
                     .buttonStyle(.plain)
             }
             .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
