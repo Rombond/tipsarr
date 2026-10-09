@@ -29,7 +29,7 @@ import UIKit
 
 public enum Tokens {
     /// Neutral colours that change with light / dark mode.
-    public struct Palette {
+    public struct Palette: Sendable {
 ${entries(tokens.color.light).map(([k]) => `        public let ${swiftName(k)}: Color`).join('\n')}
     }
 
