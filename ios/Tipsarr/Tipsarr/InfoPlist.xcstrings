@@ -1,0 +1,12 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSFaceIDUsageDescription" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tipsarr uses Face ID to unlock the app." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Tipsarr utilise Face ID pour déverrouiller l’app." } }
+      }
+    }
+  },
+  "version" : "1.0"
+}
