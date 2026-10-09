@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct LibraryView: View {
-    @Environment(\.horizontalSizeClass) private var sizeClass
+    /// Width of the screen: a half-width pane of an iPad or Duo window is as narrow as a phone, whatever the size class says.
+    @State private var width: CGFloat = 0
+    private var roomy: Bool { width >= 600 }
     @State private var model: LibraryModel
     @State private var showFilters = false
     @AppStorage("libraryLayout") private var listLayout = false
@@ -21,10 +23,11 @@ struct LibraryView: View {
                 }
                 .padding(.vertical, Tokens.Spacing.sm)
             }
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
             .background(Tokens.palette.bg)
             .navigationTitle("library.title")
             // Field under the title, full width: the default top-right spot is out of the way on iPad.
-            .searchable(text: $model.filters.query, placement: sizeClass == .regular ? .navigationBarDrawer(displayMode: .always) : .automatic, prompt: Text("library.search"))
+            .searchable(text: $model.filters.query, placement: roomy ? .navigationBarDrawer(displayMode: .always) : .automatic, prompt: Text("library.search"))
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button { listLayout.toggle() } label: {
@@ -72,7 +75,7 @@ struct LibraryView: View {
                 .padding(.leading, Tokens.Spacing.lg)
             }
             // Wide screens have room for the count and the sort order, as in Penpot.
-            if sizeClass == .regular, model.phase == .loaded {
+            if roomy, model.phase == .loaded {
                 Text(verbatim: L10n.string("library.count", String(model.total)) + " · " + model.filters.sort.title.resolved)
                     .font(.footnote)
                     .foregroundStyle(Tokens.palette.mutedFg)

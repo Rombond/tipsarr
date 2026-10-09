@@ -7,6 +7,7 @@ struct ProfileView: View {
 
     @Environment(\.appContext) private var context
     @Environment(\.liveUpdates) private var live
+    @Environment(\.detailPane) private var pane
     @AppStorage("avatarVersion") var avatarVersion = 0
     @Environment(SessionManager.self) var session
     @State var model: ProfileModel
@@ -48,6 +49,8 @@ struct ProfileView: View {
             }
             .navigationDestination(for: ProfileRoute.self) { ProfileDestination(route: $0, account: account, profile: profile) }
             .mediaDestinations()
+            // Back on the Profile root (Duo): the right pane returns to the statistics.
+            .onAppear { pane?.content = nil }
             .task { await model.load() }
             .refreshable { await model.load() }
             .onChange(of: live?.requestsTick) { Task { await model.load() } }
