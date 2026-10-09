@@ -578,7 +578,17 @@
   "m.request.cancel": "Cancel request",
   "m.issue.send": "Send report",
   "m.detail.no_overview": "No overview available.",
-  "m.detail.seasons_count": "%1$@ season | %1$@ seasons"
+  "m.detail.seasons_count": "%1$@ season | %1$@ seasons",
+  "m.search.prompt": "Movies, TV shows, people",
+  "m.search.recents": "Recent searches",
+  "m.search.clear": "Clear",
+  "m.search.genres": "Browse by genre",
+  "m.person.biography": "Biography",
+  "m.person.known_for": "Known for",
+  "m.person.born": "Born %@",
+  "m.person.died": "Died %@",
+  "m.common.more": "More",
+  "m.common.less": "Less"
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -1159,6 +1169,16 @@
   "m.request.cancel": "Annuler la demande",
   "m.issue.send": "Envoyer le signalement",
   "m.detail.no_overview": "Aucun résumé disponible.",
-  "m.detail.seasons_count": "%1$@ saison | %1$@ saisons"
+  "m.detail.seasons_count": "%1$@ saison | %1$@ saisons",
+  "m.search.prompt": "Films, séries, personnes",
+  "m.search.recents": "Recherches récentes",
+  "m.search.clear": "Effacer",
+  "m.search.genres": "Parcourir par genre",
+  "m.person.biography": "Biographie",
+  "m.person.known_for": "Connu pour",
+  "m.person.born": "Né(e) le %@",
+  "m.person.died": "Décédé(e) le %@",
+  "m.common.more": "Plus",
+  "m.common.less": "Moins"
  }
 }

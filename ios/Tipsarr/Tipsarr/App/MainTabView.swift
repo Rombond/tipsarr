@@ -17,8 +17,8 @@ struct MainTabView: View {
             Tab("m.tab.discover", systemImage: "safari", value: AppTab.discover) {
                 DiscoverView(api: api) { selection = .search }
             }
-            Tab("m.tab.search", systemImage: "magnifyingglass", value: AppTab.search) {
-                TabPlaceholder(title: "m.tab.search", symbol: "magnifyingglass")
+            Tab("m.tab.search", systemImage: "magnifyingglass", value: AppTab.search, role: .search) {
+                SearchView(api: api)
             }
             Tab("m.tab.requests", systemImage: "checklist", value: AppTab.requests) {
                 TabPlaceholder(title: "m.tab.requests", symbol: "checklist")

@@ -78,3 +78,47 @@ struct SuggestionResult: Sendable {
     /// The server is still building the recommendations.
     var generating: Bool
 }
+
+struct Genre: Sendable, Hashable, Identifiable {
+    var id: Int
+    var name: String
+}
+
+struct PersonSummary: Sendable, Hashable, Identifiable {
+    var id: Int
+    var name: String
+    var department: String?
+    var profilePath: String?
+    var route: PersonRoute { PersonRoute(id: id, name: name) }
+}
+
+struct PersonRoute: Hashable, Sendable {
+    var id: Int
+    var name: String
+}
+
+struct GenreRoute: Hashable, Sendable {
+    var type: MediaType
+    var id: Int
+    var name: String
+}
+
+struct PersonDetail: Sendable {
+    var id: Int
+    var name: String
+    var department: String?
+    var biography: String?
+    var birthday: String?
+    var birthplace: String?
+    var deathday: String?
+    var profilePath: String?
+    var credits: [MediaItem]
+}
+
+struct SearchPage: Sendable {
+    var items: [MediaItem]
+    var people: [PersonSummary]
+    var page: Int
+    var totalPages: Int
+    var hasMore: Bool { page < totalPages }
+}

@@ -75,5 +75,15 @@
   "m.request.cancel": "Cancel request",
   "m.issue.send": "Send report",
   "m.detail.no_overview": "No overview available.",
-  "m.detail.seasons_count": "%1$@ season | %1$@ seasons"
+  "m.detail.seasons_count": "%1$@ season | %1$@ seasons",
+  "m.search.prompt": "Movies, TV shows, people",
+  "m.search.recents": "Recent searches",
+  "m.search.clear": "Clear",
+  "m.search.genres": "Browse by genre",
+  "m.person.biography": "Biography",
+  "m.person.known_for": "Known for",
+  "m.person.born": "Born %@",
+  "m.person.died": "Died %@",
+  "m.common.more": "More",
+  "m.common.less": "Less"
 }

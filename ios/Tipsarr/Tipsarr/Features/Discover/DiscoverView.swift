@@ -55,7 +55,7 @@ struct DiscoverView: View {
                         .accessibilityLabel(Text("m.discover.search"))
                 }
             }
-            .navigationDestination(for: MediaRoute.self) { MediaDetailScreen(route: $0) }
+            .mediaDestinations()
         }
     }
 

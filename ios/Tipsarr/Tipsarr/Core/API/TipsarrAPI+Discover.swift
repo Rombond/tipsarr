@@ -68,3 +68,51 @@ extension MediaItem {
         )
     }
 }
+
+extension TipsarrAPI {
+    func genres(_ type: MediaType) async throws -> [Genre] {
+        try await load { client in
+            guard case .ok(let ok) = try await client.discoverGenres(path: .init(_type: .init(rawValue: type.rawValue)!)) else { throw APIError.unexpected }
+            return try ok.body.json.map { Genre(id: Int($0.id), name: $0.name) }
+        }
+    }
+
+    func byGenre(_ type: MediaType, genre: Int, page: Int) async throws -> MediaPage {
+        try await load { client in
+            switch type {
+            case .movie:
+                guard case .ok(let ok) = try await client.discover_movie(query: .init(page: Int64(page), genre: Int64(genre))) else { throw APIError.unexpected }
+                return MediaPage(try ok.body.json)
+            case .tv:
+                guard case .ok(let ok) = try await client.discover_tv(query: .init(page: Int64(page), genre: Int64(genre))) else { throw APIError.unexpected }
+                return MediaPage(try ok.body.json)
+            }
+        }
+    }
+
+    func search(_ query: String, page: Int) async throws -> SearchPage {
+        try await load { client in
+            guard case .ok(let ok) = try await client.search(query: .init(page: Int64(page), q: query)) else { throw APIError.unexpected }
+            let body = try ok.body.json
+            return SearchPage(
+                items: body.items.map(MediaItem.init),
+                people: body.people.map { PersonSummary(id: Int($0.id), name: $0.name, department: $0.department, profilePath: $0.profilePath) },
+                page: Int(body.page),
+                totalPages: Int(body.totalPages)
+            )
+        }
+    }
+
+    func person(id: Int) async throws -> PersonDetail {
+        try await load { client in
+            guard case .ok(let ok) = try await client.person(path: .init(id: Int64(id))) else { throw APIError.unexpected }
+            let body = try ok.body.json
+            return PersonDetail(
+                id: Int(body.id), name: body.name, department: body.department,
+                biography: body.biography.flatMap { $0.isEmpty ? nil : $0 },
+                birthday: body.birthday, birthplace: body.birthplace, deathday: body.deathday,
+                profilePath: body.profilePath, credits: (body.credits ?? []).map(MediaItem.init)
+            )
+        }
+    }
+}

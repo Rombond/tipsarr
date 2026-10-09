@@ -4,7 +4,7 @@ import Observation
 /// One paged list of titles (infinite scroll). Duplicates across pages are dropped.
 @MainActor @Observable
 final class MediaListModel {
-    enum Source: Sendable { case trending, upcoming, movies, tv }
+    enum Source: Hashable, Sendable { case trending, upcoming, movies, tv, genre(MediaType, Int) }
     enum Phase: Equatable { case idle, loading, loaded, failed(APIError) }
 
     let source: Source
@@ -61,6 +61,7 @@ final class MediaListModel {
         case .upcoming: try await api.upcoming(page: page)
         case .movies: try await api.popularMovies(page: page)
         case .tv: try await api.popularTV(page: page)
+        case .genre(let type, let id): try await api.byGenre(type, genre: id, page: page)
         }
     }
 

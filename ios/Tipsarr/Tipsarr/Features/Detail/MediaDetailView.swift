@@ -305,6 +305,7 @@ struct MediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: Tokens.Spacing.md) {
                     ForEach(detail.cast.prefix(15)) { member in
+                        NavigationLink(value: PersonRoute(id: member.id, name: member.name)) {
                         VStack(spacing: Tokens.Spacing.xs) {
                             RemoteImage(path: member.profilePath, size: .w185) {
                                 Image(systemName: "person.fill").foregroundStyle(Tokens.palette.mutedFg)
@@ -319,6 +320,8 @@ struct MediaDetailView: View {
                         }
                         .frame(width: 80)
                         .accessibilityElement(children: .combine)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
