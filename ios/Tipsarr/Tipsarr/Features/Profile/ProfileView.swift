@@ -4,6 +4,7 @@ struct ProfileView: View {
     let account: Account
     let profile: Profile
     var openRequests: () -> Void = {}
+    var openPending: () -> Void = {}
 
     @Environment(\.appContext) private var context
     @Environment(\.liveUpdates) private var live
@@ -11,11 +12,14 @@ struct ProfileView: View {
     @State private var model: ProfileModel
     @State private var showPicture = false
 
-    init(account: Account, profile: Profile, api: TipsarrAPI, openRequests: @escaping () -> Void = {}) {
+    init(account: Account, profile: Profile, api: TipsarrAPI, openRequests: @escaping () -> Void = {}, openPending: @escaping () -> Void = {}) {
         self.account = account
         self.profile = profile
         self.openRequests = openRequests
-        _model = State(initialValue: ProfileModel(api: api))
+        self.openPending = openPending
+        let model = ProfileModel(api: api)
+        model.isAdmin = profile.isAdmin
+        _model = State(initialValue: model)
     }
 
     var body: some View {
@@ -24,6 +28,7 @@ struct ProfileView: View {
                 VStack(spacing: Tokens.Spacing._2xl) {
                     header
                     stats
+                    if profile.isAdmin { AdminGroup(pendingCount: model.pendingCount, openIssues: model.openIssues, openRequests: openPending) }
                     recentRequests
                 }
                 .padding(Tokens.Spacing.lg)
@@ -46,6 +51,8 @@ struct ProfileView: View {
                 case .devices: DevicesView()
                 case .accounts: AccountsView()
                 case .appIcon: AppIconPicker()
+                case .issues: IssuesView()
+                case .issue(let id): IssueDetailView(id: id)
                 }
             }
             .mediaDestinations()
@@ -149,7 +156,7 @@ struct ProfileView: View {
     }
 }
 
-enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts, appIcon }
+enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts, appIcon, issues, issue(String) }
 
 /// Number with an icon and a label.
 private struct StatTile: View {
@@ -183,5 +190,44 @@ private struct StatCard: View {
         } else {
             StatTile(symbol: symbol, value: value, label: label)
         }
+    }
+}
+
+/// Administrator tools: one grouped card of rows, like the Administration group in Penpot.
+private struct AdminGroup: View {
+    let pendingCount: Int?
+    let openIssues: Int?
+    let openRequests: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
+            Text("m.admin.title").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg).padding(.horizontal, Tokens.Spacing.xs)
+            VStack(spacing: 0) {
+                Button(action: openRequests) { row("clock", Tokens.Status.requested, "m.admin.pending_requests", pendingCount) }
+                    .buttonStyle(.plain)
+                Divider().padding(.leading, 52)
+                NavigationLink(value: ProfileRoute.issues) { row("exclamationmark.bubble", Tokens.Status.failed, "nav.issues", openIssues) }
+                    .buttonStyle(.plain)
+            }
+            .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
+            .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
+        }
+    }
+
+    private func row(_ symbol: String, _ color: Color, _ title: LText, _ value: Int?) -> some View {
+        HStack(spacing: Tokens.Spacing.md) {
+            Image(systemName: symbol)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(color)
+                .frame(width: 30, height: 30)
+                .background(color.opacity(0.16), in: .rect(cornerRadius: Tokens.Radius.sm - 2))
+            Text(title).font(.body)
+            Spacer(minLength: 0)
+            if let value, value > 0 { Text(verbatim: String(value)).font(.subheadline).foregroundStyle(Tokens.palette.mutedFg) }
+            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg)
+        }
+        .padding(.horizontal, Tokens.Spacing.md)
+        .frame(minHeight: Tokens.Size.touchTarget + Tokens.Spacing.sm)
+        .contentShape(.rect)
     }
 }

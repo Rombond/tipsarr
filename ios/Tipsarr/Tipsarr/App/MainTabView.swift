@@ -36,14 +36,17 @@ struct MainTabView: View {
                 SearchView(api: api)
             }
             Tab("m.tab.requests", systemImage: "checklist", value: AppTab.requests) {
-                RequestsView(api: api, isAdmin: profile.isAdmin, path: $router.requestsPath) { router.tab = .discover }
+                RequestsView(api: api, isAdmin: profile.isAdmin, path: $router.requestsPath, filter: $router.requestsFilter) { router.tab = .discover }
             }
             .badge(profile.isAdmin ? pendingCount : 0)
             Tab("m.tab.library", systemImage: "books.vertical", value: AppTab.library) {
                 LibraryView(api: api, path: $router.libraryPath)
             }
             Tab("m.tab.profile", systemImage: "person.crop.circle", value: AppTab.profile) {
-                ProfileView(account: account, profile: profile, api: api) { router.tab = .requests }
+                ProfileView(account: account, profile: profile, api: api, openRequests: { router.tab = .requests }, openPending: {
+                    router.requestsFilter = .pending
+                    router.tab = .requests
+                })
             }
         }
         .environment(\.imageSource, ImageSource(serverURL: account.serverURL, token: account.token))

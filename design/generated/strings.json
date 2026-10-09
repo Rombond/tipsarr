@@ -628,7 +628,13 @@
   "m.session.signing_in_faceid": "Signing in…",
   "m.settings.faceid_signin": "Sign in with Face ID",
   "m.settings.faceid_signin_footer": "Your password is kept in the iPhone’s Keychain, protected by Face ID or your passcode. It is only used to sign you back in when your session ends.",
-  "m.detail.share": "Share"
+  "m.detail.share": "Share",
+  "m.admin.title": "Administration",
+  "m.admin.pending_requests": "Pending requests",
+  "m.admin.sync": "Sync & jobs",
+  "m.admin.reported_by": "Reported by %@",
+  "m.admin.comments": "%@ comments",
+  "m.admin.no_comments": "No comments yet."
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -1259,6 +1265,12 @@
   "m.session.signing_in_faceid": "Connexion…",
   "m.settings.faceid_signin": "Connexion avec Face ID",
   "m.settings.faceid_signin_footer": "Votre mot de passe est conservé dans le trousseau de l’iPhone, protégé par Face ID ou votre code. Il sert uniquement à vous reconnecter quand votre session se termine.",
-  "m.detail.share": "Partager"
+  "m.detail.share": "Partager",
+  "m.admin.title": "Administration",
+  "m.admin.pending_requests": "Demandes en attente",
+  "m.admin.sync": "Synchro et tâches",
+  "m.admin.reported_by": "Signalé par %@",
+  "m.admin.comments": "%@ commentaires",
+  "m.admin.no_comments": "Pas encore de commentaire."
  }
 }

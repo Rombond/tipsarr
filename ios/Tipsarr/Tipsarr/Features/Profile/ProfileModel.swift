@@ -9,6 +9,9 @@ final class ProfileModel {
     private(set) var watchlistCount: Int?
     private(set) var watchedCount: Int?
     private(set) var recent: [RequestRecord] = []
+    private(set) var pendingCount: Int?
+    private(set) var openIssues: Int?
+    var isAdmin = false
 
     init(api: TipsarrAPI) { self.api = api }
 
@@ -18,11 +21,15 @@ final class ProfileModel {
         var watched = LibraryFilters()
         watched.watched = .yes
         async let library = try? api.library(watched, page: 1, pageSize: 1)
+        async let counts = isAdmin ? try? api.requestCounts() : nil
+        async let issues = isAdmin ? try? api.openIssueCount() : nil
         if let page = await requests {
             requestCount = page.total
             recent = page.items
         }
         if let list = await watchlist { watchlistCount = list.count }
         if let page = await library { watchedCount = page.total }
+        if let counts = await counts { pendingCount = counts.pending }
+        if let issues = await issues { openIssues = issues }
     }
 }

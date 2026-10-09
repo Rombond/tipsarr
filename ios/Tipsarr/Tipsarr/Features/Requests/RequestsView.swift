@@ -8,11 +8,14 @@ struct RequestsView: View {
     @Environment(ToastCenter.self) private var toast
     @Environment(\.liveUpdates) private var live
     @Binding var path: NavigationPath
+    /// Set from outside to jump to a filter (the admin's "pending requests" shortcut).
+    @Binding var requestedFilter: RequestFilter?
     var openDiscover: () -> Void = {}
 
-    init(api: TipsarrAPI, isAdmin: Bool, path: Binding<NavigationPath>, openDiscover: @escaping () -> Void = {}) {
+    init(api: TipsarrAPI, isAdmin: Bool, path: Binding<NavigationPath>, filter: Binding<RequestFilter?>, openDiscover: @escaping () -> Void = {}) {
         _model = State(initialValue: RequestsModel(api: api, isAdmin: isAdmin))
         _path = path
+        _requestedFilter = filter
         self.openDiscover = openDiscover
     }
 
@@ -22,6 +25,10 @@ struct RequestsView: View {
                 .background(Tokens.palette.bg)
                 .navigationTitle("requests.title")
                 .task(id: filter) { await model.load(filter) }
+                .onChange(of: requestedFilter) { _, new in
+                    if let new { filter = new; requestedFilter = nil }
+                }
+                .task { if let new = requestedFilter { filter = new; requestedFilter = nil } }
                 .refreshable { await model.load(filter) }
                 .onChange(of: live?.requestsTick) { Task { await model.load(filter) } }
                 .navigationDestination(for: RequestRecord.self) { record in
