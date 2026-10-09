@@ -114,24 +114,45 @@ struct RequestSheet: View {
     @ViewBuilder private func optionRows(_ options: RequestOptions) -> some View {
         VStack(spacing: Tokens.Spacing.sm) {
             OptionRow(symbol: "slider.horizontal.3", title: "req.quality_profile") {
-                Picker("req.quality_profile", selection: $profileID) {
-                    ForEach(options.profiles) { profile in Text(verbatim: profile.name).tag(Optional(profile.id)) }
+                Menu {
+                    ForEach(options.profiles) { profile in
+                        Button {
+                            profileID = profile.id
+                        } label: {
+                            if profileID == profile.id { Image(systemName: "checkmark") }
+                            Text(verbatim: profile.name)
+                        }
+                    }
+                } label: {
+                    menuLabel(options.profiles.first { $0.id == profileID }?.name ?? "")
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
             }
             if model.canChooseFolder, !options.rootFolders.isEmpty {
                 OptionRow(symbol: "externaldrive", title: "req.root_folder") {
-                    Picker("req.root_folder", selection: $folder) {
+                    Menu {
                         ForEach(options.rootFolders) { root in
-                            Text(verbatim: "\(root.path) · \(Self.size(root.freeSpace))").tag(Optional(root.path))
+                            Button {
+                                folder = root.path
+                            } label: {
+                                if folder == root.path { Image(systemName: "checkmark") }
+                                Text(verbatim: "\(root.path) · \(Self.size(root.freeSpace))")
+                            }
                         }
+                    } label: {
+                        menuLabel(folder ?? options.defaultFolder)
                     }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
                 }
             }
         }
+    }
+
+    /// One line, middle-truncated, with the chevron the system picker would show.
+    private func menuLabel(_ text: String) -> some View {
+        HStack(spacing: Tokens.Spacing.xs) {
+            Text(verbatim: text).lineLimit(1).truncationMode(.middle)
+            Image(systemName: "chevron.up.chevron.down").font(.caption2)
+        }
+        .foregroundStyle(Tokens.palette.mutedFg)
     }
 
     private static func size(_ bytes: Int64) -> String {
@@ -172,7 +193,7 @@ private struct OptionRow<Control: View>: View {
     var body: some View {
         HStack(spacing: Tokens.Spacing.md) {
             Image(systemName: symbol).foregroundStyle(Tokens.palette.mutedFg).frame(width: 24)
-            Text(title).font(.body)
+            Text(title).font(.body).lineLimit(1).fixedSize()
             Spacer(minLength: Tokens.Spacing.md)
             control
         }

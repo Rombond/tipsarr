@@ -83,13 +83,17 @@ struct RemoteImage<Placeholder: View>: View {
     @State private var image: UIImage?
 
     var body: some View {
-        ZStack {
-            if let image {
-                Image(uiImage: image).resizable().scaledToFill().transition(.opacity)
-            } else {
-                placeholder
+        // The container decides the size; a fill-scaled image would otherwise report a size
+        // wider than its frame and push the whole screen wider than the display.
+        Color.clear
+            .overlay {
+                if let image {
+                    Image(uiImage: image).resizable().scaledToFill().transition(.opacity)
+                } else {
+                    placeholder
+                }
             }
-        }
+            .clipped()
         .animation(.easeOut(duration: Tokens.Motion.normal), value: image)
         .task(id: TaskKey(path: path, source: source)) {
             guard let path, let source, let url = source.tmdbURL(size: size, path: path) else {
