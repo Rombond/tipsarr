@@ -15,10 +15,12 @@ struct Hinge: Equatable {
 }
 
 enum FoldInfo {
-    /// The active vertical fold region of the window, if there is one (iOS 27.1 and later).
+    /// The vertical fold region of the window when the Duo is unfolded (iOS 27.1 and later). Measured in the
+    /// simulator: the region exists with a 40 pt frame and 20 pt margins on both sides while unfolded, but its
+    /// `isActive` flag is false when the device lies flat, so inactive regions count too.
     static func verticalHinge(_ proxy: GeometryProxy) -> Hinge? {
         guard #available(iOS 27.1, *) else { return nil }
-        for region in proxy.reservedRegions(kind: .division) where region.isActive && region.frame.height > region.frame.width {
+        for region in proxy.reservedRegions(kind: .division, options: .includeInactive) where region.frame.height > region.frame.width && region.frame.width > 0 {
             return Hinge(minX: region.frame.minX, maxX: region.frame.maxX,
                          leadingMargin: region.margins.leading, trailingMargin: region.margins.trailing)
         }
