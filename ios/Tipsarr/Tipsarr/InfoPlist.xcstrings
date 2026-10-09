@@ -1,10 +1,33 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "NSFaceIDUsageDescription" : {
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tipsarr uses Face ID to unlock the app." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Tipsarr utilise Face ID pour déverrouiller l’app." } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Tipsarr"
+          }
+        }
+      }
+    },
+    "NSFaceIDUsageDescription" : {
+      "comment" : "Privacy - Face ID Usage Description",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipsarr uses Face ID to unlock the app."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipsarr utilise Face ID pour déverrouiller l’app."
+          }
+        }
       }
     }
   },

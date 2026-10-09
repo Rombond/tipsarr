@@ -20,7 +20,8 @@ struct PosterCard: View {
                 .clipShape(.rect(cornerRadius: Tokens.Radius.md))
             Text(title)
                 .font(.subheadline.weight(.medium))
-                .lineLimit(2)
+                .lineLimit(2, reservesSpace: true)
+                .multilineTextAlignment(.leading)
                 .foregroundStyle(Tokens.palette.fg)
             if let subtitle {
                 Text(subtitle)
@@ -29,6 +30,7 @@ struct PosterCard: View {
                     .lineLimit(1)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
     }

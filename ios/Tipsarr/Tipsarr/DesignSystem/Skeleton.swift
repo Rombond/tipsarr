@@ -26,7 +26,7 @@ struct SkeletonBlock: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(Tokens.palette.muted)
+            .fill(Tokens.palette.border)
             .frame(height: height)
     }
 }
@@ -36,7 +36,7 @@ struct PosterSkeleton: View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
             Color.clear
                 .aspectRatio(1 / Tokens.Size.posterRatio, contentMode: .fit)
-                .background(Tokens.palette.muted, in: .rect(cornerRadius: Tokens.Radius.md))
+                .background(Tokens.palette.border, in: .rect(cornerRadius: Tokens.Radius.md))
             SkeletonBlock(height: 14)
             SkeletonBlock(height: 12).frame(maxWidth: 60)
         }

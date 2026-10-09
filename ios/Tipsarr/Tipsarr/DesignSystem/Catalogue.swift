@@ -8,6 +8,14 @@ struct Catalogue: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
+                section("Posters") {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Tokens.Spacing.md), count: 3), spacing: Tokens.Spacing.lg) {
+                        PosterCard(title: "Blade Runner 2049", subtitle: "2017", state: .available)
+                        PosterCard(title: "Severance", subtitle: "2022", state: .downloading)
+                        PosterCard(title: "A very long title that wraps onto two lines", subtitle: "1999", state: .partial)
+                        PosterSkeleton()
+                    }
+                }
                 section("Badges") {
                     FlowRow { ForEach(RequestState.allCases, id: \.self) { StatusBadge(state: $0) } }
                 }
@@ -30,13 +38,6 @@ struct Catalogue: View {
                 section("Banner") {
                     Banner(title: "banner.dry_run", message: "banner.dry_run_long")
                     Banner(kind: .error, title: "m.offline.title", message: "m.offline.body", onDismiss: {})
-                }
-                section("Posters") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Tokens.Spacing.md), count: 3), spacing: Tokens.Spacing.lg) {
-                        PosterCard(title: "Blade Runner 2049", subtitle: "2017", state: .available)
-                        PosterCard(title: "Severance", subtitle: "2022", state: .downloading)
-                        PosterSkeleton()
-                    }
                 }
                 section("Sheet") {
                     Button("common.details") { showSheet = true }.buttonStyle(.tipsarr(.secondary))
