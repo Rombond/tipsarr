@@ -26,7 +26,7 @@ struct LibraryView: View {
                     Button { listLayout.toggle() } label: {
                         Image(systemName: listLayout ? "square.grid.2x2" : "list.bullet")
                     }
-                    .accessibilityLabel(Text(listLayout ? "m.library.grid" : "m.library.list"))
+                    .accessibilityLabel(Text(choose(listLayout, "m.library.grid", "m.library.list")))
                     Button { showFilters = true } label: {
                         Image(systemName: model.filters.sheetIsDefault ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
                     }

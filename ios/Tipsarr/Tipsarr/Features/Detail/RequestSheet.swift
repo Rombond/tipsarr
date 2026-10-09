@@ -21,10 +21,10 @@ struct RequestSheet: View {
                 header
                 if isTV { seasonPicker }
                 if let options = model.options { optionRows(options) }
-                Text(model.isAdmin ? "m.request.admin_note" : "m.request.user_note")
+                Text(choose(model.isAdmin, "m.request.admin_note", "m.request.user_note"))
                     .font(.footnote)
                     .foregroundStyle(Tokens.palette.mutedFg)
-                if let errorText { Banner(kind: .error, title: LocalizedStringResource(stringLiteral: errorText)) }
+                if let errorText { Banner(kind: .error, title: LText.verbatim(errorText)) }
                 VStack(spacing: Tokens.Spacing.sm) {
                     Button { Task { await submit() } } label: {
                         Label {
@@ -54,7 +54,7 @@ struct RequestSheet: View {
             .clipShape(.rect(cornerRadius: Tokens.Radius.sm))
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: model.route.title).font(.headline).lineLimit(2)
-                Text(verbatim: [detail?.year, isTV ? String(localized: "type.tv") : String(localized: "type.movie")].compactMap { $0 }.joined(separator: " · "))
+                Text(verbatim: [detail?.year, isTV ? L10n.string("type.tv") : L10n.string("type.movie")].compactMap { $0 }.joined(separator: " · "))
                     .font(.subheadline)
                     .foregroundStyle(Tokens.palette.mutedFg)
             }
@@ -69,8 +69,10 @@ struct RequestSheet: View {
             HStack {
                 Text("req.which_seasons").font(.title3.weight(.semibold))
                 Spacer()
-                Button(allSelected ? "req.select_none" : "req.select_all") {
+                Button {
                     selectedSeasons = allSelected ? [] : Set(selectable.map(\.number))
+                } label: {
+                    Text(choose(allSelected, "req.select_none", "req.select_all"))
                 }
                 .font(.subheadline)
                 .disabled(selectable.isEmpty)
@@ -187,7 +189,7 @@ struct RequestSheet: View {
 
 private struct OptionRow<Control: View>: View {
     let symbol: String
-    let title: LocalizedStringResource
+    let title: LText
     @ViewBuilder var control: Control
 
     var body: some View {

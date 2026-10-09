@@ -44,7 +44,7 @@ struct LibraryFacets: Sendable {
 enum LibrarySort: String, CaseIterable, Sendable {
     case added, title, year, rating, runtime, popular
 
-    var title: LocalizedStringResource {
+    var title: LText {
         switch self {
         case .added: "library.sort_added"
         case .title: "library.sort_title"

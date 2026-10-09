@@ -3,9 +3,9 @@ import SwiftUI
 /// Full-area empty / error / offline state.
 struct StateView: View {
     let symbol: String
-    let title: LocalizedStringResource
-    var message: LocalizedStringResource?
-    var actionTitle: LocalizedStringResource?
+    let title: LText
+    var message: LText?
+    var actionTitle: LText?
     var action: (() -> Void)?
 
     var body: some View {

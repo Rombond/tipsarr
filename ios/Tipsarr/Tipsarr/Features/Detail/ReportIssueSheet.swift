@@ -41,11 +41,11 @@ struct ReportIssueSheet: View {
                             }
                         }
                 }
-                if let errorText { Banner(kind: .error, title: LocalizedStringResource(stringLiteral: errorText)) }
+                if let errorText { Banner(kind: .error, title: LText.verbatim(errorText)) }
                 VStack(spacing: Tokens.Spacing.sm) {
                     Button { Task { await send() } } label: {
                         Label {
-                            Text(sending ? "common.saving" : "m.issue.send")
+                            Text(choose(sending, "common.saving", "m.issue.send"))
                         } icon: { Image(systemName: "flag") }
                     }
                     .buttonStyle(.tipsarr(.primary, fullWidth: true))

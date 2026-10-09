@@ -8,7 +8,7 @@ struct RatingsStrip: View {
     private struct Entry: Identifiable {
         let id: String
         let value: String
-        let hint: LocalizedStringResource?
+        let hint: LText?
     }
 
     private var entries: [Entry] {

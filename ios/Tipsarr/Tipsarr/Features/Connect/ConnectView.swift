@@ -4,7 +4,7 @@ struct ConnectView: View {
     @Environment(SessionManager.self) private var session
     @State private var address = ""
     @State private var checking = false
-    @State private var error: LocalizedStringResource?
+    @State private var error: LText?
 
     var body: some View {
         AuthScaffold(symbol: "server.rack", title: "m.connect.title", subtitle: "m.connect.subtitle") {

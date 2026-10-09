@@ -3,8 +3,8 @@ import SwiftUI
 /// Shared layout of the connect / login / system screens: centred column, readable on iPad.
 struct AuthScaffold<Content: View>: View {
     let symbol: String
-    let title: LocalizedStringResource
-    var subtitle: LocalizedStringResource?
+    let title: LText
+    var subtitle: LText?
     @ViewBuilder var content: Content
 
     var body: some View {

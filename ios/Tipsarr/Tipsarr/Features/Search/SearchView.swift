@@ -3,7 +3,7 @@ import SwiftUI
 enum SearchScope: Hashable, CaseIterable {
     case all, movies, tv, people
 
-    var title: LocalizedStringResource {
+    var title: LText {
         switch self {
         case .all: "search.tab_all"
         case .movies: "type.movies"
@@ -86,7 +86,7 @@ struct SearchView: View {
         }
     }
 
-    private func genreGroup(_ title: LocalizedStringResource, genres: [Genre], type: MediaType) -> some View {
+    private func genreGroup(_ title: LText, genres: [Genre], type: MediaType) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
             Text(title).font(.subheadline.weight(.medium)).foregroundStyle(Tokens.palette.mutedFg)
             FlowLayout(spacing: Tokens.Spacing.sm) {
@@ -121,7 +121,7 @@ struct SearchView: View {
             let titles = visibleTitles
             if !hasResults {
                 StateView(symbol: "magnifyingglass",
-                          title: LocalizedStringResource(stringLiteral: L10n.string("search.nothing", trimmed)),
+                          title: LText.verbatim(L10n.string("search.nothing", trimmed)),
                           message: "search.nothing_hint")
             } else {
                 ScrollView {

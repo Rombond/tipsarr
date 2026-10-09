@@ -55,7 +55,7 @@ struct PersonScreen: View {
                     VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
                         Text("m.person.biography").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
                         Text(verbatim: biography).font(.callout).lineSpacing(3).lineLimit(expanded ? nil : 6)
-                        Button(expanded ? "m.common.less" : "m.common.more") { expanded.toggle() }.font(.subheadline)
+                        Button { expanded.toggle() } label: { Text(choose(expanded, "m.common.less", "m.common.more")) }.font(.subheadline)
                     }
                 }
                 if !person.credits.isEmpty {

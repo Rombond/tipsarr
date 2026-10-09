@@ -6,7 +6,7 @@ struct Field: View {
     @Binding var text: String
     var prompt: LocalizedStringKey?
     var secure = false
-    var error: LocalizedStringResource?
+    var error: LText?
     var keyboard: UIKeyboardType = .default
     var contentType: UITextContentType?
     var submitLabel: SubmitLabel = .done

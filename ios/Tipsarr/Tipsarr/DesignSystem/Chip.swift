@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Selectable filter chip (Discover genres, Requests filters).
 struct Chip: View {
-    let title: LocalizedStringResource
+    let title: LText
     var isSelected = false
     /// Small count shown after the title (0 or nil hides it).
     var count: Int?

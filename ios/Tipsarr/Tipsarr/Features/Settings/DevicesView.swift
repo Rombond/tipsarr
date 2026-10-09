@@ -58,7 +58,7 @@ struct DevicesView: View {
                 .foregroundStyle(Tokens.palette.mutedFg)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: Tokens.Spacing.sm) {
-                    Text(verbatim: device.deviceName.isEmpty ? String(localized: "profile.device_web") : device.deviceName).font(.body.weight(.medium))
+                    Text(verbatim: device.deviceName.isEmpty ? L10n.string("profile.device_web") : device.deviceName).font(.body.weight(.medium))
                     if device.current {
                         Text("profile.device_current")
                             .font(.caption2.weight(.semibold))

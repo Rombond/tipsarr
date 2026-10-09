@@ -29,7 +29,7 @@ struct LoginView: View {
                     .focused($focus, equals: .password)
                     .onSubmit { Task { await submit() } }
                 if let errorText {
-                    Banner(kind: .error, title: LocalizedStringResource(stringLiteral: errorText))
+                    Banner(kind: .error, title: LText.verbatim(errorText))
                 }
                 Button { Task { await submit() } } label: {
                     if signingIn {

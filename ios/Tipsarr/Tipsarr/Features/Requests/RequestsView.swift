@@ -93,7 +93,7 @@ struct RequestsView: View {
                                   actionTitle: "m.requests.empty_cta", action: openDiscover)
                     } else {
                         StateView(symbol: "checklist",
-                                  title: LocalizedStringResource(stringLiteral: L10n.string("requests.empty_tab", String(localized: filter.title))))
+                                  title: LText.verbatim(L10n.string("requests.empty_tab", filter.title.resolved)))
                     }
                 }
             case .loaded:
@@ -153,7 +153,7 @@ struct RequestRow: View {
                         Spacer(minLength: Tokens.Spacing.sm)
                         StatusBadge(state: record.state)
                     }
-                    Text(record.type == .tv ? "type.tv" : "type.movie").font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+                    Text(choose(record.type == .tv, "type.tv", "type.movie")).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                     Text(verbatim: when).font(.caption).foregroundStyle(Tokens.palette.mutedFg)
                     if record.state == .downloading, let percent = record.progressPercent {
                         ProgressBar(percent: percent).padding(.top, Tokens.Spacing.xs)
@@ -201,7 +201,7 @@ struct DeclineSheet: View {
                 .lineLimit(3...6)
                 .padding(Tokens.Spacing.md)
                 .background(Tokens.palette.muted, in: .rect(cornerRadius: Tokens.Radius.md))
-            if let errorText { Banner(kind: .error, title: LocalizedStringResource(stringLiteral: errorText)) }
+            if let errorText { Banner(kind: .error, title: LText.verbatim(errorText)) }
             VStack(spacing: Tokens.Spacing.sm) {
                 Button { Task { await send() } } label: {
                     Label { Text("m.requests.decline_send") } icon: { Image(systemName: "xmark") }

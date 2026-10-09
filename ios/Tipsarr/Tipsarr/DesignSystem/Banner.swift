@@ -22,8 +22,8 @@ struct Banner: View {
     }
 
     var kind: Kind = .info
-    let title: LocalizedStringResource
-    var message: LocalizedStringResource?
+    let title: LText
+    var message: LText?
     var onDismiss: (() -> Void)?
 
     var body: some View {

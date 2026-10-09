@@ -4,7 +4,7 @@ import SwiftUI
 enum RequestState: String, CaseIterable, Sendable {
     case requested, approved, searching, downloading, available, partial, declined, failed
 
-    var title: LocalizedStringResource {
+    var title: LText {
         switch self {
         case .requested: "state.requested"
         case .approved: "state.approved"

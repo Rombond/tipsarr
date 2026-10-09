@@ -71,12 +71,12 @@ struct HiddenScreen: View {
 }
 
 private struct TitleGridScreen: View {
-    let title: LocalizedStringResource
-    let hint: LocalizedStringResource?
+    let title: LText
+    let hint: LText?
     let items: [MediaItem]
     let phase: WatchlistScreen.Phase
-    let emptyMessage: LocalizedStringResource
-    let actionTitle: LocalizedStringResource
+    let emptyMessage: LText
+    let actionTitle: LText
     let actionSymbol: String
     let reload: () async -> Void
     let onAction: (MediaItem) async -> Void

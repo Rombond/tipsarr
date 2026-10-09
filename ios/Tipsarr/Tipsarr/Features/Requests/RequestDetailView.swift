@@ -79,7 +79,7 @@ struct RequestDetailView: View {
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
                 Text(verbatim: record.title).font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
-                Text(record.type == .tv ? "type.tv" : "type.movie").font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+                Text(choose(record.type == .tv, "type.tv", "type.movie")).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                 StatusBadge(state: record.state)
             }
         }
@@ -101,10 +101,10 @@ struct RequestDetailView: View {
 
     @ViewBuilder private var banner: some View {
         if record.state == .declined {
-            Banner(kind: .error, title: record.declineReason.map { LocalizedStringResource(stringLiteral: L10n.string("req.reason", $0)) } ?? "m.detail.declined")
+            Banner(kind: .error, title: record.declineReason.map { LText.verbatim(L10n.string("req.reason", $0)) } ?? "m.detail.declined")
         } else if record.state == .failed {
             Banner(kind: .warning, title: "req.failed_generic",
-                   message: model.isAdmin ? record.error.map { LocalizedStringResource(stringLiteral: $0) } : nil)
+                   message: model.isAdmin ? record.error.map { LText.verbatim($0) } : nil)
         }
     }
 
@@ -131,7 +131,7 @@ struct RequestDetailView: View {
             VStack(spacing: 0) {
                 if let name = record.requestedBy, !name.isEmpty {
                     let isMe = name == context?.profile.name
-                    DetailFact(label: "m.requests.requested_by", value: isMe ? String(localized: "common.you").trimmingCharacters(in: CharacterSet(charactersIn: "()")).localizedCapitalized : name)
+                    DetailFact(label: "m.requests.requested_by", value: isMe ? L10n.string("common.you").trimmingCharacters(in: CharacterSet(charactersIn: "()")).localizedCapitalized : name)
                 }
                 if !record.seasons.isEmpty {
                     DetailFact(label: "fact.seasons", value: record.seasons.sorted().map(String.init).formatted())
@@ -215,7 +215,7 @@ struct RequestDetailView: View {
 }
 
 private struct DetailFact: View {
-    let label: LocalizedStringResource
+    let label: LText
     let value: String
 
     var body: some View {
@@ -236,7 +236,7 @@ struct Timeline: View {
     struct Step: Identifiable {
         enum Status { case done, current, todo, failed }
         let id = UUID()
-        var title: LocalizedStringResource
+        var title: LText
         var detail: String
         var status: Status
     }

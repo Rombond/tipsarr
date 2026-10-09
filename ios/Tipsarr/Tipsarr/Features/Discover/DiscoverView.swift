@@ -3,7 +3,7 @@ import SwiftUI
 enum DiscoverChip: CaseIterable, Hashable {
     case forYou, trending, upcoming, movies, tv
 
-    var title: LocalizedStringResource {
+    var title: LText {
         switch self {
         case .forYou: "m.discover.chip_for_you"
         case .trending: "discover.trending"
@@ -97,7 +97,7 @@ private struct ForYouContent: View {
             case .loaded:
                 VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
                     ForEach(home.rows) { row in
-                        Rail(title: LocalizedStringResource(stringLiteral: row.title), items: row.items)
+                        Rail(title: LText.verbatim(row.title), items: row.items)
                     }
                 }
             }
@@ -107,7 +107,7 @@ private struct ForYouContent: View {
 }
 
 private struct Rail: View {
-    let title: LocalizedStringResource
+    let title: LText
     let items: [MediaItem]
 
     var body: some View {
@@ -195,7 +195,7 @@ struct ErrorState: View {
             if error == .unreachable {
                 StateView.offline { Task { await retry() } }
             } else {
-                StateView(symbol: "exclamationmark.triangle", title: LocalizedStringResource(stringLiteral: error.localizedMessage),
+                StateView(symbol: "exclamationmark.triangle", title: LText.verbatim(error.localizedMessage),
                           actionTitle: "common.retry") { Task { await retry() } }
             }
         }

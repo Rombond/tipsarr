@@ -111,7 +111,7 @@ struct TitleFlags: Sendable, Equatable {
 enum IssueKind: String, CaseIterable, Sendable {
     case video, audio, subtitles, other
 
-    var title: LocalizedStringResource {
+    var title: LText {
         switch self {
         case .video: "issue.kind.video"
         case .audio: "issue.kind.audio"
@@ -124,7 +124,7 @@ enum IssueKind: String, CaseIterable, Sendable {
 enum RequestFilter: String, CaseIterable, Sendable {
     case all, pending, approved, available, declined, failed
 
-    var title: LocalizedStringResource {
+    var title: LText {
         switch self {
         case .all: "requests.tab.all"
         case .pending: "requests.tab.pending"

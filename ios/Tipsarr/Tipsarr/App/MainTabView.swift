@@ -47,7 +47,7 @@ struct MainTabView: View {
 }
 
 private struct TabPlaceholder: View {
-    let title: LocalizedStringResource
+    let title: LText
     let symbol: String
 
     var body: some View {

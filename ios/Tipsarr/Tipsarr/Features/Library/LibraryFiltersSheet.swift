@@ -39,7 +39,7 @@ struct LibraryFiltersSheet: View {
 
     // MARK: Sections
 
-    private func section<Content: View>(_ title: LocalizedStringResource, @ViewBuilder content: () -> Content) -> some View {
+    private func section<Content: View>(_ title: LText, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
             Text(title).font(.headline).accessibilityAddTraits(.isHeader)
             content()
@@ -78,7 +78,7 @@ struct LibraryFiltersSheet: View {
         }
     }
 
-    private func yearMenu(_ title: LocalizedStringResource, selection: Binding<Int?>, range: ClosedRange<Int>) -> some View {
+    private func yearMenu(_ title: LText, selection: Binding<Int?>, range: ClosedRange<Int>) -> some View {
         Picker(selection: selection) {
             Text("library.any").tag(Int?.none)
             ForEach(Array(range).reversed(), id: \.self) { year in Text(verbatim: String(year)).tag(Int?.some(year)) }

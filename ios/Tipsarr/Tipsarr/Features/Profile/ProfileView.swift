@@ -26,7 +26,7 @@ struct ProfileView: View {
                         .accessibilityLabel(Text("profile.change_picture"))
                         VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
                             Text(verbatim: profile.name).font(.title2.weight(.bold))
-                            Text(profile.isAdmin ? "nav.administrator" : "nav.member").font(.subheadline).foregroundStyle(Tokens.palette.mutedFg)
+                            Text(choose(profile.isAdmin, "nav.administrator", "nav.member")).font(.subheadline).foregroundStyle(Tokens.palette.mutedFg)
                             Text(verbatim: account.serverURL.host() ?? account.serverURL.absoluteString)
                                 .font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                         }

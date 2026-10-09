@@ -11,7 +11,7 @@ enum AppTheme: String, CaseIterable, Sendable {
         }
     }
 
-    var title: LocalizedStringResource {
+    var title: LText {
         switch self {
         case .system: "theme.system"
         case .light: "theme.light"

@@ -124,7 +124,7 @@ struct MediaDetailView: View {
         switch model.action {
         case .request:
             Button { Task { await startRequest() } } label: {
-                Label { Text(model.busy ? "media.requesting" : "media.request") } icon: { Image(systemName: "plus") }
+                Label { Text(choose(model.busy, "media.requesting", "media.request")) } icon: { Image(systemName: "plus") }
             }
             .buttonStyle(.tipsarr(.primary, fullWidth: true))
             .disabled(model.busy)
@@ -173,13 +173,13 @@ struct MediaDetailView: View {
             Button {
                 Task { await run { try await model.toggleWatchlist() } }
             } label: {
-                Label { Text(model.flags.watchlisted ? "actions.on_watchlist" : "actions.watchlist") }
+                Label { Text(choose(model.flags.watchlisted, "actions.on_watchlist", "actions.watchlist")) }
                     icon: { Image(systemName: model.flags.watchlisted ? "bookmark.fill" : "bookmark") }
             }
             Button {
                 Task { await run { try await model.toggleHidden() } }
             } label: {
-                Label { Text(model.flags.blocklisted ? "actions.show_again" : "media.not_interested") }
+                Label { Text(choose(model.flags.blocklisted, "actions.show_again", "media.not_interested")) }
                     icon: { Image(systemName: model.flags.blocklisted ? "eye" : "eye.slash") }
             }
             if let key = detail.trailerKey, let url = URL(string: "https://www.youtube.com/watch?v=\(key)") {
@@ -207,7 +207,7 @@ struct MediaDetailView: View {
         switch model.action {
         case .requestAgain:
             let reason = model.request?.declineReason
-            Banner(kind: .error, title: reason.map { LocalizedStringResource(stringLiteral: L10n.string("req.reason", $0)) } ?? "m.detail.declined")
+            Banner(kind: .error, title: reason.map { LText.verbatim(L10n.string("req.reason", $0)) } ?? "m.detail.declined")
         case .failed:
             Banner(kind: .warning, title: "req.failed_generic")
         default:
@@ -390,7 +390,7 @@ struct MediaDetailView: View {
 }
 
 private struct FactRow: View {
-    let label: LocalizedStringResource
+    let label: LText
     let value: String
 
     var body: some View {
