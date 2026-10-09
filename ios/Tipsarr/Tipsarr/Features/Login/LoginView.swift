@@ -15,7 +15,7 @@ struct LoginView: View {
     init(server: Server, prefillUsername: String?) {
         self.server = server
         _username = State(initialValue: prefillUsername ?? "")
-        _rememberWithFaceID = State(initialValue: AppLock.deviceAuthAvailable)
+        _rememberWithFaceID = State(initialValue: DeviceAuth.isAvailable)
     }
 
     var body: some View {
@@ -30,7 +30,7 @@ struct LoginView: View {
                 Field(title: "login.password", text: $password, secure: true, contentType: .password, submitLabel: .go)
                     .focused($focus, equals: .password)
                     .onSubmit { Task { await submit() } }
-                if AppLock.deviceAuthAvailable {
+                if DeviceAuth.isAvailable {
                     Toggle(isOn: $rememberWithFaceID) {
                         Text("m.login.remember_faceid").font(.subheadline)
                     }

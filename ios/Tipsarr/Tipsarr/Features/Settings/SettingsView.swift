@@ -3,7 +3,6 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(SessionManager.self) private var session
     @Environment(AppSettings.self) private var settings
-    @Environment(AppLock.self) private var lock
     @Environment(\.appContext) private var context
     @Environment(ToastCenter.self) private var toast
     @AppStorage("avatarVersion") private var avatarVersion = 0
@@ -99,30 +98,12 @@ struct SettingsView: View {
                 }
             }
             Section {
-                Toggle(isOn: Binding(
-                    get: { lock.isEnabled },
-                    set: { on in
-                        if on { Task { _ = await lock.enable() } } else { lock.disable() }
-                    }
-                )) {
-                    Label { Text("m.faceid.title") } icon: { Image(systemName: lock.symbol) }
-                }
-                .disabled(!lock.isAvailable)
                 if faceIDSignIn {
                     Toggle(isOn: Binding(get: { faceIDSignIn }, set: { on in
                         if !on { CredentialStore.delete(accountID: account.id); faceIDSignIn = false }
                     })) {
                         Label { Text("m.settings.faceid_signin") } icon: { Image(systemName: "key.viewfinder") }
                     }
-                }
-                if lock.isEnabled {
-                    @Bindable var lock = lock
-                    Picker(selection: $lock.delay) {
-                        ForEach(AppLock.Delay.allCases, id: \.self) { Text($0.title).tag($0) }
-                    } label: {
-                        Label { Text("m.faceid.lock_after") } icon: { Image(systemName: "timer") }
-                    }
-                    .pickerStyle(.navigationLink)
                 }
                 NavigationLink(value: ProfileRoute.devices) {
                     LabeledContent {
@@ -134,10 +115,7 @@ struct SettingsView: View {
             } header: {
                 Text("m.settings.security")
             } footer: {
-                VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
-                    if faceIDSignIn { Text("m.settings.faceid_signin_footer") }
-                    Text("m.faceid.footer")
-                }
+                if faceIDSignIn { Text("m.settings.faceid_signin_footer") }
             }
             Section("m.settings.server") {
                 Label {

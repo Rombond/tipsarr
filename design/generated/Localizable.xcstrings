@@ -3797,13 +3797,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Signing out removes an account from this iPhone. Face ID protects all accounts."
+            "value": "Signing out removes an account from this iPhone.."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se déconnecter retire un compte de cet iPhone. Face ID protège tous les comptes."
+            "value": "Se déconnecter retire un compte de cet iPhone.."
           }
         }
       }
@@ -4305,118 +4305,6 @@
         }
       }
     },
-    "m.faceid.after_1": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "After 1 minute"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Après 1 minute"
-          }
-        }
-      }
-    },
-    "m.faceid.after_15": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "After 15 minutes"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Après 15 minutes"
-          }
-        }
-      }
-    },
-    "m.faceid.after_5": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "After 5 minutes"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Après 5 minutes"
-          }
-        }
-      }
-    },
-    "m.faceid.footer": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tipsarr asks for Face ID when you return to the app after this delay. You stay signed in either way."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tipsarr demande Face ID quand vous revenez dans l’app après ce délai. Vous restez connecté dans tous les cas."
-          }
-        }
-      }
-    },
-    "m.faceid.immediately": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Immediately"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Immédiatement"
-          }
-        }
-      }
-    },
-    "m.faceid.lock_after": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lock after"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verrouiller après"
-          }
-        }
-      }
-    },
-    "m.faceid.title": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lock with Face ID"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verrouiller avec Face ID"
-          }
-        }
-      }
-    },
     "m.faceid.usage": {
       "localizations": {
         "en": {
@@ -4669,86 +4557,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Non vus"
-          }
-        }
-      }
-    },
-    "m.lock.passcode": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Use passcode"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Utiliser le code"
-          }
-        }
-      }
-    },
-    "m.lock.reason": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unlock Tipsarr"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Déverrouiller Tipsarr"
-          }
-        }
-      }
-    },
-    "m.lock.subtitle": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unlock with Face ID to continue."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Déverrouillez avec Face ID pour continuer."
-          }
-        }
-      }
-    },
-    "m.lock.title": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tipsarr is locked"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tipsarr est verrouillé"
-          }
-        }
-      }
-    },
-    "m.lock.unlock": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unlock"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Déverrouiller"
           }
         }
       }
