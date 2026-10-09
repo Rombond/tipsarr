@@ -66,5 +66,13 @@
   "m.discover.trending_week": "Trending this week",
   "m.discover.see_all": "See all",
   "m.discover.search": "Search",
-  "m.discover.chip_for_you": "For you"
+  "m.discover.chip_for_you": "For you",
+  "m.detail.request_again": "Request again",
+  "m.detail.declined": "Declined by an admin.",
+  "m.request.admin_note": "Requests from admins are approved automatically.",
+  "m.request.user_note": "An admin will approve your request.",
+  "m.request.selected": "%@ selected",
+  "m.request.cancel": "Cancel request",
+  "m.issue.send": "Send report",
+  "m.detail.no_overview": "No overview available."
 }

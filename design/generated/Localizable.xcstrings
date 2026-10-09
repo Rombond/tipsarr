@@ -4033,6 +4033,38 @@
         }
       }
     },
+    "m.detail.declined": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Declined by an admin."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refusé par un admin."
+          }
+        }
+      }
+    },
+    "m.detail.no_overview": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No overview available."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun résumé disponible."
+          }
+        }
+      }
+    },
     "m.detail.open_jellyfin": {
       "localizations": {
         "en": {
@@ -4061,6 +4093,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Seules les notes TMDB existent pour les séries."
+          }
+        }
+      }
+    },
+    "m.detail.request_again": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redemander"
           }
         }
       }
@@ -4321,6 +4369,22 @@
         }
       }
     },
+    "m.issue.send": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send report"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyer le signalement"
+          }
+        }
+      }
+    },
     "m.lock.passcode": {
       "localizations": {
         "en": {
@@ -4513,6 +4577,22 @@
         }
       }
     },
+    "m.request.admin_note": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requests from admins are approved automatically."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les demandes des admins sont approuvées automatiquement."
+          }
+        }
+      }
+    },
     "m.request.approved_by": {
       "comment": "placeholders: name",
       "localizations": {
@@ -4526,6 +4606,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "par %@"
+          }
+        }
+      }
+    },
+    "m.request.cancel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel request"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuler la demande"
           }
         }
       }
@@ -4563,6 +4659,22 @@
         }
       }
     },
+    "m.request.selected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ selected"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ sélectionnée(s)"
+          }
+        }
+      }
+    },
     "m.request.sent_to": {
       "comment": "placeholders: service, date",
       "localizations": {
@@ -4576,6 +4688,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "envoyé à %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "m.request.user_note": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An admin will approve your request."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un admin approuvera votre demande."
           }
         }
       }

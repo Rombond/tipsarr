@@ -164,3 +164,32 @@ extension RequestRecord {
         }
     }
 }
+
+extension TipsarrAPI {
+    func setWatchlisted(_ on: Bool, _ type: MediaType, id: Int) async throws {
+        try await load { client in
+            if on {
+                _ = try await client.add_watchlist(body: .json(.init(tmdbId: Int64(id), _type: .init(rawValue: type.rawValue)!)))
+            } else {
+                _ = try await client.remove_watchlist(path: .init(_type: .init(rawValue: type.rawValue)!, id: Int64(id)))
+            }
+        }
+    }
+
+    func setBlocklisted(_ on: Bool, _ type: MediaType, id: Int) async throws {
+        try await load { client in
+            if on {
+                _ = try await client.add_blocklist(body: .json(.init(tmdbId: Int64(id), _type: .init(rawValue: type.rawValue)!)))
+            } else {
+                _ = try await client.remove_blocklist(path: .init(_type: .init(rawValue: type.rawValue)!, id: Int64(id)))
+            }
+        }
+    }
+
+    func retryRequest(id: String) async throws -> RequestRecord {
+        try await load { client in
+            guard case .ok(let ok) = try await client.retryRequest(path: .init(id: id)) else { throw APIError.unexpected }
+            return RequestRecord(try ok.body.json)
+        }
+    }
+}

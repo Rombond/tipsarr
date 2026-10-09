@@ -66,5 +66,13 @@
   "m.discover.trending_week": "Tendances de la semaine",
   "m.discover.see_all": "Tout voir",
   "m.discover.search": "Rechercher",
-  "m.discover.chip_for_you": "Pour vous"
+  "m.discover.chip_for_you": "Pour vous",
+  "m.detail.request_again": "Redemander",
+  "m.detail.declined": "Refusé par un admin.",
+  "m.request.admin_note": "Les demandes des admins sont approuvées automatiquement.",
+  "m.request.user_note": "Un admin approuvera votre demande.",
+  "m.request.selected": "%@ sélectionnée(s)",
+  "m.request.cancel": "Annuler la demande",
+  "m.issue.send": "Envoyer le signalement",
+  "m.detail.no_overview": "Aucun résumé disponible."
 }
