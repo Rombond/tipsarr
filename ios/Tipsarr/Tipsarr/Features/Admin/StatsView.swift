@@ -81,9 +81,9 @@ struct StatsView: View {
             StateView(symbol: "chart.bar", title: "stats.empty").frame(minHeight: 240)
         } else {
             tiles(r)
-            MostWatchedCarousel(title: "stats.top", titleKey: "stats.top", items: r.top)
-            MostWatchedCarousel(title: "stats.top_movies", titleKey: "stats.top_movies", items: r.topMovies)
-            MostWatchedCarousel(title: "stats.top_shows", titleKey: "stats.top_shows", items: r.topShows)
+            PosterCarousel(title: "stats.top", titleKey: "stats.top", rows: r.top.map(\.row), ranked: true)
+            PosterCarousel(title: "stats.top_movies", titleKey: "stats.top_movies", rows: r.topMovies.map(\.row), ranked: true)
+            PosterCarousel(title: "stats.top_shows", titleKey: "stats.top_shows", rows: r.topShows.map(\.row), ranked: true)
             if !r.genres.isEmpty { chartCard("stats.genres") { buckets(r.genres, byHours: true) } }
             if !r.decades.isEmpty { chartCard("stats.decades") { buckets(r.decades, byHours: false) } }
             if !r.months.isEmpty { chartCard("stats.months") { monthsChart(r.months) } }
@@ -185,74 +185,39 @@ struct StatsView: View {
 
     // MARK: Asked for, never watched
 
-    private var unwatchedSection: some View {
-        VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
-            Text("stats.unwatched_title").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
-            Text(who == nil || !isAdmin ? "stats.unwatched_mine" : "stats.unwatched_others").font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
-            if let unwatched {
+    /// "Asked for, never watched": a carousel with See all, and the explanation above it.
+    @ViewBuilder private var unwatchedSection: some View {
+        if let unwatched {
+            VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
                 if unwatched.items.isEmpty {
+                    Text("stats.unwatched_title").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
                     Text("stats.unwatched_none").font(.subheadline).foregroundStyle(Tokens.palette.mutedFg)
                 } else {
-                    VStack(spacing: 0) {
-                        ForEach(unwatched.items) { record in
-                            NavigationLink(value: MediaRoute(type: record.type, tmdbId: record.tmdbId, title: record.title)) {
-                                row(poster: record.posterPath, server: false, title: record.title,
-                                    note: L10n.string("stats.unwatched_since", record.createdAt.formatted(date: .abbreviated, time: .omitted)))
-                            }
-                            .buttonStyle(.plain)
-                            Divider()
-                        }
-                        if unwatched.total > unwatched.items.count {
-                            Text(verbatim: L10n.string("stats.unwatched_more", String(unwatched.total - unwatched.items.count)))
-                                .font(.footnote).foregroundStyle(Tokens.palette.mutedFg).padding(.top, Tokens.Spacing.sm)
-                        }
+                    PosterCarousel(title: "stats.unwatched_title", titleKey: "stats.unwatched_title", rows: unwatched.items.map(\.unwatchedRow))
+                    Text(who == nil || !isAdmin ? "stats.unwatched_mine" : "stats.unwatched_others")
+                        .font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+                    if unwatched.total > unwatched.items.count {
+                        Text(verbatim: L10n.string("stats.unwatched_more", String(unwatched.total - unwatched.items.count)))
+                            .font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                     }
                 }
             }
         }
     }
 
-    private var neverWatchedSection: some View {
-        VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
-            Text("stats.never_title").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
-            if let neverWatched {
+    /// Admins: titles in the library nobody ever played, oldest first.
+    @ViewBuilder private var neverWatchedSection: some View {
+        if let neverWatched {
+            VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
                 if neverWatched.items.isEmpty {
+                    Text("stats.never_title").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
                     Text("stats.never_none").font(.subheadline).foregroundStyle(Tokens.palette.mutedFg)
                 } else {
+                    PosterCarousel(title: "stats.never_title", titleKey: "stats.never_title", rows: neverWatched.items.map(\.row))
                     Text(verbatim: L10n.string("stats.never_hint", String(neverWatched.total))).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
-                    VStack(spacing: 0) {
-                        ForEach(neverWatched.items) { item in
-                            NavigationLink(value: item.route) {
-                                row(poster: item.posterPath, server: true, title: item.title, note: item.year.map(String.init) ?? "")
-                            }
-                            .buttonStyle(.plain)
-                            Divider()
-                        }
-                    }
                 }
             }
         }
-    }
-
-    private func row(poster: String?, server: Bool, title: String, note: String) -> some View {
-        HStack(spacing: Tokens.Spacing.md) {
-            Group {
-                if server { RemoteImage(serverPath: poster) { Image(systemName: "film").foregroundStyle(Tokens.palette.mutedFg) } }
-                else { RemoteImage(path: poster, size: .w92) { Image(systemName: "film").foregroundStyle(Tokens.palette.mutedFg) } }
-            }
-            .frame(width: 40, height: 60)
-            .background(Tokens.palette.muted)
-            .clipShape(.rect(cornerRadius: 6))
-            .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: title).font(.body.weight(.medium)).lineLimit(1).foregroundStyle(Tokens.palette.fg)
-                if !note.isEmpty { Text(verbatim: note).font(.footnote).foregroundStyle(Tokens.palette.mutedFg) }
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, Tokens.Spacing.sm)
-        .contentShape(.rect)
-        .accessibilityElement(children: .combine)
     }
 
     // MARK: Data

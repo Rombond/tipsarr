@@ -26,8 +26,8 @@ struct ProfileView: View {
                 VStack(spacing: Tokens.Spacing._2xl) {
                     header
                     stats
-                    MostWatchedCarousel(title: "stats.top", titleKey: "stats.top", items: model.topWatched)
-                    statsRow
+                    // See all goes to the full Stats page.
+                    PosterCarousel(title: "stats.top", titleKey: "stats.top", rows: model.topWatched.map(\.row), ranked: true, seeAll: .stats)
                     if profile.isAdmin { AdminGroup(openIssues: model.openIssues) }
                     recentRequests
                 }
@@ -57,7 +57,7 @@ struct ProfileView: View {
                 case .user(let id): UserDetailView(id: id)
                 case .sync: SyncView()
                 case .stats: StatsView()
-                case .topList(let route): MostWatchedList(route: route)
+                case .posterList(let route): PosterList(route: route)
                 }
             }
             .mediaDestinations()
@@ -120,21 +120,6 @@ struct ProfileView: View {
         }
     }
 
-    private var statsRow: some View {
-        NavigationLink(value: ProfileRoute.stats) {
-            HStack {
-                Label { Text("nav.stats") } icon: { Image(systemName: "chart.bar") }
-                Spacer()
-                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg)
-            }
-            .padding(.horizontal, Tokens.Spacing.md)
-            .frame(minHeight: Tokens.Size.touchTarget + Tokens.Spacing.sm)
-            .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
-            .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
-        }
-        .buttonStyle(.plain)
-    }
-
     // MARK: Recent requests
 
     @ViewBuilder private var recentRequests: some View {
@@ -176,7 +161,7 @@ struct ProfileView: View {
     }
 }
 
-enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts, appIcon, issues, issue(String), users, user(String), sync, stats, topList(TopListRoute) }
+enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts, appIcon, issues, issue(String), users, user(String), sync, stats, posterList(PosterListRoute) }
 
 /// Number with an icon and a label.
 private struct StatTile: View {
