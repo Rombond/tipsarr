@@ -92,6 +92,8 @@ struct MainTabView: View {
                         FloatingTabBar(selection: Binding(get: { router.tab }, set: { router.tab = $0; pane.content = nil }), badges: badges, showsTitles: false).padding(.bottom, Tokens.Spacing.sm)
                     }
                     .frame(width: max(hinge.leftWidth, 0))
+                    // The fold margin comes back as a trailing safe area; the pane ends at the hinge zone already.
+                    .ignoresSafeArea(.container, edges: .trailing)
                 Color.clear.frame(width: max(hinge.rightStart - hinge.leftWidth, 0))
                 DetailPaneView(pane: pane, tab: router.tab, account: account, profile: profile)
                     .frame(maxWidth: .infinity)
