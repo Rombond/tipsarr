@@ -15,6 +15,7 @@ struct MediaDetailScreen: View {
 
 struct MediaDetailView: View {
     @State private var model: MediaDetailModel
+    private let serverURL: URL
     @State private var sheet: Sheet?
     @State private var confirmCancel = false
     @Environment(ToastCenter.self) private var toast
@@ -27,6 +28,7 @@ struct MediaDetailView: View {
 
     init(route: MediaRoute, context: AppContext) {
         _model = State(initialValue: MediaDetailModel(route: route, context: context))
+        serverURL = context.api.serverURL
     }
 
     var body: some View {
@@ -44,6 +46,16 @@ struct MediaDetailView: View {
         .background(Tokens.palette.bg)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
+        .toolbar {
+            if let link = DeepLink.mediaURL(server: serverURL, type: model.route.type, tmdbId: model.route.tmdbId) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: link, subject: Text(verbatim: shareTitle), message: Text(verbatim: shareMessage)) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityLabel(Text("m.detail.share"))
+                }
+            }
+        }
         .task { await model.load() }
         .onChange(of: live?.requestsTick) { Task { await model.load() } }
         .sheet(item: $sheet) { item in
@@ -63,6 +75,17 @@ struct MediaDetailView: View {
                 .tipsarrSheet(detents: [.medium, .large])
             }
         }
+    }
+
+    // MARK: Share
+
+    private var shareTitle: String { model.detail?.title ?? model.route.title }
+
+    /// Title with year, and the web page as a fallback for people without the app.
+    private var shareMessage: String {
+        let title = [shareTitle, model.detail?.year.map { "(\($0))" }].compactMap { $0 }.joined(separator: " ")
+        let web = serverURL.appending(path: "media/\(model.route.type.rawValue)/\(model.route.tmdbId)")
+        return "\(title)\n\(web.absoluteString)"
     }
 
     // MARK: Content

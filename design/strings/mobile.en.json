@@ -124,5 +124,6 @@
   "m.session.use_password": "Use my password",
   "m.session.signing_in_faceid": "Signing in…",
   "m.settings.faceid_signin": "Sign in with Face ID",
-  "m.settings.faceid_signin_footer": "Your password is kept in the iPhone’s Keychain, protected by Face ID or your passcode. It is only used to sign you back in when your session ends."
+  "m.settings.faceid_signin_footer": "Your password is kept in the iPhone’s Keychain, protected by Face ID or your passcode. It is only used to sign you back in when your session ends.",
+  "m.detail.share": "Share"
 }

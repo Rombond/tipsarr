@@ -31,3 +31,11 @@ struct DeepLink: Equatable, Sendable {
         return DeepLink(host: host.lowercased(), target: target)
     }
 }
+
+extension DeepLink {
+    /// Link that opens a title in the app of someone signed in to the same server.
+    static func mediaURL(server: URL, type: MediaType, tmdbId: Int) -> URL? {
+        guard let host = server.host() else { return nil }
+        return URL(string: "tipsarr://\(host)/media/\(type.rawValue)/\(tmdbId)")
+    }
+}

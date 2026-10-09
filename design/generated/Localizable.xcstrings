@@ -4193,6 +4193,22 @@
         }
       }
     },
+    "m.detail.share": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partager"
+          }
+        }
+      }
+    },
     "m.discover.chip_for_you": {
       "localizations": {
         "en": {
