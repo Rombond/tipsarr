@@ -40,6 +40,17 @@ struct MainTabView: View {
         .environment(\.liveUpdates, live)
         .environment(toast)
         .modifier(ToastOverlay(center: toast))
+        // Hardware keyboard: Cmd+1...5 switch tabs, Cmd+F opens Search.
+        .background {
+            ForEach(Array(AppTab.ordered.enumerated()), id: \.element) { index, tab in
+                Button("") { router.tab = tab }
+                    .keyboardShortcut(KeyEquivalent(Character(String(index + 1))), modifiers: .command)
+                    .accessibilityHidden(true)
+            }
+            Button("") { router.tab = .search }
+                .keyboardShortcut("f", modifiers: .command)
+                .accessibilityHidden(true)
+        }
         .onChange(of: profile.ratingSource) { _, new in ratings.setSource(RatingSource(rawValue: new) ?? .tmdb) }
         .task(id: router.tab) { await refreshPending() }
         .onChange(of: scenePhase) { _, phase in

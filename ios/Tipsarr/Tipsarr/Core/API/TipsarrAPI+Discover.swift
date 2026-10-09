@@ -65,7 +65,8 @@ extension MediaItem {
             releaseYear: item.releaseDate.map { String($0.prefix(4)) }.flatMap { $0.isEmpty ? nil : $0 },
             voteAverage: item.voteAverage,
             state: state,
-            overview: item.overview.flatMap { $0.isEmpty ? nil : $0 }
+            overview: item.overview.flatMap { $0.isEmpty ? nil : $0 },
+            backdropPath: item.backdropPath.flatMap { $0.isEmpty ? nil : $0 }
         )
     }
 }

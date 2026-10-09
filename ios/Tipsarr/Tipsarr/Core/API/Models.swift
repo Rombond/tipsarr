@@ -51,6 +51,7 @@ struct MediaItem: Sendable, Hashable, Identifiable {
     var voteAverage: Double
     var state: RequestState?
     var overview: String?
+    var backdropPath: String?
 
     var id: String { "\(type.rawValue)-\(tmdbId)" }
     var route: MediaRoute { MediaRoute(type: type, tmdbId: tmdbId, title: title) }

@@ -27,6 +27,7 @@ enum DiscoverChip: CaseIterable, Hashable {
 struct DiscoverView: View {
     @State private var model: DiscoverModel
     @State private var chip: DiscoverChip = .forYou
+    @State private var width: CGFloat = 0
     @Environment(\.liveUpdates) private var live
     @Binding var path: NavigationPath
     var openSearch: () -> Void = {}
@@ -37,18 +38,26 @@ struct DiscoverView: View {
         self.openSearch = openSearch
     }
 
+    private var wide: Bool { width >= 900 }
+
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Tokens.Spacing.lg) {
-                    chips
+                    // Landscape iPad home: a hero and rails (Penpot page 10) instead of chips on top.
+                    if wide && chip == .forYou {
+                        WideHome(model: model, seeAll: { chip = $0 }) { chips }
+                    } else {
+                        chips
+                    }
                     switch chip.source {
                     case nil: ForYouContent(home: model.home)
                     case let source?: MediaGrid(model: model.list(source))
                     }
                 }
-                .padding(.vertical, Tokens.Spacing.sm)
+                .padding(.bottom, Tokens.Spacing.sm)
             }
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
             .refreshable { await refreshCurrent() }
             .onChange(of: live?.suggestionsTick) { if chip == .forYou { Task { await model.home.refresh() } } }
             .onChange(of: live?.requestsTick) { Task { await refreshCurrent() } }
@@ -111,22 +120,28 @@ private struct ForYouContent: View {
     }
 }
 
-private struct Rail: View {
+struct Rail: View {
     let title: LText
     let items: [MediaItem]
+    var posterWidth: CGFloat = 120
+    var onSeeAll: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
-            Text(title)
-                .font(.title3.weight(.semibold))
-                .accessibilityAddTraits(.isHeader)
-                .padding(.horizontal, Tokens.Spacing.lg)
+            HStack {
+                Text(title).font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
+                Spacer()
+                if let onSeeAll {
+                    Button(action: onSeeAll) { Text("m.discover.see_all").font(.subheadline) }.foregroundStyle(Tokens.palette.mutedFg)
+                }
+            }
+            .padding(.horizontal, Tokens.Spacing.lg)
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: Tokens.Spacing.md) {
                     ForEach(items) { item in
                         NavigationLink(value: item.route) {
                             PosterCard(item: item)
-                                .frame(width: 120)
+                                .frame(width: posterWidth)
                         }
                         .buttonStyle(.plain)
                     }
@@ -204,5 +219,72 @@ struct ErrorState: View {
             }
         }
         .frame(minHeight: 360)
+    }
+}
+
+/// Landscape iPad "For you": a hero with the top trending title, the chips, then Trending now and Upcoming rails.
+private struct WideHome<Chips: View>: View {
+    let model: DiscoverModel
+    let seeAll: (DiscoverChip) -> Void
+    @ViewBuilder var chips: Chips
+
+    var body: some View {
+        let trending = model.list(.trending), upcoming = model.list(.upcoming)
+        VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
+            if let first = trending.items.first { Hero(item: first) }
+            chips
+            if !trending.items.isEmpty {
+                Rail(title: "discover.trending", items: Array(trending.items.dropFirst().prefix(20)), posterWidth: 132) { seeAll(.trending) }
+            }
+            if !upcoming.items.isEmpty {
+                Rail(title: "discover.upcoming", items: Array(upcoming.items.prefix(20)), posterWidth: 132) { seeAll(.upcoming) }
+            }
+        }
+        .task {
+            await trending.loadIfNeeded()
+            await upcoming.loadIfNeeded()
+        }
+    }
+}
+
+private extension Rail {
+    init(title: LText, items: [MediaItem], posterWidth: CGFloat, onSeeAll: @escaping () -> Void) {
+        self.init(title: title, items: items, posterWidth: posterWidth, onSeeAll: Optional(onSeeAll))
+    }
+}
+
+/// Big banner of one title: backdrop, title, short facts, overview and a button to its page.
+private struct Hero: View {
+    let item: MediaItem
+
+    var body: some View {
+        RemoteImage(path: item.backdropPath ?? item.posterPath, size: .w1280) { Tokens.palette.muted }
+            .frame(height: 380)
+            .frame(maxWidth: .infinity)
+            .overlay {
+                LinearGradient(colors: [.black.opacity(0.1), .black.opacity(0.75)], startPoint: .top, endPoint: .bottom)
+            }
+            .overlay(alignment: .bottomLeading) {
+                VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
+                    Text(verbatim: item.title).font(.system(size: 40, weight: .bold)).lineLimit(2).accessibilityAddTraits(.isHeader)
+                    Text(verbatim: [item.releaseYear, L10n.string(item.type == .tv ? "type.tv" : "type.movie")].compactMap { $0 }.joined(separator: " · "))
+                        .font(.subheadline.weight(.medium)).opacity(0.85)
+                    if let overview = item.overview {
+                        Text(verbatim: overview).font(.body).opacity(0.9).lineLimit(3).frame(maxWidth: 560, alignment: .leading)
+                    }
+                    HStack(spacing: Tokens.Spacing.md) {
+                        NavigationLink(value: item.route) {
+                            Label { Text("media.view_details") } icon: { Image(systemName: "info.circle") }
+                        }
+                        .buttonStyle(.tipsarr(.primary))
+                        if let state = item.state { StatusBadge(state: state) }
+                    }
+                }
+                .foregroundStyle(.white)
+                .padding(Tokens.Spacing._3xl)
+            }
+            .clipShape(.rect(cornerRadius: Tokens.Radius.xl))
+            .padding(.horizontal, Tokens.Spacing.lg)
+            .accessibilityElement(children: .contain)
     }
 }

@@ -51,6 +51,8 @@ struct PosterCard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        .contentShape(.hoverEffect, .rect(cornerRadius: Tokens.Radius.md))
+        .hoverEffect(.lift)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
     }
