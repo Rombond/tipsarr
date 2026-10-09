@@ -50,6 +50,7 @@ struct MediaItem: Sendable, Hashable, Identifiable {
     var releaseYear: String?
     var voteAverage: Double
     var state: RequestState?
+    var overview: String?
 
     var id: String { "\(type.rawValue)-\(tmdbId)" }
     var route: MediaRoute { MediaRoute(type: type, tmdbId: tmdbId, title: title) }

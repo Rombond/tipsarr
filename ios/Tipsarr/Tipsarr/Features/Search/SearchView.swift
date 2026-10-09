@@ -18,6 +18,9 @@ struct SearchView: View {
     @State private var model: SearchModel
     @State private var query = ""
     @State private var scope: SearchScope = .all
+    @State private var width: CGFloat = 0
+    /// Selected result in the two-column layout.
+    @State private var selection: MediaRoute?
 
     init(api: TipsarrAPI) {
         _model = State(initialValue: SearchModel(api: api))
@@ -25,26 +28,71 @@ struct SearchView: View {
 
     private var trimmed: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
 
+    /// Two columns (search and results on the left, the title on the right) when the screen is wide enough.
+    private var split: Bool { width >= 700 }
+
     var body: some View {
+        Group {
+            if split { splitBody } else { stackBody }
+        }
+        .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
+        .task(id: query) {
+            // Debounce: typing cancels this task before the request starts.
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
+            await model.search(query)
+        }
+    }
+
+    private var stackBody: some View {
         NavigationStack {
-            Group {
-                if trimmed.isEmpty { landing } else { results }
+            searchable(pane, placement: sizeClass == .regular ? .navigationBarDrawer(displayMode: .always) : .automatic)
+                .mediaDestinations()
+        }
+    }
+
+    private var splitBody: some View {
+        NavigationSplitView(columnVisibility: .constant(.all)) {
+            searchable(pane, placement: .sidebar)
+                .navigationSplitViewColumnWidth(min: 340, ideal: 400, max: 460)
+                .mediaDestinations()
+        } detail: {
+            NavigationStack {
+                if let selection {
+                    MediaDetailScreen(route: selection)
+                } else {
+                    StateView(symbol: "magnifyingglass", title: trimmed.isEmpty ? "m.search.start" : "m.search.select")
+                        .background(Tokens.palette.bg)
+                }
             }
-            .background(Tokens.palette.bg)
-            .navigationTitle("m.tab.search")
-            .searchable(text: $query, placement: sizeClass == .regular ? .navigationBarDrawer(displayMode: .always) : .automatic, prompt: Text("m.search.prompt"))
+            .mediaDestinations()
+        }
+        .navigationSplitViewStyle(.balanced)
+        // The first result is shown as soon as the results arrive.
+        .onChange(of: visibleTitles.first?.id) { selectFirstIfNeeded() }
+        .onChange(of: scope) { selectFirstIfNeeded() }
+    }
+
+    private func selectFirstIfNeeded() {
+        guard !trimmed.isEmpty else { return }
+        if selection == nil || !visibleTitles.contains(where: { $0.route == selection }) { selection = visibleTitles.first?.route }
+    }
+
+    private var pane: some View {
+        Group {
+            if trimmed.isEmpty { landing } else { results }
+        }
+        .background(Tokens.palette.bg)
+        .navigationTitle("m.tab.search")
+    }
+
+    private func searchable<V: View>(_ view: V, placement: SearchFieldPlacement) -> some View {
+        view
+            .searchable(text: $query, placement: placement, prompt: Text("m.search.prompt"))
             .searchScopes($scope, activation: .onSearchPresentation) {
                 ForEach(SearchScope.allCases, id: \.self) { Text($0.title).tag($0) }
             }
             .onSubmit(of: .search) { model.remember(query) }
-            .task(id: query) {
-                // Debounce: typing cancels this task before the request starts.
-                try? await Task.sleep(for: .milliseconds(350))
-                guard !Task.isCancelled else { return }
-                await model.search(query)
-            }
-            .mediaDestinations()
-        }
     }
 
     // MARK: Landing (no query)
@@ -124,6 +172,8 @@ struct SearchView: View {
                 StateView(symbol: "magnifyingglass",
                           title: LText.verbatim(L10n.string("search.nothing", trimmed)),
                           message: "search.nothing_hint")
+            } else if split {
+                resultsList(titles)
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Tokens.Spacing.xl) {
@@ -134,6 +184,30 @@ struct SearchView: View {
                 }
             }
         }
+    }
+
+    /// Two-column layout: results as rows, the selected one opens in the detail column.
+    private func resultsList(_ titles: [MediaItem]) -> some View {
+        List(selection: $selection) {
+            if scope == .all || scope == .people {
+                Section {
+                    ForEach(scope == .people ? model.people : Array(model.people.prefix(4))) { person in
+                        NavigationLink(value: person.route) { PersonRow(person: person) }
+                    }
+                } header: {
+                    if !model.people.isEmpty { Text("type.people") }
+                }
+            }
+            if scope != .people {
+                ForEach(titles) { item in
+                    SearchResultRow(item: item)
+                        .tag(item.route)
+                        .task { await model.loadMore(after: item) }
+                }
+            }
+        }
+        .listStyle(.plain)
+        .onChange(of: selection) { if selection != nil { model.remember(query) } }
     }
 
     private var hasResults: Bool {
@@ -252,5 +326,34 @@ extension View {
         navigationDestination(for: MediaRoute.self) { MediaDetailScreen(route: $0) }
             .navigationDestination(for: PersonRoute.self) { PersonScreen(route: $0) }
             .navigationDestination(for: GenreRoute.self) { GenreScreen(route: $0) }
+    }
+}
+
+/// One result in the two-column Search: poster, title, year, type, score, a short overview and the state.
+struct SearchResultRow: View {
+    let item: MediaItem
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Tokens.Spacing.md) {
+            RemoteImage(path: item.posterPath, size: .w185) { Image(systemName: "film").foregroundStyle(Tokens.palette.mutedFg) }
+                .frame(width: 64, height: 96)
+                .background(Tokens.palette.muted)
+                .clipShape(.rect(cornerRadius: Tokens.Radius.sm))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
+                Text(verbatim: item.title).font(.body.weight(.semibold)).lineLimit(2)
+                HStack(spacing: Tokens.Spacing.sm) {
+                    Text(verbatim: [item.releaseYear, L10n.string(item.type == .tv ? "type.tv" : "type.movie")].compactMap { $0 }.joined(separator: " · "))
+                        .font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+                    RatingLabel(input: RatingInput(type: item.type, tmdbId: item.tmdbId, tmdb: item.voteAverage))
+                }
+                if let overview = item.overview {
+                    Text(verbatim: overview).font(.footnote).foregroundStyle(Tokens.palette.mutedFg).lineLimit(2)
+                }
+                if let state = item.state { StatusBadge(state: state).padding(.top, 2) }
+            }
+        }
+        .padding(.vertical, Tokens.Spacing.xs)
+        .accessibilityElement(children: .combine)
     }
 }
