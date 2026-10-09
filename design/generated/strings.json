@@ -633,7 +633,13 @@
   "m.icon.light": "Light",
   "m.icon.dark": "Dark",
   "m.icon.mono": "Monochrome",
-  "m.icon.footer": "Automatic follows the light, dark and tinted looks of your home screen."
+  "m.icon.footer": "Automatic follows the light, dark and tinted looks of your home screen.",
+  "m.login.remember_faceid": "Sign in with Face ID next time",
+  "m.session.faceid_signin": "Sign in with Face ID",
+  "m.session.use_password": "Use my password",
+  "m.session.signing_in_faceid": "Signing in…",
+  "m.settings.faceid_signin": "Sign in with Face ID",
+  "m.settings.faceid_signin_footer": "Your password is kept in the iPhone’s Keychain, protected by Face ID or your passcode. It is only used to sign you back in when your session ends."
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -1269,6 +1275,12 @@
   "m.icon.light": "Clair",
   "m.icon.dark": "Sombre",
   "m.icon.mono": "Monochrome",
-  "m.icon.footer": "Automatique suit les modes clair, sombre et teinté de votre écran d’accueil."
+  "m.icon.footer": "Automatique suit les modes clair, sombre et teinté de votre écran d’accueil.",
+  "m.login.remember_faceid": "Se connecter avec Face ID la prochaine fois",
+  "m.session.faceid_signin": "Se connecter avec Face ID",
+  "m.session.use_password": "Utiliser mon mot de passe",
+  "m.session.signing_in_faceid": "Connexion…",
+  "m.settings.faceid_signin": "Connexion avec Face ID",
+  "m.settings.faceid_signin_footer": "Votre mot de passe est conservé dans le trousseau de l’iPhone, protégé par Face ID ou votre code. Il sert uniquement à vous reconnecter quand votre session se termine."
  }
 }

@@ -47,10 +47,12 @@ final class AppLock {
         return context.biometryType == .touchID ? "touchid" : "faceid"
     }
 
-    /// The device has a passcode (needed for any lock).
-    var isAvailable: Bool {
+    /// The device has a passcode (needed for any lock and for the stored login).
+    nonisolated static var deviceAuthAvailable: Bool {
         LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
     }
+
+    var isAvailable: Bool { Self.deviceAuthAvailable }
 
     // MARK: Life cycle
 

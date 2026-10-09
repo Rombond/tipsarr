@@ -14,13 +14,49 @@ struct SessionExpiredView: View {
     @Environment(SessionManager.self) private var session
     let account: Account
     let server: Server
+    @State private var hasFaceID: Bool
+    @State private var trying = false
+
+    init(account: Account, server: Server) {
+        self.account = account
+        self.server = server
+        _hasFaceID = State(initialValue: CredentialStore.exists(accountID: account.id))
+    }
 
     var body: some View {
-        StateView(symbol: "lock.slash", title: "m.session.expired_title", message: "m.session.expired_body",
-                  actionTitle: "m.session.sign_in") {
-            session.continueToLogin(server, username: account.name)
+        VStack(spacing: Tokens.Spacing.lg) {
+            StateView(symbol: hasFaceID ? "faceid" : "lock.slash", title: "m.session.expired_title", message: "m.session.expired_body")
+            VStack(spacing: Tokens.Spacing.sm) {
+                if hasFaceID {
+                    Button { Task { await faceID() } } label: {
+                        if trying {
+                            HStack(spacing: Tokens.Spacing.sm) { ProgressView(); Text("m.session.signing_in_faceid") }
+                        } else {
+                            Label { Text("m.session.faceid_signin") } icon: { Image(systemName: "faceid") }
+                        }
+                    }
+                    .buttonStyle(.tipsarr(.primary, fullWidth: true))
+                    .disabled(trying)
+                }
+                Button { session.continueToLogin(server, username: account.name) } label: {
+                    Text(hasFaceID ? "m.session.use_password" : "m.session.sign_in")
+                }
+                .buttonStyle(.tipsarr(hasFaceID ? .ghost : .primary, fullWidth: true))
+            }
+            .padding(.horizontal, Tokens.Spacing._2xl)
+            .padding(.bottom, Tokens.Spacing._3xl)
         }
         .background(Tokens.palette.bg)
+        // The session ended while the person is away: ask for Face ID right away.
+        .task { if hasFaceID { await faceID() } }
+    }
+
+    private func faceID() async {
+        guard !trying else { return }
+        trying = true
+        defer { trying = false }
+        if await session.reauthenticate(account, server: server) { return }
+        hasFaceID = CredentialStore.exists(accountID: account.id)
     }
 }
 

@@ -7,6 +7,7 @@ struct LoginView: View {
     @State private var password = ""
     @State private var signingIn = false
     @State private var errorText: String?
+    @State private var rememberWithFaceID: Bool
     @FocusState private var focus: Focus?
 
     private enum Focus { case username, password }
@@ -14,6 +15,7 @@ struct LoginView: View {
     init(server: Server, prefillUsername: String?) {
         self.server = server
         _username = State(initialValue: prefillUsername ?? "")
+        _rememberWithFaceID = State(initialValue: AppLock.deviceAuthAvailable)
     }
 
     var body: some View {
@@ -28,6 +30,11 @@ struct LoginView: View {
                 Field(title: "login.password", text: $password, secure: true, contentType: .password, submitLabel: .go)
                     .focused($focus, equals: .password)
                     .onSubmit { Task { await submit() } }
+                if AppLock.deviceAuthAvailable {
+                    Toggle(isOn: $rememberWithFaceID) {
+                        Text("m.login.remember_faceid").font(.subheadline)
+                    }
+                }
                 if let errorText {
                     Banner(kind: .error, title: LText.verbatim(errorText))
                 }
@@ -59,7 +66,7 @@ struct LoginView: View {
         errorText = nil
         defer { signingIn = false }
         do {
-            try await session.signIn(server: server, username: username, password: password)
+            try await session.signIn(server: server, username: username, password: password, rememberWithFaceID: rememberWithFaceID)
         } catch {
             password = ""
             errorText = APIError.from(error).localizedMessage

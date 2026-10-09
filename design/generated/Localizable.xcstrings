@@ -4753,6 +4753,22 @@
         }
       }
     },
+    "m.login.remember_faceid": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in with Face ID next time"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se connecter avec Face ID la prochaine fois"
+          }
+        }
+      }
+    },
     "m.login.signing_in": {
       "localizations": {
         "en": {
@@ -5412,6 +5428,22 @@
         }
       }
     },
+    "m.session.faceid_signin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in with Face ID"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se connecter avec Face ID"
+          }
+        }
+      }
+    },
     "m.session.sign_in": {
       "localizations": {
         "en": {
@@ -5424,6 +5456,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Se connecter"
+          }
+        }
+      }
+    },
+    "m.session.signing_in_faceid": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signing in…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexion…"
+          }
+        }
+      }
+    },
+    "m.session.use_password": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use my password"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utiliser mon mot de passe"
           }
         }
       }
@@ -5472,6 +5536,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Apparence"
+          }
+        }
+      }
+    },
+    "m.settings.faceid_signin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in with Face ID"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexion avec Face ID"
+          }
+        }
+      }
+    },
+    "m.settings.faceid_signin_footer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your password is kept in the iPhone’s Keychain, protected by Face ID or your passcode. It is only used to sign you back in when your session ends."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre mot de passe est conservé dans le trousseau de l’iPhone, protégé par Face ID ou votre code. Il sert uniquement à vous reconnecter quand votre session se termine."
           }
         }
       }

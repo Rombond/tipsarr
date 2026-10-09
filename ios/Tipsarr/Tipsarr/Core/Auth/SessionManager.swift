@@ -79,18 +79,36 @@ final class SessionManager {
         }
     }
 
-    func signIn(server: Server, username: String, password: String) async throws {
+    /// `rememberWithFaceID` keeps the login in the Keychain so Face ID can sign in again when the session ends.
+    func signIn(server: Server, username: String, password: String, rememberWithFaceID: Bool = false) async throws {
         let api = TipsarrAPI(serverURL: server.url, token: nil)
         let result = try await api.signIn(username: username, password: password, deviceName: UIDevice.current.name)
         let account = Account(serverURL: server.url, userID: result.profile.id, name: result.profile.name,
                               token: result.token, lastUsed: .now)
         accounts.add(account)
+        if rememberWithFaceID {
+            CredentialStore.save(Credential(username: username, password: password), accountID: account.id)
+        }
         serverStatus = server.status
         phase = .ready(account, result.profile)
     }
 
+    /// Session ended: Face ID reads the stored login and signs in again. False when there is none or it failed.
+    func reauthenticate(_ account: Account, server: Server) async -> Bool {
+        guard let credential = await CredentialStore.load(accountID: account.id, reason: L10n.string("m.session.faceid_signin")) else { return false }
+        do {
+            try await signIn(server: server, username: credential.username, password: credential.password)
+            return true
+        } catch {
+            // The password changed on the server: the stored one is useless now.
+            if APIError.from(error).code == "invalid_credentials" { CredentialStore.delete(accountID: account.id) }
+            return false
+        }
+    }
+
     /// Removes the account from the phone; the next one (or Connect) takes over.
     func signOut(_ account: Account) async {
+        CredentialStore.delete(accountID: account.id)
         await TipsarrAPI(serverURL: account.serverURL, token: account.token).logout()
         accounts.remove(account)
         try? await UNUserNotificationCenter.current().setBadgeCount(0)

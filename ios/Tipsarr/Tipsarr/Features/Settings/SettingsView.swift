@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var confirmSignOut = false
     @State private var showPicture = false
     @State private var deviceCount: Int?
+    @State private var faceIDSignIn = false
 
     private var ratingSource: Binding<RatingSource> {
         Binding(
@@ -107,6 +108,13 @@ struct SettingsView: View {
                     Label { Text("m.faceid.title") } icon: { Image(systemName: lock.symbol) }
                 }
                 .disabled(!lock.isAvailable)
+                if faceIDSignIn {
+                    Toggle(isOn: Binding(get: { faceIDSignIn }, set: { on in
+                        if !on { CredentialStore.delete(accountID: account.id); faceIDSignIn = false }
+                    })) {
+                        Label { Text("m.settings.faceid_signin") } icon: { Image(systemName: "key.viewfinder") }
+                    }
+                }
                 if lock.isEnabled {
                     @Bindable var lock = lock
                     Picker(selection: $lock.delay) {
@@ -126,7 +134,10 @@ struct SettingsView: View {
             } header: {
                 Text("m.settings.security")
             } footer: {
-                Text("m.faceid.footer")
+                VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
+                    if faceIDSignIn { Text("m.settings.faceid_signin_footer") }
+                    Text("m.faceid.footer")
+                }
             }
             Section("m.settings.server") {
                 Label {
@@ -151,7 +162,10 @@ struct SettingsView: View {
         .background(Tokens.palette.bg)
         .navigationTitle("m.settings.title")
         .navigationBarTitleDisplayMode(.inline)
-        .task { deviceCount = try? await context?.api.sessions().count }
+        .task {
+            deviceCount = try? await context?.api.sessions().count
+            faceIDSignIn = CredentialStore.exists(accountID: account.id)
+        }
         .sheet(isPresented: $showPicture) {
             PictureSheet(profile: profile) { avatarVersion += 1 }
                 .tipsarrSheet(detents: [.medium])

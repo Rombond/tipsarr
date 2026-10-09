@@ -130,5 +130,11 @@
   "m.icon.light": "Light",
   "m.icon.dark": "Dark",
   "m.icon.mono": "Monochrome",
-  "m.icon.footer": "Automatic follows the light, dark and tinted looks of your home screen."
+  "m.icon.footer": "Automatic follows the light, dark and tinted looks of your home screen.",
+  "m.login.remember_faceid": "Sign in with Face ID next time",
+  "m.session.faceid_signin": "Sign in with Face ID",
+  "m.session.use_password": "Use my password",
+  "m.session.signing_in_faceid": "Signing in…",
+  "m.settings.faceid_signin": "Sign in with Face ID",
+  "m.settings.faceid_signin_footer": "Your password is kept in the iPhone’s Keychain, protected by Face ID or your passcode. It is only used to sign you back in when your session ends."
 }
