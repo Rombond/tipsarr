@@ -96,7 +96,7 @@ private struct TitleGridScreen: View {
                 case .loaded:
                     LazyVGrid(columns: Self.columns, spacing: Tokens.Spacing.lg) {
                         ForEach(items) { item in
-                            NavigationLink(value: item.route) {
+                            MediaLink(route: item.route) {
                                 PosterCard(item: item)
                             }
                             .buttonStyle(.plain)

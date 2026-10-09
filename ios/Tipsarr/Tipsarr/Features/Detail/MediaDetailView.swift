@@ -360,7 +360,7 @@ struct MediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: Tokens.Spacing.md) {
                     ForEach(detail.recommendations.prefix(15)) { item in
-                        NavigationLink(value: item.route) {
+                        MediaLink(route: item.route) {
                             PosterCard(item: item)
                                 .frame(width: 110)
                         }

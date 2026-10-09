@@ -106,7 +106,7 @@ struct LibraryView: View {
     private var grid: some View {
         LazyVGrid(columns: Self.columns, spacing: Tokens.Spacing.lg) {
             ForEach(model.items) { item in
-                NavigationLink(value: item.route) {
+                MediaLink(route: item.route) {
                     PosterCard(title: item.title, subtitle: item.year.map(String.init), serverPosterPath: item.posterPath, watched: item.watched,
                                rating: RatingInput(type: item.type, tmdbId: item.tmdbId, tmdb: item.rating))
                 }
@@ -120,7 +120,7 @@ struct LibraryView: View {
     private var list: some View {
         LazyVStack(spacing: 0) {
             ForEach(model.items) { item in
-                NavigationLink(value: item.route) { LibraryRow(item: item) }
+                MediaLink(route: item.route) { LibraryRow(item: item) }
                     .buttonStyle(.plain)
                     .task { await model.loadMore(after: item) }
                 Divider()

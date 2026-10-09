@@ -133,7 +133,7 @@ struct Rail: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: Tokens.Spacing.md) {
                     ForEach(items) { item in
-                        NavigationLink(value: item.route) {
+                        MediaLink(route: item.route) {
                             PosterCard(item: item)
                                 .frame(width: 120)
                         }
@@ -180,7 +180,7 @@ struct MediaGrid: View {
             case .loaded:
                 LazyVGrid(columns: Self.columns, spacing: Tokens.Spacing.lg) {
                     ForEach(model.items) { item in
-                        NavigationLink(value: item.route) {
+                        MediaLink(route: item.route) {
                             PosterCard(item: item)
                         }
                         .buttonStyle(.plain)
@@ -216,18 +216,19 @@ struct ErrorState: View {
     }
 }
 
-/// Landscape iPad "For you": a hero on the first recommendation, the chips, then the suggestion rows below.
-/// Trending and Upcoming are chips of their own, so they are not repeated here.
+/// Landscape iPad "For you": a hero on the top trending title, then the chips and the suggestion rows.
+/// The Trending and Upcoming rails are not repeated: they are chips of their own.
 private struct WideHome<Chips: View>: View {
     let model: DiscoverModel
     @ViewBuilder var chips: Chips
 
     var body: some View {
+        let trending = model.list(.trending)
         VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
-            if let first = model.home.rows.first?.items.first { Hero(item: first) }
+            if let first = trending.items.first { Hero(item: first) }
             chips
         }
-        .task { await model.home.loadIfNeeded() }
+        .task { await trending.loadIfNeeded() }
     }
 }
 
@@ -251,7 +252,7 @@ private struct Hero: View {
                         Text(verbatim: overview).font(.body).opacity(0.9).lineLimit(3).frame(maxWidth: 560, alignment: .leading)
                     }
                     HStack(spacing: Tokens.Spacing.md) {
-                        NavigationLink(value: item.route) {
+                        MediaLink(route: item.route) {
                             Label { Text("media.view_details") } icon: { Image(systemName: "info.circle") }
                         }
                         .buttonStyle(.tipsarr(.primary))

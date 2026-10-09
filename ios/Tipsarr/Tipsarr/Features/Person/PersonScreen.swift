@@ -63,7 +63,7 @@ struct PersonScreen: View {
                         Text("m.person.known_for").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 104, maximum: 180), spacing: Tokens.Spacing.md, alignment: .top)], spacing: Tokens.Spacing.lg) {
                             ForEach(person.credits) { item in
-                                NavigationLink(value: item.route) {
+                                MediaLink(route: item.route) {
                                     PosterCard(item: item)
                                 }
                                 .buttonStyle(.plain)

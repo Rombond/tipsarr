@@ -18,6 +18,8 @@ struct MainTabView: View {
     @State private var pendingCount = 0
     @State private var ratings: RatingProvider
     @State private var live = LiveUpdates()
+    @State private var pane = DetailPane()
+    @State private var foldedHinge = false
     /// Tabs opened at least once; wide windows keep them alive so each tab keeps its navigation and scroll position.
     @State private var visited: Set<AppTab> = [.discover]
 
@@ -32,8 +34,9 @@ struct MainTabView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            shell(ShellStyle.style(size: proxy.size, compact: sizeClass == .compact))
+            shell(ShellStyle.style(size: proxy.size, compact: sizeClass == .compact, hinge: FoldInfo.verticalHinge(proxy)))
         }
+        .onGeometryChange(for: Bool.self, of: { FoldInfo.verticalHinge($0) != nil }) { foldedHinge = $0 }
         .environment(\.imageSource, ImageSource(serverURL: account.serverURL, token: account.token))
         .environment(\.appContext, AppContext(api: api, profile: profile, userFolderChoice: session.serverStatus?.userFolderChoice ?? false))
         .environment(\.ratingProvider, ratings)
@@ -79,17 +82,33 @@ struct MainTabView: View {
     /// landscape iPad window, a floating bar at the bottom of a portrait one.
     @ViewBuilder private func shell(_ style: ShellStyle) -> some View {
         let badges: [AppTab: Int] = profile.isAdmin ? [.requests: pendingCount] : [:]
-        HStack(spacing: 0) {
-            if style == .sidebar {
-                AppSidebar(selection: $router.tab, account: account, profile: profile, badges: badges)
+        if case .dualPane(let hinge) = style {
+            // Left of the hinge: the tab content with its own bar. Right of it: the opened title or request.
+            HStack(spacing: 0) {
+                tabs(style)
+                    .environment(\.detailPane, pane)
+                    .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 88) }
+                    .overlay(alignment: .bottom) {
+                        FloatingTabBar(selection: $router.tab, badges: badges, showsTitles: false).padding(.bottom, Tokens.Spacing.sm)
+                    }
+                    .frame(width: max(hinge.leftWidth, 0))
+                Color.clear.frame(width: max(hinge.rightStart - hinge.leftWidth, 0))
+                DetailPaneView(pane: pane)
+                    .frame(maxWidth: .infinity)
             }
-            tabs(style)
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if style == .bottomBar { Color.clear.frame(height: 96) }
+        } else {
+            HStack(spacing: 0) {
+                if style == .sidebar {
+                    AppSidebar(selection: $router.tab, account: account, profile: profile, badges: badges)
                 }
-                .overlay(alignment: .bottom) {
-                    if style == .bottomBar { FloatingTabBar(selection: $router.tab, badges: badges).padding(.bottom, Tokens.Spacing.sm) }
-                }
+                tabs(style)
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        if style == .bottomBar { Color.clear.frame(height: 96) }
+                    }
+                    .overlay(alignment: .bottom) {
+                        if style == .bottomBar { FloatingTabBar(selection: $router.tab, badges: badges).padding(.bottom, Tokens.Spacing.sm) }
+                    }
+            }
         }
     }
 
@@ -131,13 +150,16 @@ struct MainTabView: View {
         }
     }
 
+    /// True while the Duo is unfolded (the shell injected `pane`).
+    private var dualPaneActive: Bool { foldedHinge }
+
     private var api: TipsarrAPI { TipsarrAPI(serverURL: account.serverURL, token: account.token) }
 
     /// A link for this account's server opens its screen; links for another server wait for that account.
     private func consumeLink() async {
         guard let link = session.pendingLink, link.host == account.serverURL.host()?.lowercased() else { return }
         session.clearPendingLink()
-        await router.open(link.target, api: api)
+        await router.open(link.target, api: api, pane: dualPaneActive ? pane : nil)
     }
 
     private func refreshPending() async {

@@ -4913,6 +4913,22 @@
         }
       }
     },
+    "m.pane.select": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a title to see it here"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez un titre pour le voir ici"
+          }
+        }
+      }
+    },
     "m.person.biography": {
       "localizations": {
         "en": {

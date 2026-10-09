@@ -5,8 +5,11 @@ import SwiftUI
 /// uses a sidebar when it is landscape and a floating bar at the bottom when it is portrait.
 enum ShellStyle: Equatable {
     case system, bottomBar, sidebar
+    /// Unfolded iPhone Duo: the list on the left of the hinge, the detail on the right.
+    case dualPane(Hinge)
 
-    static func style(size: CGSize, compact: Bool) -> ShellStyle {
+    static func style(size: CGSize, compact: Bool, hinge: Hinge?) -> ShellStyle {
+        if let hinge { return .dualPane(hinge) }
         if compact { return .system }
         return size.width > size.height ? .sidebar : .bottomBar
     }

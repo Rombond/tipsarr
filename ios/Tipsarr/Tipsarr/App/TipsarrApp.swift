@@ -4,6 +4,13 @@ import SwiftUI
 struct TipsarrApp: App {
     @State private var settings = AppSettings()
 
+    init() {
+        #if DEBUG
+        // Line-buffered output, so `[network]` / `[fold]` lines reach a piped console at once.
+        setvbuf(stdout, nil, _IOLBF, 0)
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             Root()

@@ -151,7 +151,7 @@ struct RequestDetailView: View {
                 }
                 .buttonStyle(.tipsarr(.primary, fullWidth: true))
             }
-            NavigationLink(value: MediaRoute(type: record.type, tmdbId: record.tmdbId, title: record.title)) {
+            MediaLink(route: MediaRoute(type: record.type, tmdbId: record.tmdbId, title: record.title)) {
                 Text("media.view_details")
             }
             .buttonStyle(.tipsarr(.secondary, fullWidth: true))

@@ -44,7 +44,7 @@ struct PosterCarousel: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHStack(alignment: .top, spacing: Tokens.Spacing.md) {
                         ForEach(rows) { row in
-                            NavigationLink(value: row.route) { card(row) }.buttonStyle(.plain)
+                            MediaLink(route: row.route) { card(row) }.buttonStyle(.plain)
                         }
                     }
                 }
@@ -91,7 +91,7 @@ struct PosterList: View {
     var body: some View {
         List {
             ForEach(Array(route.rows.enumerated()), id: \.element.id) { index, row in
-                NavigationLink(value: row.route) {
+                MediaLink(route: row.route) {
                     HStack(spacing: Tokens.Spacing.md) {
                         if route.ranked {
                             Text(verbatim: String(index + 1)).font(.headline).foregroundStyle(Tokens.palette.mutedFg).frame(width: 28)

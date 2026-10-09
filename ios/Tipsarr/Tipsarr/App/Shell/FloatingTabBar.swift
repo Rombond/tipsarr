@@ -29,6 +29,8 @@ extension AppTab {
 struct FloatingTabBar: View {
     @Binding var selection: AppTab
     var badges: [AppTab: Int] = [:]
+    /// Icons only when the bar is narrow (the left pane of the Duo).
+    var showsTitles = true
 
     var body: some View {
         HStack(spacing: 0) {
@@ -36,7 +38,7 @@ struct FloatingTabBar: View {
                 Button { selection = tab } label: {
                     VStack(spacing: 2) {
                         Image(systemName: tab.symbol).font(.title3.weight(selection == tab ? .semibold : .regular))
-                        Text(tab.title).font(.caption2.weight(selection == tab ? .semibold : .medium))
+                        if showsTitles { Text(tab.title).font(.caption2.weight(selection == tab ? .semibold : .medium)) }
                     }
                     .foregroundStyle(selection == tab ? Tokens.palette.fg : Tokens.palette.mutedFg)
                     .frame(maxWidth: .infinity, minHeight: 54)
@@ -45,6 +47,7 @@ struct FloatingTabBar: View {
                     .contentShape(.capsule)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Text(tab.title))
                 .accessibilityAddTraits(selection == tab ? .isSelected : [])
             }
         }
@@ -53,7 +56,7 @@ struct FloatingTabBar: View {
         .background(Tokens.palette.card, in: .capsule)
         .overlay { Capsule().strokeBorder(Tokens.palette.border) }
         .shadow(color: .black.opacity(0.12), radius: 16, y: 6)
-        .padding(.horizontal, Tokens.Spacing._3xl)
+        .padding(.horizontal, showsTitles ? Tokens.Spacing._3xl : Tokens.Spacing.lg)
     }
 }
 

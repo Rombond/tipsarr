@@ -31,7 +31,7 @@ struct IssueDetailView: View {
         let issue = thread.issue
         return ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Spacing.xl) {
-                NavigationLink(value: issue.route) {
+                MediaLink(route: issue.route) {
                     HStack(spacing: Tokens.Spacing.md) {
                         RemoteImage(path: issue.posterPath, size: .w185) {
                             Image(systemName: "film").foregroundStyle(Tokens.palette.mutedFg)

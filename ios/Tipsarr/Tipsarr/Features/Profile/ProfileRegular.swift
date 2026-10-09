@@ -134,7 +134,7 @@ extension ProfileView {
                 }
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible())], spacing: 12) {
                     ForEach(model.recent.prefix(4)) { record in
-                        NavigationLink(value: MediaRoute(type: record.type, tmdbId: record.tmdbId, title: record.title)) {
+                        MediaLink(route: MediaRoute(type: record.type, tmdbId: record.tmdbId, title: record.title)) {
                             RequestCardTile(record: record)
                         }
                         .buttonStyle(.plain)

@@ -148,7 +148,7 @@ struct ProfileView: View {
                 }
                 VStack(spacing: 0) {
                     ForEach(model.recent.prefix(3)) { record in
-                        NavigationLink(value: MediaRoute(type: record.type, tmdbId: record.tmdbId, title: record.title)) {
+                        MediaLink(route: MediaRoute(type: record.type, tmdbId: record.tmdbId, title: record.title)) {
                             HStack(spacing: Tokens.Spacing.md) {
                                 RemoteImage(path: record.posterPath, size: .w92) {
                                     Image(systemName: "film").foregroundStyle(Tokens.palette.mutedFg)

@@ -7,6 +7,7 @@ struct RequestsView: View {
     @State private var deleting: RequestRecord?
     @Environment(ToastCenter.self) private var toast
     @Environment(\.liveUpdates) private var live
+    @Environment(\.detailPane) private var pane
     @Binding var path: NavigationPath
     /// Selected request id in the two-column layout.
     @Binding var selection: String?
@@ -28,6 +29,7 @@ struct RequestsView: View {
             if split { splitBody } else { stackBody }
         }
         .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
+        .onAppear { pane?.requestsModel = model }
         .task(id: filter) { await model.load(filter) }
         .onChange(of: live?.requestsTick) { Task { await model.load(filter) } }
         .sheet(item: $declining) { record in
@@ -188,7 +190,7 @@ struct RequestRow: View {
 
     var body: some View {
         if link {
-            NavigationLink(value: record) { rowContent }
+            RequestLink(record: record) { rowContent }
         } else {
             rowContent
         }

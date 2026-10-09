@@ -11,17 +11,25 @@ final class AppRouter {
     var requestsSelection: String?
 
     /// Shows the screen of a link. Titles open at the root of their tab with the new screen on top.
-    func open(_ target: DeepLinkTarget, api: TipsarrAPI) async {
+    func open(_ target: DeepLinkTarget, api: TipsarrAPI, pane: DetailPane? = nil) async {
         switch target {
         case .media(let type, let id):
-            discoverPath = NavigationPath()
-            discoverPath.append(MediaRoute(type: type, tmdbId: id, title: ""))
-            tab = .discover
+            let route = MediaRoute(type: type, tmdbId: id, title: "")
+            if let pane {
+                // Unfolded Duo: the title opens in the right pane.
+                pane.content = .media(route)
+                tab = .discover
+            } else {
+                discoverPath = NavigationPath()
+                discoverPath.append(route)
+                tab = .discover
+            }
         case .request(let id):
             guard let record = try? await api.request(id: id) else { return tab = .requests }
             requestsPath = NavigationPath()
             requestsPath.append(record)
             requestsSelection = record.id
+            pane?.content = .request(record)
             tab = .requests
         case .issue:
             // Issues arrive with the admin screens; Discover is the safe landing until then.
