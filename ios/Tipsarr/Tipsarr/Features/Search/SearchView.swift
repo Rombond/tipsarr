@@ -14,6 +14,7 @@ enum SearchScope: Hashable, CaseIterable {
 }
 
 struct SearchView: View {
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var model: SearchModel
     @State private var query = ""
     @State private var scope: SearchScope = .all
@@ -31,7 +32,7 @@ struct SearchView: View {
             }
             .background(Tokens.palette.bg)
             .navigationTitle("m.tab.search")
-            .searchable(text: $query, prompt: Text("m.search.prompt"))
+            .searchable(text: $query, placement: sizeClass == .regular ? .navigationBarDrawer(displayMode: .always) : .automatic, prompt: Text("m.search.prompt"))
             .searchScopes($scope, activation: .onSearchPresentation) {
                 ForEach(SearchScope.allCases, id: \.self) { Text($0.title).tag($0) }
             }

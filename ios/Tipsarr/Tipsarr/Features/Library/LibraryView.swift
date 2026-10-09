@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct LibraryView: View {
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var model: LibraryModel
     @State private var showFilters = false
     @AppStorage("libraryLayout") private var listLayout = false
@@ -22,7 +23,8 @@ struct LibraryView: View {
             }
             .background(Tokens.palette.bg)
             .navigationTitle("library.title")
-            .searchable(text: $model.filters.query, prompt: Text("library.search"))
+            // Field under the title, full width: the default top-right spot is out of the way on iPad.
+            .searchable(text: $model.filters.query, placement: sizeClass == .regular ? .navigationBarDrawer(displayMode: .always) : .automatic, prompt: Text("library.search"))
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button { listLayout.toggle() } label: {

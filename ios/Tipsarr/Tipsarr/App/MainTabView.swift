@@ -10,6 +10,7 @@ struct MainTabView: View {
     @Environment(SessionManager.self) private var session
     @Environment(AppSettings.self) private var settings
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) private var sizeClass
     let account: Account
     let profile: Profile
     @State private var router = AppRouter()
@@ -32,7 +33,8 @@ struct MainTabView: View {
             Tab("m.tab.discover", systemImage: "safari", value: AppTab.discover) {
                 DiscoverView(api: api, path: $router.discoverPath) { router.tab = .search }
             }
-            Tab("m.tab.search", systemImage: "magnifyingglass", value: AppTab.search, role: .search) {
+            // The separate search tab (field at the top right of the bar) is for compact widths only; wide screens put the field in the page.
+            Tab("m.tab.search", systemImage: "magnifyingglass", value: AppTab.search, role: sizeClass == .compact ? .search : nil) {
                 SearchView(api: api)
             }
             Tab("m.tab.requests", systemImage: "checklist", value: AppTab.requests) {
