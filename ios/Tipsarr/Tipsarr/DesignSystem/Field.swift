@@ -7,6 +7,9 @@ struct Field: View {
     var prompt: LocalizedStringKey?
     var secure = false
     var error: LocalizedStringResource?
+    var keyboard: UIKeyboardType = .default
+    var contentType: UITextContentType?
+    var submitLabel: SubmitLabel = .done
 
     @FocusState private var focused: Bool
 
@@ -16,6 +19,11 @@ struct Field: View {
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(Tokens.palette.mutedFg)
             input
+                .keyboardType(keyboard)
+                .textContentType(contentType)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(submitLabel)
                 .focused($focused)
                 .padding(.horizontal, Tokens.Spacing.md)
                 .frame(minHeight: Tokens.Size.touchTarget)
