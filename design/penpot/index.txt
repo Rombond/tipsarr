@@ -7,5 +7,6 @@
 55_accounts.js
 60_admin.js
 70_ipad.js
+72_ipad_profile.js
 75_duo.js
 80_foundations.js
