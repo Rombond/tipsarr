@@ -3797,13 +3797,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Signing out removes an account from this iPhone.."
+            "value": "Signing out removes an account from this iPhone."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se déconnecter retire un compte de cet iPhone.."
+            "value": "Se déconnecter retire un compte de cet iPhone."
           }
         }
       }

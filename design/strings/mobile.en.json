@@ -28,7 +28,7 @@
   "m.accounts.add": "Add account",
   "m.accounts.manage": "Manage accounts",
   "m.accounts.switching": "Switching to {name}…",
-  "m.accounts.footer_signout": "Signing out removes an account from this iPhone..",
+  "m.accounts.footer_signout": "Signing out removes an account from this iPhone.",
   "m.accounts.intro": "Each account keeps its own sign-in on this iPhone. Switching is instant, no password needed.",
   "m.accounts.server": "Server",
   "m.accounts.current_server": "Current server",

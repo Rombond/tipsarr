@@ -28,7 +28,7 @@
   "m.accounts.add": "Ajouter un compte",
   "m.accounts.manage": "Gérer les comptes",
   "m.accounts.switching": "Passage à {name}…",
-  "m.accounts.footer_signout": "Se déconnecter retire un compte de cet iPhone..",
+  "m.accounts.footer_signout": "Se déconnecter retire un compte de cet iPhone.",
   "m.accounts.intro": "Chaque compte garde sa propre connexion sur cet iPhone. Le changement est instantané, sans mot de passe.",
   "m.accounts.server": "Serveur",
   "m.accounts.current_server": "Serveur actuel",
