@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(SessionManager.self) private var session
     @Environment(AppSettings.self) private var settings
+    @Environment(AppLock.self) private var lock
     @Environment(\.appContext) private var context
     @Environment(ToastCenter.self) private var toast
     @AppStorage("avatarVersion") private var avatarVersion = 0
@@ -96,7 +97,25 @@ struct SettingsView: View {
                     Label { Text("m.settings.app_icon") } icon: { Image(systemName: "app.badge") }
                 }
             }
-            Section("m.settings.security") {
+            Section {
+                Toggle(isOn: Binding(
+                    get: { lock.isEnabled },
+                    set: { on in
+                        if on { Task { _ = await lock.enable() } } else { lock.disable() }
+                    }
+                )) {
+                    Label { Text("m.faceid.title") } icon: { Image(systemName: lock.symbol) }
+                }
+                .disabled(!lock.isAvailable)
+                if lock.isEnabled {
+                    @Bindable var lock = lock
+                    Picker(selection: $lock.delay) {
+                        ForEach(AppLock.Delay.allCases, id: \.self) { Text($0.title).tag($0) }
+                    } label: {
+                        Label { Text("m.faceid.lock_after") } icon: { Image(systemName: "timer") }
+                    }
+                    .pickerStyle(.navigationLink)
+                }
                 NavigationLink(value: ProfileRoute.devices) {
                     LabeledContent {
                         if let deviceCount { Text(verbatim: String(deviceCount)) }
@@ -104,6 +123,10 @@ struct SettingsView: View {
                         Label { Text("profile.devices_title") } icon: { Image(systemName: "macbook.and.iphone") }
                     }
                 }
+            } header: {
+                Text("m.settings.security")
+            } footer: {
+                Text("m.faceid.footer")
             }
             Section("m.settings.server") {
                 Label {

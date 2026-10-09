@@ -3,11 +3,13 @@ import SwiftUI
 @main
 struct TipsarrApp: App {
     @State private var settings = AppSettings()
+    @State private var lock = AppLock()
 
     var body: some Scene {
         WindowGroup {
             Root()
                 .environment(settings)
+                .environment(lock)
                 .environment(\.locale, settings.language.map { Locale(identifier: $0) } ?? .autoupdatingCurrent)
                 .preferredColorScheme(settings.theme.colorScheme)
         }

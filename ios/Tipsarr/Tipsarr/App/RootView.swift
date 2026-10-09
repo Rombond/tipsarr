@@ -2,6 +2,8 @@ import SwiftUI
 
 struct RootView: View {
     @State private var session = SessionManager()
+    @Environment(AppLock.self) private var lock
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -26,6 +28,15 @@ struct RootView: View {
             }
         }
         .environment(session)
+        .overlay {
+            if lock.isLocked {
+                LockView(lock: lock).transition(.opacity)
+            } else if lock.isEnabled && scenePhase != .active && !lock.authenticating {
+                PrivacyCover()
+            }
+        }
+        .animation(.easeOut(duration: Tokens.Motion.fast), value: lock.isLocked)
+        .onChange(of: scenePhase) { _, phase in lock.scenePhaseChanged(phase) }
         .animation(.easeOut(duration: Tokens.Motion.normal), value: session.phase)
         .task { await session.start() }
     }
