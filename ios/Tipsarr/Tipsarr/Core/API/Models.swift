@@ -72,3 +72,9 @@ struct SuggestionRow: Sendable, Identifiable {
     var title: String
     var items: [MediaItem]
 }
+
+struct SuggestionResult: Sendable {
+    var rows: [SuggestionRow]
+    /// The server is still building the recommendations.
+    var generating: Bool
+}

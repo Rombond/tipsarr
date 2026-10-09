@@ -30,12 +30,14 @@ extension TipsarrAPI {
         }
     }
 
-    func suggestions() async throws -> [SuggestionRow] {
+    func suggestions() async throws -> SuggestionResult {
         try await load { client in
             guard case .ok(let ok) = try await client.suggestions() else { throw APIError.unexpected }
-            return try ok.body.json.rows.map { row in
-                SuggestionRow(id: row.id, title: row.title, items: row.items.map(MediaItem.init))
-            }
+            let body = try ok.body.json
+            return SuggestionResult(
+                rows: body.rows.map { SuggestionRow(id: $0.id, title: $0.title, items: $0.items.map(MediaItem.init)) },
+                generating: body.generating
+            )
         }
     }
 }

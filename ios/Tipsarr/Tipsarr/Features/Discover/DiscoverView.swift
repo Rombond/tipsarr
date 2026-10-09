@@ -40,12 +40,13 @@ struct DiscoverView: View {
                 VStack(alignment: .leading, spacing: Tokens.Spacing.lg) {
                     chips
                     switch chip.source {
-                    case nil: ForYouContent(home: model.home) { chip = .trending }
+                    case nil: ForYouContent(home: model.home)
                     case let source?: MediaGrid(model: model.list(source))
                     }
                 }
                 .padding(.vertical, Tokens.Spacing.sm)
             }
+            .refreshable { await refreshCurrent() }
             .background(Tokens.palette.bg)
             .navigationTitle("m.tab.discover")
             .toolbar {
@@ -55,6 +56,14 @@ struct DiscoverView: View {
                 }
             }
             .navigationDestination(for: MediaRoute.self) { MediaRoutePlaceholder(route: $0) }
+        }
+    }
+
+    private func refreshCurrent() async {
+        if let source = chip.source {
+            await model.list(source).refresh()
+        } else {
+            await model.home.refresh()
         }
     }
 
@@ -70,10 +79,9 @@ struct DiscoverView: View {
     }
 }
 
-/// "For you" chip: the trending rail and the suggestion rows.
+/// "For you" chip: the suggestion rows (the server decides which rows, e.g. trending, because you watched).
 private struct ForYouContent: View {
     let home: DiscoverHomeModel
-    let seeAllTrending: () -> Void
 
     var body: some View {
         Group {
@@ -82,9 +90,12 @@ private struct ForYouContent: View {
                 RailSkeleton()
             case .failed(let error):
                 ErrorState(error: error) { await home.refresh() }
+            case .loaded where home.rows.isEmpty:
+                StateView(symbol: home.generating ? "hourglass" : "sparkles",
+                          title: home.generating ? "suggest.preparing" : "common.no_results")
+                    .frame(minHeight: 360)
             case .loaded:
                 VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
-                    Rail(title: "m.discover.trending_week", items: home.trending, onSeeAll: seeAllTrending)
                     ForEach(home.rows) { row in
                         Rail(title: LocalizedStringResource(stringLiteral: row.title), items: row.items)
                     }
@@ -98,19 +109,13 @@ private struct ForYouContent: View {
 private struct Rail: View {
     let title: LocalizedStringResource
     let items: [MediaItem]
-    var onSeeAll: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
-            HStack {
-                Text(title).font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
-                Spacer()
-                if let onSeeAll {
-                    Button(action: onSeeAll) { Text("m.discover.see_all").font(.subheadline) }
-                        .foregroundStyle(Tokens.palette.mutedFg)
-                }
-            }
-            .padding(.horizontal, Tokens.Spacing.lg)
+            Text(title)
+                .font(.title3.weight(.semibold))
+                .accessibilityAddTraits(.isHeader)
+                .padding(.horizontal, Tokens.Spacing.lg)
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: Tokens.Spacing.md) {
                     ForEach(items) { item in

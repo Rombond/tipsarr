@@ -20,6 +20,7 @@ enum TipsarrClient {
             serverURL: server.appending(path: "api/v1"),
             transport: URLSessionTransport(configuration: .init(session: session)),
             middlewares: [
+                TimingMiddleware(),
                 HeadersMiddleware(token: token, language: language, appVersion: appVersion),
                 ErrorMiddleware(),
                 RetryMiddleware(),

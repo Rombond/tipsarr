@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import os
 
 /// Where images come from: the active account's server and token.
 struct ImageSource: Sendable, Equatable {
@@ -21,6 +22,7 @@ enum TMDBSize: String, Sendable {
 /// TMDB images are immutable, so cached copies are always preferred.
 actor ImageLoader {
     static let shared = ImageLoader()
+    private static let logger = Logger(subsystem: "com.brebond.tipsarr", category: "network")
 
     private let memory = NSCache<NSURL, UIImage>()
     private let session: URLSession
@@ -41,7 +43,10 @@ actor ImageLoader {
         let task = Task { [session] () throws -> UIImage in
             var request = URLRequest(url: url)
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            let start = ContinuousClock.now
             let (data, response) = try await session.data(for: request)
+            let ms = (ContinuousClock.now - start).milliseconds
+            Self.logger.notice("image \(url.lastPathComponent, privacy: .public) \((response as? HTTPURLResponse)?.statusCode ?? 0) \(ms) ms")
             guard (response as? HTTPURLResponse)?.statusCode == 200,
                   let image = UIImage(data: data)?.preparingForDisplay() else { throw URLError(.cannotDecodeContentData) }
             return image

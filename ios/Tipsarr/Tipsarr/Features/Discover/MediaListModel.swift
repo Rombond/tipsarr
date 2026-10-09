@@ -70,14 +70,14 @@ final class MediaListModel {
     }
 }
 
-/// The Trending chip: a trending rail plus the suggestion rows.
+/// The "For you" chip: the suggestion rows from the server.
 @MainActor @Observable
 final class DiscoverHomeModel {
     enum Phase: Equatable { case idle, loading, loaded, failed(APIError) }
 
     private let api: TipsarrAPI
-    private(set) var trending: [MediaItem] = []
     private(set) var rows: [SuggestionRow] = []
+    private(set) var generating = false
     private(set) var phase: Phase = .idle
 
     init(api: TipsarrAPI) { self.api = api }
@@ -87,14 +87,14 @@ final class DiscoverHomeModel {
     }
 
     func refresh() async {
-        if trending.isEmpty { phase = .loading }
-        async let suggestions = try? api.suggestions()
+        if rows.isEmpty { phase = .loading }
         do {
-            trending = Array(try await api.trending(page: 1).items.prefix(15))
-            rows = await suggestions?.filter { !$0.items.isEmpty } ?? rows
+            let result = try await api.suggestions()
+            rows = result.rows.filter { !$0.items.isEmpty }
+            generating = result.generating
             phase = .loaded
         } catch {
-            if trending.isEmpty { phase = .failed(APIError.from(error)) }
+            if rows.isEmpty { phase = .failed(APIError.from(error)) }
         }
     }
 }

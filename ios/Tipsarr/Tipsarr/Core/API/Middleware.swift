@@ -1,6 +1,7 @@
 import Foundation
 import HTTPTypes
 import OpenAPIRuntime
+import os
 
 extension ClientError: ClientErrorProviding {
     var underlying: Error { underlyingError }
@@ -84,5 +85,38 @@ struct ErrorMiddleware: ClientMiddleware {
         let errors = json["errors"] as? [[String: Any]] ?? []
         let code = errors.first { $0["location"] as? String == "code" }?["value"] as? String
         return (code, json["detail"] as? String)
+    }
+}
+
+/// Logs operation, status and total time (retries included) to the `network` log category.
+/// Filter the Xcode console on "network" to see where time goes.
+struct TimingMiddleware: ClientMiddleware {
+    private static let logger = Logger(subsystem: "com.brebond.tipsarr", category: "network")
+
+    func intercept(
+        _ request: HTTPRequest,
+        body: HTTPBody?,
+        baseURL: URL,
+        operationID: String,
+        next: @concurrent @Sendable (HTTPRequest, HTTPBody?, URL) async throws -> (HTTPResponse, HTTPBody?)
+    ) async throws -> (HTTPResponse, HTTPBody?) {
+        let start = ContinuousClock.now
+        do {
+            let result = try await next(request, body, baseURL)
+            let ms = (ContinuousClock.now - start).milliseconds
+            Self.logger.notice("\(operationID, privacy: .public) \(result.0.status.code) \(ms) ms")
+            return result
+        } catch {
+            let ms = (ContinuousClock.now - start).milliseconds
+            Self.logger.notice("\(operationID, privacy: .public) failed \(ms) ms: \(String(describing: error), privacy: .public)")
+            throw error
+        }
+    }
+}
+
+extension Duration {
+    var milliseconds: Int {
+        let parts = components
+        return Int(parts.seconds) * 1000 + Int(parts.attoseconds / 1_000_000_000_000_000)
     }
 }
