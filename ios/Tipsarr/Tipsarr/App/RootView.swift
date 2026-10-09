@@ -26,6 +26,7 @@ struct RootView: View {
             }
         }
         .environment(session)
+        .onOpenURL { url in Task { await session.handle(url) } }
         .animation(.easeOut(duration: Tokens.Motion.normal), value: session.phase)
         .task { await session.start() }
     }

@@ -17,6 +17,7 @@ struct RequestDetailView: View {
     @Environment(\.appContext) private var context
     @Environment(ToastCenter.self) private var toast
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.liveUpdates) private var live
 
     init(initial: RequestRecord, model: RequestsModel) {
         _record = State(initialValue: initial)
@@ -27,7 +28,7 @@ struct RequestDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Spacing.xl) {
                 header
-                if record.state == .downloading, let percent = record.progressPercent { progress(percent) }
+                if record.state == .downloading, let percent = live?.progress[record.id]?.percent ?? record.progressPercent { progress(percent) }
                 banner
                 if model.isAdmin, let name = record.requestedBy, !name.isEmpty { requester(name) }
                 VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
@@ -46,6 +47,7 @@ struct RequestDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await reload() }
         .task { await reload() }
+        .onChange(of: live?.requestsTick) { Task { await reload() } }
         .sheet(isPresented: $declining) {
             DeclineSheet(title: record.title) { reason in
                 record = try await model.decline(record, reason: reason)
@@ -79,7 +81,7 @@ struct RequestDetailView: View {
             ProgressBar(percent: percent)
             HStack {
                 Text(verbatim: L10n.string("req.stage.downloading_pct", percent))
-                if let eta = record.etaSeconds, eta > 0 {
+                if let eta = live?.progress[record.id]?.etaSeconds ?? record.etaSeconds, eta > 0 {
                     Text(Duration.seconds(eta), format: .units(allowed: [.hours, .minutes], width: .abbreviated, maximumUnitCount: 2))
                 }
             }

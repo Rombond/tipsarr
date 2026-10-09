@@ -12,10 +12,11 @@ struct MainTabView: View {
     @Environment(\.scenePhase) private var scenePhase
     let account: Account
     let profile: Profile
-    @State private var selection: AppTab = .discover
+    @State private var router = AppRouter()
     @State private var toast = ToastCenter()
     @State private var pendingCount = 0
     @State private var ratings: RatingProvider
+    @State private var live = LiveUpdates()
 
     init(account: Account, profile: Profile) {
         self.account = account
@@ -27,34 +28,43 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        TabView(selection: $selection) {
+        TabView(selection: $router.tab) {
             Tab("m.tab.discover", systemImage: "safari", value: AppTab.discover) {
-                DiscoverView(api: api) { selection = .search }
+                DiscoverView(api: api, path: $router.discoverPath) { router.tab = .search }
             }
             Tab("m.tab.search", systemImage: "magnifyingglass", value: AppTab.search, role: .search) {
                 SearchView(api: api)
             }
             Tab("m.tab.requests", systemImage: "checklist", value: AppTab.requests) {
-                RequestsView(api: api, isAdmin: profile.isAdmin) { selection = .discover }
+                RequestsView(api: api, isAdmin: profile.isAdmin, path: $router.requestsPath) { router.tab = .discover }
             }
             .badge(profile.isAdmin ? pendingCount : 0)
             Tab("m.tab.library", systemImage: "books.vertical", value: AppTab.library) {
-                LibraryView(api: api)
+                LibraryView(api: api, path: $router.libraryPath)
             }
             Tab("m.tab.profile", systemImage: "person.crop.circle", value: AppTab.profile) {
-                ProfileView(account: account, profile: profile, api: api) { selection = .requests }
+                ProfileView(account: account, profile: profile, api: api) { router.tab = .requests }
             }
         }
         .environment(\.imageSource, ImageSource(serverURL: account.serverURL, token: account.token))
         .environment(\.appContext, AppContext(api: api, profile: profile, userFolderChoice: session.serverStatus?.userFolderChoice ?? false))
         .environment(\.ratingProvider, ratings)
+        .environment(\.liveUpdates, live)
         .environment(toast)
         .modifier(ToastOverlay(center: toast))
         .onChange(of: profile.ratingSource) { _, new in ratings.setSource(RatingSource(rawValue: new) ?? .tmdb) }
-        .task(id: selection) { await refreshPending() }
+        .task(id: router.tab) { await refreshPending() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await refreshPending() } }
         }
+        // Server stream: only while the app is in the foreground.
+        .task(id: scenePhase) {
+            if scenePhase == .active { live.start(server: account.serverURL, token: account.token) } else { live.stop() }
+        }
+        .onChange(of: live.requestsTick) { Task { await refreshPending() } }
+        .onChange(of: session.pendingLink) { Task { await consumeLink() } }
+        .task { await consumeLink() }
+        .onDisappear { live.stop() }
         .onChange(of: pendingCount) { _, count in
             // Same number on the app icon as on the Requests tab (admins only).
             Task { try? await UNUserNotificationCenter.current().setBadgeCount(count) }
@@ -67,6 +77,13 @@ struct MainTabView: View {
     }
 
     private var api: TipsarrAPI { TipsarrAPI(serverURL: account.serverURL, token: account.token) }
+
+    /// A link for this account's server opens its screen; links for another server wait for that account.
+    private func consumeLink() async {
+        guard let link = session.pendingLink, link.host == account.serverURL.host()?.lowercased() else { return }
+        session.clearPendingLink()
+        await router.open(link.target, api: api)
+    }
 
     private func refreshPending() async {
         guard profile.isAdmin, let counts = try? await api.requestCounts() else { return }

@@ -4,13 +4,15 @@ struct LibraryView: View {
     @State private var model: LibraryModel
     @State private var showFilters = false
     @AppStorage("libraryLayout") private var listLayout = false
+    @Binding var path: NavigationPath
 
-    init(api: TipsarrAPI) {
+    init(api: TipsarrAPI, path: Binding<NavigationPath>) {
         _model = State(initialValue: LibraryModel(api: api))
+        _path = path
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Tokens.Spacing.lg) {
                     chips

@@ -18,6 +18,7 @@ struct MediaDetailView: View {
     @State private var sheet: Sheet?
     @State private var confirmCancel = false
     @Environment(ToastCenter.self) private var toast
+    @Environment(\.liveUpdates) private var live
 
     enum Sheet: Identifiable {
         case request, report
@@ -44,6 +45,7 @@ struct MediaDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
         .task { await model.load() }
+        .onChange(of: live?.requestsTick) { Task { await model.load() } }
         .sheet(item: $sheet) { item in
             switch item {
             case .request:
@@ -99,11 +101,11 @@ struct MediaDetailView: View {
                 mainButton
                 menu(detail)
             }
-            if case .inProgress(.downloading, _) = model.action, let request = model.request, let percent = request.progressPercent {
+            if case .inProgress(.downloading, _) = model.action, let request = model.request, let percent = live?.progress[request.id]?.percent ?? request.progressPercent {
                 ProgressBar(percent: percent)
                 HStack {
                     Text(verbatim: L10n.string("req.stage.downloading_pct", percent))
-                    if let eta = request.etaSeconds, eta > 0 {
+                    if let eta = live?.progress[request.id]?.etaSeconds ?? request.etaSeconds, eta > 0 {
                         Text(Duration.seconds(eta), format: .units(allowed: [.hours, .minutes], width: .abbreviated, maximumUnitCount: 2))
                     }
                 }

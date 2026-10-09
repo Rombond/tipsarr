@@ -21,6 +21,8 @@ final class SessionManager {
     let accounts = AccountStore()
     /// Status of the active server, read at launch or sign-in.
     private(set) var serverStatus: ServerStatus?
+    /// A link opened before the app was ready (or for another account); the tabs consume it.
+    private(set) var pendingLink: DeepLink?
 
     /// Launch: resume the active account, or ask for a server.
     func start() async {
@@ -116,6 +118,23 @@ final class SessionManager {
     }
 
     func backToConnect() { phase = .connect }
+
+    // MARK: Deep links
+
+    /// Picks the account of the link's server (switching if needed), asks to sign in when there is none.
+    func handle(_ url: URL) async {
+        guard let link = DeepLink.parse(url) else { return }
+        pendingLink = link
+        let host = link.host
+        if case .ready(let current, _) = phase, current.serverURL.host()?.lowercased() == host { return }
+        if let account = accounts.accounts.first(where: { $0.serverURL.host()?.lowercased() == host }) {
+            await switchTo(account)
+        } else if let server = try? await connect(to: URL(string: "https://\(host)")!) {
+            continueToLogin(server)
+        }
+    }
+
+    func clearPendingLink() { pendingLink = nil }
 
     /// Profile changed on the server (language, score source): keep the signed-in screens in sync.
     func update(profile: Profile) {

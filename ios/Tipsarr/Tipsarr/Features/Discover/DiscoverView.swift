@@ -27,15 +27,18 @@ enum DiscoverChip: CaseIterable, Hashable {
 struct DiscoverView: View {
     @State private var model: DiscoverModel
     @State private var chip: DiscoverChip = .forYou
+    @Environment(\.liveUpdates) private var live
+    @Binding var path: NavigationPath
     var openSearch: () -> Void = {}
 
-    init(api: TipsarrAPI, openSearch: @escaping () -> Void = {}) {
+    init(api: TipsarrAPI, path: Binding<NavigationPath>, openSearch: @escaping () -> Void = {}) {
         _model = State(initialValue: DiscoverModel(api: api))
+        _path = path
         self.openSearch = openSearch
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Tokens.Spacing.lg) {
                     chips
@@ -47,6 +50,8 @@ struct DiscoverView: View {
                 .padding(.vertical, Tokens.Spacing.sm)
             }
             .refreshable { await refreshCurrent() }
+            .onChange(of: live?.suggestionsTick) { if chip == .forYou { Task { await model.home.refresh() } } }
+            .onChange(of: live?.requestsTick) { Task { await refreshCurrent() } }
             .background(Tokens.palette.bg)
             .navigationTitle("m.tab.discover")
             .toolbar {

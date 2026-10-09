@@ -6,6 +6,7 @@ struct ProfileView: View {
     var openRequests: () -> Void = {}
 
     @Environment(\.appContext) private var context
+    @Environment(\.liveUpdates) private var live
     @AppStorage("avatarVersion") private var avatarVersion = 0
     @State private var model: ProfileModel
     @State private var showPicture = false
@@ -50,6 +51,7 @@ struct ProfileView: View {
             .mediaDestinations()
             .task { await model.load() }
             .refreshable { await model.load() }
+            .onChange(of: live?.requestsTick) { Task { await model.load() } }
             .sheet(isPresented: $showPicture) {
                 PictureSheet(profile: profile) { avatarVersion += 1 }
                     .tipsarrSheet(detents: [.medium])

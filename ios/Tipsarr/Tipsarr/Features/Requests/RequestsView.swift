@@ -6,20 +6,24 @@ struct RequestsView: View {
     @State private var declining: RequestRecord?
     @State private var deleting: RequestRecord?
     @Environment(ToastCenter.self) private var toast
+    @Environment(\.liveUpdates) private var live
+    @Binding var path: NavigationPath
     var openDiscover: () -> Void = {}
 
-    init(api: TipsarrAPI, isAdmin: Bool, openDiscover: @escaping () -> Void = {}) {
+    init(api: TipsarrAPI, isAdmin: Bool, path: Binding<NavigationPath>, openDiscover: @escaping () -> Void = {}) {
         _model = State(initialValue: RequestsModel(api: api, isAdmin: isAdmin))
+        _path = path
         self.openDiscover = openDiscover
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             content
                 .background(Tokens.palette.bg)
                 .navigationTitle("requests.title")
                 .task(id: filter) { await model.load(filter) }
                 .refreshable { await model.load(filter) }
+                .onChange(of: live?.requestsTick) { Task { await model.load(filter) } }
                 .navigationDestination(for: RequestRecord.self) { record in
                     RequestDetailScreen(record: record, model: model)
                 }
@@ -99,6 +103,7 @@ struct RequestsView: View {
             case .loaded:
                 ForEach(model.items) { record in
                     RequestRow(record: record, showRequester: model.isAdmin, busy: model.busy.contains(record.id),
+                               progress: live?.progress[record.id],
                                onApprove: { Task { await approve(record) } },
                                onDecline: { declining = record })
                         .listRowInsets(.init(top: Tokens.Spacing.md, leading: Tokens.Spacing.lg, bottom: Tokens.Spacing.md, trailing: Tokens.Spacing.lg))
@@ -134,6 +139,8 @@ struct RequestRow: View {
     let record: RequestRecord
     var showRequester = false
     var busy = false
+    /// Newer progress pushed by the server.
+    var progress: LiveProgress?
     var onApprove: () -> Void = {}
     var onDecline: () -> Void = {}
 
@@ -155,7 +162,7 @@ struct RequestRow: View {
                     }
                     Text(choose(record.type == .tv, "type.tv", "type.movie")).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                     Text(verbatim: when).font(.caption).foregroundStyle(Tokens.palette.mutedFg)
-                    if record.state == .downloading, let percent = record.progressPercent {
+                    if record.state == .downloading, let percent = progress?.percent ?? record.progressPercent {
                         ProgressBar(percent: percent).padding(.top, Tokens.Spacing.xs)
                     }
                     if showRequester && record.state == .requested {
