@@ -65,5 +65,6 @@
   "m.discover.chip_tv": "TV",
   "m.discover.trending_week": "Trending this week",
   "m.discover.see_all": "See all",
-  "m.discover.search": "Search"
+  "m.discover.search": "Search",
+  "m.discover.chip_for_you": "For you"
 }

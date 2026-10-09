@@ -4065,6 +4065,22 @@
         }
       }
     },
+    "m.discover.chip_for_you": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For you"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour vous"
+          }
+        }
+      }
+    },
     "m.discover.chip_movies": {
       "localizations": {
         "en": {

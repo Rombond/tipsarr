@@ -1,10 +1,11 @@
 import SwiftUI
 
 enum DiscoverChip: CaseIterable, Hashable {
-    case trending, upcoming, movies, tv
+    case forYou, trending, upcoming, movies, tv
 
     var title: LocalizedStringResource {
         switch self {
+        case .forYou: "m.discover.chip_for_you"
         case .trending: "discover.trending"
         case .upcoming: "m.discover.chip_upcoming"
         case .movies: "m.discover.chip_movies"
@@ -14,7 +15,8 @@ enum DiscoverChip: CaseIterable, Hashable {
 
     var source: MediaListModel.Source? {
         switch self {
-        case .trending: nil
+        case .forYou: nil
+        case .trending: .trending
         case .upcoming: .upcoming
         case .movies: .movies
         case .tv: .tv
@@ -22,11 +24,9 @@ enum DiscoverChip: CaseIterable, Hashable {
     }
 }
 
-enum DiscoverRoute: Hashable { case allTrending }
-
 struct DiscoverView: View {
     @State private var model: DiscoverModel
-    @State private var chip: DiscoverChip = .trending
+    @State private var chip: DiscoverChip = .forYou
     var openSearch: () -> Void = {}
 
     init(api: TipsarrAPI, openSearch: @escaping () -> Void = {}) {
@@ -37,10 +37,10 @@ struct DiscoverView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: Tokens.Spacing.lg) {
+                VStack(alignment: .leading, spacing: Tokens.Spacing.lg) {
                     chips
                     switch chip.source {
-                    case nil: TrendingContent(home: model.home)
+                    case nil: ForYouContent(home: model.home) { chip = .trending }
                     case let source?: MediaGrid(model: model.list(source))
                     }
                 }
@@ -55,9 +55,6 @@ struct DiscoverView: View {
                 }
             }
             .navigationDestination(for: MediaRoute.self) { MediaRoutePlaceholder(route: $0) }
-            .navigationDestination(for: DiscoverRoute.self) { _ in
-                MediaGridScreen(title: "discover.trending", model: model.list(.trending))
-            }
         }
     }
 
@@ -73,9 +70,10 @@ struct DiscoverView: View {
     }
 }
 
-/// Trending chip: rails.
-private struct TrendingContent: View {
+/// "For you" chip: the trending rail and the suggestion rows.
+private struct ForYouContent: View {
     let home: DiscoverHomeModel
+    let seeAllTrending: () -> Void
 
     var body: some View {
         Group {
@@ -86,7 +84,7 @@ private struct TrendingContent: View {
                 ErrorState(error: error) { await home.refresh() }
             case .loaded:
                 VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
-                    Rail(title: "m.discover.trending_week", items: home.trending, seeAll: DiscoverRoute.allTrending)
+                    Rail(title: "m.discover.trending_week", items: home.trending, onSeeAll: seeAllTrending)
                     ForEach(home.rows) { row in
                         Rail(title: LocalizedStringResource(stringLiteral: row.title), items: row.items)
                     }
@@ -97,18 +95,18 @@ private struct TrendingContent: View {
     }
 }
 
-private struct Rail<Route: Hashable>: View {
+private struct Rail: View {
     let title: LocalizedStringResource
     let items: [MediaItem]
-    var seeAll: Route?
+    var onSeeAll: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
             HStack {
                 Text(title).font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
                 Spacer()
-                if let seeAll {
-                    NavigationLink(value: seeAll) { Text("m.discover.see_all").font(.subheadline) }
+                if let onSeeAll {
+                    Button(action: onSeeAll) { Text("m.discover.see_all").font(.subheadline) }
                         .foregroundStyle(Tokens.palette.mutedFg)
                 }
             }
@@ -130,12 +128,6 @@ private struct Rail<Route: Hashable>: View {
     }
 }
 
-extension Rail where Route == Never? {
-    init(title: LocalizedStringResource, items: [MediaItem]) {
-        self.init(title: title, items: items, seeAll: nil)
-    }
-}
-
 private struct RailSkeleton: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
@@ -152,7 +144,8 @@ private struct RailSkeleton: View {
     }
 }
 
-/// Non-trending chips and "See all": adaptive grid with infinite scroll.
+/// Grid chips (Trending, Upcoming, Movies, TV): adaptive grid with infinite scroll.
+/// Must not sit in a `LazyVStack`: nested lazy containers build every cell, which would fire every "load more".
 struct MediaGrid: View {
     let model: MediaListModel
 
@@ -184,19 +177,6 @@ struct MediaGrid: View {
     }
 
     private static let columns = [GridItem(.adaptive(minimum: 104, maximum: 180), spacing: Tokens.Spacing.md, alignment: .top)]
-}
-
-struct MediaGridScreen: View {
-    let title: LocalizedStringResource
-    let model: MediaListModel
-
-    var body: some View {
-        ScrollView { MediaGrid(model: model).padding(.vertical, Tokens.Spacing.sm) }
-            .background(Tokens.palette.bg)
-            .navigationTitle(Text(title))
-            .navigationBarTitleDisplayMode(.inline)
-            .refreshable { await model.refresh() }
-    }
 }
 
 /// Error view for a failed list: offline gets the offline wording, others the server message.

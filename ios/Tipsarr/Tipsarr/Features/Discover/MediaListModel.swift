@@ -104,7 +104,7 @@ final class DiscoverHomeModel {
 final class DiscoverModel {
     let home: DiscoverHomeModel
     private let api: TipsarrAPI
-    private var lists: [MediaListModel.Source: MediaListModel] = [:]
+    @ObservationIgnored private var lists: [MediaListModel.Source: MediaListModel] = [:]
 
     init(api: TipsarrAPI) {
         self.api = api

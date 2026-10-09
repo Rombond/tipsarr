@@ -568,7 +568,8 @@
   "m.discover.chip_tv": "TV",
   "m.discover.trending_week": "Trending this week",
   "m.discover.see_all": "See all",
-  "m.discover.search": "Search"
+  "m.discover.search": "Search",
+  "m.discover.chip_for_you": "For you"
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -1139,6 +1140,7 @@
   "m.discover.chip_tv": "Séries",
   "m.discover.trending_week": "Tendances de la semaine",
   "m.discover.see_all": "Tout voir",
-  "m.discover.search": "Rechercher"
+  "m.discover.search": "Rechercher",
+  "m.discover.chip_for_you": "Pour vous"
  }
 }
