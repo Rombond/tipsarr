@@ -34,10 +34,17 @@ final class RatingProvider {
         flush?.cancel()
     }
 
-    /// Text such as "7.8", "79" or "92%"; nil while unknown.
-    func text(for input: RatingInput) -> String? {
-        if source == .tmdb || input.type == .tv { return Self.format(input.tmdb, as: .tmdb) }
-        return Self.format(scores[input.tmdbId], as: source)
+    struct Reading: Equatable {
+        var source: RatingSource
+        var value: Double
+        var text: String
+    }
+
+    /// The score to show on a card: the chosen source for movies, TMDB for shows. Nil while unknown.
+    func reading(for input: RatingInput) -> Reading? {
+        let (shown, value): (RatingSource, Double?) = (source == .tmdb || input.type == .tv) ? (.tmdb, input.tmdb) : (source, scores[input.tmdbId])
+        guard let value, let text = Self.format(value, as: shown) else { return nil }
+        return Reading(source: shown, value: value, text: text)
     }
 
     /// Asks for a movie's score; requests are grouped so one screen makes one or two calls.
@@ -93,22 +100,31 @@ extension EnvironmentValues {
     }
 }
 
-/// Star and score, e.g. "★ 7.8". Empty while there is no score.
+/// Provider logo and score, e.g. the IMDb logo and "7.8". Empty while there is no score.
 struct RatingLabel: View {
     let input: RatingInput
     @Environment(\.ratingProvider) private var provider
 
+    private var reading: RatingProvider.Reading? {
+        provider?.reading(for: input)
+            ?? RatingProvider.format(input.tmdb, as: .tmdb).map { .init(source: .tmdb, value: input.tmdb ?? 0, text: $0) }
+    }
+
     var body: some View {
         Group {
-            if let text = provider?.text(for: input) ?? RatingProvider.format(input.tmdb, as: .tmdb) {
-                HStack(spacing: 2) {
-                    Image(systemName: "star.fill").imageScale(.small)
-                    Text(verbatim: text)
+            if let reading {
+                HStack(spacing: Tokens.Spacing.xs) {
+                    if reading.source == .metacritic {
+                        MetacriticSquare(value: reading.value, height: 12)
+                    } else {
+                        ProviderMark(source: reading.source, value: reading.value, height: 12)
+                        Text(verbatim: reading.text)
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(Tokens.palette.mutedFg)
+                    }
                 }
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(Tokens.palette.mutedFg)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: text))
+                .accessibilityLabel(Text(verbatim: reading.text))
             }
         }
         .task(id: "\(input.type.rawValue)-\(input.tmdbId)-\(provider?.source.rawValue ?? "")") { provider?.request(input) }

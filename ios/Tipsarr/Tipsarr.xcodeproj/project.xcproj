@@ -82,6 +82,7 @@
       ],
       "build-settings": {
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+        "ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES": "AppIconLight AppIconDark AppIconMono",
         "CODE_SIGN_STYLE": "Automatic",
         "CURRENT_PROJECT_VERSION": "1",
         "DEVELOPMENT_TEAM": "L46FL2JE5Z",

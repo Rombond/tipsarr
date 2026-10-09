@@ -44,6 +44,7 @@ struct ProfileView: View {
                 case .settings: SettingsView(account: account, profile: profile)
                 case .devices: DevicesView()
                 case .accounts: AccountsView()
+                case .appIcon: AppIconPicker()
                 }
             }
             .mediaDestinations()
@@ -146,7 +147,7 @@ struct ProfileView: View {
     }
 }
 
-enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts }
+enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts, appIcon }
 
 /// Number with an icon and a label.
 private struct StatTile: View {

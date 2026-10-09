@@ -124,5 +124,11 @@
   "m.settings.region": "Région",
   "m.settings.security": "Sécurité",
   "m.settings.server": "Serveur",
-  "m.settings.server_version": "Tipsarr %@ · connecté"
+  "m.settings.server_version": "Tipsarr %@ · connecté",
+  "m.settings.app_icon": "Icône de l’app",
+  "m.icon.default": "Automatique",
+  "m.icon.light": "Clair",
+  "m.icon.dark": "Sombre",
+  "m.icon.mono": "Monochrome",
+  "m.icon.footer": "Automatique suit les modes clair, sombre et teinté de votre écran d’accueil."
 }

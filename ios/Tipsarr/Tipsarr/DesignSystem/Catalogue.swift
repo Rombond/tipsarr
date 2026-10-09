@@ -8,6 +8,19 @@ struct Catalogue: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
+                section("Ratings") {
+                    RatingsStrip(ratings: .init(tmdb: 8.2, imdb: 8.5, rottenTomatoes: 92, metacritic: 79))
+                    RatingsStrip(ratings: .init(tmdb: 8.7, rottenTomatoes: 41, metacritic: 35))
+                    HStack(spacing: Tokens.Spacing.lg) {
+                        ProviderMark(source: .tmdb, value: 8.2)
+                        ProviderMark(source: .imdb, value: 8.5)
+                        ProviderMark(source: .rottenTomatoes, value: 92)
+                        ProviderMark(source: .rottenTomatoes, value: 41)
+                        MetacriticSquare(value: 79)
+                        MetacriticSquare(value: 45)
+                        MetacriticSquare(value: 20)
+                    }
+                }
                 section("Posters") {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Tokens.Spacing.md), count: 3), spacing: Tokens.Spacing.lg) {
                         PosterCard(title: "Blade Runner 2049", subtitle: "2017", state: .available)

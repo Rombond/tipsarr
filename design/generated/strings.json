@@ -627,7 +627,13 @@
   "m.settings.region": "Region",
   "m.settings.security": "Security",
   "m.settings.server": "Server",
-  "m.settings.server_version": "Tipsarr %@ · connected"
+  "m.settings.server_version": "Tipsarr %@ · connected",
+  "m.settings.app_icon": "App icon",
+  "m.icon.default": "Automatic",
+  "m.icon.light": "Light",
+  "m.icon.dark": "Dark",
+  "m.icon.mono": "Monochrome",
+  "m.icon.footer": "Automatic follows the light, dark and tinted looks of your home screen."
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -1257,6 +1263,12 @@
   "m.settings.region": "Région",
   "m.settings.security": "Sécurité",
   "m.settings.server": "Serveur",
-  "m.settings.server_version": "Tipsarr %@ · connecté"
+  "m.settings.server_version": "Tipsarr %@ · connecté",
+  "m.settings.app_icon": "Icône de l’app",
+  "m.icon.default": "Automatique",
+  "m.icon.light": "Clair",
+  "m.icon.dark": "Sombre",
+  "m.icon.mono": "Monochrome",
+  "m.icon.footer": "Automatique suit les modes clair, sombre et teinté de votre écran d’accueil."
  }
 }

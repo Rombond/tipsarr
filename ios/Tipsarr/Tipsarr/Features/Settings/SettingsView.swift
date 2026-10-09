@@ -92,6 +92,9 @@ struct SettingsView: View {
                     Label { Text("theme.title") } icon: { Image(systemName: "paintpalette") }
                 }
                 .pickerStyle(.navigationLink)
+                NavigationLink(value: ProfileRoute.appIcon) {
+                    Label { Text("m.settings.app_icon") } icon: { Image(systemName: "app.badge") }
+                }
             }
             Section("m.settings.security") {
                 NavigationLink(value: ProfileRoute.devices) {
