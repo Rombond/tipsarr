@@ -7,9 +7,12 @@ struct ProfileView: View {
 
     @Environment(\.appContext) private var context
     @Environment(\.liveUpdates) private var live
-    @AppStorage("avatarVersion") private var avatarVersion = 0
-    @State private var model: ProfileModel
-    @State private var showPicture = false
+    @AppStorage("avatarVersion") var avatarVersion = 0
+    @Environment(SessionManager.self) var session
+    @State var model: ProfileModel
+    @State var showPicture = false
+    /// Width of the content area; picks the compact, portrait-iPad or landscape-iPad layout.
+    @State private var width: CGFloat = 0
 
     init(account: Account, profile: Profile, api: TipsarrAPI, openRequests: @escaping () -> Void = {}) {
         self.account = account
@@ -23,18 +26,18 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: Tokens.Spacing._2xl) {
-                    header
-                    stats
-                    // See all goes to the full Stats page.
-                    PosterCarousel(title: "stats.top", titleKey: "stats.top", rows: model.topWatched.map(\.row), ranked: true, seeAll: .stats)
-                    if profile.isAdmin { AdminGroup(openIssues: model.openIssues) }
-                    recentRequests
+                Group {
+                    switch width == 0 ? ContentWidth.compact : ContentWidth(width) {
+                    case .compact: compactBody
+                    case .regular: portraitBody
+                    case .wide: landscapeBody
+                    }
                 }
                 .padding(Tokens.Spacing.lg)
-                .frame(maxWidth: 720)
+                .frame(maxWidth: width == 0 || width < 620 ? 720 : 1100)
                 .frame(maxWidth: .infinity)
             }
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
             .background(Tokens.palette.bg)
             .navigationTitle("profile.title")
             .toolbar {
@@ -71,6 +74,18 @@ struct ProfileView: View {
         }
     }
 
+    /// iPhone and narrow windows: one centred column.
+    private var compactBody: some View {
+        VStack(spacing: Tokens.Spacing._2xl) {
+            header
+            stats
+            // See all goes to the full Stats page.
+            PosterCarousel(title: "stats.top", titleKey: "stats.top", rows: model.topWatched.map(\.row), ranked: true, seeAll: .stats)
+            if profile.isAdmin { AdminGroup(openIssues: model.openIssues) }
+            recentRequests
+        }
+    }
+
     // MARK: Header
 
     private var header: some View {
@@ -96,7 +111,7 @@ struct ProfileView: View {
     }
 
     /// "Member since Oct 2025 · last seen today"
-    private var memberLine: String? {
+    var memberLine: String? {
         var parts: [String] = []
         if let created = profile.createdAt, created.timeIntervalSince1970 > 0 {
             parts.append(L10n.string("profile.member_since", created.formatted(.dateTime.month(.abbreviated).year())))
@@ -132,7 +147,7 @@ struct ProfileView: View {
                         .foregroundStyle(Tokens.palette.mutedFg)
                 }
                 VStack(spacing: 0) {
-                    ForEach(model.recent) { record in
+                    ForEach(model.recent.prefix(3)) { record in
                         NavigationLink(value: MediaRoute(type: record.type, tmdbId: record.tmdbId, title: record.title)) {
                             HStack(spacing: Tokens.Spacing.md) {
                                 RemoteImage(path: record.posterPath, size: .w92) {
@@ -164,36 +179,57 @@ struct ProfileView: View {
 enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts, appIcon, issues, issue(String), users, user(String), sync, stats, posterList(PosterListRoute) }
 
 /// Number with an icon and a label.
-private struct StatTile: View {
+struct StatTile: View {
     let symbol: String
     let value: Int?
     let label: LText
+    /// Icon beside the number (wide tiles of the portrait iPad layout) instead of above it.
+    var horizontal = false
 
     var body: some View {
-        VStack(spacing: Tokens.Spacing.xs) {
-            Image(systemName: symbol).foregroundStyle(Tokens.palette.mutedFg)
-            Text(verbatim: value.map(String.init) ?? "–").font(.title2.weight(.bold))
-            Text(label).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+        Group {
+            if horizontal {
+                HStack(spacing: Tokens.Spacing.md) {
+                    Image(systemName: symbol)
+                        .foregroundStyle(Tokens.palette.fg)
+                        .frame(width: 40, height: 40)
+                        .background(Tokens.palette.muted, in: .rect(cornerRadius: Tokens.Radius.md))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: value.map(String.init) ?? "–").font(.title.weight(.bold))
+                        Text(label).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(Tokens.Spacing.md)
+            } else {
+                VStack(spacing: Tokens.Spacing.xs) {
+                    Image(systemName: symbol).foregroundStyle(Tokens.palette.mutedFg)
+                    Text(verbatim: value.map(String.init) ?? "–").font(.title2.weight(.bold))
+                    Text(label).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, Tokens.Spacing.md)
+            }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, Tokens.Spacing.md)
         .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
         .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
         .accessibilityElement(children: .combine)
     }
 }
 
-private struct StatCard: View {
+struct StatCard: View {
     let symbol: String
     let value: Int?
     let label: LText
+    var horizontal = false
     var action: (() -> Void)?
 
     var body: some View {
         if let action {
-            Button(action: action) { StatTile(symbol: symbol, value: value, label: label) }.buttonStyle(.plain)
+            Button(action: action) { StatTile(symbol: symbol, value: value, label: label, horizontal: horizontal) }.buttonStyle(.plain)
         } else {
-            StatTile(symbol: symbol, value: value, label: label)
+            StatTile(symbol: symbol, value: value, label: label, horizontal: horizontal)
         }
     }
 }

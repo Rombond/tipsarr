@@ -17,7 +17,7 @@ final class ProfileModel {
     init(api: TipsarrAPI) { self.api = api }
 
     func load() async {
-        async let requests = try? api.myRequests(take: 3)
+        async let requests = try? api.myRequests(take: 4)
         async let watchlist = try? api.watchlist()
         var watched = LibraryFilters()
         watched.watched = .yes

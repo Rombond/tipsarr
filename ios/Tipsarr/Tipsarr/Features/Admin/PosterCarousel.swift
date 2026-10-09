@@ -28,6 +28,7 @@ struct PosterCarousel: View {
     var ranked = false
     /// Where See all goes; the full list when nil.
     var seeAll: ProfileRoute?
+    var posterWidth: CGFloat = 120
 
     var body: some View {
         if !rows.isEmpty {
@@ -61,7 +62,7 @@ struct PosterCarousel: View {
             Text(verbatim: row.title).font(.subheadline.weight(.medium)).lineLimit(1)
             Text(verbatim: row.note).font(.caption).foregroundStyle(Tokens.palette.mutedFg).lineLimit(1)
         }
-        .frame(width: 120)
+        .frame(width: posterWidth)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: "\(row.title), \(row.note)"))
     }
