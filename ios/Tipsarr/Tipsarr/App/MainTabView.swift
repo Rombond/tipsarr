@@ -34,7 +34,7 @@ struct MainTabView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            shell(ShellStyle.style(size: proxy.size, compact: sizeClass == .compact, hinge: FoldInfo.verticalHinge(proxy)))
+            shell(ShellStyle.style(size: proxy.size, compact: sizeClass == .compact, hinge: FoldInfo.verticalHinge(proxy)), trailingInset: proxy.safeAreaInsets.trailing)
         }
         .onGeometryChange(for: Bool.self, of: { FoldInfo.verticalHinge($0) != nil }) { foldedHinge = $0 }
         .environment(\.imageSource, ImageSource(serverURL: account.serverURL, token: account.token))
@@ -80,20 +80,20 @@ struct MainTabView: View {
 
     /// The five tabs inside the system bar (iPhone, narrow windows), or with our own bar: a sidebar on a
     /// landscape iPad window, a floating bar at the bottom of a portrait one.
-    @ViewBuilder private func shell(_ style: ShellStyle) -> some View {
+    @ViewBuilder private func shell(_ style: ShellStyle, trailingInset: CGFloat = 0) -> some View {
         let badges: [AppTab: Int] = profile.isAdmin ? [.requests: pendingCount] : [:]
         if case .dualPane(let hinge) = style {
             // Left of the hinge: the tab content with its own bar. Right of it: the opened title or request.
             HStack(spacing: 0) {
                 tabs(style)
+                    // Navigation stacks take the window's trailing safe area (clock strip) although this pane ends at the hinge.
+                    .safeAreaPadding(.trailing, -trailingInset)
                     .environment(\.detailPane, pane)
                     .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 88) }
                     .overlay(alignment: .bottom) {
                         FloatingTabBar(selection: Binding(get: { router.tab }, set: { router.tab = $0; pane.content = nil }), badges: badges, showsTitles: false).padding(.bottom, Tokens.Spacing.sm)
                     }
                     .frame(width: max(hinge.leftWidth, 0))
-                    // The fold margin comes back as a trailing safe area; the pane ends at the hinge zone already.
-                    .ignoresSafeArea(.container, edges: .trailing)
                 Color.clear.frame(width: max(hinge.rightStart - hinge.leftWidth, 0))
                 DetailPaneView(pane: pane, tab: router.tab, account: account, profile: profile)
                     .frame(maxWidth: .infinity)
