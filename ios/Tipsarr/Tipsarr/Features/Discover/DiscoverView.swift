@@ -178,7 +178,8 @@ struct MediaGrid: View {
                 if model.loadingMore { ProgressView().frame(maxWidth: .infinity).padding() }
             }
         }
-        .task { await model.loadIfNeeded() }
+        // The same grid view is reused when the chip changes, so the task must follow the model.
+        .task(id: ObjectIdentifier(model)) { await model.loadIfNeeded() }
     }
 
     private static let columns = [GridItem(.adaptive(minimum: 104, maximum: 180), spacing: Tokens.Spacing.md, alignment: .top)]

@@ -4373,6 +4373,7 @@
       }
     },
     "m.discover.see_all" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4389,6 +4390,7 @@
       }
     },
     "m.discover.trending_week" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9153,7 +9155,6 @@
       }
     },
     "suggest.preparing" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

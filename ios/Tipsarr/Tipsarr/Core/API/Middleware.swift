@@ -105,10 +105,16 @@ struct TimingMiddleware: ClientMiddleware {
             let result = try await next(request, body, baseURL)
             let ms = (ContinuousClock.now - start).milliseconds
             Self.logger.notice("\(operationID, privacy: .public) \(result.0.status.code) \(ms) ms")
+            #if DEBUG
+            print("[network] \(operationID) \(result.0.status.code) \(ms) ms")
+            #endif
             return result
         } catch {
             let ms = (ContinuousClock.now - start).milliseconds
             Self.logger.notice("\(operationID, privacy: .public) failed \(ms) ms: \(String(describing: error), privacy: .public)")
+            #if DEBUG
+            print("[network] \(operationID) failed \(ms) ms: \(error)")
+            #endif
             throw error
         }
     }

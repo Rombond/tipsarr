@@ -47,6 +47,9 @@ actor ImageLoader {
             let (data, response) = try await session.data(for: request)
             let ms = (ContinuousClock.now - start).milliseconds
             Self.logger.notice("image \(url.lastPathComponent, privacy: .public) \((response as? HTTPURLResponse)?.statusCode ?? 0) \(ms) ms")
+            #if DEBUG
+            print("[network] image \(url.lastPathComponent) \((response as? HTTPURLResponse)?.statusCode ?? 0) \(ms) ms")
+            #endif
             guard (response as? HTTPURLResponse)?.statusCode == 200,
                   let image = UIImage(data: data)?.preparingForDisplay() else { throw URLError(.cannotDecodeContentData) }
             return image
