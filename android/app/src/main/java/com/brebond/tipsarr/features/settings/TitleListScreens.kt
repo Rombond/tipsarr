@@ -116,7 +116,7 @@ private fun TitleGridScreen(
                     if (!loaded) items(6) { PosterSkeleton() }
                     items(items, key = { it.id }) { item ->
                         Box {
-                            MediaPoster(item, { onOpen(item) }, Modifier.combinedClickable(onClick = { onOpen(item) }, onLongClick = { menuFor = item.id }))
+                            MediaPoster(item, { onOpen(item) }, Modifier.combinedClickable(onClick = { onOpen(item) }, onLongClick = { menuFor = item.id }), longPressMenu = false)
                             DropdownMenu(menuFor == item.id, { menuFor = null }, containerColor = Tokens.palette.card) {
                                 DropdownMenuItem(text = { Text(actionTitle, color = Tokens.palette.fg) }, onClick = {
                                     menuFor = null

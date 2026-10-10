@@ -93,7 +93,7 @@ class MediaDetailModel(
             val scores = async { if (route.type == MediaType.Movie) runCatching { api.movieScores(route.tmdbId) }.getOrNull() else null }
             val titleFlags = async { runCatching { api.flags(route.type, route.tmdbId) }.getOrNull() }
             val mine = async { runCatching { api.myRequests() }.getOrNull() }
-            scores.await()?.let { ratings = ratings.copy(imdb = it.imdb, rottenTomatoes = it.rottenTomatoes, metacritic = it.metacritic) }
+            scores.await()?.let { ratings = ratings.copy(imdb = it.imdb, rottenTomatoes = it.rottenTomatoes, metacritic = it.metacritic, rottenTomatoesUrl = it.rottenTomatoesUrl) }
             titleFlags.await()?.let { flags = it }
             mine.await()?.let { apply(it) }
         }

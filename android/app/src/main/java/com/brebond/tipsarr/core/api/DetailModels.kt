@@ -39,6 +39,7 @@ data class MediaDetail(
     val recommendations: List<MediaItem> = emptyList(),
     val watchUrl: String? = null,
     val trailerKey: String? = null,
+    val imdbId: String? = null,
 ) {
     val year: String? get() = releaseDate?.takeIf { it.length >= 4 }?.take(4)
     val requestOpen: Boolean get() = requestStatus != null
@@ -48,10 +49,10 @@ data class MediaDetail(
 data class Score(val value: Double, val votes: Int? = null)
 
 @Serializable
-data class MovieScores(val imdb: Score? = null, val metacritic: Score? = null, val rottenTomatoes: Score? = null)
+data class MovieScores(val imdb: Score? = null, val metacritic: Score? = null, val rottenTomatoes: Score? = null, val rottenTomatoesUrl: String? = null)
 
 /** Scores for the ratings strip. TMDB comes with the detail, the others only exist for movies. */
-data class RatingsSummary(val tmdb: Double? = null, val imdb: Double? = null, val rottenTomatoes: Double? = null, val metacritic: Double? = null)
+data class RatingsSummary(val tmdb: Double? = null, val imdb: Double? = null, val rottenTomatoes: Double? = null, val metacritic: Double? = null, val rottenTomatoesUrl: String? = null)
 
 @Serializable
 data class TitleFlags(val watchlisted: Boolean = false, val blocklisted: Boolean = false)

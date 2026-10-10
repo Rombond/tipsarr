@@ -85,7 +85,15 @@ fun LibraryFiltersSheet(initial: LibraryFilters, facets: LibraryFacets?, onDismi
                         })
                     }
                 }
-                Text(stringResource(R.string.library_genres_all), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+                val modes = listOf(false to R.string.m_library_genre_all, true to R.string.m_library_genre_any)
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    modes.forEachIndexed { index, (any, label) ->
+                        SegmentedButton(
+                            selected = filters.anyGenre == any, onClick = { update(filters.copy(anyGenre = any)) },
+                            shape = SegmentedButtonDefaults.itemShape(index, modes.size),
+                        ) { Text(stringResource(label)) }
+                    }
+                }
             }
             if (facets != null && facets.yearMax >= facets.yearMin && facets.yearMax > 0) Section(stringResource(R.string.library_year)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
@@ -110,7 +118,7 @@ fun LibraryFiltersSheet(initial: LibraryFilters, facets: LibraryFacets?, onDismi
                     onValueChange = { v -> update(filters.copy(maxRuntime = if (v.toInt() >= facets.maxRuntimeMinutes - 2) null else (v / 5).toInt() * 5)) },
                     colors = SliderDefaults.colors(thumbColor = Tokens.palette.primary, activeTrackColor = Tokens.palette.primary, inactiveTrackColor = Tokens.palette.muted),
                 )
-                Text(filters.maxRuntime?.let { stringResource(R.string.library_under, it.toString()) } ?: stringResource(R.string.library_any), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+                Text(filters.maxRuntime?.let { stringResource(R.string.m_library_under, hoursText(it)) } ?: stringResource(R.string.library_any), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
             }
             Section(stringResource(R.string.library_watched_state)) {
                 val options = listOf(WatchedFilter.Any to R.string.library_any, WatchedFilter.Yes to R.string.library_watched, WatchedFilter.No to R.string.library_not_watched)
@@ -185,3 +193,6 @@ private fun YearMenu(label: String, selected: Int?, years: List<Int>, onSelect: 
         }
     }
 }
+
+/** Minutes as "1h 45m" (or "45m"): the slider reaches several hours in big libraries. */
+private fun hoursText(minutes: Int): String = if (minutes >= 60) "${minutes / 60}h" + (minutes % 60).takeIf { it > 0 }?.let { " ${it}m" }.orEmpty() else "${minutes}m"

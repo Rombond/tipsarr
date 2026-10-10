@@ -10,6 +10,7 @@ suspend fun TipsarrApi.library(filters: LibraryFilters, page: Int, pageSize: Int
         add("type=${filters.kind.wire}")
         if (filters.query.isNotEmpty()) add("q=${enc(filters.query)}")
         filters.genres.sorted().forEach { add("genre=${enc(it)}") }
+        if (filters.anyGenre && filters.genres.size > 1) add("genreMode=any")
         filters.yearFrom?.let { add("yearFrom=$it") }
         filters.yearTo?.let { add("yearTo=$it") }
         filters.minRating?.let { add("minRating=$it") }

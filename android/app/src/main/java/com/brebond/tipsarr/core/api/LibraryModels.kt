@@ -52,6 +52,8 @@ data class LibraryFilters(
     val kind: LibraryKind = LibraryKind.All,
     val query: String = "",
     val genres: Set<String> = emptySet(),
+    /** True: a title needs at least one of the genres (default: all of them). */
+    val anyGenre: Boolean = false,
     val yearFrom: Int? = null,
     val yearTo: Int? = null,
     val minRating: Double? = null,
@@ -62,5 +64,5 @@ data class LibraryFilters(
 ) {
     /** Filters from the sheet only (not the chips or the search text). */
     val sheetIsDefault: Boolean
-        get() = genres.isEmpty() && yearFrom == null && yearTo == null && minRating == null && maxRuntime == null && sort == LibrarySort.Added && descending
+        get() = genres.isEmpty() && !anyGenre && yearFrom == null && yearTo == null && minRating == null && maxRuntime == null && sort == LibrarySort.Added && descending
 }

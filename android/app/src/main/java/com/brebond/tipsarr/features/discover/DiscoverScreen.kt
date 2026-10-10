@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.HourglassTop
@@ -46,6 +47,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.brebond.tipsarr.R
 import com.brebond.tipsarr.core.api.ApiError
+import com.brebond.tipsarr.core.api.BoxOfficeChart
 import com.brebond.tipsarr.core.api.MediaItem
 import com.brebond.tipsarr.core.live.LocalLive
 import com.brebond.tipsarr.core.live.OnTick
@@ -63,7 +65,7 @@ private val GUTTER = Tokens.Spacing.lg
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DiscoverScreen(model: DiscoverModel, onOpenSearch: () -> Unit, onOpenItem: (MediaItem) -> Unit, modifier: Modifier = Modifier) {
+fun DiscoverScreen(model: DiscoverModel, boxOffice: BoxOfficeModel, onOpenChart: (BoxOfficeChart) -> Unit, onOpenItem: (MediaItem) -> Unit, modifier: Modifier = Modifier) {
     var refreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val source = model.source(model.chip)
@@ -72,24 +74,21 @@ fun DiscoverScreen(model: DiscoverModel, onOpenSearch: () -> Unit, onOpenItem: (
     OnTick(live?.requestsTick ?: 0) { model.refreshCurrent() }
     PullToRefreshBox(
         isRefreshing = refreshing,
-        onRefresh = { scope.launch { refreshing = true; model.refreshCurrent(); refreshing = false } },
+        onRefresh = { scope.launch { refreshing = true; model.refreshCurrent(); if (model.chip == DiscoverChip.ForYou) boxOffice.refresh(); refreshing = false } },
         modifier = modifier.fillMaxSize(),
     ) {
-        if (source == null) ForYou(model, onOpenSearch, onOpenItem) else Grid(model, model.list(source), onOpenSearch, onOpenItem)
+        if (source == null) ForYou(model, boxOffice, onOpenChart, onOpenItem) else Grid(model, model.list(source), onOpenItem)
     }
 }
 
 @Composable
-private fun Header(model: DiscoverModel, onOpenSearch: () -> Unit, gutter: Dp = GUTTER) {
+private fun Header(model: DiscoverModel, gutter: Dp = GUTTER) {
     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
-        Row(Modifier.fillMaxWidth().padding(start = gutter, end = Tokens.Spacing.sm, top = Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(start = gutter, end = gutter, top = Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 stringResource(R.string.m_tab_discover), fontSize = Tokens.FontSize.largeTitle, fontWeight = FontWeight.Bold,
                 color = Tokens.palette.fg, modifier = Modifier.weight(1f).semantics { heading() },
             )
-            IconButton(onClick = onOpenSearch) {
-                Icon(Icons.Outlined.Search, contentDescription = stringResource(R.string.m_discover_search), tint = Tokens.palette.fg)
-            }
         }
         LazyRow(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), contentPadding = PaddingValues(horizontal = gutter)) {
             items(DiscoverChip.entries) { item ->
@@ -109,15 +108,16 @@ private fun DiscoverChip.title(): Int = when (this) {
 
 /** "For you" chip: the suggestion rows (the server decides which rows, e.g. trending, because you watched). */
 @Composable
-private fun ForYou(model: DiscoverModel, onOpenSearch: () -> Unit, onOpenItem: (MediaItem) -> Unit) {
+private fun ForYou(model: DiscoverModel, boxOffice: BoxOfficeModel, onOpenChart: (BoxOfficeChart) -> Unit, onOpenItem: (MediaItem) -> Unit) {
     val home = model.home
     LaunchedEffect(home) { home.loadIfNeeded() }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Tokens.Spacing.lg), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg)) {
-        item { Header(model, onOpenSearch) }
+        item { Header(model) }
         when (val phase = home.phase) {
             Phase.Idle, Phase.Loading -> item { RailSkeleton() }
             is Phase.Failed -> item { ErrorBlock(phase.error) { home.refresh() } }
             Phase.Loaded -> if (home.rows.isEmpty()) {
+                item { BoxOfficeRail(boxOffice, onOpenItem, onOpenChart) }
                 item {
                     StateView(
                         if (home.generating) Icons.Outlined.HourglassTop else Icons.Outlined.AutoAwesome,
@@ -126,7 +126,13 @@ private fun ForYou(model: DiscoverModel, onOpenSearch: () -> Unit, onOpenItem: (
                     )
                 }
             } else {
-                items(home.rows, key = { it.id }) { row -> Rail(row.title, row.items, onOpenItem) }
+                // The box office sits right under the first suggestion row ("Recommended for you").
+                itemsIndexed(home.rows, key = { _, row -> row.id }) { index, row ->
+                    Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg)) {
+                        Rail(row.title, row.items, onOpenItem)
+                        if (index == 0) BoxOfficeRail(boxOffice, onOpenItem, onOpenChart)
+                    }
+                }
             }
         }
     }
@@ -159,7 +165,7 @@ private fun RailSkeleton() {
 
 /** Grid chips (Trending, Upcoming, Movies, TV): adaptive grid with infinite scroll. */
 @Composable
-private fun Grid(model: DiscoverModel, list: MediaListModel, onOpenSearch: () -> Unit, onOpenItem: (MediaItem) -> Unit) {
+private fun Grid(model: DiscoverModel, list: MediaListModel, onOpenItem: (MediaItem) -> Unit) {
     LaunchedEffect(list) { list.loadIfNeeded() }
     LazyVerticalGrid(
         columns = GridCells.Adaptive(104.dp),
@@ -168,7 +174,7 @@ private fun Grid(model: DiscoverModel, list: MediaListModel, onOpenSearch: () ->
         verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg),
         horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md),
     ) {
-        item(span = { GridItemSpan(maxLineSpan) }) { Header(model, onOpenSearch, gutter = 0.dp) }
+        item(span = { GridItemSpan(maxLineSpan) }) { Header(model, gutter = 0.dp) }
         when (val phase = list.phase) {
             Phase.Idle, Phase.Loading -> items(9) { PosterSkeleton() }
             is Phase.Failed -> item(span = { GridItemSpan(maxLineSpan) }) { ErrorBlock(phase.error) { list.refresh() } }

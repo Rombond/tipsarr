@@ -43,6 +43,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import com.brebond.tipsarr.core.api.request
+import com.brebond.tipsarr.core.api.updatePreferences
 import com.brebond.tipsarr.core.live.LocalLive
 import com.brebond.tipsarr.core.live.OnTick
 import com.brebond.tipsarr.core.navigation.DeepLinkTarget
@@ -53,7 +54,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.activity.compose.BackHandler
 import com.brebond.tipsarr.core.api.MediaItem
+import com.brebond.tipsarr.core.support.LocalTitleMenu
 import com.brebond.tipsarr.core.support.LocalToast
+import com.brebond.tipsarr.core.support.TitleMenu
 import com.brebond.tipsarr.core.support.ToastCenter
 import com.brebond.tipsarr.core.support.ToastHost
 import com.brebond.tipsarr.features.detail.MediaDetailScreen
@@ -127,6 +130,11 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
     val toasts = remember { ToastCenter(scope) }
     val openTitle: (MediaItem) -> Unit = { model.openTitle(tab, MediaRoute(it.type, it.tmdbId, it.title)) }
     LaunchedEffect(tab) { model.refreshPending() }
+    // No region yet: the phone's one, which the person can change in Settings.
+    LaunchedEffect(account.id, profile.region) {
+        val code = java.util.Locale.getDefault().country
+        if (profile.region.isEmpty() && code.length == 2) runCatching { session.update(model.api.updatePreferences(region = code.uppercase())) }
+    }
     LaunchedEffect(profile.ratingSource) { model.ratings.changeSource(RatingSource.from(profile.ratingSource)) }
     var showPicture by remember { mutableStateOf(false) }
 
@@ -216,6 +224,7 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
                             is Screen.User -> UserDetailScreen(model.api, top.id, profile.id, onBack = { model.back(tab) })
                             Screen.Sync -> SyncScreen(model.api, onBack = { model.back(tab) })
                             Screen.Stats -> StatsScreen(model.api, profile.isAdmin, profile, onBack = { model.back(tab) }, onOpenTitle = { model.openTitle(tab, it) }, onSeeAll = { model.open(tab, Screen.PosterList(it)) })
+                            is Screen.BoxOffice -> com.brebond.tipsarr.features.discover.BoxOfficeScreen(model.api, top.chart, onBack = { model.back(tab) }, onOpenItem = openTitle)
                             is Screen.PosterList -> PosterListScreen(top.route, onBack = { model.back(tab) }, onOpen = { model.openTitle(tab, it) })
             }
         }
@@ -223,7 +232,7 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
     val renderRoot: @Composable (AppTab) -> Unit = { current ->
         when (current) {
 
-                    AppTab.Discover -> DiscoverScreen(model.discover, onOpenSearch = { tab = AppTab.Search }, onOpenItem = openTitle)
+                    AppTab.Discover -> DiscoverScreen(model.discover, model.boxOffice, onOpenChart = { model.open(tab, Screen.BoxOffice(it)) }, onOpenItem = openTitle)
                     AppTab.Library -> LibraryScreen(model.library, onOpen = { model.openTitle(tab, it) })
                     AppTab.Requests -> RequestsScreen(model.requests, onOpen = { model.openRequest(tab, it) }, onOpenDiscover = { tab = AppTab.Discover })
                     AppTab.Search -> SearchScreen(
@@ -239,7 +248,6 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
                         onOpenWatchlist = { model.open(tab, Screen.Watchlist) },
                         onOpenTitle = { model.openTitle(tab, it) },
                         onOpenRequest = { model.openRequest(tab, it) },
-                        onChangePicture = { showPicture = true },
                         onOpenStats = { model.open(tab, Screen.Stats) },
                         onOpenIssues = { model.open(tab, Screen.Issues) },
                         onOpenUsers = { model.open(tab, Screen.Users) },
@@ -273,7 +281,7 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
         }
     }
 
-    CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader, LocalToast provides toasts, LocalRatings provides model.ratings, LocalLive provides model.live) {
+    CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader, LocalToast provides toasts, LocalRatings provides model.ratings, LocalLive provides model.live, LocalTitleMenu provides remember(model.api) { TitleMenu(model.api) }) {
         Box(Modifier.fillMaxSize().background(Tokens.palette.bg)) {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val rail = hinge == null && maxWidth >= 840.dp

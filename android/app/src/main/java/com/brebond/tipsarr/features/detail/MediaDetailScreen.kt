@@ -187,7 +187,7 @@ fun MediaDetailScreen(model: MediaDetailModel, serverUrl: String, onBack: () -> 
                             Modifier.widthIn(max = 720.dp).fillMaxWidth().padding(horizontal = GUTTER).padding(bottom = Tokens.Spacing.x3xl),
                             verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.xl),
                         ) {
-                            RatingsStrip(model.ratings)
+                            RatingsStrip(model.ratings, detail)
                             ActionRow(
                                 model = model, detail = detail,
                                 onRequest = ::startRequest,
@@ -302,7 +302,8 @@ private fun DetailSkeleton(title: String) {
 
 /** One row of scores between the poster and the request button, each with its provider's logo. Movies: TMDB, IMDb, Rotten Tomatoes, Metacritic. Shows: TMDB. */
 @Composable
-private fun RatingsStrip(ratings: RatingsSummary) {
+private fun RatingsStrip(ratings: RatingsSummary, detail: MediaDetail) {
+    val context = LocalContext.current
     val entries = buildList {
         ratings.tmdb?.let { add(RatingSource.Tmdb to it) }
         ratings.imdb?.let { add(RatingSource.Imdb to it) }
@@ -316,7 +317,10 @@ private fun RatingsStrip(ratings: RatingsSummary) {
     ) {
         entries.forEachIndexed { index, (source, value) ->
             if (index > 0) Box(Modifier.width(1.dp).height(28.dp).background(Tokens.palette.border))
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.weight(1f).clickable { context.startActivity(Intent(Intent.ACTION_VIEW, ratingUrl(source, detail, ratings).toUri())) },
+                horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,
+            ) {
                 if (source == RatingSource.Metacritic) {
                     MetacriticSquare(value, height = 18.dp)
                 } else {
@@ -325,6 +329,17 @@ private fun RatingsStrip(ratings: RatingsSummary) {
                 }
             }
         }
+    }
+}
+
+/** Where a score leads, as on the web: TMDB and IMDb by id, Rotten Tomatoes' own page when known, else a search. */
+private fun ratingUrl(source: RatingSource, detail: MediaDetail, ratings: RatingsSummary): String {
+    val q = java.net.URLEncoder.encode(detail.title, "UTF-8").replace("+", "%20")
+    return when (source) {
+        RatingSource.Tmdb -> "https://www.themoviedb.org/${if (detail.type == MediaType.Movie) "movie" else "tv"}/${detail.tmdbId}"
+        RatingSource.Imdb -> detail.imdbId?.takeIf { it.isNotEmpty() }?.let { "https://www.imdb.com/title/$it" } ?: "https://www.imdb.com/find/?q=$q"
+        RatingSource.RottenTomatoes -> ratings.rottenTomatoesUrl ?: "https://www.rottentomatoes.com/search?search=$q"
+        RatingSource.Metacritic -> "https://www.metacritic.com/search/$q/"
     }
 }
 
@@ -345,6 +360,12 @@ private fun ActionRow(
     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
         Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { MainButton(action, model, onRequest, onRetry, onCancel) }
+            detail.trailerKey?.let { key ->
+                IconButton(
+                    { context.startActivity(Intent(Intent.ACTION_VIEW, "https://www.youtube.com/watch?v=$key".toUri())) },
+                    Modifier.size(Tokens.Size.touchTarget).clip(CircleShape).background(Tokens.palette.muted),
+                ) { Icon(Icons.Outlined.PlayCircle, stringResource(R.string.actions_trailer), tint = Tokens.palette.fg) }
+            }
             Box {
                 IconButton(
                     { menu = true },
@@ -359,12 +380,6 @@ private fun ActionRow(
                         if (model.flags.blocklisted) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
                         stringResource(if (model.flags.blocklisted) R.string.actions_show_again else R.string.media_not_interested),
                     ) { menu = false; onHidden() }
-                    detail.trailerKey?.let { key ->
-                        MenuItem(Icons.Outlined.PlayCircle, stringResource(R.string.actions_trailer)) {
-                            menu = false
-                            context.startActivity(Intent(Intent.ACTION_VIEW, "https://www.youtube.com/watch?v=$key".toUri()))
-                        }
-                    }
                     MenuItem(Icons.Outlined.Flag, stringResource(R.string.actions_report_short)) { menu = false; onReport() }
                     if (action is DetailAction.InProgress && action.cancellable) {
                         MenuItem(Icons.Outlined.Cancel, stringResource(R.string.m_request_cancel), Tokens.palette.destructive) { menu = false; onCancel() }

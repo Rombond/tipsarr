@@ -45,6 +45,7 @@ sealed interface Screen {
     class User(val id: String) : Screen
     data object Sync : Screen
     data object Stats : Screen
+    class BoxOffice(val chart: com.brebond.tipsarr.core.api.BoxOfficeChart) : Screen
     class PosterList(val route: com.brebond.tipsarr.features.admin.PosterListRoute) : Screen
 }
 
@@ -57,6 +58,7 @@ class MainViewModel(
     ratingSource: RatingSource,
 ) : ViewModel() {
     val discover = DiscoverModel(api)
+    val boxOffice = com.brebond.tipsarr.features.discover.BoxOfficeModel(api)
     val search = SearchModel(api, context)
     val requests = RequestsModel(api, isAdmin)
     val library = LibraryModel(api)

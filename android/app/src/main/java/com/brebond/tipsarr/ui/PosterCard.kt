@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -41,6 +43,7 @@ fun PosterCard(
     subtitle: String? = null,
     state: RequestState? = null,
     watched: Boolean = false,
+    rank: Int? = null,
     rating: (@Composable () -> Unit)? = null,
     poster: @Composable () -> Unit = {},
 ) {
@@ -60,6 +63,12 @@ fun PosterCard(
             Icon(Icons.Filled.Movie, contentDescription = null, tint = p.mutedFg, modifier = Modifier.align(Alignment.Center).size(28.dp))
             poster()
             if (state != null) StatusBadge(state, Modifier.align(Alignment.TopEnd).padding(Tokens.Spacing.sm), compact = true)
+            if (rank != null) {
+                Text(
+                    rank.toString(), fontSize = Tokens.FontSize.footnote, fontWeight = FontWeight.Bold, color = Color.White,
+                    modifier = Modifier.align(Alignment.BottomStart).padding(Tokens.Spacing.sm).clip(CircleShape).background(Color.Black.copy(alpha = 0.6f)).defaultMinSize(minWidth = 22.dp, minHeight = 22.dp).wrapContentSize(),
+                )
+            }
             if (watched) {
                 Icon(
                     Icons.Filled.Visibility, contentDescription = null, tint = Color.White,

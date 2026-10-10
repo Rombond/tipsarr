@@ -3,6 +3,7 @@ package com.brebond.tipsarr.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,7 +27,7 @@ import com.brebond.tipsarr.design.palette
 
 /** A pushed screen: back button and an inline title over the app background. */
 @Composable
-fun TopBarScaffold(title: String, onBack: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+fun TopBarScaffold(title: String, onBack: () -> Unit, modifier: Modifier = Modifier, actions: @Composable RowScope.() -> Unit = {}, content: @Composable () -> Unit) {
     Column(modifier.fillMaxSize().background(Tokens.palette.bg)) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = Tokens.Spacing.xs, vertical = Tokens.Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.common_back), tint = Tokens.palette.fg) }
@@ -34,6 +35,7 @@ fun TopBarScaffold(title: String, onBack: () -> Unit, modifier: Modifier = Modif
                 title, fontSize = Tokens.FontSize.headline, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg,
                 maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).semantics { heading() },
             )
+            actions()
         }
         Column(Modifier.weight(1f)) { content() }
     }

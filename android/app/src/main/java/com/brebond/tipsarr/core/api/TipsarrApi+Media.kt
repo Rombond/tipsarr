@@ -10,7 +10,7 @@ suspend fun TipsarrApi.episodes(tmdbId: Int, season: Int): List<Episode> =
 /** Movie scores from IMDb, Rotten Tomatoes and Metacritic. */
 suspend fun TipsarrApi.movieScores(id: Int): RatingsSummary {
     val scores = get("/media/movie/$id/ratings", MovieScores.serializer())
-    return RatingsSummary(imdb = scores.imdb?.value, rottenTomatoes = scores.rottenTomatoes?.value, metacritic = scores.metacritic?.value)
+    return RatingsSummary(imdb = scores.imdb?.value, rottenTomatoes = scores.rottenTomatoes?.value, metacritic = scores.metacritic?.value, rottenTomatoesUrl = scores.rottenTomatoesUrl?.takeIf { it.isNotEmpty() })
 }
 
 suspend fun TipsarrApi.flags(type: MediaType, id: Int): TitleFlags = get("/media/${type.path()}/$id/flags", TitleFlags.serializer())

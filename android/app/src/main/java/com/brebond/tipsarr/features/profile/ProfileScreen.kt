@@ -88,7 +88,6 @@ fun ProfileScreen(
     onOpenWatchlist: () -> Unit,
     onOpenTitle: (MediaRoute) -> Unit,
     onOpenRequest: (RequestRecord) -> Unit,
-    onChangePicture: () -> Unit,
     onOpenStats: () -> Unit = {},
     onOpenIssues: () -> Unit = {},
     onOpenUsers: () -> Unit = {},
@@ -115,7 +114,7 @@ fun ProfileScreen(
                     IconButton(onOpenSettings) { Icon(Icons.Outlined.Settings, stringResource(R.string.nav_settings), tint = Tokens.palette.fg) }
                 }
             }
-            item { Header(profile, avatarVersion, onChangePicture) }
+            item { Header(profile, avatarVersion) }
             item {
                 Row(Modifier.padding(horizontal = GUTTER), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
                     StatTile(Icons.Outlined.Checklist, model.requestCount, stringResource(R.string.profile_stat_requests), Modifier.weight(1f), onOpenRequests)
@@ -131,7 +130,7 @@ fun ProfileScreen(
                             modifier = Modifier.weight(1f).semantics { heading() },
                         )
                         Text(
-                            stringResource(R.string.m_discover_see_all), fontSize = Tokens.FontSize.subhead, color = Tokens.palette.mutedFg,
+                            stringResource(R.string.m_stats_open), fontSize = Tokens.FontSize.subhead, color = Tokens.palette.mutedFg,
                             modifier = Modifier.clickable(onClick = onOpenStats).padding(Tokens.Spacing.sm),
                         )
                     }
@@ -188,7 +187,7 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun Header(profile: Profile, avatarVersion: Int, onChangePicture: () -> Unit) {
+private fun Header(profile: Profile, avatarVersion: Int) {
     val context = LocalContext.current
     val member = buildList {
         if (profile.createdAt > 0) {
@@ -198,13 +197,8 @@ private fun Header(profile: Profile, avatarVersion: Int, onChangePicture: () -> 
         if (profile.lastLoginAt > 0) add(stringResource(R.string.profile_last_seen, relativeTime(context, profile.lastLoginAt)))
     }.joinToString(" · ")
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
-        Box(Modifier.clickable(onClick = onChangePicture).semantics { }) {
-            AvatarView(profile.id, profile.name, 88.dp, avatarVersion)
-            Icon(
-                Icons.Outlined.PhotoCamera, stringResource(R.string.profile_change_picture), tint = Tokens.palette.primaryFg,
-                modifier = Modifier.align(Alignment.BottomEnd).size(28.dp).clip(CircleShape).background(Tokens.palette.primary).padding(6.dp),
-            )
-        }
+        // Changing the picture lives in Settings only.
+        AvatarView(profile.id, profile.name, 88.dp, avatarVersion)
         Text(profile.name, fontSize = Tokens.FontSize.title1, fontWeight = FontWeight.Bold, color = Tokens.palette.fg)
         if (member.isNotEmpty()) Text(member, fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = GUTTER))
     }

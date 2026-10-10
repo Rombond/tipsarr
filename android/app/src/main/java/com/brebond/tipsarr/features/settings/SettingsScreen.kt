@@ -70,6 +70,9 @@ import com.brebond.tipsarr.ui.TopBarScaffold
 import kotlinx.coroutines.launch
 import java.util.Locale
 
+/** The country's flag as two regional-indicator symbols. */
+private fun flag(code: String): String = code.uppercase().map { String(Character.toChars(0x1F1E6 + (it - 'A'))) }.joinToString("")
+
 /** Settings: account, language, region, score on posters, hidden titles, theme, devices, server, sign out. */
 @Composable
 fun SettingsScreen(
@@ -106,14 +109,14 @@ fun SettingsScreen(
 
     val regions = remember(settings.language) {
         val locale = Locale.getDefault()
-        Locale.getISOCountries().map { it to Locale("", it).getDisplayCountry(locale) }.filter { it.second.isNotEmpty() }.sortedBy { it.second.lowercase() }
+        Locale.getISOCountries().map { it to flag(it) + " " + Locale("", it).getDisplayCountry(locale) }.filter { it.second.isNotEmpty() }.sortedBy { it.second.lowercase() }
     }
 
     TopBarScaffold(stringResource(R.string.m_settings_title), onBack) {
         Box(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding(), contentAlignment = Alignment.TopCenter) {
             Column(Modifier.widthIn(max = 720.dp).fillMaxWidth().padding(Tokens.Spacing.lg), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.xl)) {
                 Group(stringResource(R.string.m_settings_account)) {
-                    NavRow(Icons.Outlined.People, stringResource(R.string.m_accounts_title), value = accountCount.toString(), onClick = onOpenAccounts)
+                    NavRow(Icons.Outlined.People, stringResource(if (accountCount == 1) R.string.m_accounts_title_one else R.string.m_accounts_title), value = accountCount.toString(), onClick = onOpenAccounts)
                     NavRow(Icons.Outlined.Person, stringResource(R.string.profile_change_picture), onClick = onChangePicture)
                     MenuRow(
                         Icons.Outlined.Language, stringResource(R.string.lang_title),
@@ -141,7 +144,7 @@ fun SettingsScreen(
                         value = stringResource(sources.first { it.first == current }.second),
                         choices = sources.map { stringResource(it.second) to it.first.wire },
                     ) { wire -> if (wire != null) save(R.string.profile_saved) { api.updatePreferences(ratingSource = RatingSource.from(wire)) } }
-                    NavRow(Icons.Outlined.VisibilityOff, stringResource(R.string.profile_hidden_title), onClick = onOpenHidden)
+                    NavRow(Icons.Outlined.VisibilityOff, stringResource(R.string.m_settings_hidden), onClick = onOpenHidden)
                 }
                 Group(stringResource(R.string.m_settings_appearance)) {
                     val themes = listOf(AppTheme.System to R.string.theme_system, AppTheme.Light to R.string.theme_light, AppTheme.Dark to R.string.theme_dark)
