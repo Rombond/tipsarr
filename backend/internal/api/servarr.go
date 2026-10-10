@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/servarr"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -68,7 +69,7 @@ func registerServarr(api huma.API, d Deps) {
 		OperationID: "listServarr", Method: http.MethodGet, Path: "/admin/servarr",
 		Summary: "Radarr/Sonarr instances (admin)", Tags: []string{"admin"}, Security: sec, Errors: adminErrs,
 	}, func(ctx context.Context, _ *struct{}) (*struct{ Body []instanceView }, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		rows, err := d.Store.ListServarr(ctx)
@@ -104,7 +105,7 @@ func registerServarr(api huma.API, d Deps) {
 		Summary: "Add a Radarr/Sonarr instance (admin)", Tags: []string{"admin"}, Security: sec,
 		DefaultStatus: http.StatusCreated, Errors: append(adminErrs, http.StatusUnprocessableEntity),
 	}, func(ctx context.Context, in *struct{ Body instanceBody }) (*struct{ Body instanceView }, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		if err := validate(in.Body); err != nil {
@@ -148,7 +149,7 @@ func registerServarr(api huma.API, d Deps) {
 		ID   string `path:"id" maxLength:"32"`
 		Body instanceBody
 	}) (*struct{ Body instanceView }, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		if err := validate(in.Body); err != nil {
@@ -192,7 +193,7 @@ func registerServarr(api huma.API, d Deps) {
 	}, func(ctx context.Context, in *struct {
 		ID string `path:"id" maxLength:"32"`
 	}) (*struct{}, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		return &struct{}{}, d.Store.DeleteServarr(ctx, in.ID)
@@ -204,7 +205,7 @@ func registerServarr(api huma.API, d Deps) {
 		Description: "Read-only: uses a dry-run client, so it can never change anything in Radarr/Sonarr.",
 		Tags:        []string{"admin"}, Security: sec, Errors: append(adminErrs, http.StatusUnprocessableEntity),
 	}, func(ctx context.Context, in *struct{ Body probeBody }) (*struct{ Body probeResult }, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		key := strings.TrimSpace(in.Body.APIKey)

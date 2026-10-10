@@ -7,6 +7,7 @@ import (
 
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/media"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -25,7 +26,7 @@ func registerBoxOffice(api huma.API, d Deps) {
 			TMDBID int    `json:"tmdbId" minimum:"1"`
 		}
 	}) (*struct{}, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		err := d.BoxOffice.SetAlias(ctx, in.Body.Title, in.Body.TMDBID)
@@ -42,7 +43,7 @@ func registerBoxOffice(api huma.API, d Deps) {
 	}, func(ctx context.Context, in *struct {
 		Title string `query:"title" required:"true" maxLength:"255"`
 	}) (*struct{}, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		return &struct{}{}, mediaErr(d.BoxOffice.RemoveAlias(ctx, in.Title))

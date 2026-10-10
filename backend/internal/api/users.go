@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -13,6 +14,15 @@ var (
 	regionRe   = regexp.MustCompile(`^([A-Z]{2})?$`)
 	languageRe = regexp.MustCompile(`^([a-z]{2}(-[A-Z]{2})?)?$`)
 )
+
+// userQuota is a person's own request limits. A missing (null) value means the default applies; a limit of 0
+// means no limit.
+type userQuota struct {
+	MovieLimit *int `json:"movieLimit,omitempty" minimum:"0" maximum:"100000"`
+	MovieDays  *int `json:"movieDays,omitempty" minimum:"0" maximum:"3650"`
+	TVLimit    *int `json:"tvLimit,omitempty" minimum:"0" maximum:"100000"`
+	TVDays     *int `json:"tvDays,omitempty" minimum:"0" maximum:"3650"`
+}
 
 type prefsBody struct {
 	Region   *string `json:"region,omitempty" doc:"ISO 3166 country, e.g. FR (empty = none). Used for release dates and the box-office region"`
@@ -91,7 +101,7 @@ func registerUsers(api huma.API, d Deps) {
 		OperationID: "listUsers", Method: http.MethodGet, Path: "/admin/users",
 		Summary: "All Tipsarr users (admin)", Tags: []string{"admin"}, Security: sec, Errors: adminErrs,
 	}, func(ctx context.Context, _ *struct{}) (*struct{ Body []store.User }, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageUsers); err != nil {
 			return nil, err
 		}
 		rows, err := d.Store.ListUsers(ctx)
@@ -103,7 +113,7 @@ func registerUsers(api huma.API, d Deps) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "updateUser", Method: http.MethodPatch, Path: "/admin/users/{id}",
-		Summary: "Change a user's role, region or language (admin)", Tags: []string{"admin"}, Security: sec,
+		Summary: "Change a user's role, region, language, permissions or quotas (needs the manage-users right; roles are for admins)", Tags: []string{"admin"}, Security: sec,
 		Errors: append(adminErrs, http.StatusNotFound, http.StatusConflict, http.StatusUnprocessableEntity),
 	}, func(ctx context.Context, in *struct {
 		ID   string `path:"id" maxLength:"64"`
@@ -111,9 +121,13 @@ func registerUsers(api huma.API, d Deps) {
 			Role     *string `json:"role,omitempty" enum:"admin,user"`
 			Region   *string `json:"region,omitempty" doc:"2-letter country code, empty to clear"`
 			Language *string `json:"language,omitempty" doc:"e.g. fr or fr-FR, empty to clear"`
+			// Permissions replaces the person's mask (see GET /admin/permissions). Nobody can change their own.
+			Permissions *int64 `json:"permissions,omitempty"`
+			// Quota replaces the person's request limits; a missing field means the default applies.
+			Quota *userQuota `json:"quota,omitempty"`
 		}
 	}) (*meOutput, error) {
-		me, err := requireAdmin(ctx)
+		me, err := requireCan(ctx, perms.ManageUsers)
 		if err != nil {
 			return nil, err
 		}
@@ -127,6 +141,9 @@ func registerUsers(api huma.API, d Deps) {
 		}
 		roleChanged := false
 		if in.Body.Role != nil && *in.Body.Role != u.Role {
+			if me.Role != store.RoleAdmin {
+				return nil, fail(403, "permission_required", "only an admin can change roles")
+			}
 			if u.ID == me.ID {
 				return nil, fail(409, "own_role", "you cannot change your own role")
 			}
@@ -141,6 +158,20 @@ func registerUsers(api huma.API, d Deps) {
 			roleChanged = true
 		}
 		prefs.apply(u)
+		if in.Body.Permissions != nil {
+			if u.ID == me.ID {
+				return nil, fail(409, "own_permissions", "you cannot change your own permissions")
+			}
+			next := perms.Stored(perms.Mask(*in.Body.Permissions))
+			// handing out the keys to users and settings is for admins; others may give the day-to-day rights
+			if (next&^perms.Mask(u.Permissions))&(perms.ManageUsers|perms.ManageSettings) != 0 && me.Role != store.RoleAdmin {
+				return nil, fail(403, "permission_required", "only an admin can grant those permissions")
+			}
+			u.Permissions = int64(next)
+		}
+		if q := in.Body.Quota; q != nil {
+			u.MovieQuotaLimit, u.MovieQuotaDays, u.TVQuotaLimit, u.TVQuotaDays = q.MovieLimit, q.MovieDays, q.TVLimit, q.TVDays
+		}
 		if err := d.Store.UpdateUser(ctx, u); err != nil {
 			return nil, err
 		}
@@ -163,7 +194,7 @@ func registerUsers(api huma.API, d Deps) {
 			Total   int `json:"total"`
 		}
 	}, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageUsers); err != nil {
 			return nil, err
 		}
 		created, total, err := d.Library.ImportUsers(ctx)

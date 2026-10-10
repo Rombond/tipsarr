@@ -8,6 +8,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/avatars"
 	"github.com/Rombond/tipsarr/backend/internal/clients/jellyfin"
 	"github.com/Rombond/tipsarr/backend/internal/library"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/danielgtaylor/huma/v2"
 )
 
@@ -59,7 +60,7 @@ func registerLDAPImport(api huma.API, d Deps) {
 		Tags:        []string{"admin"}, Security: []map[string][]string{{"session": {}}, {"bearer": {}}},
 		Errors: []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusServiceUnavailable, http.StatusBadGateway},
 	}, func(ctx context.Context, _ *struct{}) (*struct{ Body ldapImportBody }, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		res, err := importLDAPFromJellyfin(ctx, d)

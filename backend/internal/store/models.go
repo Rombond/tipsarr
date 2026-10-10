@@ -1,9 +1,11 @@
 package store
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/Rombond/tipsarr/backend/internal/i18n"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/uptrace/bun"
 )
 
@@ -24,6 +26,43 @@ type User struct {
 	RatingSource string `bun:"rating_source" json:"ratingSource"`
 	CreatedAt    int64  `bun:"created_at" json:"createdAt"`
 	LastLoginAt  int64  `bun:"last_login_at" json:"lastLoginAt"`
+
+	// Permissions is the mask stored for the person (see package perms); EffectivePermissions is what they may
+	// really do (everything for an admin) and is what the apps check.
+	Permissions          int64 `bun:"permissions" json:"permissions"`
+	EffectivePermissions int64 `bun:"-" json:"effectivePermissions"`
+	// Quotas that replace the defaults for this person; absent = the default applies. A limit of 0 is "no limit".
+	MovieQuotaLimit *int `bun:"movie_quota_limit" json:"movieQuotaLimit,omitempty"`
+	MovieQuotaDays  *int `bun:"movie_quota_days" json:"movieQuotaDays,omitempty"`
+	TVQuotaLimit    *int `bun:"tv_quota_limit" json:"tvQuotaLimit,omitempty"`
+	TVQuotaDays     *int `bun:"tv_quota_days" json:"tvQuotaDays,omitempty"`
+}
+
+// AfterScanRow fills the computed fields when a user is read.
+func (u *User) AfterScanRow(context.Context) error {
+	u.Resolve()
+	return nil
+}
+
+// Resolve computes EffectivePermissions from the role and the stored mask.
+func (u *User) Resolve() *User {
+	u.EffectivePermissions = int64(perms.Effective(u.Role == RoleAdmin, perms.Mask(u.Permissions)))
+	return u
+}
+
+// Mask is what the person may do: everything for an admin, otherwise their stored mask.
+func (u *User) Mask() perms.Mask {
+	return perms.Effective(u.Role == RoleAdmin, perms.Mask(u.Permissions))
+}
+
+// Can reports whether the person has every one of the flags (an admin always does).
+func (u *User) Can(flags ...perms.Mask) bool {
+	return perms.Effective(u.Role == RoleAdmin, perms.Mask(u.Permissions)).Has(flags...)
+}
+
+// CanAny reports whether the person has at least one of the flags (an admin always does).
+func (u *User) CanAny(flags ...perms.Mask) bool {
+	return perms.Effective(u.Role == RoleAdmin, perms.Mask(u.Permissions)).HasAny(flags...)
 }
 
 type Session struct {

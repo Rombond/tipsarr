@@ -11,6 +11,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
 
@@ -67,7 +68,12 @@ type IssueThread struct {
 }
 
 func canSee(u *store.User, i *store.Issue) bool {
-	return u.Role == store.RoleAdmin || i.CreatedBy == u.ID
+	return u.Can(perms.ViewIssues) || i.CreatedBy == u.ID
+}
+
+// canAct is who may comment on, resolve or reopen an issue: the reporter and people who manage issues.
+func canAct(u *store.User, i *store.Issue) bool {
+	return u.Can(perms.ManageIssues) || i.CreatedBy == u.ID
 }
 
 type CreateParams struct {
@@ -80,6 +86,9 @@ type CreateParams struct {
 }
 
 func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*IssueThread, error) {
+	if !u.Can(perms.CreateIssues) {
+		return nil, ErrForbidden
+	}
 	msg := strings.TrimSpace(p.Message)
 	valid := false
 	for _, k := range Kinds {
@@ -108,7 +117,7 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*I
 	}
 	s.changed(i)
 	s.notify.Dispatch(notify.IssueCreated, map[string]any{"issue": v.IssueView, "message": msg})
-	s.notify.Push(notify.PushEvent{Name: "issue.created", ID: i.ID, Subject: i.Title, Admins: true, Skip: u.ID})
+	s.notify.Push(notify.PushEvent{Name: "issue.created", ID: i.ID, Subject: i.Title, Admins: true, Needs: int64(perms.ManageIssues), Skip: u.ID})
 	return v, nil
 }
 
@@ -197,7 +206,7 @@ type ListResult struct {
 
 func (s *Service) List(ctx context.Context, u *store.User, p ListParams) (*ListResult, error) {
 	f := store.IssueFilter{Take: p.Take, Skip: p.Skip, MediaType: p.MediaType, TMDBID: p.TMDBID}
-	if u.Role != store.RoleAdmin {
+	if !u.Can(perms.ViewIssues) {
 		f.CreatedBy = u.ID
 	}
 	if p.Filter == "open" || p.Filter == "resolved" {
@@ -213,7 +222,7 @@ func (s *Service) List(ctx context.Context, u *store.User, p ListParams) (*ListR
 
 func (s *Service) Counts(ctx context.Context, u *store.User) (open, resolved int, err error) {
 	by := u.ID
-	if u.Role == store.RoleAdmin {
+	if u.Can(perms.ViewIssues) {
 		by = ""
 	}
 	return s.store.IssueCounts(ctx, by)
@@ -242,6 +251,9 @@ func (s *Service) Comment(ctx context.Context, u *store.User, id, message string
 	if !canSee(u, i) {
 		return nil, store.ErrNotFound
 	}
+	if !canAct(u, i) {
+		return nil, ErrForbidden
+	}
 	if err := s.store.AddIssueComment(ctx, &store.IssueComment{ID: store.NewID(), IssueID: id, UserID: u.ID, Message: msg}); err != nil {
 		return nil, err
 	}
@@ -251,11 +263,11 @@ func (s *Service) Comment(ctx context.Context, u *store.User, id, message string
 	}
 	s.changed(i)
 	s.notify.Dispatch(notify.IssueCommented, map[string]any{"issue": d.IssueView, "comment": msg, "by": IssueUser{ID: u.ID, Name: u.Name}})
-	s.notify.Push(notify.PushEvent{Name: "issue.comment", ID: i.ID, Subject: i.Title, Users: []string{i.CreatedBy}, Admins: true, Skip: u.ID})
+	s.notify.Push(notify.PushEvent{Name: "issue.comment", ID: i.ID, Subject: i.Title, Users: []string{i.CreatedBy}, Admins: true, Needs: int64(perms.ManageIssues), Skip: u.ID})
 	return d, nil
 }
 
-// SetResolved resolves or reopens an issue. Admins and the reporter may do either.
+// SetResolved resolves or reopens an issue. People who manage issues and the reporter may do either.
 func (s *Service) SetResolved(ctx context.Context, u *store.User, id string, resolved bool) (*IssueThread, error) {
 	i, err := s.store.GetIssue(ctx, id)
 	if err != nil {
@@ -263,6 +275,9 @@ func (s *Service) SetResolved(ctx context.Context, u *store.User, id string, res
 	}
 	if !canSee(u, i) {
 		return nil, store.ErrNotFound
+	}
+	if !canAct(u, i) {
+		return nil, ErrForbidden
 	}
 	if resolved {
 		i.Status, i.ResolvedBy = store.IssueResolved, u.ID
@@ -285,7 +300,7 @@ func (s *Service) SetResolved(ctx context.Context, u *store.User, id string, res
 }
 
 func (s *Service) Delete(ctx context.Context, u *store.User, id string) error {
-	if u.Role != store.RoleAdmin {
+	if !u.Can(perms.ManageIssues) {
 		return ErrForbidden
 	}
 	i, err := s.store.GetIssue(ctx, id)

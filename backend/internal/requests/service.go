@@ -23,6 +23,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
 
@@ -184,12 +185,12 @@ type ListResult struct {
 }
 
 func canSee(u *store.User, r *store.Request) bool {
-	return u.Role == store.RoleAdmin || r.RequestedBy == u.ID
+	return u.Can(perms.RequestView) || r.RequestedBy == u.ID
 }
 
 func (s *Service) List(ctx context.Context, u *store.User, p ListParams) (*ListResult, error) {
 	f := store.RequestFilter{Take: p.Take, Skip: p.Skip}
-	if u.Role != store.RoleAdmin || p.Filter == "mine" {
+	if !u.Can(perms.RequestView) || p.Filter == "mine" {
 		f.RequestedBy = u.ID
 	} else if p.User != "" {
 		f.RequestedBy = p.User
@@ -230,14 +231,14 @@ func (s *Service) Get(ctx context.Context, u *store.User, id string) (*View, err
 // redact hides technical failure details (internal URLs, upstream response bodies) from
 // everyone but admins; webhooks pass a nil user and never carry them either.
 func redact(v *View, u *store.User) {
-	if v.Error != "" && (u == nil || u.Role != store.RoleAdmin) {
+	if v.Error != "" && (u == nil || !u.Can(perms.ManageRequests)) {
 		v.Error = "Sending to the download manager failed; an admin can see the details."
 	}
 }
 
 func (s *Service) Counts(ctx context.Context, u *store.User) (map[string]int, error) {
 	uid := u.ID
-	if u.Role == store.RoleAdmin {
+	if u.Can(perms.RequestView) {
 		uid = ""
 	}
 	c, err := s.store.RequestCounts(ctx, uid)
@@ -262,13 +263,17 @@ type CreateParams struct {
 	Overrides *Overrides
 }
 
-// Create records a request from a user. Admin requests are approved right away.
+// Create records a request from a user. Requests from people who auto-approve (admins, managers, the
+// auto-approve rights) are approved right away; the others wait for someone who may approve.
 func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*View, error) {
 	if p.Type != "movie" && p.Type != "tv" || p.TMDBID <= 0 {
 		return nil, ErrInvalid
 	}
-	if p.Overrides != nil && p.Overrides.RootFolder != "" && !s.mayChooseFolder(ctx, u) {
-		return nil, ErrForbidden // the quality profile is everyone's choice, the folder is the admin's call
+	if !u.Mask().MayRequest(p.Type) {
+		return nil, ErrForbidden
+	}
+	if p.Overrides != nil && p.Overrides.RootFolder != "" && !u.Can(perms.RequestAdvanced) {
+		return nil, ErrForbidden // the quality profile is everyone's choice, the folder needs the advanced-requests right
 	}
 	d, err := s.media.Detail(ctx, media.Opts{Language: u.Language, Region: u.Region}, p.Type, p.TMDBID)
 	if err != nil {
@@ -325,15 +330,22 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 		}
 		r.RootFolder = p.Overrides.RootFolder
 	}
+	needed := 1
+	if p.Type == "tv" {
+		needed = len(seasons)
+	}
+	if err := s.checkQuota(ctx, u, p.Type, needed); err != nil {
+		return nil, err
+	}
 	if err := s.store.CreateRequest(ctx, r, seasons); err != nil {
 		return nil, err
 	}
 	s.changed(ctx, r)
 	s.notify.Dispatch(notify.RequestCreated, s.payload(ctx, r))
-	s.notify.Push(notify.PushEvent{Name: "request.created", ID: r.ID, Subject: r.Title, Admins: true, Skip: u.ID})
+	s.notify.Push(notify.PushEvent{Name: "request.created", ID: r.ID, Subject: r.Title, Admins: true, Needs: int64(perms.ManageRequests), Skip: u.ID})
 
-	if u.Role == store.RoleAdmin {
-		v, err := s.Approve(ctx, u, r.ID, p.Overrides)
+	if u.Mask().AutoApproves(p.Type) {
+		v, err := s.approve(ctx, u, r.ID, p.Overrides)
 		if errors.Is(err, ErrNoInstance) {
 			return s.view(ctx, r) // stays pending until a Radarr/Sonarr instance is configured
 		}
@@ -351,9 +363,14 @@ type Overrides struct {
 
 // Approve (or retry a failed request) and send it to Radarr/Sonarr unless dry-run is on.
 func (s *Service) Approve(ctx context.Context, by *store.User, id string, ov *Overrides) (*View, error) {
-	if by.Role != store.RoleAdmin {
+	if !by.Can(perms.ManageRequests) {
 		return nil, ErrForbidden
 	}
+	return s.approve(ctx, by, id, ov)
+}
+
+// approve does the work of Approve without checking the right: Create uses it for people who auto-approve.
+func (s *Service) approve(ctx context.Context, by *store.User, id string, ov *Overrides) (*View, error) {
 	r, err := s.store.GetRequest(ctx, id)
 	if err != nil {
 		return nil, err
@@ -489,7 +506,7 @@ func (s *Service) send(ctx context.Context, c *servarr.Client, r *store.Request,
 }
 
 func (s *Service) Decline(ctx context.Context, by *store.User, id, reason string) (*View, error) {
-	if by.Role != store.RoleAdmin {
+	if !by.Can(perms.ManageRequests) {
 		return nil, ErrForbidden
 	}
 	r, err := s.store.GetRequest(ctx, id)
@@ -518,7 +535,7 @@ func (s *Service) Delete(ctx context.Context, u *store.User, id string) error {
 	if !canSee(u, r) {
 		return store.ErrNotFound
 	}
-	if u.Role != store.RoleAdmin && r.Status != store.StatusPending && r.Status != store.StatusDeclined && r.Status != store.StatusFailed {
+	if !u.Can(perms.ManageRequests) && r.Status != store.StatusPending && r.Status != store.StatusDeclined && r.Status != store.StatusFailed {
 		return ErrForbidden
 	}
 	if err := s.removeFromServarr(ctx, r); err != nil {
@@ -632,10 +649,10 @@ func (s *Service) UpdateOptions(ctx context.Context, u *store.User, id string, o
 	if r.Status != store.StatusPending && r.Status != store.StatusFailed {
 		return nil, ErrBadState
 	}
-	if ov.RootFolder != "" && !s.mayChooseFolder(ctx, u) {
+	folderAllowed := u.Can(perms.RequestAdvanced)
+	if ov.RootFolder != "" && !folderAllowed {
 		return nil, ErrForbidden
 	}
-	folderAllowed := s.mayChooseFolder(ctx, u)
 	r.ProfileID = 0
 	if folderAllowed {
 		r.RootFolder = ov.RootFolder
@@ -658,20 +675,6 @@ func (s *Service) seasonProgress(id string) []SeasonProgress {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.seasons[id]
-}
-
-// SettingUserFolder lets every user pick the root folder when requesting. Off by default: then
-// only admins see the folder choice. The quality profile is always everyone's choice.
-const SettingUserFolder = "requests.user_folder"
-
-// UsersMayChooseFolder reports whether non-admins may choose the root folder.
-func (s *Service) UsersMayChooseFolder(ctx context.Context) bool {
-	v, _ := s.store.GetSetting(ctx, SettingUserFolder)
-	return v == "true"
-}
-
-func (s *Service) mayChooseFolder(ctx context.Context, u *store.User) bool {
-	return u.Role == store.RoleAdmin || s.UsersMayChooseFolder(ctx)
 }
 
 // localizePosters swaps the poster stored with each request (the language it was made in, or an import's)

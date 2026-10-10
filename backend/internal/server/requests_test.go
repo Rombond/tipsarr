@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"io"
 	"net/http"
@@ -496,7 +497,7 @@ func TestRequestOptionsAndOverrides(t *testing.T) {
 		t.Fatalf("options without an instance = %d", resp.StatusCode)
 	}
 	addInstance(t, e, admin, "radarr", radarr)
-	// everyone chooses the quality profile; the folder choice is the admin's call (off by default)
+	// everyone chooses the quality profile; the folder needs the advanced-requests permission (off by default)
 	resp, body := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", bob)
 	if resp.StatusCode != 200 || !strings.Contains(body, `"HD-1080p"`) || strings.Contains(body, `/data/media`) || !strings.Contains(body, `"qualityProfileId":4`) {
 		t.Fatalf("user options while folders are off = %d %s", resp.StatusCode, body)
@@ -504,16 +505,10 @@ func TestRequestOptionsAndOverrides(t *testing.T) {
 	if resp, _ := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"rootFolder":"/data/other"}`, bob); resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("user folder while off = %d", resp.StatusCode)
 	}
-	if _, b := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(b, `"userFolderChoice":false`) {
-		t.Fatalf("status = %s", b)
-	}
 	if resp, body := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", admin); resp.StatusCode != 200 || !strings.Contains(body, `/data/media`) {
 		t.Fatalf("admin options = %d %s", resp.StatusCode, body)
 	}
-	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"userFolderChoice":true}`, admin)
-	if _, b := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(b, `"userFolderChoice":true`) {
-		t.Fatalf("status = %s", b)
-	}
+	grantPermissions(t, e, admin, bob, perms.Default|perms.RequestAdvanced) // the folder choice is a permission now
 	if _, body = call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", bob); !strings.Contains(body, `/data/media`) {
 		t.Fatalf("user options with folders on = %s", body)
 	}

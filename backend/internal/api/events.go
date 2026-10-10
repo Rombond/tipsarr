@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 )
 
 // eventsHandler is the SSE stream (GET /api/v1/events). One stream per open tab, filtered
@@ -32,7 +34,7 @@ func eventsHandler(d Deps) http.HandlerFunc {
 		if v := r.Header.Get("Last-Event-ID"); v != "" {
 			last, _ = strconv.ParseInt(v, 10, 64)
 		}
-		live, replay, cancel := d.Hub.Subscribe(u.ID, u.Role == "admin", last)
+		live, replay, cancel := d.Hub.Subscribe(u.ID, u.CanAny(perms.RequestView, perms.ManageSettings), last) // everyone's request events, and job status
 		defer cancel()
 
 		h := w.Header()

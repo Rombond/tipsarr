@@ -45,6 +45,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The permission flags and the defaults for new people (needs the manage-users right)
+         * @description Each person has a mask: the sum of the values of the flags they have. Admins can do everything whatever their mask says. Flags marked reserved exist so the numbers match Seerr but no feature uses them yet: do not show them.
+         */
+        get: operations["getPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/permissions/defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the permissions and quotas new people start with (admin)
+         * @description Only changes people who sign in or are imported from now on.
+         */
+        put: operations["setPermissionDefaults"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/servarr": {
         parameters: {
             query?: never;
@@ -203,7 +243,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Change a user's role, region or language (admin) */
+        /** Change a user's role, region, language, permissions or quotas (needs the manage-users right; roles are for admins) */
         patch: operations["updateUser"];
         trace?: never;
     };
@@ -721,6 +761,26 @@ export interface paths {
         post?: never;
         /** Stop push notifications on this device */
         delete: operations["unregisterDevice"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/quota": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How many requests the signed-in person may still make
+         * @description Movies count one per request, shows one per season, over the last N days. Admins and people who manage requests have no limit.
+         */
+        get: operations["myQuota"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1489,6 +1549,17 @@ export interface components {
              */
             type: string;
         };
+        Flag: {
+            /** @enum {string} */
+            group: "admin" | "requests" | "auto-approve" | "issues" | "reserved";
+            /** @description Flags that come with this one and cannot be switched off while it is on */
+            implies?: string[];
+            name: string;
+            /** @description Defined so the numbers match Seerr; no feature uses it yet, hide it */
+            reserved: boolean;
+            /** Format: int64 */
+            value: number;
+        };
         Flags: {
             blocklisted: boolean;
             watchlisted: boolean;
@@ -1502,6 +1573,10 @@ export interface components {
             /** Format: int64 */
             count: number;
             name: string;
+        };
+        GetPermissionsResponse: {
+            defaults: components["schemas"]["PermissionDefaults"];
+            flags: components["schemas"]["Flag"][];
         };
         HealthOutputBody: {
             ok: boolean;
@@ -1761,6 +1836,27 @@ export interface components {
             rootFolder: string;
             rootFolders: components["schemas"]["RootFolder"][];
         };
+        PermissionDefaults: {
+            /** Format: int64 */
+            movieQuotaDays: number;
+            /**
+             * Format: int64
+             * @description Movie requests allowed per period, 0 = no limit
+             */
+            movieQuotaLimit: number;
+            /**
+             * Format: int64
+             * @description Mask new people start with (see flags)
+             */
+            permissions: number;
+            /** Format: int64 */
+            tvQuotaDays: number;
+            /**
+             * Format: int64
+             * @description Seasons of shows allowed per period, 0 = no limit
+             */
+            tvQuotaLimit: number;
+        };
         Person: {
             department?: string;
             /** Format: int64 */
@@ -1841,6 +1937,8 @@ export interface components {
         ProfileView: {
             /** Format: int64 */
             createdAt: number;
+            /** Format: int64 */
+            effectivePermissions: number;
             /** @description The person uploaded their own picture */
             hasUploadedAvatar: boolean;
             id: string;
@@ -1878,6 +1976,30 @@ export interface components {
             /** Format: int64 */
             id: number;
             name: string;
+        };
+        Quota: {
+            movie: components["schemas"]["QuotaWindow"];
+            tv: components["schemas"]["QuotaWindow"];
+        };
+        QuotaWindow: {
+            /** Format: int64 */
+            days: number;
+            /** Format: int64 */
+            limit: number;
+            /**
+             * Format: int64
+             * @description Absent when there is no limit
+             */
+            remaining?: number;
+            /**
+             * Format: int64
+             * @description Unix time when the oldest counted request leaves the window
+             */
+            resetsAt?: number;
+            /** @description The limit is reached: new requests are refused until ResetsAt */
+            restricted: boolean;
+            /** Format: int64 */
+            used: number;
         };
         RegisterDeviceInputBody: {
             /**
@@ -2051,8 +2173,6 @@ export interface components {
             servarrAutoImport: boolean;
             /** @description Secrets are write-only; this only says whether a key is saved */
             tmdbConfigured: boolean;
-            /** @description Non-admins may choose the root folder when requesting (default false); the quality profile is always their choice */
-            userFolderChoice: boolean;
             /** @description Path (with secret token) for the Jellyfin webhook plugin to call */
             webhookPath: string;
         };
@@ -2199,7 +2319,6 @@ export interface components {
             dryRun: boolean;
             features: components["schemas"]["StatusFeatures"];
             minAppVersion: string;
-            userFolderChoice: boolean;
             version: string;
         };
         SyncStatusBody: {
@@ -2280,11 +2399,13 @@ export interface components {
             servarrAutoImport?: boolean;
             /** @description Set or replace the TMDB key (empty string clears it) */
             tmdbApiKey?: string;
-            userFolderChoice?: boolean;
         };
         UpdateUserRequest: {
             /** @description e.g. fr or fr-FR, empty to clear */
             language?: string;
+            /** Format: int64 */
+            permissions?: number;
+            quota?: components["schemas"]["UserQuota"];
             /** @description 2-letter country code, empty to clear */
             region?: string;
             /** @enum {string} */
@@ -2293,14 +2414,36 @@ export interface components {
         User: {
             /** Format: int64 */
             createdAt: number;
+            /** Format: int64 */
+            effectivePermissions: number;
             id: string;
             language: string;
             /** Format: int64 */
             lastLoginAt: number;
+            /** Format: int64 */
+            movieQuotaDays?: number;
+            /** Format: int64 */
+            movieQuotaLimit?: number;
             name: string;
+            /** Format: int64 */
+            permissions: number;
             ratingSource: string;
             region: string;
             role: string;
+            /** Format: int64 */
+            tvQuotaDays?: number;
+            /** Format: int64 */
+            tvQuotaLimit?: number;
+        };
+        UserQuota: {
+            /** Format: int64 */
+            movieDays?: number;
+            /** Format: int64 */
+            movieLimit?: number;
+            /** Format: int64 */
+            tvDays?: number;
+            /** Format: int64 */
+            tvLimit?: number;
         };
         UserRef: {
             id: string;
@@ -2580,6 +2723,113 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    getPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPermissionsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    setPermissionDefaults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PermissionDefaults"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionDefaults"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5354,6 +5604,44 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    myQuota: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quota"];
+                };
             };
             /** @description Unauthorized */
             401: {

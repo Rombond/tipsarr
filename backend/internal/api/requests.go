@@ -7,6 +7,7 @@ import (
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/servarr"
 	"github.com/Rombond/tipsarr/backend/internal/media"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
@@ -28,6 +29,8 @@ func reqErr(err error) error {
 		return fail(409, "bad_state", err.Error())
 	case errors.Is(err, requests.ErrNoInstance):
 		return fail(409, "no_instance", err.Error())
+	case errors.Is(err, requests.ErrQuota):
+		return fail(403, "quota_reached", err.Error())
 	case errors.Is(err, requests.ErrForbidden):
 		return fail(403, "forbidden", err.Error())
 	case errors.Is(err, requests.ErrServarrFailed):
@@ -148,8 +151,8 @@ func registerRequests(api huma.API, d Deps) {
 		if err != nil && !errors.Is(err, requests.ErrNoInstance) {
 			return nil, fail(502, "servarr_error", err.Error())
 		}
-		if o != nil && u.Role != store.RoleAdmin && !d.Requests.UsersMayChooseFolder(ctx) {
-			o.RootFolders, o.RootFolder = []servarr.RootFolder{}, "" // everyone picks the quality profile; the folder is the admin's call
+		if o != nil && !u.Can(perms.RequestAdvanced) {
+			o.RootFolders, o.RootFolder = []servarr.RootFolder{}, "" // everyone picks the quality profile; the folder needs the advanced-requests right
 		}
 		return &struct{ Body *requests.Options }{o}, reqErr(err)
 	})
@@ -193,7 +196,7 @@ func registerRequests(api huma.API, d Deps) {
 			RootFolder       string `json:"rootFolder,omitempty"`
 		}
 	}) (*requestOutput, error) {
-		u, err := requireAdmin(ctx)
+		u, err := requireCan(ctx, perms.ManageRequests)
 		if err != nil {
 			return nil, err
 		}
@@ -225,7 +228,7 @@ func registerRequests(api huma.API, d Deps) {
 		Summary: "Retry a failed request (admin)", Tags: []string{"requests"}, Security: sec,
 		Errors: []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusConflict},
 	}, func(ctx context.Context, in *idIn) (*requestOutput, error) {
-		u, err := requireAdmin(ctx)
+		u, err := requireCan(ctx, perms.ManageRequests)
 		if err != nil {
 			return nil, err
 		}
@@ -243,7 +246,7 @@ func registerRequests(api huma.API, d Deps) {
 			Reason string `json:"reason,omitempty" maxLength:"500"`
 		}
 	}) (*requestOutput, error) {
-		u, err := requireAdmin(ctx)
+		u, err := requireCan(ctx, perms.ManageRequests)
 		if err != nil {
 			return nil, err
 		}

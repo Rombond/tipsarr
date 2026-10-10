@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"time"
 )
 
@@ -83,9 +84,11 @@ func (s *Store) DeleteUserSessions(ctx context.Context, userID string) error {
 	return s.pruneDevices(ctx)
 }
 
-// UpdateUser changes the editable fields of a user.
+// UpdateUser changes the editable fields of a user: role, region, language, permissions and quotas.
 func (s *Store) UpdateUser(ctx context.Context, u *User) error {
-	_, err := s.DB.NewUpdate().Model(u).Column("role", "region", "language").WherePK().Exec(ctx)
+	u.Permissions = int64(perms.Stored(perms.Mask(u.Permissions)))
+	_, err := s.DB.NewUpdate().Model(u).Column("role", "region", "language", "permissions", "movie_quota_limit", "movie_quota_days", "tv_quota_limit", "tv_quota_days").WherePK().Exec(ctx)
+	u.Resolve()
 	return err
 }
 
@@ -102,6 +105,6 @@ func (s *Store) EnsureUser(ctx context.Context, id, name string, admin bool) (cr
 	if admin {
 		role = RoleAdmin
 	}
-	_, err = s.DB.NewInsert().Model(&User{ID: id, Name: name, Role: role, CreatedAt: time.Now().Unix()}).Exec(ctx)
+	_, err = s.DB.NewInsert().Model(&User{ID: id, Name: name, Role: role, CreatedAt: time.Now().Unix(), Permissions: int64(s.DefaultPermissions(ctx))}).Exec(ctx)
 	return err == nil, err
 }

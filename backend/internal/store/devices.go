@@ -88,19 +88,32 @@ func (s *Store) DeleteDevice(ctx context.Context, id string) error {
 
 // DevicesFor returns the devices of the given users plus, when admins is set, every admin's devices.
 func (s *Store) DevicesFor(ctx context.Context, userIDs []string, admins bool) ([]Device, error) {
+	return s.DevicesForManagers(ctx, userIDs, admins, 0)
+}
+
+// DevicesForManagers is DevicesFor where "admins" also includes everyone whose permission mask has at least
+// one of the bits in needs (for example the people who manage requests).
+func (s *Store) DevicesForManagers(ctx context.Context, userIDs []string, admins bool, needs int64) ([]Device, error) {
 	out := []Device{}
 	if len(userIDs) == 0 && !admins {
 		return out, nil
 	}
+	managers := func() (string, []any) {
+		if needs == 0 {
+			return "user_id IN (SELECT id FROM users WHERE role = ?)", []any{RoleAdmin}
+		}
+		return "user_id IN (SELECT id FROM users WHERE role = ? OR (permissions & ?) <> 0)", []any{RoleAdmin, needs}
+	}
 	q := s.DB.NewSelect().Model(&out)
 	switch {
 	case admins && len(userIDs) > 0:
+		cond, args := managers()
 		q = q.WhereGroup(" AND ", func(q *bun.SelectQuery) *bun.SelectQuery {
-			return q.Where("user_id IN (?)", bun.In(userIDs)).
-				WhereOr("user_id IN (SELECT id FROM users WHERE role = ?)", RoleAdmin)
+			return q.Where("user_id IN (?)", bun.In(userIDs)).WhereOr(cond, args...)
 		})
 	case admins:
-		q = q.Where("user_id IN (SELECT id FROM users WHERE role = ?)", RoleAdmin)
+		cond, args := managers()
+		q = q.Where(cond, args...)
 	default:
 		q = q.Where("user_id IN (?)", bun.In(userIDs))
 	}

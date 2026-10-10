@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Rombond/tipsarr/backend/internal/media"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -83,8 +84,8 @@ func registerLibrary(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
-		if in.Nobody && u.Role != store.RoleAdmin {
-			return nil, fail(403, "admin_only", "admin only")
+		if in.Nobody && !u.Can(perms.ManageSettings) {
+			return nil, fail(403, "permission_required", "you do not have permission to do this")
 		}
 		f := storeFilter(u.ID, in.Type, in.Q, in.Genre, in.YearFrom, in.YearTo, int(in.MinRating*10+0.5), in.MaxRuntime, in.Watched, in.Sort, in.Dir == "desc", (in.Page-1)*in.PageSize, in.PageSize)
 		f.Nobody = in.Nobody

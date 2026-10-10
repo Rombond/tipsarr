@@ -106,7 +106,7 @@ func (s *Service) Targets(ctx context.Context, ev notify.PushEvent) ([]store.Dev
 	if !ok {
 		return nil, fmt.Errorf("unknown push event %q", ev.Name)
 	}
-	rows, err := s.store.DevicesFor(ctx, ev.Users, ev.Admins)
+	rows, err := s.store.DevicesForManagers(ctx, ev.Users, ev.Admins, ev.Needs)
 	if err != nil {
 		return nil, err
 	}

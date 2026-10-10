@@ -265,7 +265,7 @@ func TestErrorsCarryCodes(t *testing.T) {
 		t.Fatalf("me = %d %s", resp.StatusCode, body)
 	}
 	c := loginAs(t, e.app, jf.URL, "bob", "hunter2")
-	if resp, body := call(t, e.app, "GET", "/api/v1/admin/users", "", c); resp.StatusCode != 403 || code(body) != "admin_only" {
+	if resp, body := call(t, e.app, "GET", "/api/v1/admin/users", "", c); resp.StatusCode != 403 || code(body) != "permission_required" {
 		t.Fatalf("admin = %d %s", resp.StatusCode, body)
 	}
 	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"tmdbApiKey":"k123"}`, loginAs(t, e.app, jf.URL, "alice", "secret"))

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Rombond/tipsarr/backend/internal/notify"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -70,7 +71,7 @@ func registerWebhooks(api huma.API, d Deps) {
 		OperationID: "listWebhooks", Method: http.MethodGet, Path: "/admin/webhooks",
 		Summary: "Outgoing webhooks (admin)", Tags: []string{"admin"}, Security: sec, Errors: adminErrs,
 	}, func(ctx context.Context, _ *struct{}) (*struct{ Body []webhookView }, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		rows, err := d.Store.ListWebhooks(ctx)
@@ -89,7 +90,7 @@ func registerWebhooks(api huma.API, d Deps) {
 		Summary: "Add an outgoing webhook (admin)", Tags: []string{"admin"}, Security: sec,
 		DefaultStatus: http.StatusCreated, Errors: append(adminErrs, http.StatusUnprocessableEntity),
 	}, func(ctx context.Context, in *struct{ Body webhookBody }) (*struct{ Body webhookView }, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		events, err := check(in.Body)
@@ -114,7 +115,7 @@ func registerWebhooks(api huma.API, d Deps) {
 		ID   string `path:"id" maxLength:"32"`
 		Body webhookBody
 	}) (*struct{ Body webhookView }, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		events, err := check(in.Body)
@@ -145,7 +146,7 @@ func registerWebhooks(api huma.API, d Deps) {
 	}, func(ctx context.Context, in *struct {
 		ID string `path:"id" maxLength:"32"`
 	}) (*struct{}, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		return &struct{}{}, d.Store.DeleteWebhook(ctx, in.ID)
@@ -158,7 +159,7 @@ func registerWebhooks(api huma.API, d Deps) {
 	}, func(ctx context.Context, in *struct {
 		ID string `path:"id" maxLength:"32"`
 	}) (*struct{}, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		w, err := d.Store.GetWebhook(ctx, in.ID)

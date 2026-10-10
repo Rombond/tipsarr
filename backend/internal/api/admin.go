@@ -14,6 +14,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/Rombond/tipsarr/backend/internal/media"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/push"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/danielgtaylor/huma/v2"
@@ -36,7 +37,6 @@ type settingsBody struct {
 	LDAPBindDN               string `json:"ldapBindDn"`
 	LDAPPasswordSet          bool   `json:"ldapBindPasswordConfigured"`
 	LDAPBaseDN               string `json:"ldapBaseDn" doc:"Where users live, e.g. ou=people,dc=example,dc=com"`
-	UserFolderChoice         bool   `json:"userFolderChoice" doc:"Non-admins may choose the root folder when requesting (default false); the quality profile is always their choice"`
 	DefaultLanguage          string `json:"defaultLanguage" doc:"App-wide default language, e.g. fr-FR; empty = the browser decides. A person's own language wins"`
 	PushEnabled              bool   `json:"pushEnabled" doc:"Mobile push notifications through the relay (off by default)"`
 	PushRelayURL             string `json:"pushRelayUrl" doc:"Address of the push relay, e.g. https://push.example.org"`
@@ -58,7 +58,6 @@ type updateSettingsInput struct {
 		PushText          *bool   `json:"pushText,omitempty"`
 		PushRelayURL      *string `json:"pushRelayUrl,omitempty" doc:"Empty string clears it (and turns push off)"`
 		PushRelayKey      *string `json:"pushRelayKey,omitempty" doc:"Write-only; empty string clears it (and turns push off)"`
-		UserFolderChoice  *bool   `json:"userFolderChoice,omitempty"`
 		DefaultLanguage   *string `json:"defaultLanguage,omitempty" doc:"e.g. fr-FR; empty clears it"`
 		LDAPURL           *string `json:"ldapUrl,omitempty" doc:"Empty string turns LDAP pictures off; the connection is tested when saving"`
 		LDAPBindDN        *string `json:"ldapBindDn,omitempty"`
@@ -103,7 +102,7 @@ func registerAdmin(api huma.API, d Deps) {
 		return settingsBody{
 			PushEnabled: pushOn == "true", PushText: pushText == "true", PushRelayURL: pushURL, PushRelayKeyConfigured: pushKey != "",
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
-			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, ServarrAutoImport: autoImport != "false", UserFolderChoice: d.Requests.UsersMayChooseFolder(ctx), DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage),
+			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, ServarrAutoImport: autoImport != "false", DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage),
 			LDAPURL: ldapGet(ctx, d, avatars.SettingLDAPURL), LDAPBindDN: ldapGet(ctx, d, avatars.SettingLDAPBindDN), LDAPBaseDN: ldapGet(ctx, d, avatars.SettingLDAPBaseDN), LDAPPasswordSet: ldapGet(ctx, d, avatars.SettingLDAPPassword) != "",
 			OIDCIssuer: oc.Issuer, OIDCClientID: oc.ClientID, OIDCClientSecretSet: oc.ClientSecret != "", OIDCAdminGroup: oc.AdminGroup, OIDCGroupsClaim: oc.GroupsClaim,
 		}, nil
@@ -114,7 +113,7 @@ func registerAdmin(api huma.API, d Deps) {
 		Summary: "Read settings (admin)", Tags: []string{"admin"}, Security: sec,
 		Errors: []int{http.StatusUnauthorized, http.StatusForbidden},
 	}, func(ctx context.Context, _ *struct{}) (*settingsOutput, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		b, err := read(ctx)
@@ -126,7 +125,7 @@ func registerAdmin(api huma.API, d Deps) {
 		Summary: "Update settings (admin)", Tags: []string{"admin"}, Security: sec,
 		Errors: []int{http.StatusUnauthorized, http.StatusForbidden},
 	}, func(ctx context.Context, in *updateSettingsInput) (*settingsOutput, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		if in.Body.TMDBKey != nil {
@@ -208,15 +207,6 @@ func registerAdmin(api huma.API, d Deps) {
 				return nil, fail(422, "bad_language", "language must look like fr or fr-FR")
 			}
 			if err := d.Store.SetSetting(ctx, media.SettingDefaultLanguage, v); err != nil {
-				return nil, err
-			}
-		}
-		if in.Body.UserFolderChoice != nil {
-			v := "false"
-			if *in.Body.UserFolderChoice {
-				v = "true"
-			}
-			if err := d.Store.SetSetting(ctx, requests.SettingUserFolder, v); err != nil {
 				return nil, err
 			}
 		}

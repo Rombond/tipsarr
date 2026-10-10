@@ -41,7 +41,8 @@ type PushEvent struct {
 	Name   string   // relay event, e.g. request.approved
 	ID     string   // request or issue id, the app opens it
 	Users  []string // user ids to notify
-	Admins bool     // also every admin
+	Admins bool     // also every admin, and whoever has one of the Needs flags
+	Needs  int64    // permission bits (package perms) that make someone an "admin" for this alert, 0 = the role only
 	Skip   string   // user id that caused the event (never notified about their own action)
 	// Subject is the title of the media the event is about. It travels to the relay only when the admin
 	// turned on "alert text" (push.text); otherwise the relay's generic alert is shown.

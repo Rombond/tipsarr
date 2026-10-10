@@ -18,6 +18,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/marks"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/push"
 	"github.com/Rombond/tipsarr/backend/internal/ratings"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
@@ -99,6 +100,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerOIDC(api, d)
 		registerMarks(api, d)
 		registerUsers(api, d)
+		registerPermissions(api, d)
 		registerServarr(api, d)
 		registerWebhooks(api, d)
 		registerLDAPImport(api, d)
@@ -189,6 +191,18 @@ func requireAdmin(ctx context.Context) (*store.User, error) {
 	}
 	if u.Role != store.RoleAdmin {
 		return nil, fail(403, "admin_only", "admin only")
+	}
+	return u, nil
+}
+
+// requireCan returns the logged-in user if they have every one of the flags (admins always do), else a 403.
+func requireCan(ctx context.Context, flags ...perms.Mask) (*store.User, error) {
+	u, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !u.Can(flags...) {
+		return nil, fail(403, "permission_required", "you do not have permission to do this")
 	}
 	return u, nil
 }

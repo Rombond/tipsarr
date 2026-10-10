@@ -17,12 +17,12 @@ func (s *Store) UpsertUser(ctx context.Context, id, name string, asAdmin bool) (
 	err := s.DB.NewSelect().Model(u).Where("id = ?", id).Scan(ctx)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
-		u = &User{ID: id, Name: name, Role: RoleUser, CreatedAt: now, LastLoginAt: now}
+		u = &User{ID: id, Name: name, Role: RoleUser, CreatedAt: now, LastLoginAt: now, Permissions: int64(s.DefaultPermissions(ctx))}
 		if asAdmin {
 			u.Role = RoleAdmin
 		}
 		_, err = s.DB.NewInsert().Model(u).Exec(ctx)
-		return u, err
+		return u.Resolve(), err
 	case err != nil:
 		return nil, err
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
 	"github.com/Rombond/tipsarr/backend/internal/library"
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/danielgtaylor/huma/v2"
 )
 
@@ -35,7 +36,7 @@ func registerSync(api huma.API, d Deps) {
 		OperationID: "syncStatus", Method: http.MethodGet, Path: "/admin/sync",
 		Summary: "Library / history sync status (admin)", Tags: []string{"admin"}, Security: sec, Errors: adminErrs,
 	}, func(ctx context.Context, _ *struct{}) (*struct{ Body syncStatusBody }, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		movies, shows, err := d.Store.LibraryCounts(ctx)
@@ -57,7 +58,7 @@ func registerSync(api huma.API, d Deps) {
 	}, func(ctx context.Context, in *struct {
 		Job string `path:"job" enum:"library-sync,history-sync,boxoffice-refresh,servarr-import,playback-sync"`
 	}) (*struct{}, error) {
-		if _, err := requireAdmin(ctx); err != nil {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
 		if in.Job != "boxoffice-refresh" && in.Job != "servarr-import" && !d.Library.Configured(ctx) {
