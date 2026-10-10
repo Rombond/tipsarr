@@ -54,10 +54,11 @@ struct RequestsView: View {
     private var stackBody: some View {
         NavigationStack(path: $path) {
             list(selecting: nil)
+                .paneInset()
                 .background(Tokens.palette.bg)
                 .navigationTitle("requests.title")
                 .navigationDestination(for: RequestRecord.self) { record in
-                    RequestDetailScreen(record: record, model: model)
+                    RequestDetailScreen(record: record, model: model).paneInset()
                 }
                 .mediaDestinations()
         }

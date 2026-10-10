@@ -25,6 +25,28 @@ enum ContentWidth {
     }
 }
 
+private struct PaneTrailingInsetKey: EnvironmentKey { static let defaultValue: CGFloat = 0 }
+
+extension EnvironmentValues {
+    /// Trailing safe area that navigation stacks in the Duo's left pane inherit from the window (clock strip) but must not use.
+    var paneTrailingInset: CGFloat {
+        get { self[PaneTrailingInsetKey.self] }
+        set { self[PaneTrailingInsetKey.self] = newValue }
+    }
+}
+
+private struct PaneInset: ViewModifier {
+    @Environment(\.paneTrailingInset) private var inset
+    @ViewBuilder func body(content: Content) -> some View {
+        if inset > 0 { content.ignoresSafeArea(.container, edges: .trailing) } else { content }
+    }
+}
+
+extension View {
+    /// Put on the root screen of a navigation stack so it uses the whole Duo pane.
+    func paneInset() -> some View { modifier(PaneInset()) }
+}
+
 extension Tokens.Palette {
     /// Sidebar background of the iPad shell (Penpot: #F7F7F8 light, #101010 dark). Not in tokens.json yet.
     static var sidebarColor: Color { Color.dynamic(light: 0xF7F7F8FF, dark: 0x101010FF) }

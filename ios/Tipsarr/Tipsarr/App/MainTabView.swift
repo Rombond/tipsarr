@@ -87,7 +87,7 @@ struct MainTabView: View {
             HStack(spacing: 0) {
                 tabs(style)
                     // Navigation stacks take the window's trailing safe area (clock strip) although this pane ends at the hinge.
-                    .safeAreaPadding(.trailing, -trailingInset)
+                    .environment(\.paneTrailingInset, trailingInset)
                     .environment(\.detailPane, pane)
                     .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 88) }
                     .overlay(alignment: .bottom) {

@@ -10,7 +10,19 @@ struct DetailPaneView: View {
 
     var body: some View {
         NavigationStack {
-            switch pane.content {
+            // Cut at the clock strip: carousels do not run behind it.
+            Group { content }
+                .mask { Rectangle().ignoresSafeArea(.container, edges: [.top, .bottom, .leading]) }
+        }
+        .mediaDestinations()
+        .navigationDestination(for: ProfileRoute.self) { ProfileDestination(route: $0, account: account, profile: profile) }
+        .background(Tokens.palette.bg)
+        // Links inside the detail push on its own stack (with a back button) instead of replacing it.
+        .environment(\.detailPane, nil)
+    }
+
+    @ViewBuilder private var content: some View {
+        switch pane.content {
             case .media(let route):
                 MediaDetailScreen(route: route)
             case .request(let record):
@@ -23,13 +35,7 @@ struct DetailPaneView: View {
                 ProfileDestination(route: route, account: account, profile: profile)
             case nil:
                 defaultContent
-            }
         }
-        .mediaDestinations()
-        .navigationDestination(for: ProfileRoute.self) { ProfileDestination(route: $0, account: account, profile: profile) }
-        .background(Tokens.palette.bg)
-        // Links inside the detail push on its own stack (with a back button) instead of replacing it.
-        .environment(\.detailPane, nil)
     }
 
     @ViewBuilder private var defaultContent: some View {

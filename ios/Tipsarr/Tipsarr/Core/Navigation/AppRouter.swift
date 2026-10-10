@@ -3,7 +3,19 @@ import SwiftUI
 /// Selected tab and the navigation paths deep links can push onto.
 @MainActor @Observable
 final class AppRouter {
-    var tab: AppTab = .discover
+    var tab: AppTab = {
+        #if DEBUG
+        // `-startTab requests` on the command line: opens that tab (screenshots from the console).
+        switch UserDefaults.standard.string(forKey: "startTab") {
+        case "requests": return .requests
+        case "library": return .library
+        case "profile": return .profile
+        case "search": return .search
+        default: break
+        }
+        #endif
+        return .discover
+    }()
     var discoverPath = NavigationPath()
     var requestsPath = NavigationPath()
     var libraryPath = NavigationPath()

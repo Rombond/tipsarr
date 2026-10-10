@@ -24,6 +24,7 @@ struct LibraryView: View {
                 .padding(.vertical, Tokens.Spacing.sm)
             }
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
+            .paneInset()
             .background(Tokens.palette.bg)
             .navigationTitle("library.title")
             // Field under the title, full width: the default top-right spot is out of the way on iPad.

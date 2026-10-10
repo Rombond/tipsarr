@@ -47,6 +47,7 @@ struct SearchView: View {
     private var stackBody: some View {
         NavigationStack {
             searchable(pane, placement: .navigationBarDrawer(displayMode: .always))
+                .paneInset()
                 .mediaDestinations()
         }
     }
@@ -323,9 +324,9 @@ struct PersonPhoto: View {
 extension View {
     /// Navigation values every stack that shows titles must handle.
     func mediaDestinations() -> some View {
-        navigationDestination(for: MediaRoute.self) { MediaDetailScreen(route: $0) }
-            .navigationDestination(for: PersonRoute.self) { PersonScreen(route: $0) }
-            .navigationDestination(for: GenreRoute.self) { GenreScreen(route: $0) }
+        navigationDestination(for: MediaRoute.self) { MediaDetailScreen(route: $0).paneInset() }
+            .navigationDestination(for: PersonRoute.self) { PersonScreen(route: $0).paneInset() }
+            .navigationDestination(for: GenreRoute.self) { GenreScreen(route: $0).paneInset() }
     }
 }
 

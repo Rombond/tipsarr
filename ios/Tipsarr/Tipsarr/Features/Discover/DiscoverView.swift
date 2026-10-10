@@ -57,6 +57,7 @@ struct DiscoverView: View {
                 }
                 .padding(.bottom, Tokens.Spacing.sm)
             }
+            .paneInset()
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
             .refreshable { await refreshCurrent() }
             .onChange(of: live?.suggestionsTick) { if chip == .forYou { Task { await model.home.refresh() } } }

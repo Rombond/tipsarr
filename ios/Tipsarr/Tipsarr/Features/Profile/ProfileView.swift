@@ -39,6 +39,7 @@ struct ProfileView: View {
                 .frame(maxWidth: .infinity)
             }
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
+            .paneInset()
             .background(Tokens.palette.bg)
             .navigationTitle("profile.title")
             .toolbar {
@@ -47,7 +48,7 @@ struct ProfileView: View {
                         .accessibilityLabel(Text("nav.settings"))
                 }
             }
-            .navigationDestination(for: ProfileRoute.self) { ProfileDestination(route: $0, account: account, profile: profile) }
+            .navigationDestination(for: ProfileRoute.self) { ProfileDestination(route: $0, account: account, profile: profile).paneInset() }
             .mediaDestinations()
             // Back on the Profile root (Duo): the right pane returns to the statistics.
             .onAppear { pane?.content = nil }
