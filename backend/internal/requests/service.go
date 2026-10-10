@@ -324,6 +324,7 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 	}
 	s.changed(ctx, r)
 	s.notify.Dispatch(notify.RequestCreated, s.payload(ctx, r))
+	s.notify.Push(notify.PushEvent{Name: "request.created", ID: r.ID, Admins: true, Skip: u.ID})
 
 	if u.Role == store.RoleAdmin {
 		v, err := s.Approve(ctx, u, r.ID, p.Overrides)
@@ -426,8 +427,10 @@ func (s *Service) Approve(ctx context.Context, by *store.User, id string, ov *Ov
 	s.changed(ctx, r)
 	if r.Status == store.StatusFailed {
 		s.notify.Dispatch(notify.RequestFailed, s.payload(ctx, r))
+		s.notify.Push(notify.PushEvent{Name: "request.failed", ID: r.ID, Users: []string{r.RequestedBy}, Skip: by.ID})
 	} else {
 		s.notify.Dispatch(notify.RequestApproved, s.payload(ctx, r))
+		s.notify.Push(notify.PushEvent{Name: "request.approved", ID: r.ID, Users: []string{r.RequestedBy}, Skip: by.ID})
 	}
 	return s.view(ctx, r)
 }
@@ -496,6 +499,7 @@ func (s *Service) Decline(ctx context.Context, by *store.User, id, reason string
 	}
 	s.changed(ctx, r)
 	s.notify.Dispatch(notify.RequestDeclined, s.payload(ctx, r))
+	s.notify.Push(notify.PushEvent{Name: "request.declined", ID: r.ID, Users: []string{r.RequestedBy}, Skip: by.ID})
 	return s.view(ctx, r)
 }
 

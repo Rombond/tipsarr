@@ -14,6 +14,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/Rombond/tipsarr/backend/internal/media"
+	"github.com/Rombond/tipsarr/backend/internal/push"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -37,6 +38,9 @@ type settingsBody struct {
 	LDAPBaseDN               string `json:"ldapBaseDn" doc:"Where users live, e.g. ou=people,dc=example,dc=com"`
 	UserFolderChoice         bool   `json:"userFolderChoice" doc:"Non-admins may choose the root folder when requesting (default false); the quality profile is always their choice"`
 	DefaultLanguage          string `json:"defaultLanguage" doc:"App-wide default language, e.g. fr-FR; empty = the browser decides. A person's own language wins"`
+	PushEnabled              bool   `json:"pushEnabled" doc:"Mobile push notifications through the relay (off by default)"`
+	PushRelayURL             string `json:"pushRelayUrl" doc:"Address of the push relay, e.g. https://push.example.org"`
+	PushRelayKeyConfigured   bool   `json:"pushRelayKeyConfigured" doc:"The relay key is write-only; this only says whether one is saved"`
 	ServarrAutoImport        bool   `json:"servarrAutoImport" doc:"Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only)"`
 }
 
@@ -49,6 +53,9 @@ type updateSettingsInput struct {
 		JellyfinPublicURL *string `json:"jellyfinPublicUrl,omitempty" doc:"Empty string clears it"`
 		JellyfinAPIKey    *string `json:"jellyfinApiKey,omitempty" doc:"Jellyfin API key (Dashboard > API Keys); empty string clears it"`
 		ServarrAutoImport *bool   `json:"servarrAutoImport,omitempty"`
+		PushEnabled       *bool   `json:"pushEnabled,omitempty" doc:"Needs the relay address and key; turning it on with either missing is refused"`
+		PushRelayURL      *string `json:"pushRelayUrl,omitempty" doc:"Empty string clears it (and turns push off)"`
+		PushRelayKey      *string `json:"pushRelayKey,omitempty" doc:"Write-only; empty string clears it (and turns push off)"`
 		UserFolderChoice  *bool   `json:"userFolderChoice,omitempty"`
 		DefaultLanguage   *string `json:"defaultLanguage,omitempty" doc:"e.g. fr-FR; empty clears it"`
 		LDAPURL           *string `json:"ldapUrl,omitempty" doc:"Empty string turns LDAP pictures off; the connection is tested when saving"`
@@ -87,7 +94,11 @@ func registerAdmin(api huma.API, d Deps) {
 		publicURL, _ := d.Store.GetSetting(ctx, media.SettingJellyfinPublicURL)
 		autoImport, _ := d.Store.GetSetting(ctx, requests.SettingAutoImport)
 		oc, _ := d.Auth.OIDCConfig(ctx)
+		pushOn, _ := d.Store.GetSetting(ctx, push.SettingEnabled)
+		pushURL, _ := d.Store.GetSetting(ctx, push.SettingURL)
+		pushKey, _ := d.Store.GetSetting(ctx, push.SettingKey)
 		return settingsBody{
+			PushEnabled: pushOn == "true", PushRelayURL: pushURL, PushRelayKeyConfigured: pushKey != "",
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
 			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, ServarrAutoImport: autoImport != "false", UserFolderChoice: d.Requests.UsersMayChooseFolder(ctx), DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage),
 			LDAPURL: ldapGet(ctx, d, avatars.SettingLDAPURL), LDAPBindDN: ldapGet(ctx, d, avatars.SettingLDAPBindDN), LDAPBaseDN: ldapGet(ctx, d, avatars.SettingLDAPBaseDN), LDAPPasswordSet: ldapGet(ctx, d, avatars.SettingLDAPPassword) != "",
@@ -215,10 +226,58 @@ func registerAdmin(api huma.API, d Deps) {
 				return nil, err
 			}
 		}
+		if err := updatePush(ctx, d, in.Body.PushEnabled, in.Body.PushRelayURL, in.Body.PushRelayKey); err != nil {
+			return nil, err
+		}
 		b, err := read(ctx)
 		return &settingsOutput{Body: b}, err
 	})
 }
+
+// updatePush saves the relay settings. Push cannot be on without an address and a key.
+func updatePush(ctx context.Context, d Deps, enabled *bool, relayURL, relayKey *string) error {
+	set := func(k, v string) error { return d.Store.SetSetting(ctx, k, v) }
+	if relayURL != nil {
+		v := strings.TrimRight(strings.TrimSpace(*relayURL), "/")
+		if v != "" {
+			if err := push.ValidURL(v); err != nil {
+				return fail(422, "invalid_push_url", err.Error())
+			}
+		}
+		if err := set(push.SettingURL, v); err != nil {
+			return err
+		}
+		if v == "" {
+			enabled = ptr(false)
+		}
+	}
+	if relayKey != nil {
+		v := strings.TrimSpace(*relayKey)
+		if err := set(push.SettingKey, v); err != nil {
+			return err
+		}
+		if v == "" {
+			enabled = ptr(false)
+		}
+	}
+	if enabled == nil {
+		return nil
+	}
+	if *enabled {
+		u, _ := d.Store.GetSetting(ctx, push.SettingURL)
+		k, _ := d.Store.GetSetting(ctx, push.SettingKey)
+		if u == "" || k == "" {
+			return fail(422, "push_not_configured", "set the relay address and key before turning push on")
+		}
+	}
+	v := "false"
+	if *enabled {
+		v = "true"
+	}
+	return set(push.SettingEnabled, v)
+}
+
+func ptr[T any](v T) *T { return &v }
 
 func ldapGet(ctx context.Context, d Deps, key string) string {
 	v, _ := d.Store.GetSetting(ctx, key)

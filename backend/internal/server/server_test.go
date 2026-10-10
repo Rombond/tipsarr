@@ -27,6 +27,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/playback"
+	"github.com/Rombond/tipsarr/backend/internal/push"
 	"github.com/Rombond/tipsarr/backend/internal/ratings"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/server"
@@ -380,6 +381,9 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	mediaSvc := media.New(st, tm.URL)
 	notifier := notify.New(st, dryRun)
 	notifier.SetRetryDelays(10*time.Millisecond, 10*time.Millisecond)
+	pusher := push.New(st, dryRun)
+	pusher.SetRetryDelays(10*time.Millisecond, 10*time.Millisecond)
+	notifier.SetPusher(pusher)
 	reqs := requests.New(st, mediaSvc, hub, notifier, dryRun)
 	box := boxoffice.New(st, mediaSvc, fakeBOM(t).URL)
 	box.SetPause(0)
@@ -400,7 +404,7 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	}})
 	authSvc.SetRecheckEvery(0) // tests: ask the fake Jellyfin about the account on every request
 	h, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier,
+		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier, Push: pusher,
 		DryRun: dryRun, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)

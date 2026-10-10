@@ -77,7 +77,10 @@ func (s *Store) UpdatePrefs(ctx context.Context, u *User) error {
 // DeleteUserSessions signs a user out everywhere (used when their role changes).
 func (s *Store) DeleteUserSessions(ctx context.Context, userID string) error {
 	_, err := s.DB.NewDelete().Model((*Session)(nil)).Where("user_id = ?", userID).Exec(ctx)
-	return err
+	if err != nil {
+		return err
+	}
+	return s.pruneDevices(ctx)
 }
 
 // UpdateUser changes the editable fields of a user.

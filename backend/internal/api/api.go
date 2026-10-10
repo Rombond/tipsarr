@@ -18,6 +18,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/marks"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
+	"github.com/Rombond/tipsarr/backend/internal/push"
 	"github.com/Rombond/tipsarr/backend/internal/ratings"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/stats"
@@ -54,6 +55,7 @@ type Deps struct {
 	SecureCookies bool          // always mark the session cookie Secure (otherwise only behind X-Forwarded-Proto: https)
 	Hub           *events.Hub
 	Notify        *notify.Service
+	Push          *push.Service // optional
 	Jobs          *jobs.Manager
 	DryRun        bool   // global: nothing is ever sent to Radarr/Sonarr
 	ConfigDir     string // image cache lives under here
@@ -92,6 +94,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerBoxOffice(api, d)
 		registerProfile(api, d)
 		registerSessions(api, d)
+		registerDevices(api, d)
 		registerIssues(api, d)
 		registerOIDC(api, d)
 		registerMarks(api, d)

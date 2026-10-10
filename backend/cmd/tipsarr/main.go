@@ -26,6 +26,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/playback"
+	"github.com/Rombond/tipsarr/backend/internal/push"
 	"github.com/Rombond/tipsarr/backend/internal/ratings"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/server"
@@ -99,6 +100,8 @@ func run(cfg config.Config) error {
 	}
 	mediaSvc := media.New(st, "")
 	notifier := notify.New(st, cfg.DryRun)
+	pusher := push.New(st, cfg.DryRun)
+	notifier.SetPusher(pusher)
 	sugg := suggestions.New(st, mediaSvc, hub)
 	lib.OnHistoryChanged = sugg.QueueRefresh
 	box := boxoffice.New(st, mediaSvc, "")
@@ -143,7 +146,7 @@ func run(cfg config.Config) error {
 	}
 
 	handler, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier,
+		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier, Push: pusher,
 		DryRun: cfg.DryRun, ConfigDir: cfg.ConfigDir,
 	})
 	if cfg.DryRun {

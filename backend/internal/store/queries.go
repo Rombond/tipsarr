@@ -96,23 +96,32 @@ func (s *Store) DeleteUserSession(ctx context.Context, userID, publicID string) 
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrNotFound
 	}
-	return nil
+	return s.pruneDevices(ctx)
 }
 
 // DeleteOtherUserSessions ends every session of the user except keepID.
 func (s *Store) DeleteOtherUserSessions(ctx context.Context, userID, keepID string) error {
 	_, err := s.DB.NewDelete().Model((*Session)(nil)).Where("user_id = ?", userID).Where("id <> ?", keepID).Exec(ctx)
-	return err
+	if err != nil {
+		return err
+	}
+	return s.pruneDevices(ctx)
 }
 
 func (s *Store) DeleteSession(ctx context.Context, sessionID string) error {
 	_, err := s.DB.NewDelete().Model((*Session)(nil)).Where("id = ?", sessionID).Exec(ctx)
-	return err
+	if err != nil {
+		return err
+	}
+	return s.pruneDevices(ctx)
 }
 
 func (s *Store) PurgeExpiredSessions(ctx context.Context) error {
 	_, err := s.DB.NewDelete().Model((*Session)(nil)).Where("expires_at <= ?", time.Now().Unix()).Exec(ctx)
-	return err
+	if err != nil {
+		return err
+	}
+	return s.pruneDevices(ctx)
 }
 
 // GetSetting returns "" when the key is unset.

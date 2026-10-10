@@ -704,6 +704,28 @@ export interface paths {
         patch: operations["updateMe"];
         trace?: never;
     };
+    "/me/devices/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** This app's push registration */
+        get: operations["getDevice"];
+        /**
+         * Register or refresh this app's push token
+         * @description Call it at every launch and whenever the OS hands out a new token or the user changes the notification toggles. The registration belongs to the current session and disappears when it ends.
+         */
+        put: operations["registerDevice"];
+        post?: never;
+        /** Stop push notifications on this device */
+        delete: operations["unregisterDevice"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/sessions": {
         parameters: {
             query?: never;
@@ -1836,10 +1858,36 @@ export interface components {
             /** Format: int64 */
             percent: number;
         };
+        PushDevice: {
+            /**
+             * Format: int64
+             * @description Bitmask: 1 my requests, 2 new requests to approve (admins), 4 issues
+             */
+            categories: number;
+            language: string;
+            /** @enum {string} */
+            platform: "ios" | "android";
+            sandbox: boolean;
+            /** Format: int64 */
+            updatedAt: number;
+        };
         QualityProfile: {
             /** Format: int64 */
             id: number;
             name: string;
+        };
+        RegisterDeviceInputBody: {
+            /**
+             * Format: int64
+             * @description Bitmask of the notifications wanted; default all (7), unchanged on refresh when omitted
+             */
+            categories?: number;
+            /** @description Language of the alert text (en or fr); default en */
+            language?: string;
+            /** @description APNs device token (hex) or FCM registration token */
+            pushToken: string;
+            /** @description iOS only: the token comes from a development build (APNs sandbox) */
+            sandbox?: boolean;
         };
         RequestCountsResponse: {
             /** Format: int64 */
@@ -1986,6 +2034,12 @@ export interface components {
             oidcGroupsClaim: string;
             /** @description OpenID Connect provider (Authelia), e.g. https://auth.example.org */
             oidcIssuer: string;
+            /** @description Mobile push notifications through the relay (off by default) */
+            pushEnabled: boolean;
+            /** @description The relay key is write-only; this only says whether one is saved */
+            pushRelayKeyConfigured: boolean;
+            /** @description Address of the push relay, e.g. https://push.example.org */
+            pushRelayUrl: string;
             /** @description Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only) */
             servarrAutoImport: boolean;
             /** @description Secrets are write-only; this only says whether a key is saved */
@@ -2204,6 +2258,12 @@ export interface components {
             oidcGroupsClaim?: string;
             /** @description Empty string turns single sign-on off. The provider is contacted when saving */
             oidcIssuer?: string;
+            /** @description Needs the relay address and key; turning it on with either missing is refused */
+            pushEnabled?: boolean;
+            /** @description Write-only; empty string clears it (and turns push off) */
+            pushRelayKey?: string;
+            /** @description Empty string clears it (and turns push off) */
+            pushRelayUrl?: string;
             servarrAutoImport?: boolean;
             /** @description Set or replace the TMDB key (empty string clears it) */
             tmdbApiKey?: string;
@@ -5148,6 +5208,140 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    getDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushDevice"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    registerDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterDeviceInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushDevice"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    unregisterDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

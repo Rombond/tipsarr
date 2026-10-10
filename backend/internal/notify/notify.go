@@ -35,7 +35,21 @@ const (
 
 var AllEvents = []string{RequestCreated, RequestApproved, RequestDeclined, RequestFailed, MediaAvailable, IssueCreated, IssueCommented, IssueResolved}
 
+// PushEvent is what a mobile push is about. The relay turns the event name into a localized alert
+// and the app fetches the details with ID, so nothing else travels.
+type PushEvent struct {
+	Name   string   // relay event, e.g. request.approved
+	ID     string   // request or issue id, the app opens it
+	Users  []string // user ids to notify
+	Admins bool     // also every admin
+	Skip   string   // user id that caused the event (never notified about their own action)
+}
+
+// Pusher delivers push events (implemented by package push).
+type Pusher interface{ Send(PushEvent) }
+
 type Service struct {
+	pusher Pusher
 	store  *store.Store
 	http   *http.Client
 	dryRun bool
@@ -44,6 +58,16 @@ type Service struct {
 
 func New(s *store.Store, dryRun bool) *Service {
 	return &Service{store: s, http: &http.Client{Timeout: 10 * time.Second}, dryRun: dryRun, delays: []time.Duration{time.Second, 5 * time.Second}}
+}
+
+// SetPusher enables mobile push; without it Push does nothing.
+func (s *Service) SetPusher(p Pusher) { s.pusher = p }
+
+// Push hands a mobile push event to the pusher, if any. It never blocks.
+func (s *Service) Push(ev PushEvent) {
+	if s.pusher != nil {
+		s.pusher.Send(ev)
+	}
 }
 
 // SetRetryDelays overrides the retry schedule (tests).

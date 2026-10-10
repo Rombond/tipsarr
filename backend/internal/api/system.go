@@ -58,6 +58,7 @@ func registerSystem(api huma.API, d Deps) {
 		out.Body.DefaultLanguage, _ = d.Store.GetSetting(ctx, media.SettingDefaultLanguage)
 		out.Body.APIVersion = APIVersion
 		out.Body.MinAppVersion, _ = d.Store.GetSetting(ctx, SettingMinAppVersion)
+		out.Body.Features.Push = d.Push != nil && d.Push.Configured(ctx)
 		return out, nil
 	})
 }
