@@ -144,7 +144,7 @@ private fun ChartRow(chart: BoxOfficeChart, entry: BoxOfficeEntry, onOpenItem: (
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(item?.title ?: entry.title, fontSize = Tokens.FontSize.body, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(chart.money(entry.weekendGross), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
-            Text("${chart.money(entry.totalGross)} · ${stringResource(R.string.m_boxoffice_weeks, entry.weeksInRelease.toString())}", fontSize = Tokens.FontSize.caption, color = Tokens.palette.mutedFg)
+            Text("${chart.money(entry.totalGross)} · ${stringResource(if (entry.weeksInRelease == 1) R.string.m_boxoffice_weeks_one else R.string.m_boxoffice_weeks, entry.weeksInRelease.toString())}", fontSize = Tokens.FontSize.caption, color = Tokens.palette.mutedFg)
         }
         item?.state?.let { StatusBadge(it, compact = true) }
     }

@@ -200,6 +200,7 @@
   "m.menu.hidden": "Masqué de vos suggestions",
   "m.boxoffice.full": "Classement complet",
   "m.boxoffice.weeks": "{n} semaines à l’affiche",
+  "m.boxoffice.weeks_one": "{n} semaine à l’affiche",
   "m.boxoffice.region": "Région",
   "m.boxoffice.week": "Semaine",
   "m.boxoffice.empty": "Pas encore de classement. Il apparaît après la prochaine mise à jour du week-end."

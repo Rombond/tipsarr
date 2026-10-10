@@ -200,6 +200,7 @@
   "m.menu.hidden": "Hidden from your suggestions",
   "m.boxoffice.full": "Full chart",
   "m.boxoffice.weeks": "{n} weeks in release",
+  "m.boxoffice.weeks_one": "{n} week in release",
   "m.boxoffice.region": "Region",
   "m.boxoffice.week": "Week",
   "m.boxoffice.empty": "No chart yet. It appears after the next weekend update."

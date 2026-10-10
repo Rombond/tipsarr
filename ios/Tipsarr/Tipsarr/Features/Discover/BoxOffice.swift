@@ -182,7 +182,7 @@ struct BoxOfficeScreen: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: entry.item?.title ?? entry.title).font(.body.weight(.semibold)).lineLimit(2)
                 Text(verbatim: chart.money(entry.weekendGross)).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
-                Text(verbatim: "\(chart.money(entry.totalGross)) · \(L10n.string("m.boxoffice.weeks", String(entry.weeksInRelease)))")
+                Text(verbatim: "\(chart.money(entry.totalGross)) · \(L10n.string(entry.weeksInRelease == 1 ? "m.boxoffice.weeks_one" : "m.boxoffice.weeks", String(entry.weeksInRelease)))")
                     .font(.caption).foregroundStyle(Tokens.palette.mutedFg)
             }
             Spacer(minLength: 0)

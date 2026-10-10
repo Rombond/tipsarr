@@ -1,6 +1,7 @@
 package com.brebond.tipsarr.features.requests
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -116,7 +117,7 @@ fun RequestDetailScreen(
                     Modifier.widthIn(max = 720.dp).fillMaxWidth().padding(Tokens.Spacing.lg),
                     verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.xl),
                 ) {
-                    Header(record)
+                    Header(record, onOpenTitle = { onOpenTitle(MediaRoute(record.type, record.tmdbId, record.title)) })
                     val shown = record.withLive(live)
                     val percent = shown.progressPercent
                     if (record.state == RequestState.Downloading && percent != null) {
@@ -144,7 +145,6 @@ fun RequestDetailScreen(
                         onApprove = { run { record = model.approve(record) } },
                         onDecline = { declining = true },
                         onRetry = { run { record = model.retry(record) } },
-                        onOpenTitle = { onOpenTitle(MediaRoute(record.type, record.tmdbId, record.title)) },
                         onDelete = { confirmDelete = true },
                     )
                 }
@@ -175,9 +175,9 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun Header(record: RequestRecord) {
+private fun Header(record: RequestRecord, onOpenTitle: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg), verticalAlignment = Alignment.Top) {
-        Box(Modifier.width(96.dp).height(96.dp * Tokens.Size.posterRatio).clip(RoundedCornerShape(Tokens.Radius.md)).background(Tokens.palette.muted), contentAlignment = Alignment.Center) {
+        Box(Modifier.width(96.dp).height(96.dp * Tokens.Size.posterRatio).clip(RoundedCornerShape(Tokens.Radius.md)).background(Tokens.palette.muted).clickable(onClickLabel = stringResource(R.string.m_requests_open_title), onClick = onOpenTitle), contentAlignment = Alignment.Center) {
             Icon(Icons.Outlined.Movie, null, tint = Tokens.palette.mutedFg)
             RemoteImage(record.posterPath, TmdbSize.W342, Modifier.fillMaxSize())
         }
@@ -254,7 +254,6 @@ private fun Actions(
     onApprove: () -> Unit,
     onDecline: () -> Unit,
     onRetry: () -> Unit,
-    onOpenTitle: () -> Unit,
     onDelete: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
@@ -271,7 +270,6 @@ private fun Actions(
         if (model.isAdmin && record.state == RequestState.Failed) {
             TipsarrButton(stringResource(R.string.req_retry), onRetry, fullWidth = true, enabled = !busy) { Icon(Icons.Outlined.Refresh, null, Modifier.size(20.dp)); Spacer(Modifier.width(Tokens.Spacing.sm)) }
         }
-        TipsarrButton(stringResource(R.string.media_view_details), onOpenTitle, fullWidth = true, kind = ButtonKind.Secondary)
         if (model.canDelete(record)) {
             TipsarrButton(stringResource(R.string.m_request_cancel), onDelete, fullWidth = true, kind = ButtonKind.Ghost, enabled = !busy)
         }

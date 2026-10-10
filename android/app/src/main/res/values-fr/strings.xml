@@ -260,6 +260,7 @@
     <string name="m_boxoffice_region">Région</string>
     <string name="m_boxoffice_week">Semaine</string>
     <string name="m_boxoffice_weeks">%1$s semaines à l’affiche</string>
+    <string name="m_boxoffice_weeks_one">%1$s semaine à l’affiche</string>
     <string name="m_common_less">Moins</string>
     <string name="m_common_more">Plus</string>
     <string name="m_connect_address">Adresse du serveur</string>

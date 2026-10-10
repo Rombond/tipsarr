@@ -4162,6 +4162,23 @@
         }
       }
     },
+    "m.boxoffice.weeks_one": {
+      "comment": "placeholders: n",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ week in release"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ semaine à l’affiche"
+          }
+        }
+      }
+    },
     "m.common.less": {
       "localizations": {
         "en": {

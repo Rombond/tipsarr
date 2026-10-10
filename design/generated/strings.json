@@ -707,6 +707,7 @@
   "m.menu.hidden": "Hidden from your suggestions",
   "m.boxoffice.full": "Full chart",
   "m.boxoffice.weeks": "{n} weeks in release",
+  "m.boxoffice.weeks_one": "{n} week in release",
   "m.boxoffice.region": "Region",
   "m.boxoffice.week": "Week",
   "m.boxoffice.empty": "No chart yet. It appears after the next weekend update."
@@ -1419,6 +1420,7 @@
   "m.menu.hidden": "Masqué de vos suggestions",
   "m.boxoffice.full": "Classement complet",
   "m.boxoffice.weeks": "{n} semaines à l’affiche",
+  "m.boxoffice.weeks_one": "{n} semaine à l’affiche",
   "m.boxoffice.region": "Région",
   "m.boxoffice.week": "Semaine",
   "m.boxoffice.empty": "Pas encore de classement. Il apparaît après la prochaine mise à jour du week-end."
