@@ -33,7 +33,8 @@ class AppSettings(context: Context) {
         private const val PREFS = "app_settings"
         private const val THEME = "theme"
         private const val LANGUAGE = "language"
-        val supported = listOf("en" to "English", "fr" to "Français")
+        /** The languages of locales/languages.json (generated). */
+        val supported = GeneratedLanguages.all
 
         /** Context whose resources use the chosen language; also sets the JVM default so API headers follow it. */
         fun wrap(base: Context): Context {

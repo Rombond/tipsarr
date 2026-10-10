@@ -1,6 +1,6 @@
 # Tipsarr Android
 
-Kotlin + Jetpack Compose + Material 3 (minSdk 26, compileSdk 37). It follows the iOS app: same behaviour, same screens, similar UI (`../ios/`). Same API (`../api/openapi.yaml`, copied by `make generate` to `app/src/main/openapi/`), same tokens (`../design/tokens.json`, generated to `app/.../design/Tokens.kt`), same strings (`app/src/main/res/values{,-fr}/strings.xml`, from `../design/strings`). Icon layers come from `../design/icon/Android-*`.
+Kotlin + Jetpack Compose + Material 3 (minSdk 26, compileSdk 37). It follows the iOS app: same behaviour, same screens, similar UI (`../ios/`). Same API (`../api/openapi.yaml`, copied by `make generate` to `app/src/main/openapi/`), same tokens (`../design/tokens.json`, generated to `app/.../design/Tokens.kt`), same strings (`app/src/main/res/values*/strings.xml`, generated from `../locales`). Icon layers come from `../design/icon/Android-*`.
 
 Build and run (Android Studio's bundled JDK, SDK in `~/Library/Android/sdk`):
 

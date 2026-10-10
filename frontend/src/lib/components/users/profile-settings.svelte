@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { api, unwrap, expectOk, errorText, type Schemas } from '$lib/api/client';
 	import { auth } from '$lib/stores/auth.svelte';
-	import { t, i18n, LOCALES, type Locale } from '$lib/i18n/index.svelte';
+	import { t, i18n, LOCALES, supported, type Locale } from '$lib/i18n/index.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { fmtDateTime } from '$lib/i18n/format';
 	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
@@ -11,7 +11,7 @@
 	import { RATING_SOURCES } from '$lib/ratings.svelte';
 
 	// the stored value is a TMDB language tag (fr-FR) or '' for "follow the browser"
-	let language = $state(auth.user?.language ? (LOCALES.find((l) => l.code === auth.user!.language.slice(0, 2))?.tag ?? '') : '');
+	let language = $state(auth.user?.language ? (LOCALES.find((l) => l.code === supported(auth.user!.language))?.tag ?? '') : '');
 	let region = $state(auth.user?.region ?? '');
 	let ratingSource = $state(auth.user?.ratingSource || 'tmdb');
 	let error = $state<string | null>(null);

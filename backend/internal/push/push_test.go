@@ -327,3 +327,19 @@ func TestAlertTextOnlyWhenEnabled(t *testing.T) {
 		t.Fatalf("%+v", it)
 	}
 }
+
+func TestAlertTextFollowsTheLanguage(t *testing.T) {
+	cases := []struct{ lang, want string }{
+		{"en", "Now available"}, {"en-US", "Now available"}, {"", "Now available"},
+		{"fr", "Maintenant disponible"}, {"fr-CA", "Maintenant disponible"}, {"FR", "Maintenant disponible"},
+		{"xx", "Now available"}, // a language without a file falls back to English
+	}
+	for _, c := range cases {
+		if title, body := alertText("request.available", c.lang, "Dune"); title != c.want || body != "Dune" {
+			t.Errorf("alertText(%q) = %q, %q; want %q", c.lang, title, body, c.want)
+		}
+	}
+	if title, _ := alertText("no.such.event", "fr", "x"); title != "" {
+		t.Errorf("unknown event got title %q", title)
+	}
+}

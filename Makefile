@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend build test generate lint ios-strings
+.PHONY: dev dev-backend dev-frontend build test generate lint ios-strings locales-check
 
 dev:
 	$(MAKE) -j2 dev-backend dev-frontend
@@ -24,11 +24,11 @@ generate:
 	cp api/openapi.yaml android/app/src/main/openapi/openapi.yaml
 	node design/build-tokens.mjs
 	cp design/generated/Tokens.swift ios/Tipsarr/Tipsarr/DesignSystem/Tokens.swift
-	mkdir -p android/app/src/main/java/com/brebond/tipsarr/design android/app/src/main/res/values android/app/src/main/res/values-fr android/app/src/main/openapi
+	mkdir -p android/app/src/main/java/com/brebond/tipsarr/design android/app/src/main/openapi
 	cp design/generated/Tokens.kt android/app/src/main/java/com/brebond/tipsarr/design/Tokens.kt
 	node design/build-strings.mjs
-	cp design/generated/strings-en.xml android/app/src/main/res/values/strings.xml
-	cp design/generated/strings-fr.xml android/app/src/main/res/values-fr/strings.xml
+	for d in design/generated/android/values*; do mkdir -p android/app/src/main/res/$$(basename $$d) && cp $$d/strings.xml android/app/src/main/res/$$(basename $$d)/strings.xml; done
+	cp design/generated/android/GeneratedLanguages.kt android/app/src/main/java/com/brebond/tipsarr/core/support/GeneratedLanguages.kt
 	cd frontend && npx openapi-typescript@7.13.0 src/lib/api/openapi.json -o src/lib/api/schema.d.ts
 
 lint:
@@ -37,3 +37,9 @@ lint:
 # Xcode reformats the catalog it owns, so it is copied on demand, not by `generate` and not checked in CI.
 ios-strings:
 	cp design/generated/Localizable.xcstrings ios/Tipsarr/Tipsarr/Localizable.xcstrings
+	cp design/generated/InfoPlist.xcstrings ios/Tipsarr/Tipsarr/InfoPlist.xcstrings
+	node design/ios-regions.mjs
+
+# Lists every language in locales/ and fails on a real problem (unknown key, changed placeholder). Missing translations are only listed.
+locales-check:
+	node design/check-locales.mjs

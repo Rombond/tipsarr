@@ -1,39 +1,30 @@
-// Builds the mobile string catalogs from the web catalogs + design/strings/mobile.*.json.
-// Run: node design/build-strings.mjs   Outputs design/generated/strings.json and Localizable.xcstrings
+// Builds every platform's string files from the translation files in locales/ (see design/locales.mjs for the layout).
+// Run: node design/build-strings.mjs   (make generate does it)
+// Outputs:
+//   design/generated/strings.json, Localizable.xcstrings, InfoPlist.xcstrings    iOS (copied into the app by `make ios-strings`)
+//   design/generated/android/values[-xx]/strings.xml, GeneratedLanguages.kt       Android (copied by `make generate`)
+//   backend/internal/push/locales/<code>.json                                     push alert titles (embedded in the server)
+// A language may leave keys out: Android, iOS, the web app and the server then show the English text.
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { loadLocales, validate, root } from './locales.mjs';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const i18n = path.join(here, '..', 'frontend', 'src', 'lib', 'i18n');
+const here = path.dirname(new URL(import.meta.url).pathname);
 const out = path.join(here, 'generated');
 fs.mkdirSync(out, { recursive: true });
 
-// web catalogs are `export const xx = { "key": "value", ... }` literals
-const readCatalog = (file, name) => {
-  const src = fs.readFileSync(path.join(i18n, file), 'utf8');
-  const m = src.match(new RegExp(`export const ${name}[^=]*=\\s*(\\{[\\s\\S]*\\})\\s*(as const)?;?\\s*$`));
-  if (!m) throw new Error(`cannot read ${file}`);
-  return new Function(`return (${m[1]})`)();
-};
-const en = readCatalog('en.ts', 'en');
-const fr = readCatalog('fr.ts', 'fr');
+const loc = loadLocales();
+const { errors, coverage } = validate(loc);
+if (errors.length) { console.error(errors.join('\n')); process.exit(1); }
+const codes = loc.languages.map((l) => l.code);
 
 // namespaces that only exist on the admin web UI are left out of the apps
 const webOnly = new Set(['settings', 'webhooks', 'services', 'setup', 'job', 'box', 'boxrow', 'checklist', 'form', 'errpage', 'brand', 'modal', 'carousel']);
 const keep = (k) => !webOnly.has(k.split('.')[0]);
-const mobile = { en: JSON.parse(fs.readFileSync(path.join(here, 'strings', 'mobile.en.json'), 'utf8')), fr: JSON.parse(fs.readFileSync(path.join(here, 'strings', 'mobile.fr.json'), 'utf8')) };
-
 const pick = (cat) => Object.fromEntries(Object.entries(cat).filter(([k]) => keep(k)));
-const strings = { en: { ...pick(en), ...mobile.en }, fr: { ...pick(fr), ...mobile.fr } };
 
-const missing = [];
-for (const k of Object.keys(strings.en)) if (!(k in strings.fr)) missing.push(`fr is missing ${k}`);
-for (const k of Object.keys(strings.fr)) if (!(k in strings.en)) missing.push(`en is missing ${k}`);
-const ph = (s) => (s.match(/\{(\w+)\}/g) || []).map((x) => x.slice(1, -1)).sort().join();
-for (const k of Object.keys(strings.en)) if (strings.fr[k] !== undefined && ph(strings.en[k]) !== ph(strings.fr[k])) missing.push(`placeholders differ for ${k}`);
-if (missing.length) { console.error(missing.join('\n')); process.exit(1); }
-
+// the catalog the apps share: web strings that make sense in an app, then the mobile ones (which win)
+const strings = Object.fromEntries(codes.map((c) => [c, { ...pick(loc.byCode[c].web), ...loc.byCode[c].mobile }]));
 fs.writeFileSync(path.join(out, 'strings.json'), JSON.stringify(strings, null, 1) + '\n');
 
 // Xcode String Catalog: {name} placeholders become positional %n$@ in order of appearance (the order is kept in the comment)
@@ -41,17 +32,31 @@ fs.writeFileSync(path.join(out, 'strings.json'), JSON.stringify(strings, null, 1
 const toPos = (s, order) => { const names = []; const text = (/\{\w+\}/.test(s) ? s.replace(/%/g, '%%') : s).replace(/\{(\w+)\}/g, (_, nm) => { names.push(nm); return `%${(order || names).indexOf(nm) + 1}$@`; }); return { text: names.length === 1 ? text.replace('%1$@', '%@') : text, names }; };
 const catalog = { sourceLanguage: 'en', version: '1.0', strings: {} };
 for (const k of Object.keys(strings.en).sort()) {
-  const e = toPos(strings.en[k]); const f = toPos(strings.fr[k], e.names);
-  catalog.strings[k] = { ...(e.names.length ? { comment: `placeholders: ${e.names.join(', ')}` } : {}), localizations: { en: { stringUnit: { state: 'translated', value: e.text } }, fr: { stringUnit: { state: 'translated', value: f.text } } } };
+  const e = toPos(strings.en[k]);
+  const localizations = {};
+  for (const c of codes) {
+    if (strings[c][k] === undefined) continue;
+    localizations[c] = { stringUnit: { state: 'translated', value: c === 'en' ? e.text : toPos(strings[c][k], e.names).text } };
+  }
+  catalog.strings[k] = { ...(e.names.length ? { comment: `placeholders: ${e.names.join(', ')}` } : {}), localizations };
 }
 fs.writeFileSync(path.join(out, 'Localizable.xcstrings'), JSON.stringify(catalog, null, 2) + '\n');
-console.log(`wrote ${Object.keys(strings.en).length} strings (web ${Object.keys(pick(en)).length}, mobile ${Object.keys(mobile.en).length})`);
+console.log(`wrote ${Object.keys(strings.en).length} strings for ${codes.join(', ')}`);
 
-// Android: strings-en.xml and strings-fr.xml (copied to res/values and res/values-fr by `make generate`).
+// iOS Info.plist texts (permission prompts) live in locales/<code>/ios.json and become InfoPlist.xcstrings
+const infoKeys = Object.keys(loc.byCode.en.ios);
+const info = { sourceLanguage: 'en', version: '1.0', strings: {} };
+for (const k of infoKeys) {
+  info.strings[k] = { localizations: Object.fromEntries(codes.filter((c) => loc.byCode[c].ios[k] !== undefined).map((c) => [c, { stringUnit: { state: 'translated', value: loc.byCode[c].ios[k] } }])) };
+}
+fs.writeFileSync(path.join(out, 'InfoPlist.xcstrings'), JSON.stringify(info, null, 2) + '\n');
+
+// Android: values/strings.xml (English) and values-<code>/strings.xml per language.
 // Key "req.stage.downloading_pct" becomes the resource name req_stage_downloading_pct; {name} placeholders become %n$s.
 const xmlName = (k) => k.replace(/[^A-Za-z0-9]+/g, '_').replace(/^(\d)/, 'k$1').toLowerCase();
+const androidStrings = Object.fromEntries(codes.map((c) => [c, { ...strings[c], ...loc.byCode[c].android }]));
 const seen = new Map();
-for (const k of Object.keys(strings.en)) {
+for (const k of Object.keys(androidStrings.en)) {
   const n = xmlName(k);
   if (seen.has(n)) { console.error(`android resource name clash: ${k} and ${seen.get(n)}`); process.exit(1); }
   seen.set(n, k);
@@ -68,17 +73,44 @@ const xmlValue = (s, order) => {
   t = t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/^([@?])/, '\\$1').replace(/\n/g, '\\n');
   return { t, names, plain: !hasPh && s.includes('%') };
 };
-// design/strings/android.{en,fr}.json override the shared wording where the iOS text does not fit (App Store, Face ID).
-const readOverride = (lang) => { const f = path.join(here, 'strings', `android.${lang}.json`); return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : {}; };
-const androidStrings = { en: { ...strings.en, ...readOverride('en') }, fr: { ...strings.fr, ...readOverride('fr') } };
-const androidXml = (lang) => {
-  const rows = Object.keys(androidStrings.en).sort().map((k) => {
+const androidXml = (code) => {
+  const rows = Object.keys(androidStrings.en).sort().filter((k) => androidStrings[code][k] !== undefined).map((k) => {
     const e = xmlValue(androidStrings.en[k]);
-    const v = lang === 'en' ? e : xmlValue(androidStrings.fr[k], e.names);
+    const v = code === 'en' ? e : xmlValue(androidStrings[code][k], e.names);
     return `    <string name="${xmlName(k)}"${v.plain ? ' formatted="false"' : ''}>${v.t}</string>`;
   });
-  return `<?xml version="1.0" encoding="utf-8"?>\n<!-- Generated by design/build-strings.mjs. Do not edit by hand. -->\n<resources>\n${rows.join('\n')}\n</resources>\n`;
+  return `<?xml version="1.0" encoding="utf-8"?>\n<!-- Generated by design/build-strings.mjs from locales/${code}/. Do not edit by hand. -->\n<resources>\n${rows.join('\n')}\n</resources>\n`;
 };
-fs.writeFileSync(path.join(out, 'strings-en.xml'), androidXml('en'));
-fs.writeFileSync(path.join(out, 'strings-fr.xml'), androidXml('fr'));
-console.log('wrote strings-en.xml and strings-fr.xml');
+// pt-BR -> values-pt-rBR
+const androidDir = (code) => (code === 'en' ? 'values' : `values-${code.replace(/-([A-Z]{2})$/, '-r$1')}`);
+const androidOut = path.join(out, 'android');
+fs.rmSync(androidOut, { recursive: true, force: true });
+for (const c of codes) {
+  fs.mkdirSync(path.join(androidOut, androidDir(c)), { recursive: true });
+  fs.writeFileSync(path.join(androidOut, androidDir(c), 'strings.xml'), androidXml(c));
+}
+// the in-app language picker lists the languages of locales/languages.json
+const kt = loc.languages.map((l) => `        "${l.code}" to "${l.name}"`).join(',\n');
+fs.writeFileSync(path.join(androidOut, 'GeneratedLanguages.kt'), `package com.brebond.tipsarr.core.support
+
+// Generated by design/build-strings.mjs from locales/languages.json. Do not edit by hand.
+object GeneratedLanguages {
+    /** Language code and the language's name in itself. */
+    val all: List<Pair<String, String>> = listOf(
+${kt},
+    )
+}
+`);
+console.log(`wrote Android strings for ${codes.length} language(s)`);
+
+// Server: push alert titles, embedded by backend/internal/push
+const pushDir = path.join(root, 'backend', 'internal', 'push', 'locales');
+fs.rmSync(pushDir, { recursive: true, force: true });
+fs.mkdirSync(pushDir, { recursive: true });
+for (const c of codes) fs.writeFileSync(path.join(pushDir, `${c}.json`), JSON.stringify(loc.byCode[c].server, null, 2) + '\n');
+
+// A short coverage line per language, so gaps are visible when generating
+for (const c of codes.filter((c) => c !== 'en')) {
+  const missing = Object.values(coverage[c]).reduce((n, a) => n + (a.total - a.have), 0);
+  if (missing) console.log(`note: ${c} misses ${missing} string(s), English is shown for them (node design/check-locales.mjs lists them)`);
+}

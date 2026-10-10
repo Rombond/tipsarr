@@ -6,6 +6,7 @@ package push
 import (
 	"bytes"
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -229,26 +230,62 @@ func (s *Service) post(ctx context.Context, cfg config, ev notify.PushEvent, dev
 	return out.Items, nil
 }
 
-// alertTitles are the alert titles in the two supported languages; the body is the media title.
-var alertTitles = map[string][2]string{ // en, fr
-	"request.approved":  {"Request approved", "Demande approuvée"},
-	"request.declined":  {"Request declined", "Demande refusée"},
-	"request.failed":    {"Request failed", "Demande en échec"},
-	"request.available": {"Now available", "Maintenant disponible"},
-	"request.created":   {"New request", "Nouvelle demande"},
-	"issue.created":     {"New issue", "Nouveau signalement"},
-	"issue.comment":     {"New comment on an issue", "Nouveau commentaire sur un signalement"},
-	"issue.resolved":    {"Issue resolved", "Signalement résolu"},
+// The alert titles are translated in locales/<code>/server.json at the repository root; `make generate`
+// copies them to locales/ here so the server embeds them.
+//
+//go:embed locales/*.json
+var localeFiles embed.FS
+
+// alertTitles maps language code -> push event -> title, read from the embedded files.
+var alertTitles = loadAlertTitles()
+
+func loadAlertTitles() map[string]map[string]string {
+	out := map[string]map[string]string{}
+	files, err := localeFiles.ReadDir("locales")
+	if err != nil {
+		panic(err)
+	}
+	for _, f := range files {
+		raw, err := localeFiles.ReadFile("locales/" + f.Name())
+		if err != nil {
+			panic(err)
+		}
+		titles := map[string]string{}
+		if err := json.Unmarshal(raw, &titles); err != nil {
+			panic(fmt.Sprintf("push locales/%s: %v", f.Name(), err))
+		}
+		out[strings.TrimSuffix(f.Name(), ".json")] = titles
+	}
+	return out
+}
+
+// alertTitle is the title for an event in the person's language (fr, fr-FR, pt-BR ...): the exact tag, then
+// the language, then English.
+func alertTitle(event, lang string) (string, bool) {
+	l := strings.ToLower(strings.ReplaceAll(lang, "_", "-"))
+	candidates := []string{l}
+	if base, _, ok := strings.Cut(l, "-"); ok {
+		candidates = append(candidates, base)
+	}
+	candidates = append(candidates, "en")
+	for _, c := range candidates {
+		for code, titles := range alertTitles {
+			if strings.ToLower(code) != c {
+				continue
+			}
+			if t, ok := titles["push."+event]; ok {
+				return t, true
+			}
+		}
+	}
+	return "", false
 }
 
 // alertText returns the title and body of the alert; the title says what happened, the body what it is about.
 func alertText(event, lang, subject string) (title, body string) {
-	t, ok := alertTitles[event]
+	t, ok := alertTitle(event, lang)
 	if !ok {
 		return "", ""
 	}
-	if strings.HasPrefix(strings.ToLower(lang), "fr") {
-		return t[1], subject
-	}
-	return t[0], subject
+	return t, subject
 }

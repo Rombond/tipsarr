@@ -1,24 +1,34 @@
-// Tiny typed i18n runtime. Catalogs are plain TypeScript objects: `en` defines the keys, every
-// other language must provide exactly the same keys (the compiler enforces it), so a missing
-// translation can never ship.
-import { en } from './en';
-import { fr } from './fr';
+// Tiny typed i18n runtime. The catalogs are the plain JSON files in `locales/<code>/web.json` at the repository
+// root; `locales/languages.json` lists the languages. English defines the keys. Another language may leave a key
+// out: the English text is shown instead (`npm run check:i18n` reports gaps and real mistakes).
+import en from '../../../../locales/en/web.json';
+import languageList from '../../../../locales/languages.json';
 
 export type Key = keyof typeof en;
-export type Locale = 'en' | 'fr';
-type Catalog = Record<Key, string>;
+export type Locale = string;
+type Catalog = Partial<Record<Key, string>>;
 
-export const LOCALES: { code: Locale; name: string; tag: string }[] = [
-	{ code: 'en', name: 'English', tag: 'en-US' },
-	{ code: 'fr', name: 'Français', tag: 'fr-FR' },
-];
+export const LOCALES: { code: Locale; name: string; tag: string }[] = languageList;
 
-const catalogs: Record<Locale, Catalog> = { en, fr };
+// every locales/<code>/web.json is bundled, so adding a language needs no code change
+const files = import.meta.glob('../../../../locales/*/web.json', { eager: true, import: 'default' }) as Record<string, Catalog>;
+const catalogs: Record<Locale, Catalog> = {};
+for (const [file, catalog] of Object.entries(files)) catalogs[file.split('/').at(-2)!] = catalog;
+
 const STORAGE_KEY = 'tipsarr-lang';
 
-function supported(code: string | null | undefined): Locale | null {
-	const base = (code ?? '').toLowerCase().slice(0, 2);
-	return LOCALES.find((l) => l.code === base)?.code ?? null;
+/** The listed language for a code or tag such as fr, fr-CA or pt-BR, or null. */
+export function supported(code: string | null | undefined): Locale | null {
+	const c = (code ?? '').toLowerCase();
+	if (!c) return null;
+	const exact = LOCALES.find((l) => l.code.toLowerCase() === c || l.tag.toLowerCase() === c);
+	if (exact) return exact.code;
+	const base = c.slice(0, 2);
+	return (
+		LOCALES.find((l) => l.code.toLowerCase() === base)?.code ??
+		LOCALES.find((l) => l.code.toLowerCase().startsWith(base + '-'))?.code ??
+		null
+	);
 }
 
 class I18n {
@@ -95,7 +105,7 @@ export const i18n = new I18n();
  * (chosen from `params.count` with Intl.PluralRules, so French counts 0 and 1 as singular).
  */
 export function t(key: Key, params?: Record<string, string | number>): string {
-	let msg: string = catalogs[i18n.locale][key] ?? en[key] ?? key;
+	let msg: string = catalogs[i18n.locale]?.[key] ?? en[key] ?? key;
 	if (msg.includes(' | ')) {
 		const forms = msg.split(' | ');
 		const count = Number(params?.count ?? 0);

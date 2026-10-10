@@ -20,7 +20,7 @@ Tipsarr is one Go binary with a Svelte interface built in. It replaces the usual
 - **Watchlist and "not interested"** per user, **issue reporting** (video, audio, subtitles) with comment threads, **user profiles** with statistics.
 - **Outgoing webhooks** (ntfy, Discord, anything that takes JSON) signed with HMAC, for requests and issues.
 - **SQLite by default**, or PostgreSQL / MySQL.
-- **English and French**, built to add more (one file per language).
+- **English and French**, built to add more: a language is a folder of plain JSON files in `locales/` (see [CONTRIBUTING-TRANSLATIONS.md](CONTRIBUTING-TRANSLATIONS.md)).
 
 ## Quick start (Docker)
 
@@ -145,7 +145,7 @@ make build          # single Docker image (frontend embedded in the Go binary)
 ```
 
 - `backend/`: Go with [chi](https://github.com/go-chi/chi), [huma](https://huma.rocks) (code-first OpenAPI) and [bun](https://bun.uptrace.dev). Migrations are portable SQL in `backend/internal/store/migrations`. All writes to Radarr/Sonarr go through one dry-run-aware client.
-- `frontend/`: SvelteKit (Svelte 5), Tailwind 4, shadcn-svelte. The API client is generated from the OpenAPI spec. Every string is translated through `t()`; a language is one file in `frontend/src/lib/i18n` plus one line in `LOCALES`, and CI checks that every catalog has the same keys.
+- `frontend/`: SvelteKit (Svelte 5), Tailwind 4, shadcn-svelte. The API client is generated from the OpenAPI spec. Every string is translated through `t()`; the texts are the JSON files in `locales/` (one folder per language, shared with the apps and the server), a missing translation shows English, and CI checks placeholders and plural forms.
 - External database tests: set `TIPSARR_TEST_PG_URL` / `TIPSARR_TEST_MYSQL_URL` (CI does this with service containers).
 
 Releases: pushing a `v*` tag publishes `ghcr.io/<owner>/tipsarr` (amd64 and arm64).

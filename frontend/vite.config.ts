@@ -29,7 +29,8 @@ export default defineConfig(({ mode }) => {
 				})
 			})
 		],
-		server: { proxy },
+		// the translation files live in ../locales (shared with the apps and the server)
+		server: { proxy, fs: { allow: ['..'] } },
 		preview: { proxy }
 	};
 });

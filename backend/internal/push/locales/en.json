@@ -1,0 +1,10 @@
+{
+  "push.request.approved": "Request approved",
+  "push.request.declined": "Request declined",
+  "push.request.failed": "Request failed",
+  "push.request.available": "Now available",
+  "push.request.created": "New request",
+  "push.issue.created": "New issue",
+  "push.issue.comment": "New comment on an issue",
+  "push.issue.resolved": "Issue resolved"
+}
