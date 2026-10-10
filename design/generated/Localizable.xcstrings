@@ -1242,7 +1242,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Popular TV"
+            "value": "Popular TV shows"
           }
         },
         "fr": {
@@ -2767,7 +2767,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Problems you reported with movies and shows."
+            "value": "Problems you reported with movies and TV shows."
           }
         },
         "fr": {
@@ -3380,7 +3380,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ movies and %2$@ shows ready to watch on Jellyfin."
+            "value": "%1$@ movies and %2$@ TV shows ready to watch on Jellyfin."
           }
         },
         "fr": {
@@ -3877,13 +3877,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Each account keeps its own sign-in on this iPhone. Switching is instant, no password needed."
+            "value": "Each account keeps its own sign-in."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chaque compte garde sa propre connexion sur cet iPhone. Le changement est instantané, sans mot de passe."
+            "value": "Chaque compte garde sa connexion."
           }
         }
       }
@@ -3925,13 +3925,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign out of this account"
+            "value": "Sign out"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se déconnecter de ce compte"
+            "value": "Déconnecter"
           }
         }
       }
@@ -3981,6 +3981,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Comptes"
+          }
+        }
+      }
+    },
+    "m.accounts.title_one": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compte"
           }
         }
       }
@@ -4061,6 +4077,87 @@
           "stringUnit": {
             "state": "translated",
             "value": "Administration"
+          }
+        }
+      }
+    },
+    "m.boxoffice.empty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No chart yet. It appears after the next weekend update."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore de classement. Il apparaît après la prochaine mise à jour du week-end."
+          }
+        }
+      }
+    },
+    "m.boxoffice.full": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full chart"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classement complet"
+          }
+        }
+      }
+    },
+    "m.boxoffice.region": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Region"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Région"
+          }
+        }
+      }
+    },
+    "m.boxoffice.week": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Week"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Semaine"
+          }
+        }
+      }
+    },
+    "m.boxoffice.weeks": {
+      "comment": "placeholders: n",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ weeks in release"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ semaines à l’affiche"
           }
         }
       }
@@ -4390,7 +4487,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "TV"
+            "value": "TV shows"
           }
         },
         "fr": {
@@ -4678,7 +4775,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reads your Jellyfin movies and shows, so titles show as available."
+            "value": "Reads your Jellyfin movies and TV shows, so titles show as available."
           }
         },
         "fr": {
@@ -4742,7 +4839,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Adds movies and shows already in Radarr or Sonarr to the requests list."
+            "value": "Adds movies and TV shows already in Radarr or Sonarr to the requests list."
           }
         },
         "fr": {
@@ -4765,6 +4862,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Appliquer"
+          }
+        }
+      }
+    },
+    "m.library.close": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermer"
+          }
+        }
+      }
+    },
+    "m.library.genre_all": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All selected"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tous les genres"
+          }
+        }
+      }
+    },
+    "m.library.genre_any": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least one"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Au moins un"
           }
         }
       }
@@ -4865,6 +5010,23 @@
         }
       }
     },
+    "m.library.under": {
+      "comment": "placeholders: duration",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "under %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "moins de %@"
+          }
+        }
+      }
+    },
     "m.library.unwatched": {
       "localizations": {
         "en": {
@@ -4925,6 +5087,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Connectez-vous avec votre compte Jellyfin"
+          }
+        }
+      }
+    },
+    "m.menu.hidden": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hidden from your suggestions"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masqué de vos suggestions"
+          }
+        }
+      }
+    },
+    "m.menu.requested": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request sent"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande envoyée"
+          }
+        }
+      }
+    },
+    "m.menu.watchlisted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added to your watchlist"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouté à votre liste"
           }
         }
       }
@@ -5364,6 +5574,22 @@
         }
       }
     },
+    "m.requests.decided_by": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decided by"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Décidé par"
+          }
+        }
+      }
+    },
     "m.requests.decline_send": {
       "localizations": {
         "en": {
@@ -5396,6 +5622,22 @@
         }
       }
     },
+    "m.requests.default_value": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Par défaut"
+          }
+        }
+      }
+    },
     "m.requests.details": {
       "localizations": {
         "en": {
@@ -5408,6 +5650,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Détails"
+          }
+        }
+      }
+    },
+    "m.requests.dry_run": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dry run"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulation"
           }
         }
       }
@@ -5428,6 +5686,38 @@
         }
       }
     },
+    "m.requests.imported": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imported from Radarr/Sonarr"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importée depuis Radarr/Sonarr"
+          }
+        }
+      }
+    },
+    "m.requests.open_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the title"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir le titre"
+          }
+        }
+      }
+    },
     "m.requests.progress": {
       "localizations": {
         "en": {
@@ -5440,6 +5730,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Progression"
+          }
+        }
+      }
+    },
+    "m.requests.quality_profile": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quality profile"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil de qualité"
           }
         }
       }
@@ -5472,6 +5778,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Demandé par"
+          }
+        }
+      }
+    },
+    "m.requests.root_folder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folder"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dossier"
           }
         }
       }
@@ -5748,6 +6070,86 @@
         }
       }
     },
+    "m.settings.faceid_enable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activer"
+          }
+        }
+      }
+    },
+    "m.settings.faceid_failed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t store the login. Check the password and that a passcode is set."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible d’enregistrer la connexion. Vérifiez le mot de passe et qu’un code est défini."
+          }
+        }
+      }
+    },
+    "m.settings.faceid_password_field": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Password"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mot de passe"
+          }
+        }
+      }
+    },
+    "m.settings.faceid_password_message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter your password once. It is kept in the Keychain, behind Face ID."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisissez votre mot de passe une fois. Il est conservé dans le trousseau, protégé par Face ID."
+          }
+        }
+      }
+    },
+    "m.settings.faceid_password_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on Face ID sign-in"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activer la connexion Face ID"
+          }
+        }
+      }
+    },
     "m.settings.faceid_signin": {
       "localizations": {
         "en": {
@@ -5776,6 +6178,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Votre mot de passe est conservé dans le trousseau de l’iPhone, protégé par Face ID ou votre code. Il sert uniquement à vous reconnecter quand votre session se termine."
+          }
+        }
+      }
+    },
+    "m.settings.hidden": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hidden content"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contenu masqué"
           }
         }
       }
@@ -6164,12 +6582,28 @@
         }
       }
     },
+    "m.stats.open": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistics"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistiques"
+          }
+        }
+      }
+    },
     "m.sync.counts": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ movies and %2$@ shows known in the library."
+            "value": "%1$@ movies and %2$@ TV shows known in the library."
           }
         },
         "fr": {
@@ -6585,7 +7019,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shows requested"
+            "value": "TV shows requested"
           }
         },
         "fr": {
@@ -10083,7 +10517,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ movies · %2$@ shows"
+            "value": "%1$@ movies · %2$@ TV shows"
           }
         },
         "fr": {
