@@ -68,10 +68,10 @@ fun PosterCard(
                 )
             }
         }
-        Text(title, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium, color = p.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(title, fontSize = Tokens.FontSize.subhead, lineHeight = Tokens.FontSize.subhead * 1.25f, fontWeight = FontWeight.Medium, color = p.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (subtitle != null || rating != null) {
             Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
-                if (subtitle != null) Text(subtitle, fontSize = Tokens.FontSize.footnote, color = p.mutedFg, maxLines = 1, modifier = Modifier.weight(1f))
+                if (subtitle != null) Text(subtitle, fontSize = Tokens.FontSize.footnote, lineHeight = Tokens.FontSize.footnote * 1.25f, color = p.mutedFg, maxLines = 1, modifier = Modifier.weight(1f))
                 if (rating != null) rating()
             }
         }

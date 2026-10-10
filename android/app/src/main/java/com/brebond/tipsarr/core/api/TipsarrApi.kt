@@ -2,6 +2,7 @@ package com.brebond.tipsarr.core.api
 
 import com.brebond.tipsarr.BuildConfig
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.KSerializer
 import java.util.Locale
 
 /** The calls the launch flow needs. Throws [ApiError] only. */
@@ -15,6 +16,9 @@ class TipsarrApi(val serverUrl: String, val token: String? = null) {
         val body = client.post("/auth/token", input, TokenInput.serializer(), TokenBody.serializer())
         SignInResult(body.token, body.user)
     }
+
+    /** One GET of a JSON resource, for the endpoint files (`TipsarrApi+Discover.kt`...). */
+    suspend fun <T> get(path: String, serializer: KSerializer<T>): T = wrap { client.get(path, serializer) }
 
     suspend fun me(): Profile = wrap { client.get("/me", Profile.serializer()) }
 
