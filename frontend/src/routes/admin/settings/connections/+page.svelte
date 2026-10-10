@@ -14,9 +14,14 @@
 	let publicUrl = $state('');
 	let message = $state<string | null>(null);
 	let saving = $state(false);
+	let pushUrl = $state('');
+	let pushKey = $state('');
 
 	$effect(() => {
-		if (settings) publicUrl = settings.jellyfinPublicUrl;
+		if (settings) {
+			publicUrl = settings.jellyfinPublicUrl;
+			pushUrl = settings.pushRelayUrl;
+		}
 	});
 
 	async function save(e: SubmitEvent) {
@@ -51,6 +56,32 @@
 			toast.success(t('common.saved'));
 		} catch (err) {
 			toast.error(errorText(err));
+		}
+	}
+
+	async function savePush(e: SubmitEvent) {
+		e.preventDefault();
+		admin.error = null;
+		try {
+			admin.settings = await unwrap(
+				api.PUT('/admin/settings', {
+					body: { pushRelayUrl: pushUrl.trim(), ...(pushKey.trim() ? { pushRelayKey: pushKey.trim() } : {}) },
+				}),
+			);
+			pushKey = '';
+			toast.success(t('common.saved'));
+		} catch (err) {
+			toast.error(errorText(err));
+		}
+	}
+
+	async function togglePush(on: boolean) {
+		try {
+			admin.settings = await unwrap(api.PUT('/admin/settings', { body: { pushEnabled: on } }));
+			toast.success(t('common.saved'));
+		} catch (err) {
+			toast.error(errorText(err));
+			admin.settings = await unwrap(api.GET('/admin/settings'));
 		}
 	}
 </script>
@@ -106,6 +137,29 @@
 				<Input bind:value={publicUrl} placeholder="https://jellyfin.example.org" type="url" autocomplete="off" />
 				<Button type="submit" variant="outline">{t('common.save')}</Button>
 			</form>
+		</CardContent>
+	</Card>
+
+	<Card>
+		<CardHeader>
+			<CardTitle>{t('settings.push_title')}</CardTitle>
+			<CardDescription>{t('settings.push_desc')}</CardDescription>
+		</CardHeader>
+		<CardContent class="grid gap-3">
+			<form class="grid gap-2" onsubmit={savePush}>
+				<Input bind:value={pushUrl} placeholder="https://push.example.org" type="url" autocomplete="off" />
+				<Input
+					bind:value={pushKey}
+					placeholder={settings.pushRelayKeyConfigured ? t('settings.push_key_saved') : t('settings.push_key_placeholder')}
+					type="password"
+					autocomplete="off"
+				/>
+				<Button type="submit" variant="outline">{t('common.save')}</Button>
+			</form>
+			<label class="flex cursor-pointer items-center gap-2 text-sm">
+				<input type="checkbox" checked={settings.pushEnabled} onchange={(e) => togglePush(e.currentTarget.checked)} />
+				{t('settings.push_toggle')}
+			</label>
 		</CardContent>
 	</Card>
 
