@@ -58,6 +58,19 @@ class ApiClient(
     suspend fun <T> postForResult(path: String, serializer: KSerializer<T>): T =
         decode(execute(request(path).post("".toRequestBody(JSON)).build(), retry = false), serializer)
 
+    suspend fun <B, T> patch(path: String, body: B, bodySerializer: KSerializer<B>, serializer: KSerializer<T>): T {
+        val payload = json.encodeToString(bodySerializer, body).toRequestBody(JSON)
+        return decode(execute(request(path).patch(payload).build(), retry = false), serializer)
+    }
+
+    /** Uploads a JPEG as the `file` part of a multipart form. */
+    suspend fun postJpeg(path: String, jpeg: ByteArray) {
+        val body = okhttp3.MultipartBody.Builder().setType(okhttp3.MultipartBody.FORM)
+            .addFormDataPart("file", "avatar.jpg", jpeg.toRequestBody("image/jpeg".toMediaType()))
+            .build()
+        execute(request(path).post(body).build(), retry = false)
+    }
+
     suspend fun delete(path: String) {
         execute(request(path).delete().build(), retry = false)
     }

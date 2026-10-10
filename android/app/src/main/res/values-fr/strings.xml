@@ -237,8 +237,8 @@
     <string name="m_accounts_active">Actif</string>
     <string name="m_accounts_add">Ajouter un compte</string>
     <string name="m_accounts_current_server">Serveur actuel</string>
-    <string name="m_accounts_footer_signout">Se déconnecter retire un compte de cet iPhone.</string>
-    <string name="m_accounts_intro">Chaque compte garde sa propre connexion sur cet iPhone. Le changement est instantané, sans mot de passe.</string>
+    <string name="m_accounts_footer_signout">Se déconnecter retire un compte de ce téléphone.</string>
+    <string name="m_accounts_intro">Chaque compte garde sa propre connexion sur ce téléphone. Le changement est instantané, sans mot de passe.</string>
     <string name="m_accounts_manage">Gérer les comptes</string>
     <string name="m_accounts_other_server">Un autre serveur…</string>
     <string name="m_accounts_remove">Se déconnecter de ce compte</string>
@@ -355,9 +355,9 @@
     <string name="m_settings_account">Compte</string>
     <string name="m_settings_app_icon">Icône de l’app</string>
     <string name="m_settings_appearance">Apparence</string>
-    <string name="m_settings_faceid_signin">Connexion avec Face ID</string>
-    <string name="m_settings_faceid_signin_footer">Votre mot de passe est conservé dans le trousseau de l’iPhone, protégé par Face ID ou votre code. Il sert uniquement à vous reconnecter quand votre session se termine.</string>
-    <string name="m_settings_language_default">Par défaut (langue de l’iPhone)</string>
+    <string name="m_settings_faceid_signin">Connexion biométrique</string>
+    <string name="m_settings_faceid_signin_footer">Votre mot de passe est conservé chiffré sur le téléphone, protégé par votre empreinte, votre visage ou le verrouillage de l’écran. Il sert uniquement à vous reconnecter quand votre session se termine.</string>
+    <string name="m_settings_language_default">Par défaut (langue du téléphone)</string>
     <string name="m_settings_rating_imdb">IMDb</string>
     <string name="m_settings_rating_metacritic">Metacritic</string>
     <string name="m_settings_rating_movies_only">Films uniquement</string>
@@ -368,10 +368,10 @@
     <string name="m_settings_server">Serveur</string>
     <string name="m_settings_server_version">Tipsarr %s · connecté</string>
     <string name="m_settings_sign_out">Se déconnecter</string>
-    <string name="m_settings_sign_out_confirm">Se déconnecter de Tipsarr sur cet iPhone ?</string>
-    <string name="m_settings_theme_footer">Choisissez l’apparence de Tipsarr. Système suit l’apparence réglée dans iOS.</string>
+    <string name="m_settings_sign_out_confirm">Se déconnecter de Tipsarr sur ce téléphone ?</string>
+    <string name="m_settings_theme_footer">Choisissez l’apparence de Tipsarr. Système suit l’apparence réglée dans Android.</string>
     <string name="m_settings_theme_system">Système</string>
-    <string name="m_settings_theme_system_hint">Suit votre iPhone</string>
+    <string name="m_settings_theme_system_hint">Suit votre téléphone</string>
     <string name="m_settings_title">Réglages</string>
     <string name="m_sync_counts">%1$s films et %2$s séries connus dans la bibliothèque.</string>
     <string name="m_sync_every">Toutes les %s</string>

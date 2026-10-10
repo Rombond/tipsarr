@@ -6,6 +6,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import com.brebond.tipsarr.core.auth.SessionManager
+import com.brebond.tipsarr.core.support.AppSettings
 import com.brebond.tipsarr.core.auth.SessionPhase
 import com.brebond.tipsarr.features.connect.ConnectScreen
 import com.brebond.tipsarr.features.login.LoginScreen
@@ -18,7 +19,7 @@ import kotlinx.coroutines.launch
 
 /** What the app shows for the current launch-flow phase (the iOS `RootView`). */
 @Composable
-fun Root(session: SessionManager) {
+fun Root(session: SessionManager, settings: AppSettings, onLanguageChanged: () -> Unit) {
     val phase by session.phase.collectAsState()
     val scope = rememberCoroutineScope()
     Crossfade(targetState = phase, label = "phase") { current ->
@@ -30,7 +31,7 @@ fun Root(session: SessionManager) {
             is SessionPhase.Failed -> FailedScreen(current.error) { scope.launch { session.retry() } }
             is SessionPhase.UpdateRequired -> UpdateRequiredScreen(current.minVersion)
             is SessionPhase.SessionExpired -> SessionExpiredScreen(session, current.account, current.server)
-            is SessionPhase.Ready -> MainTabs(current.account, current.profile, session.serverStatus?.userFolderChoice ?: false) { scope.launch { session.signOut(current.account) } }
+            is SessionPhase.Ready -> MainTabs(current.account, current.profile, session.serverStatus?.userFolderChoice ?: false, session.serverStatus?.version, session, settings, onLanguageChanged)
         }
     }
 }

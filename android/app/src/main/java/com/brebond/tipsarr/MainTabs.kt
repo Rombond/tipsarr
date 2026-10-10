@@ -55,6 +55,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.brebond.tipsarr.core.api.Profile
+import com.brebond.tipsarr.core.api.RatingSource
+import com.brebond.tipsarr.core.auth.SessionManager
+import com.brebond.tipsarr.core.support.AppSettings
+import com.brebond.tipsarr.core.support.LocalRatings
+import com.brebond.tipsarr.features.profile.PictureSheet
+import com.brebond.tipsarr.features.profile.ProfileScreen
+import com.brebond.tipsarr.features.settings.AccountsScreen
+import com.brebond.tipsarr.features.settings.DevicesScreen
+import com.brebond.tipsarr.features.settings.HiddenScreen
+import com.brebond.tipsarr.features.settings.SettingsScreen
+import com.brebond.tipsarr.features.settings.WatchlistScreen
+import kotlinx.coroutines.launch
 import com.brebond.tipsarr.core.api.TipsarrApi
 import com.brebond.tipsarr.core.auth.Account
 import com.brebond.tipsarr.core.images.ImageSource
@@ -77,11 +89,11 @@ enum class AppTab(val title: Int, val icon: ImageVector) {
 
 /** The signed-in app: five tabs in a bottom bar. Only Discover exists so far. */
 @Composable
-fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, onSignOut: () -> Unit) {
+fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serverVersion: String?, session: SessionManager, settings: AppSettings, onLanguageChanged: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val model: MainViewModel = viewModel(key = account.id, factory = viewModelFactory {
-        initializer { MainViewModel(TipsarrApi(account.serverUrl, account.token), context.applicationContext, profile.isAdmin, userFolderChoice) }
+        initializer { MainViewModel(TipsarrApi(account.serverUrl, account.token), context.applicationContext, profile.isAdmin, userFolderChoice, RatingSource.from(profile.ratingSource)) }
     })
     val source = remember(account.id) { ImageSource(account.serverUrl, account.token) }
     val loader = remember(account.id) { createImageLoader(context, source) }
@@ -89,9 +101,12 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, onSi
     val toasts = remember { ToastCenter(scope) }
     val openTitle: (MediaItem) -> Unit = { model.openTitle(tab, MediaRoute(it.type, it.tmdbId, it.title)) }
     LaunchedEffect(tab) { model.refreshPending() }
+    LaunchedEffect(profile.ratingSource) { model.ratings.changeSource(RatingSource.from(profile.ratingSource)) }
+    var showPicture by remember { mutableStateOf(false) }
+    val signOut: () -> Unit = { scope.launch { session.signOut(account) } }
     BackHandler(enabled = model.top(tab) != null) { model.back(tab) }
 
-    CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader, LocalToast provides toasts) {
+    CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader, LocalToast provides toasts, LocalRatings provides model.ratings) {
       Box(Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = Tokens.palette.bg,
@@ -139,6 +154,27 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, onSi
                                 onBack = { model.back(tab) },
                                 onOpenTitle = { model.openTitle(tab, it) },
                             )
+                            Screen.Settings -> SettingsScreen(
+                                account, profile, model.api, settings, session.accounts.accounts.size, serverVersion,
+                                onBack = { model.back(tab) },
+                                onProfileChanged = { session.update(it) },
+                                onLanguageChanged = onLanguageChanged,
+                                onOpenAccounts = { model.open(tab, Screen.Accounts) },
+                                onOpenDevices = { model.open(tab, Screen.Devices) },
+                                onOpenHidden = { model.open(tab, Screen.Hidden) },
+                                onChangePicture = { showPicture = true },
+                                onSignOut = signOut,
+                            )
+                            Screen.Accounts -> AccountsScreen(
+                                session.accounts.accounts, session.accounts.activeId, model.avatarVersion,
+                                onBack = { model.back(tab) },
+                                onSwitch = { scope.launch { session.switchTo(it) } },
+                                onAdd = { session.beginAddAccount() },
+                                onSignOut = { scope.launch { session.signOut(it) } },
+                            )
+                            Screen.Devices -> DevicesScreen(model.api, onBack = { model.back(tab) })
+                            Screen.Watchlist -> WatchlistScreen(model.api, onBack = { model.back(tab) }, onOpen = openTitle)
+                            Screen.Hidden -> HiddenScreen(model.api, onBack = { model.back(tab) }, onOpen = openTitle)
                         }
                     }
                 } else Box(Modifier.fillMaxSize().statusBarsPadding()) { when (tab) {
@@ -151,24 +187,21 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, onSi
                         onOpenPerson = { model.openPerson(tab, it) },
                         onOpenGenre = { type, genre -> model.openGenre(tab, type, genre.id, genre.name) },
                     )
-                    AppTab.Profile -> ProfileStub(profile.name, onSignOut)
+                    AppTab.Profile -> ProfileScreen(
+                        model.profile, profile, model.avatarVersion,
+                        onOpenSettings = { model.open(tab, Screen.Settings) },
+                        onOpenRequests = { tab = AppTab.Requests },
+                        onOpenWatchlist = { model.open(tab, Screen.Watchlist) },
+                        onOpenTitle = { model.openTitle(tab, it) },
+                        onOpenRequest = { model.openRequest(tab, it) },
+                        onChangePicture = { showPicture = true },
+                    )
                     else -> StateView(tab.icon, stringResource(tab.title))
                 } }
             }
         }
         ToastHost(toasts)
+        if (showPicture) PictureSheet(model.api, onDismiss = { showPicture = false }, onChanged = model::avatarChanged)
       }
-    }
-}
-
-/** Until the Profile tab exists (Android step 6) it only offers sign out, so testing does not need a reinstall. */
-@Composable
-private fun ProfileStub(name: String, onSignOut: () -> Unit) {
-    androidx.compose.foundation.layout.Column(
-        Modifier.fillMaxSize().padding(Tokens.Spacing.x2xl),
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(Tokens.Spacing.lg, androidx.compose.ui.Alignment.CenterVertically),
-    ) {
-        Text(name, fontSize = Tokens.FontSize.largeTitle, color = Tokens.palette.fg)
-        com.brebond.tipsarr.ui.TipsarrButton(stringResource(R.string.m_settings_sign_out), onSignOut, kind = com.brebond.tipsarr.ui.ButtonKind.Secondary)
     }
 }

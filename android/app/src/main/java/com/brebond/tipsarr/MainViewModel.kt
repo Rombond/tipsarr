@@ -8,7 +8,11 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.brebond.tipsarr.core.api.MediaType
+import com.brebond.tipsarr.core.api.RatingSource
+import com.brebond.tipsarr.core.support.RatingProvider
+import com.brebond.tipsarr.features.profile.ProfileModel
 import com.brebond.tipsarr.core.api.RequestRecord
 import com.brebond.tipsarr.core.api.TipsarrApi
 import com.brebond.tipsarr.core.api.requestCounts
@@ -29,6 +33,11 @@ sealed interface Screen {
     class Person(val model: PersonModel) : Screen
     class Genre(val route: GenreRoute, val list: MediaListModel) : Screen
     class Request(val record: RequestRecord) : Screen
+    data object Settings : Screen
+    data object Accounts : Screen
+    data object Devices : Screen
+    data object Watchlist : Screen
+    data object Hidden : Screen
 }
 
 /** Everything the signed-in screens own for one account; survives rotation and folding. */
@@ -37,11 +46,19 @@ class MainViewModel(
     context: Context,
     private val isAdmin: Boolean,
     private val userFolderChoice: Boolean,
+    ratingSource: RatingSource,
 ) : ViewModel() {
     val discover = DiscoverModel(api)
     val search = SearchModel(api, context)
     val requests = RequestsModel(api, isAdmin)
     val library = LibraryModel(api)
+    val profile = ProfileModel(api)
+    val ratings = RatingProvider(api, ratingSource, viewModelScope)
+
+    /** Changes when the profile picture does, so cached copies are not reused. */
+    var avatarVersion by mutableIntStateOf(0)
+        private set
+    fun avatarChanged() { avatarVersion++ }
 
     /** Requests waiting for approval, shown on the tab for admins. */
     var pendingCount by mutableIntStateOf(0)
@@ -60,6 +77,7 @@ class MainViewModel(
     fun openGenre(tab: AppTab, type: MediaType, id: Int, name: String) =
         push(tab, Screen.Genre(GenreRoute(type, id, name), MediaListModel(MediaListModel.Source.Genre, api, type to id)))
     fun openRequest(tab: AppTab, record: RequestRecord) = push(tab, Screen.Request(record))
+    fun open(tab: AppTab, screen: Screen) = push(tab, screen)
 
     /** Pops the top screen of the tab; false when only the root is left. */
     fun back(tab: AppTab): Boolean {

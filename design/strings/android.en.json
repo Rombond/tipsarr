@@ -2,5 +2,13 @@
   "m.update.body": "Your server needs a newer version of the Tipsarr app. Update from Google Play to keep going.",
   "m.update.open_store": "Open Google Play",
   "m.login.remember_faceid": "Sign in with biometrics next time",
-  "m.session.faceid_signin": "Sign in with biometrics"
+  "m.session.faceid_signin": "Sign in with biometrics",
+  "m.accounts.footer_signout": "Signing out removes an account from this phone.",
+  "m.accounts.intro": "Each account keeps its own sign-in on this phone. Switching is instant, no password needed.",
+  "m.settings.theme_system_hint": "Follows your phone",
+  "m.settings.theme_footer": "Choose how Tipsarr looks. System follows the appearance set in Android.",
+  "m.settings.language_default": "Default (phone language)",
+  "m.settings.sign_out_confirm": "Sign out of Tipsarr on this phone?",
+  "m.settings.faceid_signin": "Sign in with biometrics",
+  "m.settings.faceid_signin_footer": "Your password is kept encrypted on the phone, protected by your fingerprint, face or screen lock. It is only used to sign you back in when your session ends."
 }

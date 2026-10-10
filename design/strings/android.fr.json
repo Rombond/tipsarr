@@ -2,5 +2,13 @@
   "m.update.body": "Votre serveur nécessite une version plus récente de l’app Tipsarr. Mettez à jour depuis Google Play pour continuer.",
   "m.update.open_store": "Ouvrir Google Play",
   "m.login.remember_faceid": "Se connecter par biométrie la prochaine fois",
-  "m.session.faceid_signin": "Se connecter par biométrie"
+  "m.session.faceid_signin": "Se connecter par biométrie",
+  "m.accounts.footer_signout": "Se déconnecter retire un compte de ce téléphone.",
+  "m.accounts.intro": "Chaque compte garde sa propre connexion sur ce téléphone. Le changement est instantané, sans mot de passe.",
+  "m.settings.theme_system_hint": "Suit votre téléphone",
+  "m.settings.theme_footer": "Choisissez l’apparence de Tipsarr. Système suit l’apparence réglée dans Android.",
+  "m.settings.language_default": "Par défaut (langue du téléphone)",
+  "m.settings.sign_out_confirm": "Se déconnecter de Tipsarr sur ce téléphone ?",
+  "m.settings.faceid_signin": "Connexion biométrique",
+  "m.settings.faceid_signin_footer": "Votre mot de passe est conservé chiffré sur le téléphone, protégé par votre empreinte, votre visage ou le verrouillage de l’écran. Il sert uniquement à vous reconnecter quand votre session se termine."
 }

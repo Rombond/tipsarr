@@ -20,6 +20,9 @@ import com.brebond.tipsarr.core.images.TmdbSize
 import com.brebond.tipsarr.design.Tokens
 import com.brebond.tipsarr.design.palette
 import java.util.Locale
+import androidx.compose.ui.unit.sp
+import com.brebond.tipsarr.core.support.LocalRatings
+import com.brebond.tipsarr.core.support.RatingProvider
 
 /** Standard card for a list item: poster from the server, year, score and request state; a tap opens the title. */
 @Composable
@@ -29,7 +32,7 @@ fun MediaPoster(item: MediaItem, onClick: () -> Unit, modifier: Modifier = Modif
         modifier = modifier.clickable(onClick = onClick),
         subtitle = item.releaseYear,
         state = item.state,
-        rating = item.voteAverage.takeIf { it > 0 }?.let { score -> { ScoreLabel(score) } },
+        rating = { ScoreLabel(item.type, item.tmdbId, item.voteAverage) },
         poster = { RemoteImage(item.posterPath, TmdbSize.W342, Modifier.fillMaxSize()) },
     )
 }
@@ -40,5 +43,21 @@ fun ScoreLabel(score: Double, modifier: Modifier = Modifier) {
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.Filled.Star, contentDescription = null, tint = Tokens.Status.requested, modifier = Modifier.size(12.dp))
         Text(String.format(Locale.getDefault(), "%.1f", score), fontSize = Tokens.FontSize.footnote, lineHeight = Tokens.FontSize.footnote * 1.25f, fontWeight = FontWeight.Medium, color = Tokens.palette.mutedFg)
+    }
+}
+
+/** Score for a poster following the "Score on posters" preference: TMDB with a star, or the chosen provider's name and value. */
+@Composable
+fun ScoreLabel(type: com.brebond.tipsarr.core.api.MediaType, tmdbId: Int, tmdb: Double?, modifier: Modifier = Modifier) {
+    val provider = LocalRatings.current
+    androidx.compose.runtime.LaunchedEffect(type, tmdbId, provider?.source) { provider?.request(type, tmdbId) }
+    val reading = provider?.reading(type, tmdbId, tmdb)
+    when {
+        reading == null -> tmdb?.takeIf { it > 0 }?.let { ScoreLabel(it, modifier) }
+        reading.source == com.brebond.tipsarr.core.api.RatingSource.Tmdb -> ScoreLabel(tmdb ?: 0.0, modifier)
+        else -> Row(modifier, horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(RatingProvider.label(reading.source), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Tokens.palette.mutedFg)
+            Text(reading.text, fontSize = Tokens.FontSize.footnote, lineHeight = Tokens.FontSize.footnote * 1.25f, fontWeight = FontWeight.Medium, color = Tokens.palette.mutedFg)
+        }
     }
 }

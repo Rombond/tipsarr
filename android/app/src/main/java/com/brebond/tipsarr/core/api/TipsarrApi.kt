@@ -26,6 +26,11 @@ class TipsarrApi(val serverUrl: String, val token: String? = null) {
 
     suspend fun delete(path: String) = wrap { client.delete(path) }
 
+    suspend fun <B, T> patch(path: String, body: B, bodySerializer: KSerializer<B>, serializer: KSerializer<T>): T =
+        wrap { client.patch(path, body, bodySerializer, serializer) }
+
+    suspend fun postJpeg(path: String, jpeg: ByteArray) = wrap { client.postJpeg(path, jpeg) }
+
     /** One GET of a JSON resource, for the endpoint files (`TipsarrApi+Discover.kt`...). */
     suspend fun <T> get(path: String, serializer: KSerializer<T>): T = wrap { client.get(path, serializer) }
 

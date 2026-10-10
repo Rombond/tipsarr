@@ -237,8 +237,8 @@
     <string name="m_accounts_active">Active</string>
     <string name="m_accounts_add">Add account</string>
     <string name="m_accounts_current_server">Current server</string>
-    <string name="m_accounts_footer_signout">Signing out removes an account from this iPhone.</string>
-    <string name="m_accounts_intro">Each account keeps its own sign-in on this iPhone. Switching is instant, no password needed.</string>
+    <string name="m_accounts_footer_signout">Signing out removes an account from this phone.</string>
+    <string name="m_accounts_intro">Each account keeps its own sign-in on this phone. Switching is instant, no password needed.</string>
     <string name="m_accounts_manage">Manage accounts</string>
     <string name="m_accounts_other_server">Another server…</string>
     <string name="m_accounts_remove">Sign out of this account</string>
@@ -355,9 +355,9 @@
     <string name="m_settings_account">Account</string>
     <string name="m_settings_app_icon">App icon</string>
     <string name="m_settings_appearance">Appearance</string>
-    <string name="m_settings_faceid_signin">Sign in with Face ID</string>
-    <string name="m_settings_faceid_signin_footer">Your password is kept in the iPhone’s Keychain, protected by Face ID or your passcode. It is only used to sign you back in when your session ends.</string>
-    <string name="m_settings_language_default">Default (iPhone language)</string>
+    <string name="m_settings_faceid_signin">Sign in with biometrics</string>
+    <string name="m_settings_faceid_signin_footer">Your password is kept encrypted on the phone, protected by your fingerprint, face or screen lock. It is only used to sign you back in when your session ends.</string>
+    <string name="m_settings_language_default">Default (phone language)</string>
     <string name="m_settings_rating_imdb">IMDb</string>
     <string name="m_settings_rating_metacritic">Metacritic</string>
     <string name="m_settings_rating_movies_only">Movies only</string>
@@ -368,10 +368,10 @@
     <string name="m_settings_server">Server</string>
     <string name="m_settings_server_version">Tipsarr %s · connected</string>
     <string name="m_settings_sign_out">Sign out</string>
-    <string name="m_settings_sign_out_confirm">Sign out of Tipsarr on this iPhone?</string>
-    <string name="m_settings_theme_footer">Choose how Tipsarr looks. System follows the appearance set in iOS.</string>
+    <string name="m_settings_sign_out_confirm">Sign out of Tipsarr on this phone?</string>
+    <string name="m_settings_theme_footer">Choose how Tipsarr looks. System follows the appearance set in Android.</string>
     <string name="m_settings_theme_system">System</string>
-    <string name="m_settings_theme_system_hint">Follows your iPhone</string>
+    <string name="m_settings_theme_system_hint">Follows your phone</string>
     <string name="m_settings_title">Settings</string>
     <string name="m_sync_counts">%1$s movies and %2$s shows known in the library.</string>
     <string name="m_sync_every">Runs every %s</string>
