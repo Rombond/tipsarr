@@ -29,6 +29,7 @@ type Device struct {
 	Sandbox    bool   `bun:"sandbox"`
 	AppVersion string `bun:"app_version"`
 	Language   string `bun:"language"`
+	Server     string `bun:"server"` // host (and port) the app reaches this server on
 	Categories int    `bun:"categories"`
 	CreatedAt  int64  `bun:"created_at"`
 	UpdatedAt  int64  `bun:"updated_at"`
@@ -47,7 +48,7 @@ func (s *Store) SaveDevice(ctx context.Context, d *Device) error {
 		res, err := tx.NewUpdate().Model((*Device)(nil)).
 			Set("user_id = ?", d.UserID).Set("platform = ?", d.Platform).Set("push_token = ?", d.PushToken).
 			Set("sandbox = ?", d.Sandbox).Set("app_version = ?", d.AppVersion).Set("language = ?", d.Language).
-			Set("categories = ?", d.Categories).Set("updated_at = ?", now).
+			Set("server = ?", d.Server).Set("categories = ?", d.Categories).Set("updated_at = ?", now).
 			Where("session_id = ?", d.SessionID).Exec(ctx)
 		if err != nil {
 			return err

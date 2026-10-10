@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfileView: View {
     let account: Account
     let profile: Profile
+    @Binding var path: NavigationPath
     var openRequests: () -> Void = {}
 
     @Environment(\.appContext) private var context
@@ -15,8 +16,9 @@ struct ProfileView: View {
     /// Width of the content area; picks the compact, portrait-iPad or landscape-iPad layout.
     @State private var width: CGFloat = 0
 
-    init(account: Account, profile: Profile, api: TipsarrAPI, openRequests: @escaping () -> Void = {}) {
+    init(account: Account, profile: Profile, api: TipsarrAPI, path: Binding<NavigationPath>, openRequests: @escaping () -> Void = {}) {
         self.account = account
+        _path = path
         self.profile = profile
         self.openRequests = openRequests
         let model = ProfileModel(api: api)
@@ -25,7 +27,7 @@ struct ProfileView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 Group {
                     switch width == 0 ? ContentWidth.compact : ContentWidth(width) {

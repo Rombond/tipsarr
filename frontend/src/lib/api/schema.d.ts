@@ -1868,6 +1868,7 @@ export interface components {
             /** @enum {string} */
             platform: "ios" | "android";
             sandbox: boolean;
+            server?: string;
             /** Format: int64 */
             updatedAt: number;
         };
@@ -1888,6 +1889,8 @@ export interface components {
             pushToken: string;
             /** @description iOS only: the token comes from a development build (APNs sandbox) */
             sandbox?: boolean;
+            /** @description Host (and port) the app uses to reach this server; sent back in every alert so a phone with several accounts opens the right one */
+            server?: string;
         };
         RequestCountsResponse: {
             /** Format: int64 */

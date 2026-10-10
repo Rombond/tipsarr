@@ -9,14 +9,15 @@ struct PushRegistration: Sendable, Equatable {
 }
 
 extension TipsarrAPI {
-    /// `categories` nil keeps what the server has (a refresh at launch).
-    func registerDevice(token: String, sandbox: Bool, language: String, categories: Int?) async throws -> PushRegistration {
+    /// `server` is the host this app reaches the server on; it comes back in every alert. `categories` nil keeps what the server has (a refresh at launch).
+    func registerDevice(token: String, sandbox: Bool, language: String, server: String, categories: Int?) async throws -> PushRegistration {
         try await load { client in
             let body = Components.Schemas.RegisterDeviceInputBody(
                 categories: categories.map { Int64($0) },
                 language: language,
                 pushToken: token,
-                sandbox: sandbox
+                sandbox: sandbox,
+                server: server
             )
             guard case .ok(let ok) = try await client.registerDevice(body: .json(body)) else { throw APIError.unexpected }
             let device = try ok.body.json

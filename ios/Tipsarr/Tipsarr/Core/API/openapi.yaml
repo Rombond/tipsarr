@@ -1364,6 +1364,8 @@ components:
           type: string
         sandbox:
           type: boolean
+        server:
+          type: string
         updatedAt:
           format: int64
           type: integer
@@ -1407,6 +1409,10 @@ components:
         sandbox:
           description: "iOS only: the token comes from a development build (APNs sandbox)"
           type: boolean
+        server:
+          description: Host (and port) the app uses to reach this server; sent back in every alert so a phone with several accounts opens the right one
+          maxLength: 255
+          type: string
       required:
         - pushToken
       type: object

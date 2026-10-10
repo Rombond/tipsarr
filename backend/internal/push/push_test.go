@@ -91,7 +91,7 @@ func (f *fixture) device(t *testing.T, user, session, platform, token, lang stri
 	if err := f.st.CreateSession(context.Background(), &store.Session{ID: session, UserID: user, ExpiresAt: time.Now().Add(time.Hour).Unix()}); err != nil {
 		t.Fatal(err)
 	}
-	if err := f.st.SaveDevice(context.Background(), &store.Device{UserID: user, SessionID: session, Platform: platform, PushToken: token, Language: lang, Categories: cats}); err != nil {
+	if err := f.st.SaveDevice(context.Background(), &store.Device{UserID: user, SessionID: session, Platform: platform, PushToken: token, Language: lang, Categories: cats, Server: "tipsarr.example.org"}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -175,7 +175,7 @@ func TestSendBuildsBatchWithFixedShape(t *testing.T) {
 	if len(got) != 2 {
 		t.Fatalf("%v", got)
 	}
-	if it := got["tok-ios"]; it.Platform != "ios" || it.Event != "request.available" || it.ID != "req42" || it.Lang != "fr" {
+	if it := got["tok-ios"]; it.Platform != "ios" || it.Event != "request.available" || it.ID != "req42" || it.Lang != "fr" || it.Server != "tipsarr.example.org" {
 		t.Fatalf("%+v", it)
 	}
 	if it := got["tok-and"]; it.Platform != "android" || it.Lang != "en" {

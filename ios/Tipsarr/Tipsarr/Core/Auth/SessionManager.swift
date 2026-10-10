@@ -138,10 +138,20 @@ final class SessionManager {
     func clearPendingLink() { pendingLink = nil }
 
     /// A tapped push alert: the event names the screen, the id the request or issue, the server is the active one.
-    func openFromPush(_ tap: PushTap) {
-        guard let host = accounts.active?.serverURL.host()?.lowercased() else { return }
+    /// The alert names its server: the matching account is opened (switching if needed). An alert for a server
+    /// that is not signed in on this phone is ignored. Without a server (older alerts) the active account is used.
+    func openFromPush(_ tap: PushTap) async {
+        let account: Account?
+        if let server = tap.server?.lowercased(), !server.isEmpty {
+            account = accounts.accounts.first { PushManager.serverKey($0.serverURL) == server }
+                ?? accounts.accounts.first { $0.serverURL.host()?.lowercased() == server.split(separator: ":").first.map(String.init) }
+        } else {
+            account = accounts.active
+        }
+        guard let account, let host = account.serverURL.host()?.lowercased() else { return }
         let target: DeepLinkTarget = tap.event.hasPrefix("issue.") ? .issue(tap.id) : .request(tap.id)
         pendingLink = DeepLink(host: host, target: target)
+        await switchTo(account)
     }
 
     /// Profile changed on the server (language, score source): keep the signed-in screens in sync.

@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	apnsTokenRe = regexp.MustCompile(`^[0-9a-fA-F]{64,200}$`)
-	fcmTokenRe  = regexp.MustCompile(`^[A-Za-z0-9:_-]{20,1000}$`)
+	apnsTokenRe  = regexp.MustCompile(`^[0-9a-fA-F]{64,200}$`)
+	serverHostRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?(:[0-9]{1,5})?$`)
+	fcmTokenRe   = regexp.MustCompile(`^[A-Za-z0-9:_-]{20,1000}$`)
 )
 
 // pushDevice is what the API shows about this app's push registration. The token is never returned.
@@ -21,12 +22,13 @@ type pushDevice struct {
 	Platform   string `json:"platform" enum:"ios,android"`
 	Sandbox    bool   `json:"sandbox"`
 	Language   string `json:"language"`
+	Server     string `json:"server,omitempty"`
 	Categories int    `json:"categories" doc:"Bitmask: 1 my requests, 2 new requests to approve (admins), 4 issues"`
 	UpdatedAt  int64  `json:"updatedAt"`
 }
 
 func toPushDevice(d *store.Device) pushDevice {
-	return pushDevice{Platform: d.Platform, Sandbox: d.Sandbox, Language: d.Language, Categories: d.Categories, UpdatedAt: d.UpdatedAt}
+	return pushDevice{Platform: d.Platform, Sandbox: d.Sandbox, Language: d.Language, Server: d.Server, Categories: d.Categories, UpdatedAt: d.UpdatedAt}
 }
 
 type registerDeviceInput struct {
@@ -34,6 +36,7 @@ type registerDeviceInput struct {
 		PushToken  string `json:"pushToken" minLength:"20" maxLength:"1024" doc:"APNs device token (hex) or FCM registration token"`
 		Sandbox    bool   `json:"sandbox,omitempty" doc:"iOS only: the token comes from a development build (APNs sandbox)"`
 		Language   string `json:"language,omitempty" maxLength:"16" doc:"Language of the alert text (en or fr); default en"`
+		Server     string `json:"server,omitempty" maxLength:"255" doc:"Host (and port) the app uses to reach this server; sent back in every alert so a phone with several accounts opens the right one"`
 		Categories *int   `json:"categories,omitempty" minimum:"0" maximum:"7" doc:"Bitmask of the notifications wanted; default all (7), unchanged on refresh when omitted"`
 	}
 }
@@ -79,9 +82,16 @@ func registerDevices(api huma.API, d Deps) {
 		if lang == "" {
 			lang = "en"
 		}
+		server := strings.ToLower(strings.TrimSpace(in.Body.Server))
+		if server != "" && !serverHostRe.MatchString(server) {
+			return nil, fail(422, "invalid_server", "not a host name")
+		}
+		if server == "" && oldErr == nil {
+			server = old.Server
+		}
 		dev := &store.Device{
 			UserID: u.ID, SessionID: sess.ID, Platform: sess.Platform, PushToken: tok,
-			Sandbox: in.Body.Sandbox && sess.Platform == "ios", AppVersion: sess.AppVersion, Language: lang,
+			Server: server, Sandbox: in.Body.Sandbox && sess.Platform == "ios", AppVersion: sess.AppVersion, Language: lang,
 			Categories: store.PushAll,
 		}
 		if in.Body.Categories != nil {

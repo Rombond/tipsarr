@@ -150,7 +150,7 @@ struct MainTabView: View {
         case .search: SearchView(api: api)
         case .requests: RequestsView(api: api, isAdmin: profile.isAdmin, path: $router.requestsPath, selection: $router.requestsSelection) { router.tab = .discover }
         case .library: LibraryView(api: api, path: $router.libraryPath)
-        case .profile: ProfileView(account: account, profile: profile, api: api) { router.tab = .requests }
+        case .profile: ProfileView(account: account, profile: profile, api: api, path: $router.profilePath) { router.tab = .requests }
         }
     }
 

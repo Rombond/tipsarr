@@ -121,6 +121,7 @@ type item struct {
 	Event    string `json:"event"`
 	ID       string `json:"id"`
 	Lang     string `json:"lang"`
+	Server   string `json:"server,omitempty"`
 }
 
 type result struct {
@@ -187,7 +188,7 @@ func (s *Service) deliver(ctx context.Context, cfg config, ev notify.PushEvent, 
 func (s *Service) post(ctx context.Context, cfg config, ev notify.PushEvent, devs []store.Device) ([]result, error) {
 	items := make([]item, len(devs))
 	for i, d := range devs {
-		items[i] = item{Platform: d.Platform, Token: d.PushToken, Sandbox: d.Sandbox, Event: ev.Name, ID: ev.ID, Lang: d.Language}
+		items[i] = item{Platform: d.Platform, Token: d.PushToken, Sandbox: d.Sandbox, Event: ev.Name, ID: ev.ID, Lang: d.Language, Server: d.Server}
 	}
 	body, err := json.Marshal(map[string]any{"items": items})
 	if err != nil {

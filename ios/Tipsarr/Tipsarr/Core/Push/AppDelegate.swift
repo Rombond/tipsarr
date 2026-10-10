@@ -24,6 +24,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
         let info = response.notification.request.content.userInfo
         guard let event = info["event"] as? String, let id = info["id"] as? String else { return }
-        await MainActor.run { PushManager.shared.tap = PushTap(event: event, id: id) }
+        let server = info["server"] as? String
+        await MainActor.run { PushManager.shared.tap = PushTap(event: event, id: id, server: server) }
     }
 }

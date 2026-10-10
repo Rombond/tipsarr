@@ -48,7 +48,7 @@ struct RootView: View {
         // A tapped alert opens its request or issue (also when the tap launched the app).
         .task(id: push.tap) {
             guard let tap = push.tap else { return }
-            session.openFromPush(tap)
+            await session.openFromPush(tap)
             push.tap = nil
         }
     }

@@ -19,6 +19,7 @@ final class AppRouter {
     var discoverPath = NavigationPath()
     var requestsPath = NavigationPath()
     var libraryPath = NavigationPath()
+    var profilePath = NavigationPath()
     /// Selected request in the two-column Requests screen (wide windows); the stack uses `requestsPath`.
     var requestsSelection: String?
 
@@ -43,9 +44,14 @@ final class AppRouter {
             requestsSelection = record.id
             pane?.content = .request(record)
             tab = .requests
-        case .issue:
-            // Issues arrive with the admin screens; Discover is the safe landing until then.
-            tab = .discover
+        case .issue(let id):
+            if let pane {
+                pane.content = .profile(.issue(id))
+            } else {
+                profilePath = NavigationPath()
+                profilePath.append(ProfileRoute.issue(id))
+            }
+            tab = .profile
         case .library:
             libraryPath = NavigationPath()
             tab = .library

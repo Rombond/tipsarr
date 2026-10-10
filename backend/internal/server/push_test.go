@@ -17,6 +17,7 @@ type pushItem struct {
 	Event    string `json:"event"`
 	ID       string `json:"id"`
 	Lang     string `json:"lang"`
+	Server   string `json:"server"`
 }
 
 // fakeRelay records what Tipsarr sends to the push relay.
@@ -133,7 +134,7 @@ func TestPushRelayEndToEnd(t *testing.T) {
 	if resp, _ := bearerCall(t, base, "GET", "/api/v1/me/devices/current", "", bob); resp.StatusCode != 404 {
 		t.Fatalf("before register = %d", resp.StatusCode)
 	}
-	resp, body = reg(bob, "", `{"pushToken":"`+iosTok+`","language":"fr-CA","sandbox":true}`)
+	resp, body = reg(bob, "", `{"pushToken":"`+iosTok+`","language":"fr-CA","sandbox":true,"server":"Tipsarr.Example.org"}`)
 	if resp.StatusCode != 200 || strings.Contains(body, iosTok) || !strings.Contains(body, `"categories":7`) || !strings.Contains(body, `"language":"fr"`) || !strings.Contains(body, `"platform":"ios"`) {
 		t.Fatalf("register = %d %s", resp.StatusCode, body)
 	}
@@ -146,6 +147,9 @@ func TestPushRelayEndToEnd(t *testing.T) {
 		t.Fatalf("android register = %d %s", resp.StatusCode, body)
 	}
 	_ = alice
+	if resp, body := reg(bob, "", `{"pushToken":"`+iosTok+`","server":"evil.example/login"}`); resp.StatusCode != 422 || !strings.Contains(body, "invalid_server") {
+		t.Fatalf("bad server = %d %s", resp.StatusCode, body)
+	}
 	// refresh keeps the toggles unless they are sent
 	reg(bob, "", `{"pushToken":"`+iosTok+`","categories":1}`)
 	if _, body := reg(bob, "", `{"pushToken":"`+iosTok+`"}`); !strings.Contains(body, `"categories":1`) {
@@ -174,7 +178,7 @@ func TestPushRelayEndToEnd(t *testing.T) {
 		t.Fatalf("decline = %d %s", resp.StatusCode, body)
 	}
 	got = relay.waitFor(t, 2)
-	if got[1].Token != iosTok || got[1].Event != "request.declined" || got[1].ID != v.ID || got[1].Lang != "fr" {
+	if got[1].Token != iosTok || got[1].Event != "request.declined" || got[1].ID != v.ID || got[1].Lang != "fr" || got[1].Server != "tipsarr.example.org" {
 		t.Fatalf("requester push = %+v", got[1])
 	}
 	time.Sleep(100 * time.Millisecond)

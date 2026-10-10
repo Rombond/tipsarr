@@ -7,6 +7,8 @@ import UserNotifications
 struct PushTap: Equatable, Sendable {
     var event: String
     var id: String
+    /// Host (and port) of the server the alert is about; nil for alerts that do not say.
+    var server: String?
 }
 
 /// Push registration of this install: asks the system for permission and a token, tells the active
@@ -140,9 +142,15 @@ final class PushManager {
     private func register(categories wanted: Int?) async throws {
         guard let api, let token else { return }
         let language = AppLanguage.locale.language.languageCode?.identifier ?? "en"
-        let result = try await api.registerDevice(token: token, sandbox: Self.usesSandbox, language: language, categories: wanted)
+        let result = try await api.registerDevice(token: token, sandbox: Self.usesSandbox, language: language,
+                                                  server: Self.serverKey(api.serverURL), categories: wanted)
         categories = result.categories
         registered = true
+    }
+
+    /// `host` or `host:port`, how the alert names a server.
+    static func serverKey(_ url: URL) -> String {
+        (url.host() ?? "").lowercased() + (url.port.map { ":\($0)" } ?? "")
     }
 
     /// Xcode runs are signed with a development profile and get sandbox tokens; TestFlight and App Store
