@@ -60,6 +60,8 @@ class MainViewModel(
     val search = SearchModel(api, context)
     val requests = RequestsModel(api, isAdmin)
     val library = LibraryModel(api)
+    /** Right-pane default of the Search tab on wide windows. */
+    val trending = MediaListModel(MediaListModel.Source.Trending, api)
     val profile = ProfileModel(api, isAdmin)
     val ratings = RatingProvider(api, ratingSource, viewModelScope)
     val live = LiveUpdates(viewModelScope)

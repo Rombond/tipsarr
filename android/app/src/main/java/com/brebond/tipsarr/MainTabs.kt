@@ -1,6 +1,19 @@
 package com.brebond.tipsarr
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.outlined.ViewSidebar
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.ui.unit.dp
+import com.brebond.tipsarr.core.support.rememberVerticalHinge
+import com.brebond.tipsarr.features.discover.TrendingPane
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -156,41 +169,13 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
     val signOut: () -> Unit = { scope.launch { session.signOut(account) } }
     BackHandler(enabled = model.top(tab) != null) { model.back(tab) }
 
-    CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader, LocalToast provides toasts, LocalRatings provides model.ratings, LocalLive provides model.live) {
-      Box(Modifier.fillMaxSize()) {
-        Scaffold(
-            containerColor = Tokens.palette.bg,
-            // Top insets belong to each screen: tab roots pad for the status bar, pushed screens draw under it.
-            contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal),
-            bottomBar = {
-                NavigationBar(containerColor = Tokens.palette.card) {
-                    AppTab.entries.forEach { item ->
-                        NavigationBarItem(
-                            selected = tab == item,
-                            onClick = { tab = item },
-                            icon = {
-                                BadgedBox(badge = { if (item == AppTab.Requests && model.pendingCount > 0) Badge { Text(model.pendingCount.toString()) } }) {
-                                    Icon(item.icon, contentDescription = null)
-                                }
-                            },
-                            label = { Text(stringResource(item.title)) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Tokens.palette.primaryFg,
-                                selectedTextColor = Tokens.palette.fg,
-                                indicatorColor = Tokens.palette.primary,
-                                unselectedIconColor = Tokens.palette.mutedFg,
-                                unselectedTextColor = Tokens.palette.mutedFg,
-                            ),
-                        )
-                    }
-                }
-            },
-        ) { padding ->
-            Box(Modifier.fillMaxSize().background(Tokens.palette.bg).padding(padding)) {
-                val top = model.top(tab)
-                if (top != null) {
-                    key(top) {
-                        when (top) {
+    val hinge = rememberVerticalHinge()
+
+    // How the tabs are shown: a bottom bar on a phone, a rail on a wide window, and on a folded-open screen two panes
+    // either side of the hinge (a list on the left, what was opened on the right).
+    val renderScreen: @Composable (Screen) -> Unit = { top ->
+        key(top) {
+            when (top) {
                             is Screen.Title -> MediaDetailScreen(
                                 top.model, account.serverUrl,
                                 onBack = { model.back(tab) },
@@ -232,9 +217,12 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
                             Screen.Sync -> SyncScreen(model.api, onBack = { model.back(tab) })
                             Screen.Stats -> StatsScreen(model.api, profile.isAdmin, profile, onBack = { model.back(tab) }, onOpenTitle = { model.openTitle(tab, it) }, onSeeAll = { model.open(tab, Screen.PosterList(it)) })
                             is Screen.PosterList -> PosterListScreen(top.route, onBack = { model.back(tab) }, onOpen = { model.openTitle(tab, it) })
-                        }
-                    }
-                } else Box(Modifier.fillMaxSize().statusBarsPadding()) { when (tab) {
+            }
+        }
+    }
+    val renderRoot: @Composable (AppTab) -> Unit = { current ->
+        when (current) {
+
                     AppTab.Discover -> DiscoverScreen(model.discover, onOpenSearch = { tab = AppTab.Search }, onOpenItem = openTitle)
                     AppTab.Library -> LibraryScreen(model.library, onOpen = { model.openTitle(tab, it) })
                     AppTab.Requests -> RequestsScreen(model.requests, onOpen = { model.openRequest(tab, it) }, onOpenDiscover = { tab = AppTab.Discover })
@@ -257,12 +245,108 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
                         onOpenUsers = { model.open(tab, Screen.Users) },
                         onOpenSync = { model.open(tab, Screen.Sync) },
                     )
-                    else -> StateView(tab.icon, stringResource(tab.title))
-                } }
+            else -> StateView(current.icon, stringResource(current.title))
+        }
+    }
+    /** What the right pane shows while nothing is opened. */
+    val renderEmpty: @Composable (AppTab) -> Unit = { current ->
+        when (current) {
+            AppTab.Profile -> renderScreen(Screen.Stats)
+            AppTab.Search -> TrendingPane(model.trending, openTitle)
+            else -> StateView(Icons.Outlined.ViewSidebar, stringResource(R.string.m_pane_select))
+        }
+    }
+    val navigationBar: @Composable () -> Unit = {
+        NavigationBar(containerColor = Tokens.palette.card) {
+            AppTab.entries.forEach { item ->
+                NavigationBarItem(
+                    selected = tab == item,
+                    onClick = { tab = item },
+                    icon = { TabIcon(item, model.pendingCount) },
+                    label = { Text(stringResource(item.title)) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Tokens.palette.primaryFg, selectedTextColor = Tokens.palette.fg, indicatorColor = Tokens.palette.primary,
+                        unselectedIconColor = Tokens.palette.mutedFg, unselectedTextColor = Tokens.palette.mutedFg,
+                    ),
+                )
             }
         }
-        ToastHost(toasts)
-        if (showPicture) PictureSheet(model.api, onDismiss = { showPicture = false }, onChanged = model::avatarChanged)
-      }
+    }
+
+    CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader, LocalToast provides toasts, LocalRatings provides model.ratings, LocalLive provides model.live) {
+        Box(Modifier.fillMaxSize().background(Tokens.palette.bg)) {
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                val rail = hinge == null && maxWidth >= 840.dp
+                val top = model.top(tab)
+                // Requests and Search split into list and detail on a wide window; every tab does next to a hinge.
+                val split = hinge != null || (maxWidth >= 700.dp && (tab == AppTab.Requests || tab == AppTab.Search))
+                val single: @Composable () -> Unit = {
+                    if (top != null) renderScreen(top) else Box(Modifier.fillMaxSize().statusBarsPadding()) { renderRoot(tab) }
+                }
+                val body: @Composable () -> Unit = {
+                    if (!split) {
+                        single()
+                    } else {
+                        Row(Modifier.fillMaxSize()) {
+                            Box(Modifier.width(400.dp).fillMaxHeight().statusBarsPadding()) { renderRoot(tab) }
+                            VerticalDivider(color = Tokens.palette.border)
+                            Box(Modifier.weight(1f).fillMaxHeight()) {
+                                if (top != null) renderScreen(top) else Box(Modifier.fillMaxSize().statusBarsPadding()) { renderEmpty(tab) }
+                            }
+                        }
+                    }
+                }
+                when {
+                    hinge != null -> Row(Modifier.fillMaxSize()) {
+                        Scaffold(
+                            modifier = Modifier.width(hinge.left),
+                            containerColor = Tokens.palette.bg,
+                            contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Start),
+                            bottomBar = navigationBar,
+                        ) { padding ->
+                            Box(Modifier.fillMaxSize().padding(padding).statusBarsPadding()) { renderRoot(tab) }
+                        }
+                        Spacer(Modifier.width(hinge.right - hinge.left).fillMaxHeight())
+                        Box(Modifier.weight(1f).fillMaxHeight()) {
+                            if (top != null) renderScreen(top) else Box(Modifier.fillMaxSize().statusBarsPadding()) { renderEmpty(tab) }
+                        }
+                    }
+                    rail -> Row(Modifier.fillMaxSize()) {
+                        NavigationRail(containerColor = Tokens.palette.card, modifier = Modifier.statusBarsPadding()) {
+                            Spacer(Modifier.weight(1f))
+                            AppTab.entries.forEach { item ->
+                                NavigationRailItem(
+                                    selected = tab == item,
+                                    onClick = { tab = item },
+                                    icon = { TabIcon(item, model.pendingCount) },
+                                    label = { Text(stringResource(item.title)) },
+                                    colors = NavigationRailItemDefaults.colors(
+                                        selectedIconColor = Tokens.palette.primaryFg, selectedTextColor = Tokens.palette.fg, indicatorColor = Tokens.palette.primary,
+                                        unselectedIconColor = Tokens.palette.mutedFg, unselectedTextColor = Tokens.palette.mutedFg,
+                                    ),
+                                )
+                            }
+                            Spacer(Modifier.weight(1f))
+                        }
+                        Box(Modifier.weight(1f).fillMaxHeight()) { body() }
+                    }
+                    else -> Scaffold(
+                        containerColor = Tokens.palette.bg,
+                        // Top insets belong to each screen: tab roots pad for the status bar, pushed screens draw under it.
+                        contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal),
+                        bottomBar = navigationBar,
+                    ) { padding -> Box(Modifier.fillMaxSize().padding(padding)) { body() } }
+                }
+            }
+            ToastHost(toasts)
+            if (showPicture) PictureSheet(model.api, onDismiss = { showPicture = false }, onChanged = model::avatarChanged)
+        }
+    }
+}
+
+@Composable
+private fun TabIcon(item: AppTab, pending: Int) {
+    BadgedBox(badge = { if (item == AppTab.Requests && pending > 0) Badge { Text(pending.toString()) } }) {
+        Icon(item.icon, contentDescription = null)
     }
 }
