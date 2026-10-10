@@ -1157,7 +1157,7 @@ export interface paths {
         };
         /**
          * Watching and request statistics
-         * @description Exact when Jellyfin's Playback Reporting plugin is installed (its plays are copied into Tipsarr), otherwise estimated from the watch history. People see their own numbers; `user` and `all` are admin only.
+         * @description Exact when Jellyfin's Playback Reporting plugin is installed (its plays are copied into Tipsarr), otherwise estimated from the watch history. People see their own numbers; `user` and `all` need the manage-users right.
          */
         get: operations["getStats"];
         put?: never;
