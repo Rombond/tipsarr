@@ -66,7 +66,7 @@ struct SeasonList: View {
     private func meta(_ season: SeasonInfo) -> String {
         let count = Plural.text("seasons.episodes", count: season.episodeCount)
         guard let year = season.airDate.flatMap({ $0.count >= 4 ? String($0.prefix(4)) : nil }) else { return count }
-        return "\\(count) · \\(year)"
+        return "\(count) · \(year)"
     }
 
     private func toggle(_ number: Int) async {
@@ -92,7 +92,7 @@ private struct EpisodeRow: View {
             .background(Tokens.palette.muted)
             .clipShape(.rect(cornerRadius: Tokens.Radius.sm))
             .overlay(alignment: .bottomLeading) {
-                Text(verbatim: "E\\(episode.number)")
+                Text(verbatim: "E\(episode.number)")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 5).padding(.vertical, 2)
