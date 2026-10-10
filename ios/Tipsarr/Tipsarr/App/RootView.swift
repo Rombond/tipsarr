@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @State private var session = SessionManager()
+    @State private var push = PushManager.shared
 
     var body: some View {
         Group {
@@ -44,5 +45,11 @@ struct RootView: View {
         .onOpenURL { url in Task { await session.handle(url) } }
         .animation(.easeOut(duration: Tokens.Motion.normal), value: session.phase)
         .task { await session.start() }
+        // A tapped alert opens its request or issue (also when the tap launched the app).
+        .task(id: push.tap) {
+            guard let tap = push.tap else { return }
+            session.openFromPush(tap)
+            push.tap = nil
+        }
     }
 }

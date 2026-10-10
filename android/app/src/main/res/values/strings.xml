@@ -98,6 +98,8 @@
     <string name="error_duplicate_request">This title already has an active request.</string>
     <string name="error_forbidden">You are not allowed to do this.</string>
     <string name="error_invalid_credentials">Invalid username or password.</string>
+    <string name="error_invalid_push_token">That is not a valid push token.</string>
+    <string name="error_invalid_push_url">The relay address must start with http:// or https://.</string>
     <string name="error_invalid_request">That request is not valid.</string>
     <string name="error_invalid_token">Invalid token.</string>
     <string name="error_jellyfin_key_missing">Save a Jellyfin API key in Settings first.</string>
@@ -106,10 +108,12 @@
     <string name="error_ldap_unreachable">Cannot sign in to LDAP with these settings.</string>
     <string name="error_login_required">Please sign in.</string>
     <string name="error_no_instance">No Radarr/Sonarr is configured for this type of title yet.</string>
+    <string name="error_not_an_app">Push is only available in the iOS and Android apps.</string>
     <string name="error_not_found">Not found.</string>
     <string name="error_not_set_up">Tipsarr is not set up yet.</string>
     <string name="error_oidc_unreachable">Cannot read the provider’s configuration. Check the address.</string>
     <string name="error_own_role">You cannot change your own role.</string>
+    <string name="error_push_not_configured">Set the relay address and key before turning push on.</string>
     <string name="error_refresh_too_soon">Refreshed a moment ago, try again in a minute.</string>
     <string name="error_retype_key">Enter the API key again when you change the address.</string>
     <string name="error_setup_done">Setup has already been completed.</string>
@@ -358,6 +362,14 @@
     <string name="m_settings_faceid_signin">Sign in with biometrics</string>
     <string name="m_settings_faceid_signin_footer">Your password is kept encrypted on the phone, protected by your fingerprint, face or screen lock. It is only used to sign you back in when your session ends.</string>
     <string name="m_settings_language_default">Default (phone language)</string>
+    <string name="m_settings_notifications">Notifications</string>
+    <string name="m_settings_notifications_admin">New requests to approve</string>
+    <string name="m_settings_notifications_denied">Notifications are turned off for Tipsarr in iOS Settings.</string>
+    <string name="m_settings_notifications_footer">Alerts only say that something happened. Tipsarr fetches the details when you open it.</string>
+    <string name="m_settings_notifications_issues">Issues</string>
+    <string name="m_settings_notifications_open_settings">Open iOS Settings</string>
+    <string name="m_settings_notifications_requests">My requests</string>
+    <string name="m_settings_notifications_toggle">Push notifications</string>
     <string name="m_settings_rating_imdb">IMDb</string>
     <string name="m_settings_rating_metacritic">Metacritic</string>
     <string name="m_settings_rating_movies_only">Movies only</string>

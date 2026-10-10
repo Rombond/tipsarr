@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct TipsarrApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var settings = AppSettings()
 
     init() {

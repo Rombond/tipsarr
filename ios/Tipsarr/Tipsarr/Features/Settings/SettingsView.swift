@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var showPicture = false
     @State private var deviceCount: Int?
     @State private var faceIDSignIn = false
+    @State private var push = PushManager.shared
 
     private var ratingSource: Binding<RatingSource> {
         Binding(
@@ -97,6 +98,9 @@ struct SettingsView: View {
                     Label { Text("m.settings.app_icon") } icon: { Image(systemName: "app.badge") }
                 }
             }
+            if session.serverStatus?.pushAvailable == true {
+                notificationsSection
+            }
             Section {
                 if faceIDSignIn {
                     Toggle(isOn: Binding(get: { faceIDSignIn }, set: { on in
@@ -155,6 +159,40 @@ struct SettingsView: View {
         .sheet(isPresented: $showPicture) {
             PictureSheet(profile: profile) { avatarVersion += 1 }
                 .tipsarrSheet(detents: [.medium])
+        }
+    }
+
+    // MARK: Notifications
+
+    private var notificationsSection: some View {
+        Section {
+            Toggle(isOn: Binding(get: { push.isOn }, set: { on in Task { if on { await push.turnOn() } else { await push.turnOff() } } })) {
+                Label { Text("m.settings.notifications_toggle") } icon: { Image(systemName: "bell.badge") }
+            }
+            .disabled(push.isDenied)
+            if push.isDenied {
+                Button { push.openSystemSettings() } label: {
+                    Label { Text("m.settings.notifications_open_settings") } icon: { Image(systemName: "gearshape") }
+                }
+            }
+            if push.isOn {
+                categoryToggle(.requests, "m.settings.notifications_requests", symbol: "film.stack")
+                if profile.isAdmin { categoryToggle(.admin, "m.settings.notifications_admin", symbol: "checkmark.seal") }
+                categoryToggle(.issues, "m.settings.notifications_issues", symbol: "exclamationmark.bubble")
+            }
+        } header: {
+            Text("m.settings.notifications")
+        } footer: {
+            Text(push.isDenied ? "m.settings.notifications_denied" : "m.settings.notifications_footer")
+        }
+    }
+
+    private func categoryToggle(_ category: PushManager.Category, _ title: LocalizedStringKey, symbol: String) -> some View {
+        Toggle(isOn: Binding(
+            get: { push.categories & category.rawValue != 0 },
+            set: { on in Task { await push.set(category, on: on) } }
+        )) {
+            Label { Text(title) } icon: { Image(systemName: symbol) }
         }
     }
 

@@ -98,6 +98,8 @@
     <string name="error_duplicate_request">Ce titre a déjà une demande en cours.</string>
     <string name="error_forbidden">Vous n’avez pas le droit de faire cela.</string>
     <string name="error_invalid_credentials">Nom d’utilisateur ou mot de passe incorrect.</string>
+    <string name="error_invalid_push_token">Ce n\'est pas un jeton push valide.</string>
+    <string name="error_invalid_push_url">L\'adresse du relais doit commencer par http:// ou https://.</string>
     <string name="error_invalid_request">Cette demande n’est pas valide.</string>
     <string name="error_invalid_token">Jeton invalide.</string>
     <string name="error_jellyfin_key_missing">Enregistrez d’abord une clé API Jellyfin dans les réglages.</string>
@@ -106,10 +108,12 @@
     <string name="error_ldap_unreachable">Connexion LDAP impossible avec ces réglages.</string>
     <string name="error_login_required">Veuillez vous connecter.</string>
     <string name="error_no_instance">Aucun Radarr/Sonarr n’est encore configuré pour ce type de titre.</string>
+    <string name="error_not_an_app">Le push n\'est disponible que dans les applications iOS et Android.</string>
     <string name="error_not_found">Introuvable.</string>
     <string name="error_not_set_up">Tipsarr n’est pas encore configuré.</string>
     <string name="error_oidc_unreachable">Impossible de lire la configuration du fournisseur. Vérifiez l’adresse.</string>
     <string name="error_own_role">Vous ne pouvez pas changer votre propre rôle.</string>
+    <string name="error_push_not_configured">Renseignez l\'adresse et la clé du relais avant d\'activer le push.</string>
     <string name="error_refresh_too_soon">Actualisé à l’instant, réessayez dans une minute.</string>
     <string name="error_retype_key">Saisissez à nouveau la clé API quand vous changez l’adresse.</string>
     <string name="error_setup_done">La configuration est déjà terminée.</string>
@@ -358,6 +362,14 @@
     <string name="m_settings_faceid_signin">Connexion biométrique</string>
     <string name="m_settings_faceid_signin_footer">Votre mot de passe est conservé chiffré sur le téléphone, protégé par votre empreinte, votre visage ou le verrouillage de l’écran. Il sert uniquement à vous reconnecter quand votre session se termine.</string>
     <string name="m_settings_language_default">Par défaut (langue du téléphone)</string>
+    <string name="m_settings_notifications">Notifications</string>
+    <string name="m_settings_notifications_admin">Nouvelles demandes à approuver</string>
+    <string name="m_settings_notifications_denied">Les notifications sont désactivées pour Tipsarr dans les Réglages d\'iOS.</string>
+    <string name="m_settings_notifications_footer">Les alertes indiquent seulement qu\'il s\'est passé quelque chose. Tipsarr récupère les détails à l\'ouverture.</string>
+    <string name="m_settings_notifications_issues">Problèmes</string>
+    <string name="m_settings_notifications_open_settings">Ouvrir les Réglages iOS</string>
+    <string name="m_settings_notifications_requests">Mes demandes</string>
+    <string name="m_settings_notifications_toggle">Notifications push</string>
     <string name="m_settings_rating_imdb">IMDb</string>
     <string name="m_settings_rating_metacritic">Metacritic</string>
     <string name="m_settings_rating_movies_only">Films uniquement</string>

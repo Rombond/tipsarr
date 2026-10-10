@@ -167,5 +167,13 @@
   "m.search.select": "Choisissez un résultat",
   "m.search.start": "Cherchez un film, une série ou une personne",
   "m.pane.select": "Choisissez un titre pour le voir ici",
-  "m.pane.trending": "Tendances"
+  "m.pane.trending": "Tendances",
+  "m.settings.notifications": "Notifications",
+  "m.settings.notifications_toggle": "Notifications push",
+  "m.settings.notifications_requests": "Mes demandes",
+  "m.settings.notifications_admin": "Nouvelles demandes à approuver",
+  "m.settings.notifications_issues": "Problèmes",
+  "m.settings.notifications_footer": "Les alertes indiquent seulement qu'il s'est passé quelque chose. Tipsarr récupère les détails à l'ouverture.",
+  "m.settings.notifications_denied": "Les notifications sont désactivées pour Tipsarr dans les Réglages d'iOS.",
+  "m.settings.notifications_open_settings": "Ouvrir les Réglages iOS"
 }

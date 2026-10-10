@@ -72,7 +72,9 @@ struct MainTabView: View {
             Task { try? await UNUserNotificationCenter.current().setBadgeCount(count) }
         }
         .task {
-            if profile.isAdmin { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.badge]) }
+            // Admins see their pending count on the icon, so they are asked at once (alerts, sounds and the badge together).
+            if profile.isAdmin { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) }
+            await PushManager.shared.attach(account: account, pushAvailable: session.serverStatus?.pushAvailable ?? false)
         }
         // A new language or account rebuilds the tabs, so every list is fetched again in that language.
         .id("\(account.id)|\(settings.language ?? "")")

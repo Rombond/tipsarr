@@ -181,6 +181,7 @@ struct RequestSheet: View {
                 folder: model.canChooseFolder ? folder : nil
             )
             onDone(record)
+            Task { await PushManager.shared.askAfterFirstRequest() }
         } catch {
             errorText = APIError.from(error).localizedMessage
         }

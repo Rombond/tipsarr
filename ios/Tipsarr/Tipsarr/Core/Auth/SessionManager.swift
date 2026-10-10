@@ -111,6 +111,7 @@ final class SessionManager {
     /// Removes the account from the phone; the next one (or Connect) takes over.
     func signOut(_ account: Account) async {
         CredentialStore.delete(accountID: account.id)
+        await PushManager.shared.detach(account: account)
         await TipsarrAPI(serverURL: account.serverURL, token: account.token).logout()
         accounts.remove(account)
         try? await UNUserNotificationCenter.current().setBadgeCount(0)
@@ -135,6 +136,13 @@ final class SessionManager {
     }
 
     func clearPendingLink() { pendingLink = nil }
+
+    /// A tapped push alert: the event names the screen, the id the request or issue, the server is the active one.
+    func openFromPush(_ tap: PushTap) {
+        guard let host = accounts.active?.serverURL.host()?.lowercased() else { return }
+        let target: DeepLinkTarget = tap.event.hasPrefix("issue.") ? .issue(tap.id) : .request(tap.id)
+        pendingLink = DeepLink(host: host, target: target)
+    }
 
     /// Profile changed on the server (language, score source): keep the signed-in screens in sync.
     func update(profile: Profile) {

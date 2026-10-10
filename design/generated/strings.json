@@ -111,6 +111,10 @@
   "suggest.refresh": "↻ Refresh recommendations",
   "suggest.refresh_failed": "Could not refresh right now.",
   "error.login_required": "Please sign in.",
+  "error.push_not_configured": "Set the relay address and key before turning push on.",
+  "error.invalid_push_url": "The relay address must start with http:// or https://.",
+  "error.invalid_push_token": "That is not a valid push token.",
+  "error.not_an_app": "Push is only available in the iOS and Android apps.",
   "error.admin_only": "Only administrators can do this.",
   "error.invalid_credentials": "Invalid username or password.",
   "error.too_many_attempts": "Too many failed sign-in attempts. Try again in a few minutes.",
@@ -670,7 +674,15 @@
   "m.search.select": "Select a result",
   "m.search.start": "Search for a movie, a show or a person",
   "m.pane.select": "Pick a title to see it here",
-  "m.pane.trending": "Trending now"
+  "m.pane.trending": "Trending now",
+  "m.settings.notifications": "Notifications",
+  "m.settings.notifications_toggle": "Push notifications",
+  "m.settings.notifications_requests": "My requests",
+  "m.settings.notifications_admin": "New requests to approve",
+  "m.settings.notifications_issues": "Issues",
+  "m.settings.notifications_footer": "Alerts only say that something happened. Tipsarr fetches the details when you open it.",
+  "m.settings.notifications_denied": "Notifications are turned off for Tipsarr in iOS Settings.",
+  "m.settings.notifications_open_settings": "Open iOS Settings"
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -784,6 +796,10 @@
   "suggest.refresh": "↻ Actualiser les recommandations",
   "suggest.refresh_failed": "Impossible d’actualiser pour le moment.",
   "error.login_required": "Veuillez vous connecter.",
+  "error.push_not_configured": "Renseignez l'adresse et la clé du relais avant d'activer le push.",
+  "error.invalid_push_url": "L'adresse du relais doit commencer par http:// ou https://.",
+  "error.invalid_push_token": "Ce n'est pas un jeton push valide.",
+  "error.not_an_app": "Le push n'est disponible que dans les applications iOS et Android.",
   "error.admin_only": "Réservé aux administrateurs.",
   "error.invalid_credentials": "Nom d’utilisateur ou mot de passe incorrect.",
   "error.too_many_attempts": "Trop de tentatives de connexion échouées. Réessayez dans quelques minutes.",
@@ -1343,6 +1359,14 @@
   "m.search.select": "Choisissez un résultat",
   "m.search.start": "Cherchez un film, une série ou une personne",
   "m.pane.select": "Choisissez un titre pour le voir ici",
-  "m.pane.trending": "Tendances"
+  "m.pane.trending": "Tendances",
+  "m.settings.notifications": "Notifications",
+  "m.settings.notifications_toggle": "Notifications push",
+  "m.settings.notifications_requests": "Mes demandes",
+  "m.settings.notifications_admin": "Nouvelles demandes à approuver",
+  "m.settings.notifications_issues": "Problèmes",
+  "m.settings.notifications_footer": "Les alertes indiquent seulement qu'il s'est passé quelque chose. Tipsarr récupère les détails à l'ouverture.",
+  "m.settings.notifications_denied": "Les notifications sont désactivées pour Tipsarr dans les Réglages d'iOS.",
+  "m.settings.notifications_open_settings": "Ouvrir les Réglages iOS"
  }
 }

@@ -1557,6 +1557,38 @@
         }
       }
     },
+    "error.invalid_push_token": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That is not a valid push token."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce n'est pas un jeton push valide."
+          }
+        }
+      }
+    },
+    "error.invalid_push_url": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The relay address must start with http:// or https://."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'adresse du relais doit commencer par http:// ou https://."
+          }
+        }
+      }
+    },
     "error.invalid_request": {
       "localizations": {
         "en": {
@@ -1685,6 +1717,22 @@
         }
       }
     },
+    "error.not_an_app": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Push is only available in the iOS and Android apps."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le push n'est disponible que dans les applications iOS et Android."
+          }
+        }
+      }
+    },
     "error.not_found": {
       "localizations": {
         "en": {
@@ -1745,6 +1793,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vous ne pouvez pas changer votre propre rôle."
+          }
+        }
+      }
+    },
+    "error.push_not_configured": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set the relay address and key before turning push on."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renseignez l'adresse et la clé du relais avant d'activer le push."
           }
         }
       }
@@ -5728,6 +5792,134 @@
           "stringUnit": {
             "state": "translated",
             "value": "Par défaut (langue de l’iPhone)"
+          }
+        }
+      }
+    },
+    "m.settings.notifications": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications"
+          }
+        }
+      }
+    },
+    "m.settings.notifications_admin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New requests to approve"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvelles demandes à approuver"
+          }
+        }
+      }
+    },
+    "m.settings.notifications_denied": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications are turned off for Tipsarr in iOS Settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les notifications sont désactivées pour Tipsarr dans les Réglages d'iOS."
+          }
+        }
+      }
+    },
+    "m.settings.notifications_footer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alerts only say that something happened. Tipsarr fetches the details when you open it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les alertes indiquent seulement qu'il s'est passé quelque chose. Tipsarr récupère les détails à l'ouverture."
+          }
+        }
+      }
+    },
+    "m.settings.notifications_issues": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Issues"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Problèmes"
+          }
+        }
+      }
+    },
+    "m.settings.notifications_open_settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open iOS Settings"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir les Réglages iOS"
+          }
+        }
+      }
+    },
+    "m.settings.notifications_requests": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My requests"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mes demandes"
+          }
+        }
+      }
+    },
+    "m.settings.notifications_toggle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Push notifications"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications push"
           }
         }
       }
