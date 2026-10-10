@@ -301,7 +301,7 @@
     <string name="m_library_remove">Remove</string>
     <string name="m_library_show_again">Show again</string>
     <string name="m_library_unwatched">Unwatched</string>
-    <string name="m_login_remember_faceid">Sign in with Face ID next time</string>
+    <string name="m_login_remember_faceid">Sign in with biometrics next time</string>
     <string name="m_login_signing_in">Signing in…</string>
     <string name="m_login_subtitle">Sign in with your Jellyfin account</string>
     <string name="m_offline_body">Tipsarr can’t reach your server. Check your internet connection and try again.</string>
@@ -348,7 +348,7 @@
     <string name="m_search_start">Search for a movie, a show or a person</string>
     <string name="m_session_expired_body">Your session expired. Sign in again to continue where you left off.</string>
     <string name="m_session_expired_title">You’ve been signed out</string>
-    <string name="m_session_faceid_signin">Sign in with Face ID</string>
+    <string name="m_session_faceid_signin">Sign in with biometrics</string>
     <string name="m_session_sign_in">Sign in</string>
     <string name="m_session_signing_in_faceid">Signing in…</string>
     <string name="m_session_use_password">Use my password</string>
@@ -386,8 +386,8 @@
     <string name="m_tab_profile">Profile</string>
     <string name="m_tab_requests">Requests</string>
     <string name="m_tab_search">Search</string>
-    <string name="m_update_body">Your server needs a newer version of the Tipsarr app. Update from the App Store to keep going.</string>
-    <string name="m_update_open_store">Open App Store</string>
+    <string name="m_update_body">Your server needs a newer version of the Tipsarr app. Update from Google Play to keep going.</string>
+    <string name="m_update_open_store">Open Google Play</string>
     <string name="m_update_title">Update required</string>
     <string name="m_users_approved">Approved</string>
     <string name="m_users_available">Available</string>

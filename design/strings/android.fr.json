@@ -1,0 +1,6 @@
+{
+  "m.update.body": "Votre serveur nécessite une version plus récente de l’app Tipsarr. Mettez à jour depuis Google Play pour continuer.",
+  "m.update.open_store": "Ouvrir Google Play",
+  "m.login.remember_faceid": "Se connecter par biométrie la prochaine fois",
+  "m.session.faceid_signin": "Se connecter par biométrie"
+}

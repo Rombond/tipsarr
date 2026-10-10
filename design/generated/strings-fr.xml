@@ -301,7 +301,7 @@
     <string name="m_library_remove">Retirer</string>
     <string name="m_library_show_again">Réafficher</string>
     <string name="m_library_unwatched">Non vus</string>
-    <string name="m_login_remember_faceid">Se connecter avec Face ID la prochaine fois</string>
+    <string name="m_login_remember_faceid">Se connecter par biométrie la prochaine fois</string>
     <string name="m_login_signing_in">Connexion…</string>
     <string name="m_login_subtitle">Connectez-vous avec votre compte Jellyfin</string>
     <string name="m_offline_body">Tipsarr ne peut pas joindre votre serveur. Vérifiez votre connexion internet et réessayez.</string>
@@ -348,7 +348,7 @@
     <string name="m_search_start">Cherchez un film, une série ou une personne</string>
     <string name="m_session_expired_body">Votre session a expiré. Reconnectez-vous pour reprendre là où vous étiez.</string>
     <string name="m_session_expired_title">Vous avez été déconnecté</string>
-    <string name="m_session_faceid_signin">Se connecter avec Face ID</string>
+    <string name="m_session_faceid_signin">Se connecter par biométrie</string>
     <string name="m_session_sign_in">Se connecter</string>
     <string name="m_session_signing_in_faceid">Connexion…</string>
     <string name="m_session_use_password">Utiliser mon mot de passe</string>
@@ -386,8 +386,8 @@
     <string name="m_tab_profile">Profil</string>
     <string name="m_tab_requests">Demandes</string>
     <string name="m_tab_search">Recherche</string>
-    <string name="m_update_body">Votre serveur nécessite une version plus récente de l’app Tipsarr. Mettez à jour depuis l’App Store pour continuer.</string>
-    <string name="m_update_open_store">Ouvrir l’App Store</string>
+    <string name="m_update_body">Votre serveur nécessite une version plus récente de l’app Tipsarr. Mettez à jour depuis Google Play pour continuer.</string>
+    <string name="m_update_open_store">Ouvrir Google Play</string>
     <string name="m_update_title">Mise à jour requise</string>
     <string name="m_users_approved">Approuvées</string>
     <string name="m_users_available">Disponibles</string>

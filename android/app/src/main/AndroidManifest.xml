@@ -5,6 +5,7 @@
 
     <application
         android:allowBackup="false"
+        android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher"
         android:label="Tipsarr"
         android:supportsRtl="true"

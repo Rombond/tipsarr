@@ -1,0 +1,6 @@
+{
+  "m.update.body": "Your server needs a newer version of the Tipsarr app. Update from Google Play to keep going.",
+  "m.update.open_store": "Open Google Play",
+  "m.login.remember_faceid": "Sign in with biometrics next time",
+  "m.session.faceid_signin": "Sign in with biometrics"
+}
