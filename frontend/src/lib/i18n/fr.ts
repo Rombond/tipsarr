@@ -703,6 +703,8 @@ export const fr: Record<keyof typeof en, string> = {
 	"settings.push_key_placeholder": "Clé du relais",
 	"settings.push_key_saved": "Clé du relais enregistrée (saisissez-en une pour la remplacer)",
 	"settings.push_toggle": "Envoyer les notifications push",
+	"settings.push_text": "Nommer le titre dans les alertes",
+	"settings.push_text_hint": "Le texte de l'alerte passe par le relais et Apple/Google. Ne fonctionne que si le relais autorise le texte libre pour cette application, sinon les alertes restent génériques.",
 	"req.change_options": "Profil de qualité pour {title}",
 	"req.change_options_short": "Changer le profil de qualité",
 	"requests.confirm_delete": "Supprimer la demande pour « {title} » ?",

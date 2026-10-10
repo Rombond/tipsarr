@@ -40,6 +40,7 @@ type settingsBody struct {
 	DefaultLanguage          string `json:"defaultLanguage" doc:"App-wide default language, e.g. fr-FR; empty = the browser decides. A person's own language wins"`
 	PushEnabled              bool   `json:"pushEnabled" doc:"Mobile push notifications through the relay (off by default)"`
 	PushRelayURL             string `json:"pushRelayUrl" doc:"Address of the push relay, e.g. https://push.example.org"`
+	PushText                 bool   `json:"pushText" doc:"Alerts name the media (needs a relay that allows free text for this app); off: generic alerts"`
 	PushRelayKeyConfigured   bool   `json:"pushRelayKeyConfigured" doc:"The relay key is write-only; this only says whether one is saved"`
 	ServarrAutoImport        bool   `json:"servarrAutoImport" doc:"Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only)"`
 }
@@ -54,6 +55,7 @@ type updateSettingsInput struct {
 		JellyfinAPIKey    *string `json:"jellyfinApiKey,omitempty" doc:"Jellyfin API key (Dashboard > API Keys); empty string clears it"`
 		ServarrAutoImport *bool   `json:"servarrAutoImport,omitempty"`
 		PushEnabled       *bool   `json:"pushEnabled,omitempty" doc:"Needs the relay address and key; turning it on with either missing is refused"`
+		PushText          *bool   `json:"pushText,omitempty"`
 		PushRelayURL      *string `json:"pushRelayUrl,omitempty" doc:"Empty string clears it (and turns push off)"`
 		PushRelayKey      *string `json:"pushRelayKey,omitempty" doc:"Write-only; empty string clears it (and turns push off)"`
 		UserFolderChoice  *bool   `json:"userFolderChoice,omitempty"`
@@ -97,8 +99,9 @@ func registerAdmin(api huma.API, d Deps) {
 		pushOn, _ := d.Store.GetSetting(ctx, push.SettingEnabled)
 		pushURL, _ := d.Store.GetSetting(ctx, push.SettingURL)
 		pushKey, _ := d.Store.GetSetting(ctx, push.SettingKey)
+		pushText, _ := d.Store.GetSetting(ctx, push.SettingText)
 		return settingsBody{
-			PushEnabled: pushOn == "true", PushRelayURL: pushURL, PushRelayKeyConfigured: pushKey != "",
+			PushEnabled: pushOn == "true", PushText: pushText == "true", PushRelayURL: pushURL, PushRelayKeyConfigured: pushKey != "",
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
 			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, ServarrAutoImport: autoImport != "false", UserFolderChoice: d.Requests.UsersMayChooseFolder(ctx), DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage),
 			LDAPURL: ldapGet(ctx, d, avatars.SettingLDAPURL), LDAPBindDN: ldapGet(ctx, d, avatars.SettingLDAPBindDN), LDAPBaseDN: ldapGet(ctx, d, avatars.SettingLDAPBaseDN), LDAPPasswordSet: ldapGet(ctx, d, avatars.SettingLDAPPassword) != "",
@@ -228,6 +231,15 @@ func registerAdmin(api huma.API, d Deps) {
 		}
 		if err := updatePush(ctx, d, in.Body.PushEnabled, in.Body.PushRelayURL, in.Body.PushRelayKey); err != nil {
 			return nil, err
+		}
+		if in.Body.PushText != nil {
+			v := "false"
+			if *in.Body.PushText {
+				v = "true"
+			}
+			if err := d.Store.SetSetting(ctx, push.SettingText, v); err != nil {
+				return nil, err
+			}
 		}
 		b, err := read(ctx)
 		return &settingsOutput{Body: b}, err

@@ -43,6 +43,9 @@ type PushEvent struct {
 	Users  []string // user ids to notify
 	Admins bool     // also every admin
 	Skip   string   // user id that caused the event (never notified about their own action)
+	// Subject is the title of the media the event is about. It travels to the relay only when the admin
+	// turned on "alert text" (push.text); otherwise the relay's generic alert is shown.
+	Subject string
 }
 
 // Pusher delivers push events (implemented by package push).

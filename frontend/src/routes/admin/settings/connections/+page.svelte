@@ -75,9 +75,9 @@
 		}
 	}
 
-	async function togglePush(on: boolean) {
+	async function togglePush(on: boolean, key: 'pushEnabled' | 'pushText' = 'pushEnabled') {
 		try {
-			admin.settings = await unwrap(api.PUT('/admin/settings', { body: { pushEnabled: on } }));
+			admin.settings = await unwrap(api.PUT('/admin/settings', { body: { [key]: on } }));
 			toast.success(t('common.saved'));
 		} catch (err) {
 			toast.error(errorText(err));
@@ -160,6 +160,11 @@
 				<input type="checkbox" checked={settings.pushEnabled} onchange={(e) => togglePush(e.currentTarget.checked)} />
 				{t('settings.push_toggle')}
 			</label>
+			<label class="flex cursor-pointer items-center gap-2 text-sm">
+				<input type="checkbox" checked={settings.pushText} onchange={(e) => togglePush(e.currentTarget.checked, 'pushText')} />
+				{t('settings.push_text')}
+			</label>
+			<p class="text-xs text-muted-foreground">{t('settings.push_text_hint')}</p>
 		</CardContent>
 	</Card>
 

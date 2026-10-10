@@ -11,7 +11,8 @@ type LibraryFilter struct {
 	UserID     string   // whose watched state ("mine") applies
 	MediaType  string   // "", movie or tv
 	Query      string   // part of the title
-	Genres     []string // every one of them must match
+	Genres     []string // every one of them must match, or one of them when AnyGenre
+	AnyGenre   bool
 	YearFrom   int
 	YearTo     int
 	MinRating  int    // x 10
@@ -64,10 +65,20 @@ func (s *Store) ListLibrary(ctx context.Context, f LibraryFilter) ([]LibraryRow,
 	if t := strings.ToLower(strings.TrimSpace(f.Query)); t != "" {
 		q = q.Where(`LOWER(l.title) LIKE ? ESCAPE '!'`, "%"+escapeLike(t)+"%")
 	}
+	var anyOf []string
+	var anyArgs []any
 	for _, g := range f.Genres {
 		if g = strings.TrimSpace(g); g != "" {
-			q = q.Where(`l.genres LIKE ? ESCAPE '!'`, "%|"+escapeLike(g)+"|%")
+			if f.AnyGenre {
+				anyOf = append(anyOf, `l.genres LIKE ? ESCAPE '!'`)
+				anyArgs = append(anyArgs, "%|"+escapeLike(g)+"|%")
+			} else {
+				q = q.Where(`l.genres LIKE ? ESCAPE '!'`, "%|"+escapeLike(g)+"|%")
+			}
 		}
+	}
+	if len(anyOf) > 0 {
+		q = q.Where("("+strings.Join(anyOf, " OR ")+")", anyArgs...)
 	}
 	if f.YearFrom > 0 {
 		q = q.Where("l.year >= ?", f.YearFrom)

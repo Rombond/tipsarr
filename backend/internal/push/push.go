@@ -24,6 +24,7 @@ const (
 	SettingEnabled = "push.enabled" // "true" when on (off by default)
 	SettingURL     = "push.relay_url"
 	SettingKey     = "push.relay_key" // secret, never returned by the API
+	SettingText    = "push.text"      // "true": alerts carry the title of the media (the relay must allow free text)
 )
 
 const batchSize = 100
@@ -55,7 +56,10 @@ func New(s *store.Store, dryRun bool) *Service {
 // SetRetryDelays overrides the retry schedule (tests).
 func (s *Service) SetRetryDelays(d ...time.Duration) { s.delays = d }
 
-type config struct{ url, key string }
+type config struct {
+	url, key string
+	text     bool // alerts carry the media title
+}
 
 // load returns the relay settings, ok=false when push is off or incomplete.
 func (s *Service) load(ctx context.Context) (config, bool) {
@@ -65,7 +69,8 @@ func (s *Service) load(ctx context.Context) (config, bool) {
 	if on != "true" || u == "" || k == "" {
 		return config{}, false
 	}
-	return config{url: strings.TrimRight(u, "/"), key: k}, true
+	text, _ := s.store.GetSetting(ctx, SettingText)
+	return config{url: strings.TrimRight(u, "/"), key: k, text: text == "true"}, true
 }
 
 // Configured reports whether push is switched on with a relay address and key (/status features.push).
@@ -122,6 +127,8 @@ type item struct {
 	ID       string `json:"id"`
 	Lang     string `json:"lang"`
 	Server   string `json:"server,omitempty"`
+	Title    string `json:"title,omitempty"` // only with push.text; the relay ignores it unless its app allows free text
+	Body     string `json:"body,omitempty"`
 }
 
 type result struct {
@@ -189,6 +196,9 @@ func (s *Service) post(ctx context.Context, cfg config, ev notify.PushEvent, dev
 	items := make([]item, len(devs))
 	for i, d := range devs {
 		items[i] = item{Platform: d.Platform, Token: d.PushToken, Sandbox: d.Sandbox, Event: ev.Name, ID: ev.ID, Lang: d.Language, Server: d.Server}
+		if cfg.text && ev.Subject != "" {
+			items[i].Title, items[i].Body = alertText(ev.Name, d.Language, ev.Subject)
+		}
 	}
 	body, err := json.Marshal(map[string]any{"items": items})
 	if err != nil {
@@ -217,4 +227,28 @@ func (s *Service) post(ctx context.Context, cfg config, ev notify.PushEvent, dev
 		return nil, err
 	}
 	return out.Items, nil
+}
+
+// alertTitles are the alert titles in the two supported languages; the body is the media title.
+var alertTitles = map[string][2]string{ // en, fr
+	"request.approved":  {"Request approved", "Demande approuvée"},
+	"request.declined":  {"Request declined", "Demande refusée"},
+	"request.failed":    {"Request failed", "Demande en échec"},
+	"request.available": {"Now available", "Maintenant disponible"},
+	"request.created":   {"New request", "Nouvelle demande"},
+	"issue.created":     {"New issue", "Nouveau signalement"},
+	"issue.comment":     {"New comment on an issue", "Nouveau commentaire sur un signalement"},
+	"issue.resolved":    {"Issue resolved", "Signalement résolu"},
+}
+
+// alertText returns the title and body of the alert; the title says what happened, the body what it is about.
+func alertText(event, lang, subject string) (title, body string) {
+	t, ok := alertTitles[event]
+	if !ok {
+		return "", ""
+	}
+	if strings.HasPrefix(strings.ToLower(lang), "fr") {
+		return t[1], subject
+	}
+	return t[0], subject
 }

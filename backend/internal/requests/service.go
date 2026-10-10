@@ -203,6 +203,7 @@ func (s *Service) List(ctx context.Context, u *store.User, p ListParams) (*ListR
 	for i := range items {
 		redact(&items[i], u)
 	}
+	s.localizePosters(ctx, u, items)
 	return &ListResult{Total: total, Items: items}, err
 }
 
@@ -324,7 +325,7 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 	}
 	s.changed(ctx, r)
 	s.notify.Dispatch(notify.RequestCreated, s.payload(ctx, r))
-	s.notify.Push(notify.PushEvent{Name: "request.created", ID: r.ID, Admins: true, Skip: u.ID})
+	s.notify.Push(notify.PushEvent{Name: "request.created", ID: r.ID, Subject: r.Title, Admins: true, Skip: u.ID})
 
 	if u.Role == store.RoleAdmin {
 		v, err := s.Approve(ctx, u, r.ID, p.Overrides)
@@ -427,10 +428,10 @@ func (s *Service) Approve(ctx context.Context, by *store.User, id string, ov *Ov
 	s.changed(ctx, r)
 	if r.Status == store.StatusFailed {
 		s.notify.Dispatch(notify.RequestFailed, s.payload(ctx, r))
-		s.notify.Push(notify.PushEvent{Name: "request.failed", ID: r.ID, Users: []string{r.RequestedBy}, Skip: by.ID})
+		s.notify.Push(notify.PushEvent{Name: "request.failed", ID: r.ID, Subject: r.Title, Users: []string{r.RequestedBy}, Skip: by.ID})
 	} else {
 		s.notify.Dispatch(notify.RequestApproved, s.payload(ctx, r))
-		s.notify.Push(notify.PushEvent{Name: "request.approved", ID: r.ID, Users: []string{r.RequestedBy}, Skip: by.ID})
+		s.notify.Push(notify.PushEvent{Name: "request.approved", ID: r.ID, Subject: r.Title, Users: []string{r.RequestedBy}, Skip: by.ID})
 	}
 	return s.view(ctx, r)
 }
@@ -499,7 +500,7 @@ func (s *Service) Decline(ctx context.Context, by *store.User, id, reason string
 	}
 	s.changed(ctx, r)
 	s.notify.Dispatch(notify.RequestDeclined, s.payload(ctx, r))
-	s.notify.Push(notify.PushEvent{Name: "request.declined", ID: r.ID, Users: []string{r.RequestedBy}, Skip: by.ID})
+	s.notify.Push(notify.PushEvent{Name: "request.declined", ID: r.ID, Subject: r.Title, Users: []string{r.RequestedBy}, Skip: by.ID})
 	return s.view(ctx, r)
 }
 
@@ -666,4 +667,21 @@ func (s *Service) UsersMayChooseFolder(ctx context.Context) bool {
 
 func (s *Service) mayChooseFolder(ctx context.Context, u *store.User) bool {
 	return u.Role == store.RoleAdmin || s.UsersMayChooseFolder(ctx)
+}
+
+// localizePosters swaps the poster stored with each request (the language it was made in, or an import's)
+// for TMDB's poster in the viewer's language, so a title looks the same everywhere.
+func (s *Service) localizePosters(ctx context.Context, u *store.User, items []View) {
+	if s.media == nil || len(items) == 0 {
+		return
+	}
+	refs := make([]media.PosterRef, len(items))
+	for i, it := range items {
+		refs[i] = media.PosterRef{Type: it.Type, TMDBID: it.TMDBID}
+	}
+	for i, path := range s.media.Posters(ctx, media.Opts{Language: u.Language, Region: u.Region}, refs) {
+		if path != "" {
+			items[i].PosterPath = path
+		}
+	}
 }

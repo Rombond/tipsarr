@@ -840,3 +840,35 @@ func (s *Service) Localize(ctx context.Context, o Opts, items []Item) {
 	}
 	wg.Wait()
 }
+
+// PosterRef identifies a title for Posters.
+type PosterRef struct {
+	Type   string // movie or tv
+	TMDBID int
+}
+
+// Posters returns the TMDB poster path of each title in the person's language ("" when TMDB has none or
+// the call failed). It reads TMDB's cached basic details, a few at a time, for lists whose own posters
+// come from somewhere else (Jellyfin's library images, snapshots stored when a request was made).
+func (s *Service) Posters(ctx context.Context, o Opts, refs []PosterRef) []string {
+	out := make([]string, len(refs))
+	lang := o.lang()
+	sem := make(chan struct{}, 6)
+	var wg sync.WaitGroup
+	for i, ref := range refs {
+		if ref.TMDBID <= 0 || (ref.Type != "movie" && ref.Type != "tv") {
+			continue
+		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(i int, ref PosterRef) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			if b, err := s.basic(ctx, ref.Type, ref.TMDBID, lang); err == nil {
+				out[i] = b.PosterPath
+			}
+		}(i, ref)
+	}
+	wg.Wait()
+	return out
+}

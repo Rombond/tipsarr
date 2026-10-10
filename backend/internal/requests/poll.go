@@ -82,7 +82,7 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 			}
 			s.changed(ctx, r)
 			s.notify.Dispatch(notify.RequestFailed, s.payload(ctx, r))
-			s.notify.Push(notify.PushEvent{Name: "request.failed", ID: r.ID, Users: []string{r.RequestedBy}})
+			s.notify.Push(notify.PushEvent{Name: "request.failed", ID: r.ID, Subject: r.Title, Users: []string{r.RequestedBy}})
 			return nil
 		}
 		slog.Warn("poll request", "id", r.ID, "err", err)
@@ -98,7 +98,7 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 		s.changed(ctx, r)
 		s.hub.Publish("media.available", r.RequestedBy, map[string]any{"type": r.MediaType, "tmdbId": r.TMDBID}, false)
 		s.notify.Dispatch(notify.MediaAvailable, s.payload(ctx, r))
-		s.notify.Push(notify.PushEvent{Name: "request.available", ID: r.ID, Users: []string{r.RequestedBy}})
+		s.notify.Push(notify.PushEvent{Name: "request.available", ID: r.ID, Subject: r.Title, Users: []string{r.RequestedBy}})
 		return nil
 	}
 

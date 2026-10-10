@@ -305,3 +305,25 @@ func TestValidURL(t *testing.T) {
 		}
 	}
 }
+
+func TestAlertTextOnlyWhenEnabled(t *testing.T) {
+	f := setup(t, false)
+	f.device(t, "bob", "s2", "ios", "tok-bob", "fr", store.PushAll)
+	ctx := context.Background()
+	ev := notify.PushEvent{Name: "request.approved", ID: "7", Users: []string{"bob"}, Subject: "Inception"}
+
+	if err := f.svc.send(ctx, ev); err != nil {
+		t.Fatal(err)
+	}
+	if it := f.rel.got()[0]; it.Title != "" || it.Body != "" {
+		t.Fatalf("text sent while off: %+v", it)
+	}
+
+	f.st.SetSetting(ctx, SettingText, "true")
+	if err := f.svc.send(ctx, ev); err != nil {
+		t.Fatal(err)
+	}
+	if it := f.rel.got()[1]; it.Title != "Demande approuvée" || it.Body != "Inception" {
+		t.Fatalf("%+v", it)
+	}
+}

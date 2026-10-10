@@ -108,7 +108,7 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*I
 	}
 	s.changed(i)
 	s.notify.Dispatch(notify.IssueCreated, map[string]any{"issue": v.IssueView, "message": msg})
-	s.notify.Push(notify.PushEvent{Name: "issue.created", ID: i.ID, Admins: true, Skip: u.ID})
+	s.notify.Push(notify.PushEvent{Name: "issue.created", ID: i.ID, Subject: i.Title, Admins: true, Skip: u.ID})
 	return v, nil
 }
 
@@ -251,7 +251,7 @@ func (s *Service) Comment(ctx context.Context, u *store.User, id, message string
 	}
 	s.changed(i)
 	s.notify.Dispatch(notify.IssueCommented, map[string]any{"issue": d.IssueView, "comment": msg, "by": IssueUser{ID: u.ID, Name: u.Name}})
-	s.notify.Push(notify.PushEvent{Name: "issue.comment", ID: i.ID, Users: []string{i.CreatedBy}, Admins: true, Skip: u.ID})
+	s.notify.Push(notify.PushEvent{Name: "issue.comment", ID: i.ID, Subject: i.Title, Users: []string{i.CreatedBy}, Admins: true, Skip: u.ID})
 	return d, nil
 }
 
@@ -279,7 +279,7 @@ func (s *Service) SetResolved(ctx context.Context, u *store.User, id string, res
 	s.changed(i)
 	if resolved {
 		s.notify.Dispatch(notify.IssueResolved, map[string]any{"issue": d.IssueView})
-		s.notify.Push(notify.PushEvent{Name: "issue.resolved", ID: i.ID, Users: []string{i.CreatedBy}, Skip: u.ID})
+		s.notify.Push(notify.PushEvent{Name: "issue.resolved", ID: i.ID, Subject: i.Title, Users: []string{i.CreatedBy}, Skip: u.ID})
 	}
 	return d, nil
 }

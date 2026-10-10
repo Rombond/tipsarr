@@ -658,7 +658,7 @@ export interface paths {
         };
         /**
          * Browse what is in Jellyfin, with filters and sorting
-         * @description Data comes from the library sync (genres, year, rating, runtime, date added from Jellyfin). `genre` may be repeated: a title must have all of them. `watched` is about the logged-in user.
+         * @description Data comes from the library sync (genres, year, rating, runtime, date added from Jellyfin). `genre` may be repeated: with `genreMode=all` (default) a title must have all of them, with `any` at least one. `watched` is about the logged-in user.
          */
         get: operations["listLibrary"];
         put?: never;
@@ -1700,6 +1700,8 @@ export interface components {
             title: string;
             /** Format: int64 */
             tmdbId: number;
+            /** @description TMDB poster in the person's language; apps prefer it to posterUrl so every screen shows the same poster */
+            tmdbPosterPath?: string;
             /** @enum {string} */
             type: "movie" | "tv";
             /**
@@ -2043,6 +2045,8 @@ export interface components {
             pushRelayKeyConfigured: boolean;
             /** @description Address of the push relay, e.g. https://push.example.org */
             pushRelayUrl: string;
+            /** @description Alerts name the media (needs a relay that allows free text for this app); off: generic alerts */
+            pushText: boolean;
             /** @description Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only) */
             servarrAutoImport: boolean;
             /** @description Secrets are write-only; this only says whether a key is saved */
@@ -2267,6 +2271,7 @@ export interface components {
             pushRelayKey?: string;
             /** @description Empty string clears it (and turns push off) */
             pushRelayUrl?: string;
+            pushText?: boolean;
             servarrAutoImport?: boolean;
             /** @description Set or replace the TMDB key (empty string clears it) */
             tmdbApiKey?: string;
@@ -5033,8 +5038,10 @@ export interface operations {
                 type?: "all" | "movie" | "tv";
                 /** @description Part of the title */
                 q?: string;
-                /** @description Repeat for several; all must match */
+                /** @description Repeat for several; see genreMode */
                 genre?: string[];
+                /** @description Titles must have all the genres, or at least one */
+                genreMode?: "all" | "any";
                 yearFrom?: number;
                 yearTo?: number;
                 minRating?: number;

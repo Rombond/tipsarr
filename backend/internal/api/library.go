@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -22,6 +23,7 @@ type libraryItem struct {
 	Genres     []string `json:"genres"`
 	AddedAt    int64    `json:"addedAt" doc:"When Jellyfin added it (unix seconds)"`
 	PosterURL  string   `json:"posterUrl,omitempty" doc:"Poster served from Jellyfin through Tipsarr"`
+	TMDBPoster string   `json:"tmdbPosterPath,omitempty" doc:"TMDB poster in the person's language; apps prefer it to posterUrl so every screen shows the same poster"`
 	Plays      int      `json:"plays" doc:"Total plays by everyone"`
 	Viewers    int      `json:"viewers" doc:"People who watched it"`
 	Watched    bool     `json:"watched" doc:"The logged-in user watched it"`
@@ -59,12 +61,13 @@ func registerLibrary(api huma.API, d Deps) {
 	huma.Register(api, huma.Operation{
 		OperationID: "listLibrary", Method: http.MethodGet, Path: "/library",
 		Summary:     "Browse what is in Jellyfin, with filters and sorting",
-		Description: "Data comes from the library sync (genres, year, rating, runtime, date added from Jellyfin). `genre` may be repeated: a title must have all of them. `watched` is about the logged-in user.",
+		Description: "Data comes from the library sync (genres, year, rating, runtime, date added from Jellyfin). `genre` may be repeated: with `genreMode=all` (default) a title must have all of them, with `any` at least one. `watched` is about the logged-in user.",
 		Tags:        []string{"library"}, Security: sec, Errors: []int{http.StatusUnauthorized, http.StatusForbidden},
 	}, func(ctx context.Context, in *struct {
 		Type       string   `query:"type" enum:"all,movie,tv" default:"all"`
 		Q          string   `query:"q" maxLength:"100" doc:"Part of the title"`
-		Genre      []string `query:"genre,explode" maxItems:"6" doc:"Repeat for several; all must match"`
+		Genre      []string `query:"genre,explode" maxItems:"6" doc:"Repeat for several; see genreMode"`
+		GenreMode  string   `query:"genreMode" enum:"all,any" default:"all" doc:"Titles must have all the genres, or at least one"`
 		YearFrom   int      `query:"yearFrom" minimum:"0" maximum:"2200"`
 		YearTo     int      `query:"yearTo" minimum:"0" maximum:"2200"`
 		MinRating  float64  `query:"minRating" minimum:"0" maximum:"10"`
@@ -85,6 +88,7 @@ func registerLibrary(api huma.API, d Deps) {
 		}
 		f := storeFilter(u.ID, in.Type, in.Q, in.Genre, in.YearFrom, in.YearTo, int(in.MinRating*10+0.5), in.MaxRuntime, in.Watched, in.Sort, in.Dir == "desc", (in.Page-1)*in.PageSize, in.PageSize)
 		f.Nobody = in.Nobody
+		f.AnyGenre = in.GenreMode == "any"
 		rows, total, err := d.Store.ListLibrary(ctx, f)
 		if err != nil {
 			return nil, err
@@ -102,6 +106,13 @@ func registerLibrary(api huma.API, d Deps) {
 				it.PosterURL = "/api/v1/images/jellyfin/" + r.JellyfinID + "?tag=" + r.ImageTag
 			}
 			out.Items = append(out.Items, it)
+		}
+		refs := make([]media.PosterRef, len(out.Items))
+		for i, it := range out.Items {
+			refs[i] = media.PosterRef{Type: it.Type, TMDBID: int(it.TMDBID)}
+		}
+		for i, path := range d.Media.Posters(ctx, media.Opts{Language: u.Language, Region: u.Region}, refs) {
+			out.Items[i].TMDBPoster = path
 		}
 		return &struct{ Body libraryList }{out}, nil
 	})
