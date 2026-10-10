@@ -280,3 +280,50 @@ func (s *Store) ActiveRequestStatuses(ctx context.Context, mediaType string, ids
 	}
 	return out, nil
 }
+
+// RequestsAwaitingAlert lists requests that turned available but whose alert has not been handled.
+func (s *Store) RequestsAwaitingAlert(ctx context.Context) ([]Request, error) {
+	var rows []Request
+	return rows, s.DB.NewSelect().Model(&rows).Where("status = ?", StatusAvailable).Where("notified_at = 0").Where("available_at > 0").Scan(ctx)
+}
+
+// MarkRequestAlerted records that the alert of a request was sent (or deliberately skipped).
+func (s *Store) MarkRequestAlerted(ctx context.Context, id string, at int64) error {
+	_, err := s.DB.NewUpdate().Model((*Request)(nil)).Set("notified_at = ?", at).Where("id = ?", id).Exec(ctx)
+	return err
+}
+
+// RequestSeasonRows returns the season rows of one request, ordered by season.
+func (s *Store) RequestSeasonRows(ctx context.Context, id string) ([]RequestSeason, error) {
+	var rows []RequestSeason
+	return rows, s.DB.NewSelect().Model(&rows).Where("request_id = ?", id).Order("season_number").Scan(ctx)
+}
+
+// MarkSeasonDone stamps a season as complete once; it reports whether this call was the one that did it.
+func (s *Store) MarkSeasonDone(ctx context.Context, id string, season int, at int64) (bool, error) {
+	res, err := s.DB.NewUpdate().Model((*RequestSeason)(nil)).Set("done_at = ?", at).
+		Where("request_id = ?", id).Where("season_number = ?", season).Where("done_at = 0").Exec(ctx)
+	if err != nil {
+		return false, err
+	}
+	n, _ := res.RowsAffected()
+	return n > 0, nil
+}
+
+// MarkSeasonsAlerted records that the alert of these seasons was handled.
+func (s *Store) MarkSeasonsAlerted(ctx context.Context, id string, seasons []int, at int64) error {
+	if len(seasons) == 0 {
+		return nil
+	}
+	_, err := s.DB.NewUpdate().Model((*RequestSeason)(nil)).Set("notified_at = ?", at).
+		Where("request_id = ?", id).Where("season_number IN (?)", bun.In(seasons)).Exec(ctx)
+	return err
+}
+
+// SeasonsAwaitingAlert lists complete seasons of requests that are still in flight whose alert is due.
+func (s *Store) SeasonsAwaitingAlert(ctx context.Context) ([]RequestSeason, error) {
+	var rows []RequestSeason
+	err := s.DB.NewRaw(`SELECT rs.request_id, rs.season_number, rs.done_at, rs.notified_at FROM request_seasons rs
+		JOIN requests r ON r.id = rs.request_id WHERE r.status = ? AND rs.done_at > 0 AND rs.notified_at = 0`, StatusApproved).Scan(ctx, &rows)
+	return rows, err
+}

@@ -180,9 +180,11 @@ type Request struct {
 	SentAt        int64  `bun:"sent_at"`
 	DryRun        int    `bun:"dry_run"`
 	Error         string `bun:"error"`
-	ProfileID     int    `bun:"profile_id"`  // chosen quality profile, 0 = instance default
-	RootFolder    string `bun:"root_folder"` // chosen root folder, "" = instance default
-	Source        string `bun:"source"`      // "" = a user asked; "radarr"/"sonarr" = imported from what they monitor
+	ProfileID     int    `bun:"profile_id"`   // chosen quality profile, 0 = instance default
+	RootFolder    string `bun:"root_folder"`  // chosen root folder, "" = instance default
+	Source        string `bun:"source"`       // "" = a user asked; "radarr"/"sonarr" = imported from what they monitor
+	AvailableAt   int64  `bun:"available_at"` // when the request turned available
+	NotifiedAt    int64  `bun:"notified_at"`  // when its "now available" alert was handled, 0 = still due
 	CreatedAt     int64  `bun:"created_at"`
 	UpdatedAt     int64  `bun:"updated_at"`
 }
@@ -192,6 +194,8 @@ type RequestSeason struct {
 
 	RequestID    string `bun:"request_id,pk"`
 	SeasonNumber int    `bun:"season_number,pk"`
+	DoneAt       int64  `bun:"done_at"`     // when every episode of the season was on disk, 0 = not yet
+	NotifiedAt   int64  `bun:"notified_at"` // when the season's own alert was handled
 }
 
 type Webhook struct {

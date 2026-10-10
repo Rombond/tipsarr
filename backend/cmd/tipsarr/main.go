@@ -107,6 +107,7 @@ func run(cfg config.Config) error {
 	box := boxoffice.New(st, mediaSvc, "")
 	jm.Register(jobs.Job{Name: "boxoffice-refresh", Every: 12 * time.Hour, InitialDelay: time.Minute, Run: box.Refresh})
 	reqSvc := requests.New(st, mediaSvc, hub, notifier, cfg.DryRun)
+	reqSvc.SetLibrary(lib)
 	jm.Register(jobs.Job{Name: "request-poll", Every: 15 * time.Second, InitialDelay: 20 * time.Second, Quiet: true, Run: func(ctx context.Context) (string, error) {
 		n, err := reqSvc.Poll(ctx)
 		return fmt.Sprintf("%d requests in flight", n), err

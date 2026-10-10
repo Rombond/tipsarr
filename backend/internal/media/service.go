@@ -420,6 +420,7 @@ type rawDetail struct {
 			Site     string `json:"site"`
 			Type     string `json:"type"`
 			Official bool   `json:"official"`
+			Language string `json:"iso_639_1"`
 		} `json:"results"`
 	} `json:"videos"`
 	Credits struct {
@@ -441,7 +442,7 @@ type rawDetail struct {
 }
 
 func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) (*Detail, error) {
-	q := url.Values{"language": {o.lang()}, "append_to_response": {"credits,recommendations,similar,external_ids,videos,keywords,reviews"}, "include_video_language": {"en,null"}}
+	q := url.Values{"language": {o.lang()}, "append_to_response": {"credits,recommendations,similar,external_ids,videos,keywords,reviews"}, "include_video_language": {videoLanguages(o.lang())}}
 	var raw rawDetail
 	if err := s.get(ctx, "/"+mediaType+"/"+strconv.Itoa(id), q, ttlDetail, &raw); err != nil {
 		return nil, err
@@ -507,7 +508,7 @@ func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) 
 	if d.Overview == "" && !isEnglish(o.lang()) {
 		d.Overview = s.englishOverview(ctx, mediaType, id)
 	}
-	d.TrailerKey = pickTrailer(raw)
+	d.TrailerKey = pickTrailer(raw, o.lang())
 	d.Budget, d.Revenue = raw.Budget, raw.Revenue
 	if mediaType == "tv" {
 		for _, n := range raw.Networks {
@@ -689,21 +690,49 @@ func (s *Service) TrendingItems(ctx context.Context, o Opts, page int) ([]Item, 
 	return raw.toList("").Items, nil
 }
 
-// pickTrailer returns the YouTube key of the best trailer: official first, then any trailer.
-func pickTrailer(raw rawDetail) string {
-	fallback := ""
+// videoLanguages is the include_video_language value: the user's language, English, and
+// videos without a language (TMDB drops everything else).
+func videoLanguages(lang string) string {
+	code := langCode(lang)
+	if code == "en" {
+		return "en,null"
+	}
+	return code + ",en,null"
+}
+
+// langCode is the two-letter part of a TMDB language such as fr-FR.
+func langCode(lang string) string {
+	code, _, _ := strings.Cut(lang, "-")
+	return strings.ToLower(code)
+}
+
+// pickTrailer returns the YouTube key of the best trailer for the user's language: official
+// trailer in that language, any trailer in it, official English, any English, then the rest
+// (videos without a language first).
+func pickTrailer(raw rawDetail, lang string) string {
+	want := langCode(lang)
+	best, bestRank := "", -1
 	for _, v := range raw.Videos.Results {
 		if v.Site != "YouTube" || v.Type != "Trailer" {
 			continue
 		}
-		if v.Official {
-			return v.Key
+		rank := 0 // a language outranks an official flag: 6 = user's language, 4 = English, 2 = no language
+		switch v.Language {
+		case want:
+			rank = 6
+		case "en":
+			rank = 4
+		case "":
+			rank = 2
 		}
-		if fallback == "" {
-			fallback = v.Key
+		if v.Official {
+			rank++
+		}
+		if rank > bestRank {
+			best, bestRank = v.Key, rank
 		}
 	}
-	return fallback
+	return best
 }
 
 // Settings read by watchURL.

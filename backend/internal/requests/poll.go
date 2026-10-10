@@ -16,6 +16,9 @@ import (
 // is safe in dry-run mode (and in dry-run no request is ever "sent", so there is nothing to poll).
 // It returns the number of in-flight requests it looked at.
 func (s *Service) Poll(ctx context.Context) (int, error) {
+	if err := s.SendDueAlerts(ctx); err != nil {
+		slog.Warn("send due alerts", "err", err)
+	}
 	inflight, err := s.store.InFlightRequests(ctx)
 	if err != nil || len(inflight) == 0 {
 		return 0, err
@@ -91,14 +94,15 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 
 	if done {
 		r.Status = store.StatusAvailable
+		r.AvailableAt = s.now().Unix()
 		s.clearProgress(r.ID)
 		if err := s.store.UpdateRequest(ctx, r); err != nil {
 			return err
 		}
 		s.changed(ctx, r)
 		s.hub.Publish("media.available", r.RequestedBy, map[string]any{"type": r.MediaType, "tmdbId": r.TMDBID}, false)
-		s.notify.Dispatch(notify.MediaAvailable, s.payload(ctx, r))
-		s.notify.Push(notify.PushEvent{Name: "request.available", ID: r.ID, Subject: r.Title, Users: []string{r.RequestedBy}})
+		// The webhook and the push wait in SendDueAlerts until the library shows the title.
+		s.refreshLibrary()
 		return nil
 	}
 
@@ -121,6 +125,9 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 		s.seasons[r.ID] = seasons
 	}
 	s.mu.Unlock()
+	if r.MediaType == "tv" {
+		s.noteSeasons(ctx, r, seasons)
+	}
 	seasonsChanged := r.MediaType == "tv" && !slices.Equal(prevSeasons, seasons)
 	if downloading && (!had || prev != cur) {
 		s.hub.Publish("request.progress", r.RequestedBy, map[string]any{"id": r.ID, "percent": cur.Percent, "etaSeconds": cur.ETASeconds}, false)

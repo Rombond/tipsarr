@@ -45,13 +45,18 @@ type Service struct {
 	// newServarr builds a client for an instance; swapped in tests.
 	newServarr func(in *store.ServarrInstance) *servarr.Client
 
+	lib        LibraryRefresher
+	now        func() time.Time
+	titleHold  time.Duration
+	seasonHold time.Duration
+
 	mu       sync.Mutex
 	progress map[string]Progress
 	seasons  map[string][]SeasonProgress // shows: per-season completion while in flight
 }
 
 func New(s *store.Store, m *media.Service, h *events.Hub, n *notify.Service, dryRun bool) *Service {
-	svc := &Service{store: s, media: m, hub: h, notify: n, dryRun: dryRun, progress: map[string]Progress{}, seasons: map[string][]SeasonProgress{}}
+	svc := &Service{store: s, media: m, hub: h, notify: n, dryRun: dryRun, progress: map[string]Progress{}, seasons: map[string][]SeasonProgress{}, now: time.Now, titleHold: titleHold, seasonHold: seasonHold}
 	svc.newServarr = func(in *store.ServarrInstance) *servarr.Client {
 		return servarr.New(in.Kind, in.URL, in.APIKey, dryRun)
 	}
