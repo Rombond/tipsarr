@@ -126,7 +126,7 @@
 					{#if profile.hasUploadedAvatar}<Button size="sm" variant="ghost" disabled={uploading} onclick={removePicture}>{t('profile.remove_picture')}</Button>{/if}
 				</div>
 			{/if}
-			{#if !self && auth.isAdmin}
+			{#if !self && auth.canManageUsers}
 				<a class="ml-auto text-sm underline" href="/admin/users">{t('profile.manage_user')}</a>
 			{/if}
 		</header>
@@ -168,7 +168,7 @@
 				{#if recent.length}
 					<div class="grid gap-3 xl:grid-cols-2">
 						{#each recent as r (r.id)}
-							<RequestRow request={r} isAdmin={false} />
+							<RequestRow request={r} canManage={false} />
 						{/each}
 					</div>
 				{:else}

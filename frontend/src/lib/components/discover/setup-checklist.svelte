@@ -20,7 +20,7 @@
 		} catch {
 			/* ignore */
 		}
-		if (!auth.isAdmin || dismissed) return;
+		if (!auth.canManageSettings || dismissed) return;
 		Promise.all([unwrap(api.GET('/admin/settings')), unwrap(api.GET('/admin/sync')), unwrap(api.GET('/admin/servarr'))])
 			.then(([s, y, i]) => {
 				settings = s;
@@ -54,7 +54,7 @@
 	}
 </script>
 
-{#if auth.isAdmin && ready && !dismissed && remaining > 0}
+{#if auth.canManageSettings && ready && !dismissed && remaining > 0}
 	<section class="rounded-xl border border-border bg-card p-4">
 		<div class="mb-2 flex items-start justify-between gap-2">
 			<div>

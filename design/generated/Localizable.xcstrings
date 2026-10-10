@@ -1829,6 +1829,22 @@
         }
       }
     },
+    "error.own_permissions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You cannot change your own permissions."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous ne pouvez pas modifier vos propres permissions."
+          }
+        }
+      }
+    },
     "error.own_role": {
       "localizations": {
         "en": {
@@ -1845,6 +1861,22 @@
         }
       }
     },
+    "error.permission_required": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You do not have permission to do this."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous n’avez pas la permission de faire ça."
+          }
+        }
+      }
+    },
     "error.push_not_configured": {
       "localizations": {
         "en": {
@@ -1857,6 +1889,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Renseignez l'adresse et la clé du relais avant d'activer le push."
+          }
+        }
+      }
+    },
+    "error.quota_reached": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You have reached your request limit for now."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous avez atteint votre limite de demandes pour le moment."
           }
         }
       }
@@ -7723,6 +7771,518 @@
         }
       }
     },
+    "perm.autoApprove": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-approve"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approbation automatique"
+          }
+        }
+      }
+    },
+    "perm.autoApprove.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requests are approved at once, without waiting for someone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les demandes sont approuvées tout de suite, sans attendre quelqu’un."
+          }
+        }
+      }
+    },
+    "perm.autoApproveMovie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-approve movies"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approbation automatique des films"
+          }
+        }
+      }
+    },
+    "perm.autoApproveMovie.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movie requests are approved at once."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les demandes de films sont approuvées tout de suite."
+          }
+        }
+      }
+    },
+    "perm.autoApproveTV": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-approve TV shows"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approbation automatique des séries"
+          }
+        }
+      }
+    },
+    "perm.autoApproveTV.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TV show requests are approved at once."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les demandes de séries sont approuvées tout de suite."
+          }
+        }
+      }
+    },
+    "perm.createIssues": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Report issues"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faire des signalements"
+          }
+        }
+      }
+    },
+    "perm.createIssues.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "May report a problem with a title."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peut signaler un problème sur un titre."
+          }
+        }
+      }
+    },
+    "perm.group.admin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Admin tools"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outils d’administration"
+          }
+        }
+      }
+    },
+    "perm.group.auto-approve": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-approve"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approbation automatique"
+          }
+        }
+      }
+    },
+    "perm.group.issues": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Issues"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signalements"
+          }
+        }
+      }
+    },
+    "perm.group.requests": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requests"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demandes"
+          }
+        }
+      }
+    },
+    "perm.manageIssues": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage issues"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gérer les signalements"
+          }
+        }
+      }
+    },
+    "perm.manageIssues.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comment on, resolve and delete any issue."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commenter, résoudre et supprimer tous les signalements."
+          }
+        }
+      }
+    },
+    "perm.manageRequests": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage requests"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gérer les demandes"
+          }
+        }
+      }
+    },
+    "perm.manageRequests.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approve, decline, retry and delete any request. No request limit. Includes auto-approve."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approuver, refuser, relancer et supprimer toutes les demandes. Aucune limite de demandes. Inclut l’approbation automatique."
+          }
+        }
+      }
+    },
+    "perm.manageSettings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage settings"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gérer les réglages"
+          }
+        }
+      }
+    },
+    "perm.manageSettings.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server settings, Radarr and Sonarr, webhooks and sync jobs."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réglages du serveur, Radarr et Sonarr, webhooks et tâches de synchronisation."
+          }
+        }
+      }
+    },
+    "perm.manageUsers": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage users"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gérer les utilisateurs"
+          }
+        }
+      }
+    },
+    "perm.manageUsers.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See the user list, change permissions and request limits, import users, see everyone's statistics."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir la liste des utilisateurs, changer les permissions et les limites de demandes, importer des utilisateurs, voir les statistiques de tout le monde."
+          }
+        }
+      }
+    },
+    "perm.request": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander"
+          }
+        }
+      }
+    },
+    "perm.request.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "May request movies and TV shows."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peut demander des films et des séries."
+          }
+        }
+      }
+    },
+    "perm.requestAdvanced": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Advanced requests"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demandes avancées"
+          }
+        }
+      }
+    },
+    "perm.requestAdvanced.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "May choose the folder of a request."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peut choisir le dossier d’une demande."
+          }
+        }
+      }
+    },
+    "perm.requestMovie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request movies"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander des films"
+          }
+        }
+      }
+    },
+    "perm.requestMovie.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "May request movies."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peut demander des films."
+          }
+        }
+      }
+    },
+    "perm.requestTV": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request TV shows"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander des séries"
+          }
+        }
+      }
+    },
+    "perm.requestTV.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "May request TV shows."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peut demander des séries."
+          }
+        }
+      }
+    },
+    "perm.requestView": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View all requests"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir toutes les demandes"
+          }
+        }
+      }
+    },
+    "perm.requestView.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sees everyone's requests, not only their own."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voit les demandes de tout le monde, pas seulement les siennes."
+          }
+        }
+      }
+    },
+    "perm.viewIssues": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View all issues"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir tous les signalements"
+          }
+        }
+      }
+    },
+    "perm.viewIssues.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sees everyone's issues, not only their own."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voit les signalements de tout le monde, pas seulement les siens."
+          }
+        }
+      }
+    },
     "person.biography": {
       "localizations": {
         "en": {
@@ -8945,6 +9505,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Profil de qualité"
+          }
+        }
+      }
+    },
+    "req.quota_movie": {
+      "comment": "placeholders: remaining, days, remaining, days",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ movie request left in the next %2$@ days | %1$@ movie requests left in the next %2$@ days"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ demande de film restante sur les %2$@ prochains jours | %1$@ demandes de films restantes sur les %2$@ prochains jours"
+          }
+        }
+      }
+    },
+    "req.quota_none": {
+      "comment": "placeholders: date",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You have used all your requests for now. You can request again from %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous avez utilisé toutes vos demandes pour le moment. Vous pourrez de nouveau demander à partir du %@."
+          }
+        }
+      }
+    },
+    "req.quota_tv": {
+      "comment": "placeholders: remaining, days, remaining, days",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ season left in the next %2$@ days | %1$@ seasons left in the next %2$@ days"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ saison restante sur les %2$@ prochains jours | %1$@ saisons restantes sur les %2$@ prochains jours"
           }
         }
       }
@@ -11698,6 +12309,38 @@
         }
       }
     },
+    "users.defaults_desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The permissions and request limits of people who sign in for the first time. People already here keep theirs. Only admins can change them."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les permissions et les limites de demandes des personnes qui se connectent pour la première fois. Les personnes déjà là gardent les leurs. Seuls les administrateurs peuvent les changer."
+          }
+        }
+      }
+    },
+    "users.defaults_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Defaults for new people"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valeurs par défaut des nouvelles personnes"
+          }
+        }
+      }
+    },
     "users.import": {
       "localizations": {
         "en": {
@@ -11760,6 +12403,199 @@
           "stringUnit": {
             "state": "translated",
             "value": "dernière connexion : %@"
+          }
+        }
+      }
+    },
+    "users.permissions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions"
+          }
+        }
+      }
+    },
+    "users.permissions_admin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Admins can do everything. Change the role to edit permissions."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les administrateurs peuvent tout faire. Changez le rôle pour modifier les permissions."
+          }
+        }
+      }
+    },
+    "users.permissions_keys": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only admins can give the keys to users and settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seuls les administrateurs peuvent donner les clés des utilisateurs et des réglages."
+          }
+        }
+      }
+    },
+    "users.permissions_own": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You cannot change your own permissions."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous ne pouvez pas modifier vos propres permissions."
+          }
+        }
+      }
+    },
+    "users.permissions_saved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions saved."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions enregistrées."
+          }
+        }
+      }
+    },
+    "users.permissions_title": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions for %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions de %@"
+          }
+        }
+      }
+    },
+    "users.quota_days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per (days)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Par (jours)"
+          }
+        }
+      }
+    },
+    "users.quota_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave a field empty to use the default. 0 means no limit."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laissez un champ vide pour utiliser la valeur par défaut. 0 veut dire aucune limite."
+          }
+        }
+      }
+    },
+    "users.quota_limit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limite"
+          }
+        }
+      }
+    },
+    "users.quota_movies": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movies"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Films"
+          }
+        }
+      }
+    },
+    "users.quota_shows": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TV show seasons"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisons de séries"
+          }
+        }
+      }
+    },
+    "users.quota_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request limits"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limites de demandes"
           }
         }
       }

@@ -10,11 +10,18 @@
 	import { Input } from '$lib/components/ui/input';
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 	import UserAvatar from '$lib/components/users/user-avatar.svelte';
+	import UserAccessDialog from '$lib/components/users/user-access-dialog.svelte';
+	import PermissionDefaults from '$lib/components/users/permission-defaults.svelte';
+	import type { Flag } from '$lib/permissions';
 
 	let users = $state<Schemas['User'][]>([]);
 	let error = $state<string | null>(null);
 	let message = $state<string | null>(null);
 	let busy = $state(false);
+	let flags = $state<Flag[]>([]);
+	let defaults = $state<Schemas['PermissionDefaults'] | null>(null);
+	let editing = $state<Schemas['User'] | null>(null);
+	let editOpen = $state(false);
 
 	async function load() {
 		try {
@@ -25,11 +32,15 @@
 	}
 
 	onMount(() => {
-		if (!auth.isAdmin) {
+		if (!auth.canManageUsers) {
 			goto('/discover');
 			return;
 		}
 		load();
+		unwrap(api.GET('/admin/permissions')).then((p) => {
+			flags = p.flags as Flag[];
+			defaults = p.defaults;
+		}).catch((e) => (error = errorText(e)));
 	});
 
 	async function patch(u: Schemas['User'], body: { role?: 'admin' | 'user'; region?: string; language?: string }) {
@@ -86,7 +97,7 @@
 				<SimpleSelect
 					label={t('users.role')}
 					value={u.role}
-					disabled={u.id === auth.user?.id}
+					disabled={u.id === auth.user?.id || !auth.isAdmin}
 					options={[{ value: 'user', label: t('users.role_user') }, { value: 'admin', label: t('users.role_admin') }]}
 					onchange={(v) => patch(u, { role: v as 'admin' | 'user' })}
 					class="h-8 min-w-24"
@@ -106,7 +117,22 @@
 					onchange={(v) => patch(u, { language: v })}
 					class="h-8 min-w-32"
 				/>
+				<Button variant="outline" size="sm" disabled={!flags.length} onclick={() => { editing = u; editOpen = true; }}>{t('users.permissions')}</Button>
 			</div>
 		{/each}
 	</div>
+
+	{#if defaults && flags.length}
+		<PermissionDefaults {flags} bind:defaults />
+	{/if}
 </div>
+
+{#if editing && flags.length}
+	<UserAccessDialog
+		bind:open={editOpen}
+		user={editing}
+		{flags}
+		{defaults}
+		onsaved={(updated) => (users = users.map((x) => (x.id === updated.id ? updated : x)))}
+	/>
+{/if}

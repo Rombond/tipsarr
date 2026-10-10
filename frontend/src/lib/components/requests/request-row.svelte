@@ -12,7 +12,7 @@
 
 	let {
 		request,
-		isAdmin,
+		canManage,
 		busy = false,
 		onApprove,
 		onDecline,
@@ -20,7 +20,7 @@
 		onChanged,
 	}: {
 		request: Schemas['View'];
-		isAdmin: boolean;
+		canManage: boolean;
 		busy?: boolean;
 		onApprove?: (r: Schemas['View']) => void;
 		onDecline?: (r: Schemas['View']) => void;
@@ -48,13 +48,13 @@
 			failed: t('req.stage.failed'),
 		}[request.stage],
 	);
-	const canDelete = $derived(isAdmin || ['pending', 'declined', 'failed'].includes(request.status));
+	const canDelete = $derived(canManage || ['pending', 'declined', 'failed'].includes(request.status));
 	// the requester and admins may change the quality profile until it is sent
-	const canEdit = $derived(!request.source && (request.status === 'pending' || request.status === 'failed') && (isAdmin || request.requestedBy.id === auth.user?.id));
-	const canDecide = $derived(isAdmin && (request.status === 'pending' || request.status === 'failed'));
+	const canEdit = $derived(!request.source && (request.status === 'pending' || request.status === 'failed') && (canManage || request.requestedBy.id === auth.user?.id));
+	const canDecide = $derived(canManage && (request.status === 'pending' || request.status === 'failed'));
 
 	// a profile opens for yourself, or for any user when you are an admin
-	const canOpen = (id: string) => !!id && (auth.isAdmin || id === auth.user?.id);
+	const canOpen = (id: string) => !!id && (auth.canViewRequests || id === auth.user?.id);
 </script>
 
 {#snippet person(u: { id: string; name: string })}

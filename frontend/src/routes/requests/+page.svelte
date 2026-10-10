@@ -132,7 +132,7 @@
 <div class="grid grid-cols-[minmax(0,1fr)] gap-4">
 	<div class="flex flex-wrap items-center justify-between gap-2">
 		<h1 class="font-bold text-3xl">{t('requests.title')}</h1>
-		{#if auth.isAdmin && filter === 'pending' && items.length > 1}
+		{#if auth.canManageRequests && filter === 'pending' && items.length > 1}
 			<Button size="sm" disabled={approvingAll} onclick={approveAll}>{approvingAll ? t('requests.approving') : t('requests.approve_all', { count: items.length })}</Button>
 		{/if}
 	</div>
@@ -167,7 +167,7 @@
 	{:else}
 		<div class="grid gap-3 xl:grid-cols-2">
 			{#each items as r (r.id)}
-				<RequestRow request={r} isAdmin={auth.isAdmin} busy={busyId === r.id} onApprove={approve} onDecline={(x) => (declining = x)} onDelete={remove} onChanged={() => load(false)} />
+				<RequestRow request={r} canManage={auth.canManageRequests} busy={busyId === r.id} onApprove={approve} onDecline={(x) => (declining = x)} onDelete={remove} onChanged={() => load(false)} />
 			{/each}
 		</div>
 		<p class="text-xs text-muted-foreground">{t('requests.total', { count: total })}</p>

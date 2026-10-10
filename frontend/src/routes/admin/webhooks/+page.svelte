@@ -32,7 +32,7 @@
 	}
 
 	onMount(() => {
-		if (!auth.isAdmin) {
+		if (!auth.canManageSettings) {
 			goto('/discover');
 			return;
 		}

@@ -15,6 +15,7 @@
 		options = null,
 		busy = false,
 		error = null,
+		quotaText = '',
 		onsubmit,
 	}: {
 		open?: boolean;
@@ -25,6 +26,8 @@
 		options?: Schemas['Options'] | null;
 		busy?: boolean;
 		error?: string | null;
+		/** What is left of the person's request limit, empty when there is none. */
+		quotaText?: string;
 		onsubmit: (choice: RequestChoice) => void;
 	} = $props();
 
@@ -64,6 +67,7 @@
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>{title ? t('req.dialog_title', { title }) : t('req.which_seasons')}</Dialog.Title>
+			{#if quotaText}<Dialog.Description>{quotaText}</Dialog.Description>{/if}
 		</Dialog.Header>
 
 		{#if askSeasons}

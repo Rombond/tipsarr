@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/stats"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -13,7 +14,7 @@ func registerStats(api huma.API, d Deps) {
 		OperationID: "getStats", Method: http.MethodGet, Path: "/stats",
 		Summary: "Watching and request statistics",
 		Description: "Exact when Jellyfin's Playback Reporting plugin is installed (its plays are copied into Tipsarr), " +
-			"otherwise estimated from the watch history. People see their own numbers; `user` and `all` are admin only.",
+			"otherwise estimated from the watch history. People see their own numbers; `user` and `all` need the manage-users right.",
 		Tags: []string{"stats"}, Security: []map[string][]string{{"session": {}}, {"bearer": {}}},
 		Errors: []int{http.StatusUnauthorized, http.StatusForbidden},
 	}, func(ctx context.Context, in *struct {
@@ -27,14 +28,14 @@ func registerStats(api huma.API, d Deps) {
 		target := u.ID
 		switch {
 		case in.User == "" || in.User == u.ID:
-		case u.Role != "admin":
-			return nil, fail(403, "admin_only", "admin only")
+		case !u.Can(perms.ManageUsers):
+			return nil, fail(403, "permission_required", "you do not have permission to do this")
 		case in.User == "all":
 			target = ""
 		default:
 			target = in.User
 		}
-		res, err := d.Stats.Compute(ctx, target, in.Period, u.Role == "admin")
+		res, err := d.Stats.Compute(ctx, target, in.Period, u.Can(perms.ManageUsers))
 		if err != nil {
 			return nil, err
 		}

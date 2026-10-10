@@ -25,7 +25,7 @@
 	import LibraryIcon from '@lucide/svelte/icons/library-big';
 	import StatsIcon from '@lucide/svelte/icons/chart-column';
 
-	type NavItem = { href: string; key: Key; icon: typeof CompassIcon };
+	type NavItem = { href: string; key: Key; icon: typeof CompassIcon; needs?: 'users' | 'settings' };
 	const browse: NavItem[] = [
 		{ href: '/discover', key: 'nav.discover', icon: CompassIcon },
 		{ href: '/boxoffice', key: 'nav.boxoffice', icon: TicketIcon },
@@ -36,11 +36,12 @@
 		{ href: '/issues', key: 'nav.issues', icon: FlagIcon },
 	];
 	const admin: NavItem[] = [
-		{ href: '/admin/users', key: 'nav.users', icon: UsersIcon },
-		{ href: '/admin/services', key: 'nav.services', icon: ServerIcon },
-		{ href: '/admin/webhooks', key: 'nav.webhooks', icon: BellIcon },
-		{ href: '/admin/settings', key: 'nav.settings', icon: SettingsIcon },
+		{ href: '/admin/users', key: 'nav.users', icon: UsersIcon, needs: 'users' },
+		{ href: '/admin/services', key: 'nav.services', icon: ServerIcon, needs: 'settings' },
+		{ href: '/admin/webhooks', key: 'nav.webhooks', icon: BellIcon, needs: 'settings' },
+		{ href: '/admin/settings', key: 'nav.settings', icon: SettingsIcon, needs: 'settings' },
 	];
+	const adminItems = $derived(admin.filter((it) => (it.needs === 'users' ? auth.canManageUsers : auth.canManageSettings)));
 
 	const sidebar = Sidebar.useSidebar();
 
@@ -65,9 +66,9 @@
 				</a>
 			{/snippet}
 		</Sidebar.MenuButton>
-		{#if it.href === '/requests' && auth.isAdmin && counts.pending > 0}
+		{#if it.href === '/requests' && auth.canManageRequests && counts.pending > 0}
 			<Sidebar.MenuBadge>{counts.pending}</Sidebar.MenuBadge>
-		{:else if it.href === '/issues' && auth.isAdmin && counts.issues > 0}
+		{:else if it.href === '/issues' && auth.canViewIssues && counts.issues > 0}
 			<Sidebar.MenuBadge>{counts.issues}</Sidebar.MenuBadge>
 		{/if}
 	</Sidebar.MenuItem>
@@ -87,11 +88,11 @@
 				{#each browse as it (it.href)}{@render item(it)}{/each}
 			</Sidebar.Menu>
 		</Sidebar.Group>
-		{#if auth.isAdmin}
+		{#if auth.canAdminister}
 			<Sidebar.Group class="px-3 py-3">
 				<Sidebar.GroupLabel class="px-3 text-xs font-semibold uppercase tracking-wider">{t('nav.admin')}</Sidebar.GroupLabel>
 				<Sidebar.Menu class="gap-1">
-					{#each admin as it (it.href)}{@render item(it)}{/each}
+					{#each adminItems as it (it.href)}{@render item(it)}{/each}
 				</Sidebar.Menu>
 			</Sidebar.Group>
 		{/if}

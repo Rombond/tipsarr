@@ -48,7 +48,7 @@
 <div class="grid grid-cols-[minmax(0,1fr)] gap-4">
 	<div>
 		<h1 class="font-bold text-3xl">{t('issue.title')}</h1>
-		<p class="text-sm text-muted-foreground">{auth.isAdmin ? t('issue.subtitle_admin') : t('issue.subtitle')}</p>
+		<p class="text-sm text-muted-foreground">{auth.canViewIssues ? t('issue.subtitle_admin') : t('issue.subtitle')}</p>
 	</div>
 
 	<div class="flex gap-1" role="tablist" aria-label={t('issue.title')}>

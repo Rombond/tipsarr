@@ -40,7 +40,7 @@
 			unwatched = mine?.items ?? [];
 			unwatchedTotal = mine?.total ?? 0;
 			// library clean-up (admins): titles nobody ever watched, oldest first
-			if (auth.isAdmin) {
+			if (auth.canManageUsers) {
 				const lib = await unwrap(api.GET('/library', { params: { query: { neverWatched: true, sort: 'added', dir: 'asc', pageSize: 30 } } })).catch(() => null);
 				neverWatched = lib?.items ?? [];
 				neverTotal = lib?.total ?? 0;
@@ -53,7 +53,7 @@
 	}
 
 	onMount(() => {
-		if (auth.isAdmin) {
+		if (auth.canManageUsers) {
 			unwrap(api.GET('/admin/users')).then((u) => (users = u)).catch(() => {});
 			unwrap(api.GET('/admin/settings')).then((s) => (jellyfinLink = (s.jellyfinPublicUrl || s.jellyfinUrl).replace(/\/$/, ''))).catch(() => {});
 		}
@@ -104,7 +104,7 @@
 			</p>
 		</div>
 		<div class="flex flex-wrap items-center gap-2">
-			{#if auth.isAdmin && users.length}
+			{#if auth.canManageUsers && users.length}
 				<SimpleSelect label={t('stats.user')} value={user} options={userOptions} onchange={(v) => (user = v)} class="w-44" />
 			{/if}
 			{#if plugin}
@@ -217,7 +217,7 @@
 		<Card>
 			<CardHeader>
 				<CardTitle>{t('stats.unwatched_title')}</CardTitle>
-				<CardDescription>{user === '' || !auth.isAdmin ? t('stats.unwatched_mine') : t('stats.unwatched_others')}</CardDescription>
+				<CardDescription>{user === '' || !auth.canManageUsers ? t('stats.unwatched_mine') : t('stats.unwatched_others')}</CardDescription>
 			</CardHeader>
 			<CardContent class="grid gap-2">
 				{#each unwatched as r (r.id)}
@@ -229,7 +229,7 @@
 							<p class="truncate text-sm font-medium">{r.title}</p>
 							<p class="truncate text-xs text-muted-foreground">
 								{r.type === 'tv' ? t('type.tv_short') : t('type.movie')}
-								{#if user === 'all' || (auth.isAdmin && user !== '')} · {r.requestedBy?.name ?? ''}{/if}
+								{#if user === 'all' || (auth.canManageUsers && user !== '')} · {r.requestedBy?.name ?? ''}{/if}
 								· {t('stats.unwatched_since', { date: fmtDate(r.updatedAt) })}
 							</p>
 						</div>
@@ -243,7 +243,7 @@
 			</CardContent>
 		</Card>
 
-		{#if auth.isAdmin}
+		{#if auth.canManageUsers}
 			{#if neverWatched.length}
 				<Scroller title={t('stats.never_title')}>
 					{#each neverWatched as item (item.type + item.tmdbId)}

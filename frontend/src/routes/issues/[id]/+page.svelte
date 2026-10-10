@@ -73,7 +73,7 @@
 		});
 	};
 
-	const canOpen = (uid: string) => !!uid && (auth.isAdmin || uid === auth.user?.id);
+	const canOpen = (uid: string) => !!uid && (auth.canViewIssues || uid === auth.user?.id);
 </script>
 
 <svelte:head>
@@ -126,6 +126,7 @@
 			{/each}
 		</section>
 
+		{#if auth.canManageIssues || issue.createdBy.id === auth.user?.id}
 		<form class="grid gap-2" onsubmit={send}>
 			<textarea
 				bind:value={reply}
@@ -136,7 +137,7 @@
 				class="rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 			></textarea>
 			<div class="flex flex-wrap justify-end gap-2">
-				{#if auth.isAdmin}<Button type="button" variant="ghost" class="mr-auto text-destructive" disabled={busy} onclick={remove}>{t('req.delete')}</Button>{/if}
+				{#if auth.canManageIssues}<Button type="button" variant="ghost" class="mr-auto text-destructive" disabled={busy} onclick={remove}>{t('req.delete')}</Button>{/if}
 				{#if issue.status === 'open'}
 					<Button type="button" variant="outline" disabled={busy} onclick={() => setResolved(true)}>{t('issue.resolve')}</Button>
 				{:else}
@@ -145,5 +146,6 @@
 				<Button type="submit" disabled={busy || !reply.trim()}>{t('issue.comment')}</Button>
 			</div>
 		</form>
+		{/if}
 	{/if}
 </div>

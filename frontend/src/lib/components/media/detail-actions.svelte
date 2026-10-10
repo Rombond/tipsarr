@@ -4,6 +4,7 @@
 	import { toast } from '$lib/toast.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { auth } from '$lib/stores/auth.svelte';
 	import ReportIssueDialog from '$lib/components/issues/report-issue-dialog.svelte';
 	import FlagIcon from '@lucide/svelte/icons/flag';
 	import RequestButton from '$lib/components/requests/request-button.svelte';
@@ -58,6 +59,7 @@
 </script>
 
 <div class="flex flex-wrap items-center gap-2">
+	{#if auth.mayRequest(type)}
 	<RequestButton
 		{type}
 		{tmdbId}
@@ -66,6 +68,7 @@
 		requestStatus={details.requestStatus}
 		title={details.title}
 	/>
+	{/if}
 
 	{#if details.watchUrl}
 		<Button href={details.watchUrl} target="_blank" rel="noreferrer" class="bg-emerald-600 text-white hover:bg-emerald-600/90">
@@ -85,10 +88,12 @@
 		{#if watchlisted}<BookmarkCheckIcon class="size-4" /> {t('actions.on_watchlist')}{:else}<BookmarkIcon class="size-4" /> {t('actions.watchlist')}{/if}
 	</Button>
 
-	<Button variant="outline" onclick={() => (reporting = true)}>
-		<FlagIcon class="size-4" />
-		{t('actions.report_short')}
-	</Button>
+	{#if auth.canCreateIssues}
+		<Button variant="outline" onclick={() => (reporting = true)}>
+			<FlagIcon class="size-4" />
+			{t('actions.report_short')}
+		</Button>
+	{/if}
 
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>

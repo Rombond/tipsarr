@@ -36,7 +36,7 @@
 	let sort = $state<Sort>(SORTS.includes(q0.get('sort') as Sort) ? (q0.get('sort') as Sort) : 'added');
 	let desc = $state(q0.get('dir') !== 'asc');
 	// admin clean-up view: titles nobody ever watched
-	let never = $state(auth.isAdmin && q0.get('never') === '1');
+	let never = $state(auth.canManageSettings && q0.get('never') === '1');
 	let panelOpen = $state(false);
 	let allGenres = $state(false);
 
@@ -229,7 +229,7 @@
 					onclick={() => (type = tab.id)}
 				>{tab.label}{#if facets}<span class="ml-1 opacity-70">{tab.n}</span>{/if}</button>
 			{/each}
-			{#if auth.isAdmin}
+			{#if auth.canManageSettings}
 				<button
 					type="button"
 					aria-pressed={never}
@@ -265,7 +265,7 @@
 						{#if genres.length > 1}<p class="text-xs text-muted-foreground">{t('library.genres_all')}</p>{/if}
 					</div>
 				{/if}
-				{#if auth.isAdmin}
+				{#if auth.canManageSettings}
 					<label class="flex cursor-pointer items-start gap-2 text-sm">
 						<input type="checkbox" class="mt-0.5" checked={never} onchange={(e) => setNever(e.currentTarget.checked)} />
 						<span><span class="font-medium">{t('library.never_watched')}</span><span class="block text-xs text-muted-foreground">{t('library.never_watched_hint')}</span></span>

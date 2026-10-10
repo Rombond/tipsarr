@@ -135,7 +135,7 @@
 			{/if}
 			<span class="pointer-events-none absolute top-2 left-2 rounded-lg bg-black/70 px-2.5 py-0.5 font-black text-lg text-white backdrop-blur">#{e.position}</span>
 			{#if shown}<StatusIcon status={shown} class="absolute top-2 right-2" />{/if}
-			{#if auth.isAdmin}
+			{#if auth.canManageSettings}
 				<button
 					type="button"
 					class="absolute right-2 bottom-2 flex size-8 cursor-pointer items-center justify-center rounded-full bg-black/70 text-white opacity-0 backdrop-blur transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
@@ -214,7 +214,7 @@
 		</div>
 	{:else if charts.length === 0}
 		<div class="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-			{t('box.empty')}{#if auth.isAdmin} <a class="underline" href="/admin/settings">{t('box.empty_admin')}</a>{/if}
+			{t('box.empty')}{#if auth.canManageSettings} <a class="underline" href="/admin/settings">{t('box.empty_admin')}</a>{/if}
 		</div>
 	{:else}
 		{#each charts as c, i (c.week)}

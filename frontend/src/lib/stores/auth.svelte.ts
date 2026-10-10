@@ -1,6 +1,7 @@
 // Session store: the backend owns the session cookie; this only mirrors "who am I".
 import { api, unwrap, type User } from '$lib/api/client';
 import { i18n } from '$lib/i18n/index.svelte';
+import { P, has } from '$lib/permissions';
 
 class AuthState {
 	user: User | null = $state(null);
@@ -8,15 +9,55 @@ class AuthState {
 	/** false until setup has been completed (Jellyfin URL saved). */
 	configured: boolean | null = $state(null);
 	dryRun = $state(false);
-	/** non-admins may choose the root folder when requesting (everyone chooses the quality profile) */
-	userFolderChoice = $state(false);
 	/** bumped when a picture changes so browsers refetch it */
 	avatarV = $state(0);
 	/** the setup call needs the token from the server log (opt-in on the server) */
 	setupTokenRequired = $state(false);
 
+	/** The role: admins can do everything. For what a person may do, use the can* getters. */
 	get isAdmin() {
 		return this.user?.role === 'admin';
+	}
+
+	/** What the person may do: the sum of their permission flags (everything for an admin). */
+	get permissions() {
+		return this.user?.effectivePermissions ?? 0;
+	}
+
+	can(...flags: number[]) {
+		return has(this.permissions, ...flags);
+	}
+
+	/** may request this kind of title */
+	mayRequest(type: 'movie' | 'tv') {
+		return this.can(P.request) || this.can(type === 'movie' ? P.requestMovie : P.requestTV);
+	}
+
+	get canManageSettings() {
+		return this.can(P.manageSettings);
+	}
+	get canManageUsers() {
+		return this.can(P.manageUsers);
+	}
+	get canManageRequests() {
+		return this.can(P.manageRequests);
+	}
+	/** sees everyone's requests */
+	get canViewRequests() {
+		return this.can(P.requestView);
+	}
+	get canViewIssues() {
+		return this.can(P.viewIssues);
+	}
+	get canManageIssues() {
+		return this.can(P.manageIssues);
+	}
+	get canCreateIssues() {
+		return this.can(P.createIssues);
+	}
+	/** any admin-area page: users or settings */
+	get canAdminister() {
+		return this.canManageUsers || this.canManageSettings;
 	}
 
 	get username() {
@@ -34,7 +75,6 @@ class AuthState {
 			this.configured = setup.configured;
 			this.setupTokenRequired = setup.tokenRequired;
 			this.dryRun = st.dryRun;
-			this.userFolderChoice = st.userFolderChoice;
 			i18n.setAppDefault(st.defaultLanguage);
 		} catch {
 			this.configured = null;

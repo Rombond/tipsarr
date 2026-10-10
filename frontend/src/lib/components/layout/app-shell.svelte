@@ -12,7 +12,7 @@
 	let scrollY = $state(0);
 	const solid = $derived(scrollY > 24);
 
-	$effect(() => (auth.isAdmin ? counts.track() : undefined));
+	$effect(() => (auth.canManageRequests || auth.canViewIssues ? counts.track() : undefined));
 </script>
 
 <svelte:window bind:scrollY />
@@ -33,6 +33,6 @@
 		<div class="animate-in fade-in px-4 pt-20 pb-24 duration-300 md:px-8 md:pb-10">
 			{@render children()}
 		</div>
-		<MobileNav pending={auth.isAdmin ? counts.pending : 0} />
+		<MobileNav pending={auth.canManageRequests ? counts.pending : 0} />
 	</Sidebar.Inset>
 </Sidebar.Provider>

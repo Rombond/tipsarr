@@ -8,6 +8,7 @@
 	import { t } from '$lib/i18n/index.svelte';
 	import { api, unwrap, errorText, type Schemas } from '$lib/api/client';
 	import { toast } from '$lib/toast.svelte';
+	import { fmtDate } from '$lib/i18n/format';
 	import RequestDialog, { type RequestChoice } from './request-dialog.svelte';
 
 	let {
@@ -31,7 +32,14 @@
 	let error = $state<string | null>(null);
 	let loaded = $state<Schemas['Season'][] | null>(null);
 	let options = $state<Schemas['Options'] | null>(null);
+	let quota = $state<Schemas['Quota'] | null>(null);
 	const known = $derived(seasons ?? loaded ?? []);
+	const quotaText = $derived.by(() => {
+		const w = type === 'movie' ? quota?.movie : quota?.tv;
+		if (!w || !w.limit) return '';
+		if (w.restricted) return t('req.quota_none', { date: w.resetsAt ? fmtDate(w.resetsAt) : '' });
+		return t(type === 'movie' ? 'req.quota_movie' : 'req.quota_tv', { remaining: w.remaining ?? 0, days: w.days, count: w.remaining ?? 0 });
+	});
 
 	async function submit(choice: RequestChoice) {
 		busy = true;
@@ -71,6 +79,7 @@
 		// quality profiles to choose from (none configured: the request just stays pending)
 		busy = true;
 		options = await unwrap(api.GET('/requests/options', { params: { query: { type } } })).catch(() => null);
+		quota = await unwrap(api.GET('/me/quota')).catch(() => null);
 		busy = false;
 		const regular = known.filter((s) => s.number > 0);
 		if (options || (type === 'tv' && regular.length > 1)) open = true;
@@ -78,4 +87,4 @@
 	}
 </script>
 
-<RequestDialog bind:open {type} {title} seasons={known} {options} {busy} {error} onsubmit={submit} />
+<RequestDialog bind:open {type} {title} seasons={known} {options} {busy} {error} {quotaText} onsubmit={submit} />
