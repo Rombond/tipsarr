@@ -56,6 +56,7 @@ fun MediaPoster(item: MediaItem, onClick: () -> Unit, modifier: Modifier = Modif
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var open by remember { mutableStateOf(false) }
+    val mayRequest = menu?.mayRequest(item.type) == true
     fun run(done: Int, work: suspend TitleMenu.() -> Unit) {
         open = false
         if (menu == null) return
@@ -74,7 +75,7 @@ fun MediaPoster(item: MediaItem, onClick: () -> Unit, modifier: Modifier = Modif
             poster = { RemoteImage(item.posterPath, TmdbSize.W342, Modifier.fillMaxSize()) },
         )
         DropdownMenu(open, { open = false }, containerColor = Tokens.palette.card) {
-            if (item.state == null) PosterMenuItem(Icons.Outlined.Add, R.string.media_request) { run(R.string.m_menu_requested) { request(item.type, item.tmdbId) } }
+            if (item.state == null && mayRequest) PosterMenuItem(Icons.Outlined.Add, R.string.media_request) { run(R.string.m_menu_requested) { request(item.type, item.tmdbId) } }
             PosterMenuItem(Icons.Outlined.BookmarkBorder, R.string.actions_watchlist) { run(R.string.m_menu_watchlisted) { watchlist(item.type, item.tmdbId) } }
             PosterMenuItem(Icons.Outlined.VisibilityOff, R.string.media_not_interested) { run(R.string.m_menu_hidden) { hide(item.type, item.tmdbId) } }
         }

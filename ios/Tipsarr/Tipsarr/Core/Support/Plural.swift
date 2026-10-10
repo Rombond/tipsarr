@@ -12,6 +12,17 @@ enum Plural {
     }
 }
 
+extension Plural {
+    /// Like `text(_:count:)` for a text with more values: the form is picked by `count`, then every `%n$@` is filled from `args`.
+    static func text(_ key: String, count: Int, _ args: [String]) -> String {
+        let raw = AppLanguage.bundle.localizedString(forKey: key, value: nil, table: nil)
+        let forms = raw.components(separatedBy: " | ")
+        let singular = AppLanguage.locale.language.languageCode?.identifier == "fr" ? count <= 1 : count == 1
+        let form = forms.count > 1 ? (singular ? forms[0] : forms[1]) : raw
+        return String(format: form, arguments: args.map { $0 as NSString })
+    }
+}
+
 enum L10n {
     /// A message the server sent as a code plus values (job summaries): the translated text with the values in
     /// placeholder order, or `fallback` (the server's English text) for a code this version does not know.

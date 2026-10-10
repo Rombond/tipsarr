@@ -69,8 +69,10 @@ struct IssueDetailView: View {
                     }
                     ForEach(thread.comments) { comment in CommentRow(comment: comment) }
                 }
-                replyBox
-                actions(issue)
+                if canAct(issue) {
+                    replyBox
+                    actions(issue)
+                }
             }
             .padding(Tokens.Spacing.lg)
             .frame(maxWidth: 720)
@@ -93,14 +95,20 @@ struct IssueDetailView: View {
         }
     }
 
+    /// The reporter and people who manage issues may comment and resolve; only the latter delete.
+    private func canAct(_ issue: IssueRecord) -> Bool {
+        guard let profile = context?.profile else { return false }
+        return profile.can(.manageIssues) || issue.createdBy == profile.name
+    }
+
     private func actions(_ issue: IssueRecord) -> some View {
         VStack(spacing: Tokens.Spacing.sm) {
-            if context?.profile.isAdmin == true {
-                Button { Task { await toggle(issue) } } label: {
-                    Label { Text(issue.status == .open ? "issue.resolve" : "issue.reopen") }
-                        icon: { Image(systemName: issue.status == .open ? "checkmark.circle" : "arrow.uturn.backward.circle") }
-                }
-                .buttonStyle(.tipsarr(.secondary, fullWidth: true))
+            Button { Task { await toggle(issue) } } label: {
+                Label { Text(issue.status == .open ? "issue.resolve" : "issue.reopen") }
+                    icon: { Image(systemName: issue.status == .open ? "checkmark.circle" : "arrow.uturn.backward.circle") }
+            }
+            .buttonStyle(.tipsarr(.secondary, fullWidth: true))
+            if context?.profile.can(.manageIssues) == true {
                 Button { confirmDelete = true } label: { Text("common.delete") }
                     .buttonStyle(.tipsarr(.ghost, fullWidth: true))
                     .foregroundStyle(Tokens.palette.destructive)

@@ -250,9 +250,9 @@ private fun Pill(text: String) {
         modifier = Modifier.clip(CircleShape).background(Tokens.palette.muted).padding(horizontal = Tokens.Spacing.sm, vertical = 2.dp))
 }
 
-/** One problem report: the title, its thread, a reply box and (admins) resolve or delete. */
+/** One problem report: the title, its thread, a reply box and resolve (the reporter and people who manage issues) or delete (managers). */
 @Composable
-fun IssueDetailScreen(api: TipsarrApi, id: String, isAdmin: Boolean, onBack: () -> Unit, onOpenTitle: (MediaRoute) -> Unit) {
+fun IssueDetailScreen(api: TipsarrApi, id: String, canManage: Boolean, meId: String, onBack: () -> Unit, onOpenTitle: (MediaRoute) -> Unit) {
     val context = LocalContext.current
     val toast = LocalToast.current
     val scope = rememberCoroutineScope()
@@ -312,7 +312,8 @@ fun IssueDetailScreen(api: TipsarrApi, id: String, isAdmin: Boolean, onBack: () 
                             }
                         }
                     }
-                    Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
+                    val canAct = canManage || current.createdBy.id == meId
+                    if (canAct) Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
                         OutlinedTextField(
                             value = reply, onValueChange = { reply = it }, modifier = Modifier.fillMaxWidth(),
                             placeholder = { Text(stringResource(R.string.issue_reply_placeholder), color = Tokens.palette.mutedFg) },
@@ -330,13 +331,13 @@ fun IssueDetailScreen(api: TipsarrApi, id: String, isAdmin: Boolean, onBack: () 
                             fullWidth = true, enabled = !sending && reply.isNotBlank(),
                         ) { Icon(Icons.AutoMirrored.Outlined.Send, null, Modifier.size(20.dp)); Spacer(Modifier.width(Tokens.Spacing.sm)) }
                     }
-                    if (isAdmin) Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
+                    if (canAct) Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
                         TipsarrButton(
                             stringResource(if (current.isOpen) R.string.issue_resolve else R.string.issue_reopen),
                             { run { thread = if (current.isOpen) api.resolveIssue(id) else api.reopenIssue(id) } },
                             fullWidth = true, kind = ButtonKind.Secondary,
                         ) { Icon(if (current.isOpen) Icons.Outlined.CheckCircle else Icons.Outlined.Undo, null, Modifier.size(20.dp)); Spacer(Modifier.width(Tokens.Spacing.sm)) }
-                        TipsarrButton(stringResource(R.string.common_delete), { confirmDelete = true }, fullWidth = true, kind = ButtonKind.Ghost)
+                        if (canManage) TipsarrButton(stringResource(R.string.common_delete), { confirmDelete = true }, fullWidth = true, kind = ButtonKind.Ghost)
                     }
                 }
             }

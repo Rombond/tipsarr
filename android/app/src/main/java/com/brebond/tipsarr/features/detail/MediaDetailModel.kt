@@ -3,6 +3,10 @@ package com.brebond.tipsarr.features.detail
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.brebond.tipsarr.core.api.Profile
+import com.brebond.tipsarr.core.api.Permission
+import com.brebond.tipsarr.core.api.Quota
+import com.brebond.tipsarr.core.api.myQuota
 import com.brebond.tipsarr.core.api.ApiError
 import com.brebond.tipsarr.core.api.IssueKind
 import com.brebond.tipsarr.core.api.MediaDetail
@@ -44,9 +48,7 @@ sealed interface DetailAction {
 class MediaDetailModel(
     val route: MediaRoute,
     val api: TipsarrApi,
-    val isAdmin: Boolean,
-    /** `userFolderChoice` from `/status`: non-admins may pick the folder when true. */
-    userFolderChoice: Boolean,
+    private val me: () -> Profile,
 ) {
     sealed interface Phase {
         data object Loading : Phase
@@ -72,10 +74,26 @@ class MediaDetailModel(
         private set
     var options by mutableStateOf<RequestOptions?>(null)
         private set
+    /** The person's request limits, read when the request sheet opens; null when unknown. */
+    var quota by mutableStateOf<Quota?>(null)
+        private set
     var busy by mutableStateOf(false)
         private set
 
-    val canChooseFolder: Boolean = isAdmin || userFolderChoice
+    /** May choose the folder of a request (the advanced-requests right). */
+    val canChooseFolder: Boolean get() = me().can(Permission.REQUEST_ADVANCED)
+
+    /** May approve, decline and retry requests. */
+    val canManageRequests: Boolean get() = me().can(Permission.MANAGE_REQUESTS)
+
+    /** Requests for this title are approved right away. */
+    val autoApproves: Boolean get() = me().autoApproves(route.type)
+
+    /** May request this kind of title. */
+    val mayRequest: Boolean get() = me().mayRequest(route.type)
+
+    /** May report a problem with the title. */
+    val canReport: Boolean get() = me().can(Permission.CREATE_ISSUES)
 
     suspend fun load() {
         if (detail == null) phase = Phase.Loading
@@ -114,7 +132,7 @@ class MediaDetailModel(
             request?.let { request ->
                 if (request.isOpen) return DetailAction.InProgress(request.state, cancellable = true)
                 if (request.state == RequestState.Declined) return DetailAction.RequestAgain
-                if (request.state == RequestState.Failed) return DetailAction.Failed(canRetry = isAdmin)
+                if (request.state == RequestState.Failed) return DetailAction.Failed(canRetry = canManageRequests)
             }
             if (detail.requestOpen) return DetailAction.InProgress(RequestState.Requested, cancellable = false)
             return DetailAction.Request
@@ -139,6 +157,7 @@ class MediaDetailModel(
         busy = true
         try {
             options = api.requestOptions(route.type)
+            quota = runCatching { api.myQuota() }.getOrNull()
         } finally {
             busy = false
         }

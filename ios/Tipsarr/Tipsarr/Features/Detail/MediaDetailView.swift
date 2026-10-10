@@ -104,7 +104,7 @@ struct MediaDetailView: View {
                     facts(detail)
                     if !detail.cast.isEmpty { cast(detail) }
                     if !detail.recommendations.isEmpty { recommendations(detail) }
-                    reportRow
+                    if model.canReport { reportRow }
                 }
                 .padding(.horizontal, Tokens.Spacing.lg)
                 .frame(maxWidth: 720)
@@ -151,11 +151,13 @@ struct MediaDetailView: View {
     @ViewBuilder private var mainButton: some View {
         switch model.action {
         case .request:
-            Button { Task { await startRequest() } } label: {
-                Label { Text(choose(model.busy, "media.requesting", "media.request")) } icon: { Image(systemName: "plus") }
+            if model.mayRequest {
+                Button { Task { await startRequest() } } label: {
+                    Label { Text(choose(model.busy, "media.requesting", "media.request")) } icon: { Image(systemName: "plus") }
+                }
+                .buttonStyle(.tipsarr(.primary, fullWidth: true, capsule: true))
+                .disabled(model.busy)
             }
-            .buttonStyle(.tipsarr(.primary, fullWidth: true, capsule: true))
-            .disabled(model.busy)
         case .inProgress(let state, let cancellable):
             Button { if cancellable { confirmCancel = true } } label: {
                 Label { Text(state.title) } icon: { Image(systemName: state.symbol) }
@@ -175,11 +177,13 @@ struct MediaDetailView: View {
                     .frame(maxWidth: .infinity, minHeight: Tokens.Size.touchTarget)
             }
         case .requestAgain:
-            Button { Task { await startRequest() } } label: {
-                Label { Text("m.detail.request_again") } icon: { Image(systemName: "arrow.counterclockwise") }
+            if model.mayRequest {
+                Button { Task { await startRequest() } } label: {
+                    Label { Text("m.detail.request_again") } icon: { Image(systemName: "arrow.counterclockwise") }
+                }
+                .buttonStyle(.tipsarr(.secondary, fullWidth: true, capsule: true))
+                .disabled(model.busy)
             }
-            .buttonStyle(.tipsarr(.secondary, fullWidth: true, capsule: true))
-            .disabled(model.busy)
         case .failed(let canRetry):
             if canRetry {
                 Button { Task { await run { try await model.retryRequest() } } } label: {
@@ -224,8 +228,10 @@ struct MediaDetailView: View {
                 Label { Text(choose(model.flags.blocklisted, "actions.show_again", "media.not_interested")) }
                     icon: { Image(systemName: model.flags.blocklisted ? "eye" : "eye.slash") }
             }
-            Button { sheet = .report } label: {
-                Label { Text("actions.report_short") } icon: { Image(systemName: "flag") }
+            if model.canReport {
+                Button { sheet = .report } label: {
+                    Label { Text("actions.report_short") } icon: { Image(systemName: "flag") }
+                }
             }
             if case .inProgress(_, true) = model.action {
                 Button(role: .destructive) { confirmCancel = true } label: {

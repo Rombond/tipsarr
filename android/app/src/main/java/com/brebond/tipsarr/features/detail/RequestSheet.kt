@@ -112,6 +112,10 @@ fun RequestSheet(model: MediaDetailModel, onDismiss: () -> Unit, onDone: (Reques
                     )
                 }
             }
+            model.quota?.of(model.route.type)?.let { window ->
+                val text = com.brebond.tipsarr.core.support.quotaText(context, model.route.type, window)
+                if (text.isNotEmpty()) Text(text, fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+            }
             if (isTv) {
                 Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -153,7 +157,7 @@ fun RequestSheet(model: MediaDetailModel, onDismiss: () -> Unit, onDone: (Reques
                     }
                 }
             }
-            Text(stringResource(if (model.isAdmin) R.string.m_request_admin_note else R.string.m_request_user_note), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+            Text(stringResource(if (model.autoApproves) R.string.m_request_admin_note else R.string.m_request_user_note), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
             errorText?.let { Banner(it, kind = BannerKind.Error) }
             Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
                 TipsarrButton(

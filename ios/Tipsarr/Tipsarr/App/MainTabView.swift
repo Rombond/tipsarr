@@ -38,7 +38,7 @@ struct MainTabView: View {
         }
         .onGeometryChange(for: Bool.self, of: { FoldInfo.verticalHinge($0) != nil }) { foldedHinge = $0 }
         .environment(\.imageSource, ImageSource(serverURL: account.serverURL, token: account.token))
-        .environment(\.appContext, AppContext(api: api, profile: profile, userFolderChoice: session.serverStatus?.userFolderChoice ?? false))
+        .environment(\.appContext, AppContext(api: api, profile: profile))
         .environment(\.ratingProvider, ratings)
         .environment(\.liveUpdates, live)
         .environment(toast)
@@ -87,8 +87,8 @@ struct MainTabView: View {
             }
         }
         .task {
-            // Admins see their pending count on the icon, so they are asked at once (alerts, sounds and the badge together).
-            if profile.isAdmin { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) }
+            // People who manage requests see their pending count on the icon, so they are asked at once (alerts, sounds and the badge together).
+            if profile.can(.manageRequests) { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) }
             await PushManager.shared.attach(account: account, pushAvailable: session.serverStatus?.pushAvailable ?? false)
         }
         // A new language or account rebuilds the tabs, so every list is fetched again in that language.
@@ -98,7 +98,7 @@ struct MainTabView: View {
     /// The five tabs inside the system bar (iPhone, narrow windows), or with our own bar: a sidebar on a
     /// landscape iPad window, a floating bar at the bottom of a portrait one.
     @ViewBuilder private func shell(_ style: ShellStyle, trailingInset: CGFloat = 0) -> some View {
-        let badges: [AppTab: Int] = profile.isAdmin ? [.requests: pendingCount] : [:]
+        let badges: [AppTab: Int] = profile.can(.manageRequests) ? [.requests: pendingCount] : [:]
         if case .dualPane(let hinge) = style {
             // Left of the hinge: the tab content with its own bar. Right of it: the opened title or request.
             HStack(spacing: 0) {
@@ -137,7 +137,7 @@ struct MainTabView: View {
             TabView(selection: $router.tab) {
                 Tab("m.tab.discover", systemImage: "safari", value: AppTab.discover) { content(.discover) }
                 Tab("m.tab.requests", systemImage: "checklist", value: AppTab.requests) { content(.requests) }
-                    .badge(profile.isAdmin ? pendingCount : 0)
+                    .badge(profile.can(.manageRequests) ? pendingCount : 0)
                 Tab("m.tab.library", systemImage: "books.vertical", value: AppTab.library) { content(.library) }
                 Tab("m.tab.profile", systemImage: "person.crop.circle", value: AppTab.profile) { content(.profile) }
                 // A normal last tab, not the separate search tab: its field stays visible under the title.
@@ -163,7 +163,7 @@ struct MainTabView: View {
         switch tab {
         case .discover: DiscoverView(api: api, path: $router.discoverPath)
         case .search: SearchView(api: api)
-        case .requests: RequestsView(api: api, isAdmin: profile.isAdmin, path: $router.requestsPath, selection: $router.requestsSelection) { router.tab = .discover }
+        case .requests: RequestsView(api: api, canManage: profile.can(.manageRequests), canViewAll: profile.can(.requestView), path: $router.requestsPath, selection: $router.requestsSelection) { router.tab = .discover }
         case .library: LibraryView(api: api, path: $router.libraryPath)
         case .profile: ProfileView(account: account, profile: profile, api: api, path: $router.profilePath) { router.tab = .requests }
         }
@@ -182,7 +182,7 @@ struct MainTabView: View {
     }
 
     private func refreshPending() async {
-        guard profile.isAdmin, let counts = try? await api.requestCounts() else { return }
+        guard profile.can(.manageRequests), let counts = try? await api.requestCounts() else { return }
         pendingCount = counts.pending
     }
 }

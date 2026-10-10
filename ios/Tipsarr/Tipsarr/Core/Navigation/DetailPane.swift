@@ -45,7 +45,7 @@ struct MediaLink<Label: View>: View {
             }
         }
         .contextMenu {
-            if requestable {
+            if requestable, context?.profile.mayRequest(route.type) == true {
                 Button { run("m.menu.requested") { _ = try await $0.createRequest(route.type, tmdbId: route.tmdbId, seasons: nil, profileID: nil, folder: nil) } } label: {
                     SwiftUI.Label { Text("media.request") } icon: { Image(systemName: "plus") }
                 }

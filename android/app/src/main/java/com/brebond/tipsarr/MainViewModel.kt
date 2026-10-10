@@ -4,12 +4,15 @@ import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.brebond.tipsarr.core.api.MediaType
+import com.brebond.tipsarr.core.api.Permission
+import com.brebond.tipsarr.core.api.Profile
 import com.brebond.tipsarr.core.api.RatingSource
 import com.brebond.tipsarr.core.live.LiveUpdates
 import com.brebond.tipsarr.core.support.RatingProvider
@@ -53,18 +56,20 @@ sealed interface Screen {
 class MainViewModel(
     val api: TipsarrApi,
     context: Context,
-    private val isAdmin: Boolean,
-    private val userFolderChoice: Boolean,
+    profile: Profile,
     ratingSource: RatingSource,
 ) : ViewModel() {
+    /** The signed-in person; replaced when the session reads the profile again, so rights follow changes. */
+    var me by mutableStateOf(profile)
+
     val discover = DiscoverModel(api)
     val boxOffice = com.brebond.tipsarr.features.discover.BoxOfficeModel(api)
     val search = SearchModel(api, context)
-    val requests = RequestsModel(api, isAdmin)
+    val requests = RequestsModel(api) { me }
     val library = LibraryModel(api)
     /** Right-pane default of the Search tab on wide windows. */
     val trending = MediaListModel(MediaListModel.Source.Trending, api)
-    val profile = ProfileModel(api, isAdmin)
+    val profile = ProfileModel(api) { me }
     val ratings = RatingProvider(api, ratingSource, viewModelScope)
     val live = LiveUpdates(viewModelScope)
 
@@ -85,7 +90,7 @@ class MainViewModel(
         stacks.getOrPut(tab) { mutableStateListOf() }.add(screen)
     }
 
-    fun openTitle(tab: AppTab, route: MediaRoute) = push(tab, Screen.Title(MediaDetailModel(route, api, isAdmin, userFolderChoice)))
+    fun openTitle(tab: AppTab, route: MediaRoute) = push(tab, Screen.Title(MediaDetailModel(route, api) { me }))
     fun openPerson(tab: AppTab, route: PersonRoute) = push(tab, Screen.Person(PersonModel(route, api)))
     fun openGenre(tab: AppTab, type: MediaType, id: Int, name: String) =
         push(tab, Screen.Genre(GenreRoute(type, id, name), MediaListModel(MediaListModel.Source.Genre, api, type to id)))
@@ -104,7 +109,7 @@ class MainViewModel(
     }
 
     suspend fun refreshPending() {
-        if (!isAdmin) return
+        if (!me.can(Permission.MANAGE_REQUESTS)) return
         runCatching { api.requestCounts() }.getOrNull()?.let { pendingCount = it.pending }
     }
 }

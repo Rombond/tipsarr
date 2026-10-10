@@ -21,7 +21,7 @@ struct ProfileView: View {
         self.profile = profile
         self.openRequests = openRequests
         let model = ProfileModel(api: api)
-        model.isAdmin = profile.isAdmin
+        model.canSeeIssues = profile.can(.viewIssues)
         _model = State(initialValue: model)
     }
 
@@ -66,7 +66,7 @@ struct ProfileView: View {
             stats
             // See all goes to the full Stats page.
             PosterCarousel(title: "stats.top", titleKey: "stats.top", rows: model.topWatched.map(\.row), ranked: true, seeAll: .stats)
-            if profile.isAdmin { AdminGroup(openIssues: model.openIssues) }
+            if profile.canAny(.viewIssues, .manageUsers, .manageSettings) { AdminGroup(profile: profile, openIssues: model.openIssues) }
             recentRequests
         }
     }
@@ -210,20 +210,27 @@ struct StatCard: View {
 
 /// Administrator tools: one grouped card of rows, like the Administration group in Penpot.
 private struct AdminGroup: View {
+    let profile: Profile
     let openIssues: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
             Text("m.admin.title").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg).padding(.horizontal, Tokens.Spacing.xs)
             VStack(spacing: 0) {
-                ProfileLink(route: .issues) { row("exclamationmark.bubble", Tokens.Status.failed, "nav.issues", openIssues) }
-                    .buttonStyle(.plain)
-                Divider().padding(.leading, 52)
-                ProfileLink(route: .users) { row("person.2", Tokens.Status.approved, "nav.users", nil) }
-                    .buttonStyle(.plain)
-                Divider().padding(.leading, 52)
-                ProfileLink(route: .sync) { row("arrow.triangle.2.circlepath", Tokens.Status.searching, "m.admin.sync", nil) }
-                    .buttonStyle(.plain)
+                if profile.can(.viewIssues) {
+                    ProfileLink(route: .issues) { row("exclamationmark.bubble", Tokens.Status.failed, "nav.issues", openIssues) }
+                        .buttonStyle(.plain)
+                }
+                if profile.can(.manageUsers) {
+                    if profile.can(.viewIssues) { Divider().padding(.leading, 52) }
+                    ProfileLink(route: .users) { row("person.2", Tokens.Status.approved, "nav.users", nil) }
+                        .buttonStyle(.plain)
+                }
+                if profile.can(.manageSettings) {
+                    if profile.canAny(.viewIssues, .manageUsers) { Divider().padding(.leading, 52) }
+                    ProfileLink(route: .sync) { row("arrow.triangle.2.circlepath", Tokens.Status.searching, "m.admin.sync", nil) }
+                        .buttonStyle(.plain)
+                }
             }
             .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
             .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }

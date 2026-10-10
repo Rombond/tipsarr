@@ -9,6 +9,11 @@ struct UsersView: View {
 
     var body: some View {
         List {
+            if context?.profile.can(.manageUsers) == true {
+                Section {
+                    NavigationLink { PermissionDefaultsView() } label: { Text("users.defaults_title") }
+                }
+            }
             Section {
                 switch phase {
                 case .loading:
@@ -70,6 +75,9 @@ struct UserDetailView: View {
     @Environment(\.appContext) private var context
     @Environment(ToastCenter.self) private var toast
     @State private var detail: UserDetail?
+    /// The person as the admin list has them: the stored permission mask and request limits.
+    @State private var access: Profile?
+    @State private var editingAccess = false
     @State private var error: APIError?
 
     private var isMe: Bool { context?.profile.id == id }
@@ -86,6 +94,15 @@ struct UserDetailView: View {
         .navigationTitle(Text(verbatim: detail?.profile.name ?? ""))
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
+        .sheet(isPresented: $editingAccess) {
+            if let user = access ?? detail?.profile {
+                UserAccessSheet(user: user, isMe: isMe) { updated in
+                    access = updated
+                    if var current = detail { current.profile.effectivePermissions = updated.effectivePermissions; detail = current }
+                }
+                .tipsarrSheet(detents: [.large])
+            }
+        }
     }
 
     private func content(_ detail: UserDetail) -> some View {
@@ -100,6 +117,7 @@ struct UserDetailView: View {
                             .font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                     }
                 }
+                // Roles are for admins; people who only manage users see the role and edit permissions.
                 VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
                     Text("users.role").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg)
                     Picker("users.role", selection: Binding(get: { user.isAdmin }, set: { admin in Task { await setRole(admin) } })) {
@@ -107,9 +125,22 @@ struct UserDetailView: View {
                         Text("users.role_admin").tag(true)
                     }
                     .pickerStyle(.segmented)
-                    .disabled(isMe)
+                    .disabled(isMe || context?.profile.isAdmin != true)
                     if isMe { Text("m.users.own_role").font(.footnote).foregroundStyle(Tokens.palette.mutedFg) }
                 }
+                Button { editingAccess = true } label: {
+                    HStack {
+                        Label { Text("users.permissions") } icon: { Image(systemName: "checkmark.shield") }
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg)
+                    }
+                    .font(.body.weight(.medium))
+                    .padding(.horizontal, Tokens.Spacing.lg)
+                    .frame(minHeight: Tokens.Size.touchTarget + Tokens.Spacing.sm)
+                    .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
+                    .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
+                }
+                .buttonStyle(.plain)
                 stats(detail.stats)
             }
             .padding(Tokens.Spacing.lg)
@@ -152,6 +183,7 @@ struct UserDetailView: View {
         guard let context else { return }
         do {
             detail = try await context.api.userDetail(id: id)
+            access = try? await context.api.users().first { $0.id == id }
             error = nil
         } catch {
             if detail == nil { self.error = APIError.from(error) }

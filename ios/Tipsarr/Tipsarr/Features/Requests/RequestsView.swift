@@ -14,8 +14,8 @@ struct RequestsView: View {
     @State private var width: CGFloat = 0
     var openDiscover: () -> Void = {}
 
-    init(api: TipsarrAPI, isAdmin: Bool, path: Binding<NavigationPath>, selection: Binding<String?>, openDiscover: @escaping () -> Void = {}) {
-        _model = State(initialValue: RequestsModel(api: api, isAdmin: isAdmin))
+    init(api: TipsarrAPI, canManage: Bool, canViewAll: Bool, path: Binding<NavigationPath>, selection: Binding<String?>, openDiscover: @escaping () -> Void = {}) {
+        _model = State(initialValue: RequestsModel(api: api, canManage: canManage, canViewAll: canViewAll))
         _path = path
         _selection = selection
         self.openDiscover = openDiscover
@@ -143,7 +143,7 @@ struct RequestsView: View {
                 }
             case .loaded:
                 ForEach(model.items) { record in
-                    RequestRow(record: record, showRequester: model.isAdmin, busy: model.busy.contains(record.id),
+                    RequestRow(record: record, showRequester: model.canViewAll, canManage: model.canManage, busy: model.busy.contains(record.id),
                                progress: live?.progress[record.id], link: selecting == nil,
                                onApprove: { Task { await approve(record) } },
                                onDecline: { declining = record })
@@ -181,6 +181,8 @@ struct RequestsView: View {
 struct RequestRow: View {
     let record: RequestRecord
     var showRequester = false
+    /// Shows approve and decline on a request that waits.
+    var canManage = false
     var busy = false
     /// Newer progress pushed by the server.
     var progress: LiveProgress?
@@ -218,7 +220,7 @@ struct RequestRow: View {
                     ProgressBar(percent: percent).padding(.top, Tokens.Spacing.xs)
                     Text(verbatim: downloadText(percent)).font(.caption).foregroundStyle(Tokens.palette.mutedFg)
                 }
-                if showRequester && record.state == .requested {
+                if canManage && record.state == .requested {
                     HStack(spacing: Tokens.Spacing.sm) {
                         Button(action: onApprove) {
                             HStack(spacing: Tokens.Spacing.xs) { Image(systemName: "checkmark"); Text("req.approve") }

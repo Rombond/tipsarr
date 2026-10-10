@@ -21,7 +21,6 @@ struct TipsarrAPI: Sendable {
                 version: body.version,
                 apiVersion: Int(body.apiVersion),
                 minAppVersion: body.minAppVersion,
-                userFolderChoice: body.userFolderChoice,
                 defaultLanguage: body.defaultLanguage,
                 pushAvailable: body.features.push
             )
@@ -71,6 +70,9 @@ extension Profile {
         self.init(id: user.id, name: user.name, role: user.role, region: user.region,
                   language: user.language, ratingSource: user.ratingSource,
                   createdAt: Date(timeIntervalSince1970: TimeInterval(user.createdAt)),
-                  lastLoginAt: Date(timeIntervalSince1970: TimeInterval(user.lastLoginAt)))
+                  lastLoginAt: Date(timeIntervalSince1970: TimeInterval(user.lastLoginAt)),
+                  effectivePermissions: user.effectivePermissions, permissions: user.permissions,
+                  quota: UserQuota(movieLimit: user.movieQuotaLimit.map(Int.init), movieDays: user.movieQuotaDays.map(Int.init),
+                                   tvLimit: user.tvQuotaLimit.map(Int.init), tvDays: user.tvQuotaDays.map(Int.init)))
     }
 }

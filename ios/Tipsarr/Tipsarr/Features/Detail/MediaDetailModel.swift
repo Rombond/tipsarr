@@ -33,7 +33,17 @@ final class MediaDetailModel {
         self.context = context
     }
 
-    var isAdmin: Bool { context.profile.isAdmin }
+    /// Retry a failed request (the manage-requests permission).
+    var canManage: Bool { context.profile.can(.manageRequests) }
+    /// This person's requests are approved at once.
+    var autoApproves: Bool {
+        let p = context.profile
+        return p.can(.manageRequests) || p.can(.autoApprove) || p.can(route.type == .movie ? .autoApproveMovie : .autoApproveTV)
+    }
+    var mayRequest: Bool { context.profile.mayRequest(route.type) }
+    var canReport: Bool { context.profile.can(.createIssues) }
+    /// What is left of the request limit, read when the request sheet is prepared.
+    private(set) var quota: QuotaWindow?
     var canChooseFolder: Bool { context.canChooseFolder }
 
     // MARK: Loading
@@ -78,7 +88,7 @@ final class MediaDetailModel {
         if let request {
             if request.isOpen { return .inProgress(request.state, cancellable: true) }
             if request.state == .declined { return .requestAgain }
-            if request.state == .failed { return .failed(canRetry: isAdmin) }
+            if request.state == .failed { return .failed(canRetry: canManage) }
         }
         if detail.requestOpen { return .inProgress(.requested, cancellable: false) }
         return .request
@@ -104,6 +114,7 @@ final class MediaDetailModel {
         busy = true
         defer { busy = false }
         options = try? await context.api.requestOptions(route.type)
+        quota = try? await context.api.myQuota().window(route.type)
         return options != nil || (route.type == .tv && regularSeasons.count > 1)
     }
 

@@ -57,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.brebond.tipsarr.R
 import com.brebond.tipsarr.core.api.MediaType
+import com.brebond.tipsarr.core.api.Permission
 import com.brebond.tipsarr.core.api.Profile
 import com.brebond.tipsarr.core.api.RequestRecord
 import com.brebond.tipsarr.core.images.RemoteImage
@@ -141,16 +142,20 @@ fun ProfileScreen(
                     }
                 }
             }
-            if (profile.isAdmin) item {
+            val adminRows = buildList<@Composable () -> Unit> {
+                if (profile.can(Permission.VIEW_ISSUES)) add { AdminRow(Icons.Outlined.ChatBubbleOutline, Tokens.Status.failed, stringResource(R.string.nav_issues), model.openIssues, onOpenIssues) }
+                if (profile.can(Permission.MANAGE_USERS)) add { AdminRow(Icons.Outlined.People, Tokens.Status.approved, stringResource(R.string.nav_users), null, onOpenUsers) }
+                if (profile.can(Permission.MANAGE_SETTINGS)) add { AdminRow(Icons.Outlined.Sync, Tokens.Status.searching, stringResource(R.string.m_admin_sync), null, onOpenSync) }
+            }
+            if (adminRows.isNotEmpty()) item {
                 Column(Modifier.padding(horizontal = GUTTER), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
                     Text(stringResource(R.string.m_admin_title), fontSize = Tokens.FontSize.footnote, fontWeight = FontWeight.SemiBold, color = Tokens.palette.mutedFg, modifier = Modifier.padding(horizontal = Tokens.Spacing.xs))
                     val shape = RoundedCornerShape(Tokens.Radius.md)
                     Column(Modifier.fillMaxWidth().clip(shape).background(Tokens.palette.card).border(1.dp, Tokens.palette.border, shape)) {
-                        AdminRow(Icons.Outlined.ChatBubbleOutline, Tokens.Status.failed, stringResource(R.string.nav_issues), model.openIssues, onOpenIssues)
-                        HorizontalDivider(Modifier.padding(start = 52.dp), color = Tokens.palette.border)
-                        AdminRow(Icons.Outlined.People, Tokens.Status.approved, stringResource(R.string.nav_users), null, onOpenUsers)
-                        HorizontalDivider(Modifier.padding(start = 52.dp), color = Tokens.palette.border)
-                        AdminRow(Icons.Outlined.Sync, Tokens.Status.searching, stringResource(R.string.m_admin_sync), null, onOpenSync)
+                        adminRows.forEachIndexed { index, row ->
+                            if (index > 0) HorizontalDivider(Modifier.padding(start = 52.dp), color = Tokens.palette.border)
+                            row()
+                        }
                     }
                 }
             }

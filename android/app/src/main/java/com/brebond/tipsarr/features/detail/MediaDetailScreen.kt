@@ -205,7 +205,7 @@ fun MediaDetailScreen(model: MediaDetailModel, serverUrl: String, onBack: () -> 
                             Facts(detail)
                             if (detail.cast.isNotEmpty()) Cast(detail) { onOpenPerson(com.brebond.tipsarr.features.person.PersonRoute(it.id, it.name)) }
                             if (detail.recommendations.isNotEmpty()) Recommendations(detail.recommendations) { onOpen(MediaRoute(it.type, it.tmdbId, it.title)) }
-                            ReportRow { sheet = DetailSheet.Report }
+                            if (model.canReport) ReportRow { sheet = DetailSheet.Report }
                         }
                     }
                 }
@@ -359,7 +359,11 @@ private fun ActionRow(
     val action = model.action
     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
         Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { MainButton(action, model, onRequest, onRetry, onCancel) }
+            Box(Modifier.weight(1f)) {
+                // Someone who may not request this kind of title gets no Request button, only the rest of the row.
+                val noRequest = (action is DetailAction.Request || action is DetailAction.RequestAgain) && !model.mayRequest
+                if (!noRequest) MainButton(action, model, onRequest, onRetry, onCancel)
+            }
             detail.trailerKey?.let { key ->
                 IconButton(
                     { context.startActivity(Intent(Intent.ACTION_VIEW, "https://www.youtube.com/watch?v=$key".toUri())) },
@@ -380,7 +384,7 @@ private fun ActionRow(
                         if (model.flags.blocklisted) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
                         stringResource(if (model.flags.blocklisted) R.string.actions_show_again else R.string.media_not_interested),
                     ) { menu = false; onHidden() }
-                    MenuItem(Icons.Outlined.Flag, stringResource(R.string.actions_report_short)) { menu = false; onReport() }
+                    if (model.canReport) MenuItem(Icons.Outlined.Flag, stringResource(R.string.actions_report_short)) { menu = false; onReport() }
                     if (action is DetailAction.InProgress && action.cancellable) {
                         MenuItem(Icons.Outlined.Cancel, stringResource(R.string.m_request_cancel), Tokens.palette.destructive) { menu = false; onCancel() }
                     }

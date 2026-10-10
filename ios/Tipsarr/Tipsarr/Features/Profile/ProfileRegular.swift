@@ -11,7 +11,7 @@ extension ProfileView {
             statTiles(vertical: false)
             mostWatched(posterWidth: 116)
             recentGrid
-            if profile.isAdmin { AdminTiles(openIssues: model.openIssues) }
+            if profile.canAny(.viewIssues, .manageUsers, .manageSettings) { AdminTiles(profile: profile, openIssues: model.openIssues) }
         }
     }
 
@@ -40,7 +40,7 @@ extension ProfileView {
             VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
                 mostWatched(posterWidth: 114)
                 recentGrid
-                if profile.isAdmin { AdminTiles(openIssues: model.openIssues) }
+                if profile.canAny(.viewIssues, .manageUsers, .manageSettings) { AdminTiles(profile: profile, openIssues: model.openIssues) }
             }
             .frame(maxWidth: .infinity)
         }
@@ -151,16 +151,17 @@ struct RequestCardTile: View {
 
 /// The administrator tools as four tiles in a row (wide screens); the iPhone has the list card instead.
 struct AdminTiles: View {
+    let profile: Profile
     let openIssues: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
             Text("m.admin.title").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg).textCase(.uppercase)
             HStack(spacing: 14) {
-                tile("exclamationmark.bubble", Tokens.Status.failed, "nav.issues", .issues, openIssues)
-                tile("person.2", Tokens.Status.approved, "nav.users", .users, nil)
-                tile("arrow.triangle.2.circlepath", Tokens.Status.searching, "m.admin.sync", .sync, nil)
-                tile("chart.bar", Tokens.Status.downloading, "nav.stats", .stats, nil)
+                if profile.can(.viewIssues) { tile("exclamationmark.bubble", Tokens.Status.failed, "nav.issues", .issues, openIssues) }
+                if profile.can(.manageUsers) { tile("person.2", Tokens.Status.approved, "nav.users", .users, nil) }
+                if profile.can(.manageSettings) { tile("arrow.triangle.2.circlepath", Tokens.Status.searching, "m.admin.sync", .sync, nil) }
+                if profile.can(.manageUsers) { tile("chart.bar", Tokens.Status.downloading, "nav.stats", .stats, nil) }
             }
         }
     }

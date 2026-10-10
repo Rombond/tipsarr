@@ -84,7 +84,10 @@ import java.util.Locale
 @Composable
 fun StatsScreen(
     api: TipsarrApi,
-    isAdmin: Boolean,
+    /** May look at other people's numbers (the manage-users right). */
+    canSeeOthers: Boolean,
+    /** May see the library tools: titles nobody played, the playback plugin hint. */
+    canManageSettings: Boolean,
     me: Profile,
     onBack: () -> Unit,
     onOpenTitle: (MediaRoute) -> Unit,
@@ -110,20 +113,20 @@ fun StatsScreen(
         // Who the "never watched" list is about: the person, or everyone when an admin picked "everyone".
         val target = if (who == "all") null else (who ?: me.id)
         unwatched = runCatching { api.unwatchedRequests(target) }.getOrNull()
-        if (isAdmin && never == null) never = runCatching { api.neverWatched() }.getOrNull()
+        if (canManageSettings && never == null) never = runCatching { api.neverWatched() }.getOrNull()
     }
     LaunchedEffect(period, who) { load() }
-    LaunchedEffect(isAdmin) { if (isAdmin) users = runCatching { api.users() }.getOrDefault(emptyList()) }
+    LaunchedEffect(canSeeOthers) { if (canSeeOthers) users = runCatching { api.users() }.getOrDefault(emptyList()) }
 
     TopBarScaffold(stringResource(R.string.stats_title), onBack) {
         PullToRefreshBox(isRefreshing = refreshing, onRefresh = { scope.launch { refreshing = true; load(); refreshing = false } }, modifier = Modifier.fillMaxSize()) {
             Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding(), contentAlignment = Alignment.TopCenter) {
                 Column(Modifier.widthIn(max = 720.dp).fillMaxWidth().padding(Tokens.Spacing.lg), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.x2xl)) {
-                    Controls(report, period, { period = it }, isAdmin, users.filter { it.id != me.id }, who, { who = it })
+                    Controls(report, period, { period = it }, canSeeOthers, users.filter { it.id != me.id }, who, { who = it })
                     val current = report
                     val failure = error
                     when {
-                        current != null -> Content(current, isAdmin, onOpenTitle, onSeeAll)
+                        current != null -> Content(current, canManageSettings, onOpenTitle, onSeeAll)
                         failure != null -> Box(Modifier.fillMaxWidth().height(300.dp)) {
                             if (failure == ApiError.Unreachable) OfflineState({ scope.launch { load() } })
                             else StateView(Icons.Outlined.WarningAmber, failure.message(context), actionTitle = stringResource(R.string.common_retry), onAction = { scope.launch { load() } })
@@ -137,12 +140,12 @@ fun StatsScreen(
                                 Text(stringResource(R.string.stats_unwatched_none), fontSize = Tokens.FontSize.subhead, color = Tokens.palette.mutedFg)
                             } else {
                                 PosterCarousel(R.string.stats_unwatched_title, page.items.map { it.toUnwatchedRow(context) }, onOpenTitle, onSeeAll)
-                                Text(stringResource(if (who == null || !isAdmin) R.string.stats_unwatched_mine else R.string.stats_unwatched_others), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+                                Text(stringResource(if (who == null || !canSeeOthers) R.string.stats_unwatched_mine else R.string.stats_unwatched_others), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
                                 if (page.total > page.items.size) Text(stringResource(R.string.stats_unwatched_more, (page.total - page.items.size).toString()), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
                             }
                         }
                     }
-                    if (isAdmin) never?.let { page ->
+                    if (canManageSettings) never?.let { page ->
                         Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
                             if (page.items.isEmpty()) {
                                 Heading(stringResource(R.string.stats_never_title))
@@ -165,7 +168,7 @@ private fun Heading(text: String) {
 }
 
 @Composable
-private fun Controls(report: FullStats?, period: StatsPeriod, onPeriod: (StatsPeriod) -> Unit, isAdmin: Boolean, users: List<Profile>, who: String?, onWho: (String?) -> Unit) {
+private fun Controls(report: FullStats?, period: StatsPeriod, onPeriod: (StatsPeriod) -> Unit, canSeeOthers: Boolean, users: List<Profile>, who: String?, onWho: (String?) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
         if (report != null) Text(stringResource(if (report.exact) R.string.stats_source_plugin else R.string.stats_source_estimate), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
         val options = listOf(StatsPeriod.Days30 to R.string.stats_period_30d, StatsPeriod.Months12 to R.string.stats_period_12m, StatsPeriod.All to R.string.stats_period_all)
@@ -174,7 +177,7 @@ private fun Controls(report: FullStats?, period: StatsPeriod, onPeriod: (StatsPe
                 SegmentedButton(selected = period == value, onClick = { onPeriod(value) }, shape = SegmentedButtonDefaults.itemShape(index, options.size)) { Text(stringResource(label), maxLines = 1, overflow = TextOverflow.Ellipsis) }
             }
         }
-        if (isAdmin && users.isNotEmpty()) {
+        if (canSeeOthers && users.isNotEmpty()) {
             var open by remember { mutableStateOf(false) }
             val label = when (who) { null -> stringResource(R.string.stats_me); "all" -> stringResource(R.string.stats_everyone); else -> users.firstOrNull { it.id == who }?.name.orEmpty() }
             Box {
@@ -197,10 +200,10 @@ private fun Controls(report: FullStats?, period: StatsPeriod, onPeriod: (StatsPe
 }
 
 @Composable
-private fun Content(r: FullStats, isAdmin: Boolean, onOpenTitle: (MediaRoute) -> Unit, onSeeAll: (PosterListRoute) -> Unit) {
+private fun Content(r: FullStats, canManageSettings: Boolean, onOpenTitle: (MediaRoute) -> Unit, onSeeAll: (PosterListRoute) -> Unit) {
     val context = LocalContext.current
     val unit = stringResource(R.string.stats_unit_h)
-    if (isAdmin && r.plugin.hint) {
+    if (canManageSettings && r.plugin.hint) {
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.Radius.md)).background(Tokens.palette.muted).padding(Tokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
             Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Info, null, tint = Tokens.palette.fg)

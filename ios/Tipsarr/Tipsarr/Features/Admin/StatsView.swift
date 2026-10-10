@@ -15,7 +15,8 @@ struct StatsView: View {
     @State private var error: APIError?
     @State private var loading = true
 
-    private var isAdmin: Bool { context?.profile.isAdmin == true }
+    /// Other people's numbers and the never-watched list need the manage-users permission.
+    private var isAdmin: Bool { context?.profile.can(.manageUsers) == true }
 
     var body: some View {
         ScrollView {

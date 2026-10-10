@@ -13,6 +13,16 @@ struct RequestSheet: View {
     @State private var contentHeight: CGFloat = 560
 
     private var detail: MediaDetail? { model.detail }
+
+    /// What is left of the request limit ("2 movie requests left in the next 7 days"); nil when there is no limit.
+    private var quotaText: String? {
+        guard let q = model.quota, q.limit > 0 else { return nil }
+        if q.restricted {
+            return L10n.string("req.quota_none", q.resetsAt?.formatted(date: .abbreviated, time: .omitted) ?? "")
+        }
+        let left = q.remaining ?? 0
+        return Plural.text(isTV ? "req.quota_tv" : "req.quota_movie", count: left, [String(left), String(q.days)])
+    }
     private var isTV: Bool { model.route.type == .tv }
     private var selectable: [SeasonInfo] { model.regularSeasons.filter { !model.coveredSeasons.contains($0.number) } }
 
@@ -22,7 +32,8 @@ struct RequestSheet: View {
                 header
                 if isTV { seasonPicker }
                 if let options = model.options { optionRows(options) }
-                Text(choose(model.isAdmin, "m.request.admin_note", "m.request.user_note"))
+                if let quota = quotaText { Text(verbatim: quota).font(.footnote.weight(.medium)) }
+                Text(choose(model.autoApproves, "m.request.admin_note", "m.request.user_note"))
                     .font(.footnote)
                     .foregroundStyle(Tokens.palette.mutedFg)
                 if let errorText { Banner(kind: .error, title: LText.verbatim(errorText)) }

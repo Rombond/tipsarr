@@ -185,7 +185,7 @@ struct SettingsView: View {
             }
             if push.isOn {
                 categoryToggle(.requests, "m.settings.notifications_requests", symbol: "film.stack")
-                if profile.isAdmin { categoryToggle(.admin, "m.settings.notifications_admin", symbol: "checkmark.seal") }
+                if profile.can(.manageRequests) { categoryToggle(.admin, "m.settings.notifications_admin", symbol: "checkmark.seal") }
                 categoryToggle(.issues, "m.settings.notifications_issues", symbol: "exclamationmark.bubble")
             }
         } header: {

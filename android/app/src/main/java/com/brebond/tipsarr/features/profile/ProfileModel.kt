@@ -3,6 +3,8 @@ package com.brebond.tipsarr.features.profile
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.brebond.tipsarr.core.api.Profile
+import com.brebond.tipsarr.core.api.Permission
 import com.brebond.tipsarr.core.api.LibraryFilters
 import com.brebond.tipsarr.core.api.RequestRecord
 import com.brebond.tipsarr.core.api.StatsTop
@@ -18,7 +20,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
 /** Numbers and recent requests shown on the Profile tab. */
-class ProfileModel(private val api: TipsarrApi, private val isAdmin: Boolean = false) {
+class ProfileModel(private val api: TipsarrApi, private val me: () -> Profile) {
     /** Open problem reports, shown on the admin row. */
     var openIssues by mutableStateOf<Int?>(null)
         private set
@@ -41,7 +43,7 @@ class ProfileModel(private val api: TipsarrApi, private val isAdmin: Boolean = f
         val watchlist = async { runCatching { api.watchlist() }.getOrNull() }
         val watched = async { runCatching { api.library(LibraryFilters(watched = WatchedFilter.Yes), 1, 1) }.getOrNull() }
         val stats = async { runCatching { api.statsAll() }.getOrNull() }
-        val issues = async { if (isAdmin) runCatching { api.openIssueCount() }.getOrNull() else null }
+        val issues = async { if (me().can(Permission.VIEW_ISSUES)) runCatching { api.openIssueCount() }.getOrNull() else null }
         issues.await()?.let { openIssues = it }
         mine.await()?.let { requestCount = it.total; recent = it.items }
         watchlist.await()?.let { watchlistCount = it.size }

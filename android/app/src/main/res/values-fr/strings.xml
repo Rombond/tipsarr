@@ -344,14 +344,14 @@
     <string name="m_profile_picture_title">Photo de profil</string>
     <string name="m_profile_take_photo">Photothèque</string>
     <string name="m_profile_version">Version</string>
-    <string name="m_request_admin_note">Les demandes des admins sont approuvées automatiquement.</string>
+    <string name="m_request_admin_note">Vos demandes sont approuvées automatiquement.</string>
     <string name="m_request_approved_by">par %1$s</string>
     <string name="m_request_cancel">Annuler la demande</string>
     <string name="m_request_cancel_confirm">Annuler votre demande pour %1$s ?</string>
     <string name="m_request_keep">Garder la demande</string>
     <string name="m_request_selected">%s sélectionnée(s)</string>
     <string name="m_request_sent_to">envoyé à %1$s · %2$s</string>
-    <string name="m_request_user_note">Un admin approuvera votre demande.</string>
+    <string name="m_request_user_note">Quelqu’un approuvera votre demande.</string>
     <string name="m_requests_approve_all_confirm">Tout approuver</string>
     <string name="m_requests_by_ago">%1$s · %2$s</string>
     <string name="m_requests_cancel_swipe">Annuler</string>

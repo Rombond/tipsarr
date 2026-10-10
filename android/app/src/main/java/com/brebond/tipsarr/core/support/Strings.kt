@@ -50,3 +50,25 @@ fun relativeTime(context: Context, epochSeconds: Long): String =
     android.text.format.DateUtils.getRelativeTimeSpanString(
         epochSeconds * 1000, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS,
     ).toString()
+
+/** Picks the form of a text whose forms are separated by " | " (the first is for one, the second for every other number). */
+fun pluralForm(text: String, count: Int): String {
+    val forms = text.split(" | ")
+    val one = count == 1 || (count == 0 && Locale.getDefault().language == "fr")
+    return forms[if (one) 0 else minOf(1, forms.lastIndex)]
+}
+
+/**
+ * What is left of a request limit, in words: "2 movie requests left in the next 7 days", or when the limit is used up the
+ * day requests are possible again. Empty when there is no limit.
+ */
+fun quotaText(context: Context, type: com.brebond.tipsarr.core.api.MediaType, window: com.brebond.tipsarr.core.api.QuotaWindow): String {
+    if (window.limit <= 0) return ""
+    if (window.restricted) {
+        val date = if (window.resetsAt > 0) java.text.DateFormat.getDateInstance(java.text.DateFormat.LONG).format(java.util.Date(window.resetsAt * 1000)) else ""
+        return context.getString(com.brebond.tipsarr.R.string.req_quota_none, date)
+    }
+    val remaining = window.remaining ?: 0
+    val raw = context.getString(if (type == com.brebond.tipsarr.core.api.MediaType.Movie) com.brebond.tipsarr.R.string.req_quota_movie else com.brebond.tipsarr.R.string.req_quota_tv)
+    return runCatching { String.format(pluralForm(raw, remaining), remaining.toString(), window.days.toString()) }.getOrDefault("")
+}

@@ -6,7 +6,10 @@ final class RequestsModel {
     enum Phase: Equatable { case idle, loading, loaded, failed(APIError) }
 
     private let api: TipsarrAPI
-    let isAdmin: Bool
+    /// Approve, decline, retry and delete any request (the manage-requests permission).
+    let canManage: Bool
+    /// Sees everyone's requests and who made them (the view-requests permission).
+    let canViewAll: Bool
     private(set) var phase: Phase = .idle
     private(set) var items: [RequestRecord] = []
     private(set) var counts = RequestCounts()
@@ -15,9 +18,10 @@ final class RequestsModel {
     private var total = 0
     private var currentFilter: RequestFilter = .all
 
-    init(api: TipsarrAPI, isAdmin: Bool) {
+    init(api: TipsarrAPI, canManage: Bool, canViewAll: Bool) {
         self.api = api
-        self.isAdmin = isAdmin
+        self.canManage = canManage
+        self.canViewAll = canViewAll
     }
 
     // MARK: Loading
@@ -103,8 +107,8 @@ final class RequestsModel {
 
     // MARK: Permissions
 
-    /// Admins can delete anything; owners only unfinished requests (the server enforces it too).
+    /// People who manage requests can delete anything; owners only unfinished ones (the server enforces it too).
     func canDelete(_ record: RequestRecord) -> Bool {
-        isAdmin || record.isOpen
+        canManage || record.isOpen
     }
 }

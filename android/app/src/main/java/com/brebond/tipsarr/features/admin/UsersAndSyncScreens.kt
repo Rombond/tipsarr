@@ -52,6 +52,8 @@ import androidx.compose.ui.unit.sp
 import com.brebond.tipsarr.R
 import com.brebond.tipsarr.core.api.ApiError
 import com.brebond.tipsarr.core.api.JobStatus
+import com.brebond.tipsarr.core.api.PermissionCatalog
+import com.brebond.tipsarr.core.api.permissionCatalog
 import com.brebond.tipsarr.core.api.Profile
 import com.brebond.tipsarr.core.api.SyncStatus
 import com.brebond.tipsarr.core.api.TipsarrApi
@@ -88,15 +90,17 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UsersScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (String) -> Unit) {
+fun UsersScreen(api: TipsarrApi, me: Profile, onBack: () -> Unit, onOpen: (String) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var users by remember { mutableStateOf<List<Profile>>(emptyList()) }
     var error by remember { mutableStateOf<ApiError?>(null) }
     var loaded by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
+    var catalog by remember { mutableStateOf<PermissionCatalog?>(null) }
     suspend fun load() {
         try { users = api.users().sortedByDescending { it.lastLoginAt }; error = null } catch (e: ApiError) { if (users.isEmpty()) error = e }
+        catalog = runCatching { api.permissionCatalog() }.getOrNull() ?: catalog
         loaded = true
     }
     LaunchedEffect(Unit) { load() }
@@ -129,6 +133,7 @@ fun UsersScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (String) -> Unit) {
                                 if (index < users.lastIndex) HorizontalDivider(color = Tokens.palette.border)
                             }
                         }
+                        catalog?.let { c -> PermissionDefaultsCard(api, me, c.flags, c.defaults, onSaved = { catalog = c.copy(defaults = it) }) }
                     }
                 }
             }
@@ -138,15 +143,23 @@ fun UsersScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (String) -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun UserDetailScreen(api: TipsarrApi, id: String, myId: String, onBack: () -> Unit) {
+fun UserDetailScreen(api: TipsarrApi, id: String, me: Profile, onBack: () -> Unit) {
     val context = LocalContext.current
     val toast = LocalToast.current
     val scope = rememberCoroutineScope()
     var detail by remember { mutableStateOf<UserDetail?>(null) }
     var error by remember { mutableStateOf<ApiError?>(null) }
-    suspend fun load() { try { detail = api.userDetail(id); error = null } catch (e: ApiError) { if (detail == null) error = e } }
+    // The stored mask and the person's own limits come with the user list, not with the profile.
+    var access by remember { mutableStateOf<Profile?>(null) }
+    var catalog by remember { mutableStateOf<PermissionCatalog?>(null) }
+    var editing by remember { mutableStateOf(false) }
+    suspend fun load() {
+        try { detail = api.userDetail(id); error = null } catch (e: ApiError) { if (detail == null) error = e }
+        access = runCatching { api.users().firstOrNull { it.id == id } }.getOrNull() ?: access
+        catalog = runCatching { api.permissionCatalog() }.getOrNull() ?: catalog
+    }
     LaunchedEffect(id) { load() }
-    val isMe = id == myId
+    val isMe = id == me.id
 
     TopBarScaffold(detail?.name.orEmpty(), onBack) {
         val current = detail
@@ -168,7 +181,7 @@ fun UserDetailScreen(api: TipsarrApi, id: String, myId: String, onBack: () -> Un
                         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                             options.forEachIndexed { index, (admin, label) ->
                                 SegmentedButton(
-                                    selected = current.isAdmin == admin, enabled = !isMe,
+                                    selected = current.isAdmin == admin, enabled = !isMe && me.isAdmin,
                                     onClick = {
                                         scope.launch {
                                             try { detail = current.copy(role = api.setRole(id, admin).role); toast?.show(context.getString(R.string.m_users_saved)) } catch (e: ApiError) { toast?.show(e.message(context), ToastKind.Error) }
@@ -179,6 +192,15 @@ fun UserDetailScreen(api: TipsarrApi, id: String, myId: String, onBack: () -> Un
                             }
                         }
                         if (isMe) Text(stringResource(R.string.m_users_own_role), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+                    }
+                    val target = access
+                    val permissionCatalog = catalog
+                    if (target != null && permissionCatalog != null) {
+                        TipsarrButton(stringResource(R.string.users_permissions), { editing = true }, kind = ButtonKind.Secondary, fullWidth = true)
+                        if (editing) UserAccessSheet(
+                            api, target, me, permissionCatalog.flags, permissionCatalog.defaults, onDismiss = { editing = false },
+                            onSaved = { updated -> access = updated; editing = false },
+                        )
                     }
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
                         Text(stringResource(R.string.m_users_stats), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.Bold, color = Tokens.palette.fg, modifier = Modifier.semantics { heading() })

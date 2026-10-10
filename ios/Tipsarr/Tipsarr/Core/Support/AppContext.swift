@@ -4,10 +4,8 @@ import SwiftUI
 struct AppContext: Sendable {
     var api: TipsarrAPI
     var profile: Profile
-    /// `userFolderChoice` from `/status`: non-admins may pick the folder when true.
-    var userFolderChoice: Bool
-
-    var canChooseFolder: Bool { profile.isAdmin || userFolderChoice }
+    /// Choosing the folder of a request is the advanced-requests permission.
+    var canChooseFolder: Bool { profile.can(.requestAdvanced) }
 }
 
 private struct AppContextKey: EnvironmentKey {

@@ -29,6 +29,20 @@ suspend fun TipsarrApi.userDetail(id: String): UserDetail = get("/users/$id", Us
 suspend fun TipsarrApi.setRole(id: String, admin: Boolean): Profile =
     patch("/admin/users/$id", RoleBody(if (admin) "admin" else "user"), RoleBody.serializer(), Profile.serializer())
 
+/** Changes a person's permissions and request limits (needs the manage-users right). */
+suspend fun TipsarrApi.updateAccess(id: String, permissions: Long, quota: UserQuota): Profile =
+    patch("/admin/users/$id", AccessBody(permissions, quota), AccessBody.serializer(), Profile.serializer())
+
+/** The permission flags and the defaults for new people (needs the manage-users right). */
+suspend fun TipsarrApi.permissionCatalog(): PermissionCatalog = get("/admin/permissions", PermissionCatalog.serializer())
+
+/** Sets what new people start with (admins only). */
+suspend fun TipsarrApi.setPermissionDefaults(defaults: PermissionDefaults): PermissionDefaults =
+    put("/admin/permissions/defaults", defaults, PermissionDefaults.serializer(), PermissionDefaults.serializer())
+
+/** How many requests the signed-in person may still make. */
+suspend fun TipsarrApi.myQuota(): Quota = get("/me/quota", Quota.serializer())
+
 // Sync
 
 suspend fun TipsarrApi.syncStatus(): SyncStatus = get("/admin/sync", SyncStatus.serializer())

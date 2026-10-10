@@ -31,7 +31,7 @@ struct RequestDetailView: View {
                 header
                 if record.state == .downloading, let percent = live?.progress[record.id]?.percent ?? record.progressPercent { progress(percent) }
                 banner
-                if model.isAdmin, let name = record.requestedBy, !name.isEmpty { requester(name) }
+                if model.canViewAll, let name = record.requestedBy, !name.isEmpty { requester(name) }
                 VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
                     Text("m.requests.progress").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
                     Timeline(steps: steps)
@@ -48,7 +48,7 @@ struct RequestDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await reload() }
         .task { await reload() }
-        .task { if model.isAdmin { options = try? await context?.api.requestOptions(record.type) } }
+        .task { if model.canManage { options = try? await context?.api.requestOptions(record.type) } }
         .onChange(of: live?.requestsTick) { Task { await reload() } }
         .sheet(isPresented: $declining) {
             DeclineSheet(title: record.title) { reason in
@@ -100,7 +100,7 @@ struct RequestDetailView: View {
             Banner(kind: .error, title: record.declineReason.map { LText.verbatim(L10n.string("req.reason", $0)) } ?? "m.detail.declined")
         } else if record.state == .failed {
             Banner(kind: .warning, title: "req.failed_generic",
-                   message: model.isAdmin ? record.error.map { LText.verbatim($0) } : nil)
+                   message: model.canManage ? record.error.map { LText.verbatim($0) } : nil)
         }
     }
 
@@ -121,9 +121,9 @@ struct RequestDetailView: View {
         }
     }
 
-    /// Who asked, the chosen quality and folder: admins only (others see their own request without these).
+    /// Who asked, the chosen quality and folder: people who manage requests only (others see their own request without these).
     @ViewBuilder private var facts: some View {
-        if model.isAdmin {
+        if model.canManage {
             VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
                 Text("m.requests.details").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
                 VStack(spacing: 0) {
@@ -171,7 +171,7 @@ struct RequestDetailView: View {
 
     @ViewBuilder private var actions: some View {
         VStack(spacing: Tokens.Spacing.sm) {
-            if model.isAdmin && record.state == .requested {
+            if model.canManage && record.state == .requested {
                 HStack(spacing: Tokens.Spacing.md) {
                     Button { Task { await run { record = try await model.approve(record) } } } label: {
                         Label { Text("req.approve") } icon: { Image(systemName: "checkmark") }
@@ -183,7 +183,7 @@ struct RequestDetailView: View {
                     .buttonStyle(.tipsarr(.secondary, fullWidth: true))
                 }
             }
-            if model.isAdmin && record.state == .failed {
+            if model.canManage && record.state == .failed {
                 Button { Task { await run { record = try await model.retry(record) } } } label: {
                     Label { Text("req.retry") } icon: { Image(systemName: "arrow.clockwise") }
                 }

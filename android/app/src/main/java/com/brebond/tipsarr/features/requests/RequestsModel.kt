@@ -12,6 +12,8 @@ import com.brebond.tipsarr.core.api.approve
 import com.brebond.tipsarr.core.api.decline
 import com.brebond.tipsarr.core.api.deleteRequest
 import com.brebond.tipsarr.core.api.request
+import com.brebond.tipsarr.core.api.Permission
+import com.brebond.tipsarr.core.api.Profile
 import com.brebond.tipsarr.core.api.requestCounts
 import com.brebond.tipsarr.core.api.requests
 import com.brebond.tipsarr.core.api.retryRequest
@@ -20,7 +22,13 @@ import com.brebond.tipsarr.ui.RequestState
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
-class RequestsModel(private val api: TipsarrApi, val isAdmin: Boolean) {
+class RequestsModel(private val api: TipsarrApi, private val me: () -> Profile) {
+    /** May approve, decline, retry and delete any request. */
+    val canManage: Boolean get() = me().can(Permission.MANAGE_REQUESTS)
+
+    /** Sees everyone's requests, so the requester is shown. */
+    val canViewAll: Boolean get() = me().can(Permission.REQUEST_VIEW)
+
     var filter by mutableStateOf(RequestFilter.All)
     var phase by mutableStateOf<Phase>(Phase.Idle)
         private set
@@ -116,6 +124,6 @@ class RequestsModel(private val api: TipsarrApi, val isAdmin: Boolean) {
         RequestFilter.Failed -> record.state == RequestState.Failed
     }
 
-    /** Admins can delete anything; owners only unfinished requests (the server enforces it too). */
-    fun canDelete(record: RequestRecord): Boolean = isAdmin || record.isOpen
+    /** People who manage requests can delete anything; owners only unfinished requests (the server enforces it too). */
+    fun canDelete(record: RequestRecord): Boolean = canManage || record.isOpen
 }

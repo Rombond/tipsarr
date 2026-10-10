@@ -3,13 +3,17 @@ package com.brebond.tipsarr.core.support
 import androidx.compose.runtime.compositionLocalOf
 import com.brebond.tipsarr.core.api.ApiError
 import com.brebond.tipsarr.core.api.MediaType
+import com.brebond.tipsarr.core.api.Profile
 import com.brebond.tipsarr.core.api.TipsarrApi
 import com.brebond.tipsarr.core.api.createRequest
 import com.brebond.tipsarr.core.api.setBlocklisted
 import com.brebond.tipsarr.core.api.setWatchlisted
 
 /** What the long-press menu on a poster does: the title's defaults (every season, default folder), the result shown as a toast. */
-class TitleMenu(private val api: TipsarrApi) {
+class TitleMenu(private val api: TipsarrApi, private val me: () -> Profile) {
+    /** The Request item only shows for people who may request this kind of title. */
+    fun mayRequest(type: MediaType): Boolean = me().mayRequest(type)
+
     suspend fun request(type: MediaType, tmdbId: Int) { api.createRequest(type, tmdbId, null, null, null) }
     suspend fun watchlist(type: MediaType, tmdbId: Int) = api.setWatchlisted(true, type, tmdbId)
     suspend fun hide(type: MediaType, tmdbId: Int) = api.setBlocklisted(true, type, tmdbId)

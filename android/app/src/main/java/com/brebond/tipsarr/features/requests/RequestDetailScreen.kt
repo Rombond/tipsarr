@@ -131,10 +131,10 @@ fun RequestDetailScreen(
                             record.declineReason?.let { stringResource(R.string.req_reason, it) } ?: stringResource(R.string.m_detail_declined),
                             kind = BannerKind.Error,
                         )
-                        RequestState.Failed -> Banner(stringResource(R.string.req_failed_generic), kind = BannerKind.Warning, message = if (model.isAdmin) record.error else null)
+                        RequestState.Failed -> Banner(stringResource(R.string.req_failed_generic), kind = BannerKind.Warning, message = if (model.canManage) record.error else null)
                         else -> {}
                     }
-                    if (model.isAdmin && !record.requestedBy.isNullOrEmpty()) Requester(record)
+                    if (model.canViewAll && !record.requestedBy.isNullOrEmpty()) Requester(record)
                     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
                         SectionTitle(stringResource(R.string.m_requests_progress))
                         Timeline(steps(context, record))
@@ -257,7 +257,7 @@ private fun Actions(
     onDelete: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
-        if (model.isAdmin && record.state == RequestState.Requested) {
+        if (model.canManage && record.state == RequestState.Requested) {
             Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
                 Box(Modifier.weight(1f)) {
                     TipsarrButton(stringResource(R.string.req_approve), onApprove, fullWidth = true, enabled = !busy) { Icon(Icons.Outlined.Check, null, Modifier.size(20.dp)); Spacer(Modifier.width(Tokens.Spacing.sm)) }
@@ -267,7 +267,7 @@ private fun Actions(
                 }
             }
         }
-        if (model.isAdmin && record.state == RequestState.Failed) {
+        if (model.canManage && record.state == RequestState.Failed) {
             TipsarrButton(stringResource(R.string.req_retry), onRetry, fullWidth = true, enabled = !busy) { Icon(Icons.Outlined.Refresh, null, Modifier.size(20.dp)); Spacer(Modifier.width(Tokens.Spacing.sm)) }
         }
         if (model.canDelete(record)) {

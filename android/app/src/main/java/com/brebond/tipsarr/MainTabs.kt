@@ -12,6 +12,7 @@ import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.ui.unit.dp
+import com.brebond.tipsarr.core.api.Permission
 import com.brebond.tipsarr.core.support.rememberVerticalHinge
 import com.brebond.tipsarr.features.discover.TrendingPane
 import androidx.compose.foundation.layout.Box
@@ -118,18 +119,19 @@ enum class AppTab(val title: Int, val icon: ImageVector) {
 
 /** The signed-in app: five tabs in a bottom bar. Only Discover exists so far. */
 @Composable
-fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serverVersion: String?, session: SessionManager, settings: AppSettings, onLanguageChanged: () -> Unit) {
+fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session: SessionManager, settings: AppSettings, onLanguageChanged: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val model: MainViewModel = viewModel(key = account.id, factory = viewModelFactory {
-        initializer { MainViewModel(TipsarrApi(account.serverUrl, account.token), context.applicationContext, profile.isAdmin, userFolderChoice, RatingSource.from(profile.ratingSource)) }
+        initializer { MainViewModel(TipsarrApi(account.serverUrl, account.token), context.applicationContext, profile, RatingSource.from(profile.ratingSource)) }
     })
     val source = remember(account.id) { ImageSource(account.serverUrl, account.token) }
     val loader = remember(account.id) { createImageLoader(context, source) }
     var tab by rememberSaveable { mutableStateOf(AppTab.Discover) }
     val toasts = remember { ToastCenter(scope) }
     val openTitle: (MediaItem) -> Unit = { model.openTitle(tab, MediaRoute(it.type, it.tmdbId, it.title)) }
-    LaunchedEffect(tab) { model.refreshPending() }
+    LaunchedEffect(profile) { model.me = profile }
+    LaunchedEffect(tab, model.me.effectivePermissions) { model.refreshPending() }
     // No region yet: the phone's one, which the person can change in Settings.
     LaunchedEffect(account.id, profile.region) {
         val code = java.util.Locale.getDefault().country
@@ -219,11 +221,11 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
                             Screen.Watchlist -> WatchlistScreen(model.api, onBack = { model.back(tab) }, onOpen = openTitle)
                             Screen.Hidden -> HiddenScreen(model.api, onBack = { model.back(tab) }, onOpen = openTitle)
                             Screen.Issues -> IssuesScreen(model.api, onBack = { model.back(tab) }, onOpen = { model.open(tab, Screen.Issue(it)) })
-                            is Screen.Issue -> IssueDetailScreen(model.api, top.id, profile.isAdmin, onBack = { model.back(tab) }, onOpenTitle = { model.openTitle(tab, it) })
-                            Screen.Users -> UsersScreen(model.api, onBack = { model.back(tab) }, onOpen = { model.open(tab, Screen.User(it)) })
-                            is Screen.User -> UserDetailScreen(model.api, top.id, profile.id, onBack = { model.back(tab) })
+                            is Screen.Issue -> IssueDetailScreen(model.api, top.id, profile.can(Permission.MANAGE_ISSUES), profile.id, onBack = { model.back(tab) }, onOpenTitle = { model.openTitle(tab, it) })
+                            Screen.Users -> UsersScreen(model.api, profile, onBack = { model.back(tab) }, onOpen = { model.open(tab, Screen.User(it)) })
+                            is Screen.User -> UserDetailScreen(model.api, top.id, profile, onBack = { model.back(tab) })
                             Screen.Sync -> SyncScreen(model.api, onBack = { model.back(tab) })
-                            Screen.Stats -> StatsScreen(model.api, profile.isAdmin, profile, onBack = { model.back(tab) }, onOpenTitle = { model.openTitle(tab, it) }, onSeeAll = { model.open(tab, Screen.PosterList(it)) })
+                            Screen.Stats -> StatsScreen(model.api, profile.can(Permission.MANAGE_USERS), profile.can(Permission.MANAGE_SETTINGS), profile, onBack = { model.back(tab) }, onOpenTitle = { model.openTitle(tab, it) }, onSeeAll = { model.open(tab, Screen.PosterList(it)) })
                             is Screen.BoxOffice -> com.brebond.tipsarr.features.discover.BoxOfficeScreen(model.api, top.chart, onBack = { model.back(tab) }, onOpenItem = openTitle)
                             is Screen.PosterList -> PosterListScreen(top.route, onBack = { model.back(tab) }, onOpen = { model.openTitle(tab, it) })
             }
@@ -281,7 +283,7 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
         }
     }
 
-    CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader, LocalToast provides toasts, LocalRatings provides model.ratings, LocalLive provides model.live, LocalTitleMenu provides remember(model.api) { TitleMenu(model.api) }) {
+    CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader, LocalToast provides toasts, LocalRatings provides model.ratings, LocalLive provides model.live, LocalTitleMenu provides remember(model.api) { TitleMenu(model.api) { model.me } }) {
         Box(Modifier.fillMaxSize().background(Tokens.palette.bg)) {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val rail = hinge == null && maxWidth >= 840.dp

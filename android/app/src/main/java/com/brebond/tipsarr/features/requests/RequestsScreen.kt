@@ -158,7 +158,7 @@ fun RequestsScreen(model: RequestsModel, onOpen: (RequestRecord) -> Unit, onOpen
                         LaunchedEffect(index, model.items.size) { model.loadMore(index) }
                         SwipeRow(record, model.canDelete(record), onDelete = { deleting = record }) {
                             RequestRow(
-                                record.withLive(live), showRequester = model.isAdmin, busy = record.id in model.busy,
+                                record.withLive(live), showRequester = model.canViewAll, canDecide = model.canManage, busy = record.id in model.busy,
                                 onClick = { onOpen(record) },
                                 onApprove = { run { val updated = model.approve(record); toast?.show(approvedText(context, updated, record.title)) } },
                                 onDecline = { declining = record },
@@ -230,11 +230,13 @@ private fun RowSkeleton() {
     }
 }
 
-/** One request: poster, title, state, who and when; a bar while downloading; approve / decline for admins. */
+/** One request: poster, title, state, who and when; a bar while downloading; approve / decline for people who manage requests. */
 @Composable
 fun RequestRow(
     record: RequestRecord,
     showRequester: Boolean,
+    /** May approve and decline: the buttons only show for people who manage requests. */
+    canDecide: Boolean,
     busy: Boolean,
     onClick: () -> Unit,
     onApprove: () -> Unit,
@@ -265,7 +267,7 @@ fun RequestRow(
                 ProgressBar(percent, Modifier.padding(top = Tokens.Spacing.xs))
                 Text(downloadText(context, percent, record.etaSeconds), fontSize = Tokens.FontSize.caption, color = Tokens.palette.mutedFg)
             }
-            if (showRequester && record.state == RequestState.Requested) {
+            if (canDecide && record.state == RequestState.Requested) {
                 Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), modifier = Modifier.padding(top = Tokens.Spacing.xs)) {
                     TipsarrButton(stringResource(R.string.req_approve), onApprove, compact = true, enabled = !busy) { Icon(Icons.Outlined.Check, null, Modifier.size(16.dp)); Spacer(Modifier.width(Tokens.Spacing.xs)) }
                     TipsarrButton(stringResource(R.string.req_decline), onDecline, compact = true, kind = ButtonKind.Secondary, enabled = !busy) { Icon(Icons.Outlined.Close, null, Modifier.size(16.dp)); Spacer(Modifier.width(Tokens.Spacing.xs)) }

@@ -31,7 +31,7 @@ fun Root(session: SessionManager, settings: AppSettings, onLanguageChanged: () -
             is SessionPhase.Failed -> FailedScreen(current.error) { scope.launch { session.retry() } }
             is SessionPhase.UpdateRequired -> UpdateRequiredScreen(current.minVersion)
             is SessionPhase.SessionExpired -> SessionExpiredScreen(session, current.account, current.server)
-            is SessionPhase.Ready -> MainTabs(current.account, current.profile, session.serverStatus?.userFolderChoice ?: false, session.serverStatus?.version, session, settings, onLanguageChanged)
+            is SessionPhase.Ready -> MainTabs(current.account, current.profile, session.serverStatus?.version, session, settings, onLanguageChanged)
         }
     }
 }

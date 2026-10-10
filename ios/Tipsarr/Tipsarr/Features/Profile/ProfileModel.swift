@@ -10,7 +10,8 @@ final class ProfileModel {
     private(set) var watchedCount: Int?
     private(set) var recent: [RequestRecord] = []
     private(set) var openIssues: Int?
-    var isAdmin = false
+    /// Open issues are only counted for people who see everyone's issues.
+    var canSeeIssues = false
     /// Everything this person watched, most time first (movies and shows mixed).
     private(set) var topWatched: [StatsTop] = []
 
@@ -23,7 +24,7 @@ final class ProfileModel {
         watched.watched = .yes
         async let library = try? api.library(watched, page: 1, pageSize: 1)
         async let stats = try? api.stats(period: .all, user: nil)
-        async let issues = isAdmin ? try? api.openIssueCount() : nil
+        async let issues = canSeeIssues ? try? api.openIssueCount() : nil
         if let page = await requests {
             requestCount = page.total
             recent = page.items
