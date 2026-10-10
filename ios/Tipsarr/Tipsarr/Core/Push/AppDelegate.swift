@@ -17,14 +17,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     }
 
     /// While the app is open the alert still shows, as a banner.
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
+    // On the main actor: the system calls the completion of these methods back, and UIKit insists that happens on the main thread.
+    @MainActor
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         [.banner, .list]
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    @MainActor
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
         let info = response.notification.request.content.userInfo
         guard let event = info["event"] as? String, let id = info["id"] as? String else { return }
-        let server = info["server"] as? String
-        await MainActor.run { PushManager.shared.tap = PushTap(event: event, id: id, server: server) }
+        PushManager.shared.tap = PushTap(event: event, id: id, server: info["server"] as? String)
     }
 }
