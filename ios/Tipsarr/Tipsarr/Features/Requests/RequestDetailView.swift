@@ -14,6 +14,7 @@ struct RequestDetailView: View {
     @State private var record: RequestRecord
     @State private var declining = false
     @State private var confirmDelete = false
+    @State private var options: RequestOptions?
     @Environment(\.appContext) private var context
     @Environment(ToastCenter.self) private var toast
     @Environment(\.dismiss) private var dismiss
@@ -47,6 +48,7 @@ struct RequestDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await reload() }
         .task { await reload() }
+        .task { if model.isAdmin { options = try? await context?.api.requestOptions(record.type) } }
         .onChange(of: live?.requestsTick) { Task { await reload() } }
         .sheet(isPresented: $declining) {
             DeclineSheet(title: record.title) { reason in
@@ -61,13 +63,16 @@ struct RequestDetailView: View {
 
     private var header: some View {
         HStack(alignment: .top, spacing: Tokens.Spacing.lg) {
-            RemoteImage(path: record.posterPath, size: .w342) {
-                Image(systemName: "film").font(.title).foregroundStyle(Tokens.palette.mutedFg)
+            MediaLink(route: MediaRoute(type: record.type, tmdbId: record.tmdbId, title: record.title)) {
+                RemoteImage(path: record.posterPath, size: .w342) {
+                    Image(systemName: "film").font(.title).foregroundStyle(Tokens.palette.mutedFg)
+                }
+                .frame(width: 96, height: 96 * Tokens.Size.posterRatio)
+                .background(Tokens.palette.muted)
+                .clipShape(.rect(cornerRadius: Tokens.Radius.md))
             }
-            .frame(width: 96, height: 96 * Tokens.Size.posterRatio)
-            .background(Tokens.palette.muted)
-            .clipShape(.rect(cornerRadius: Tokens.Radius.md))
-            .accessibilityHidden(true)
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("m.requests.open_title"))
             VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
                 Text(verbatim: record.title).font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
                 Text(choose(record.type == .tv, "type.tv", "type.movie")).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
@@ -116,20 +121,33 @@ struct RequestDetailView: View {
         }
     }
 
-    private var facts: some View {
-        VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
-            Text("m.requests.details").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
-            VStack(spacing: 0) {
-                if let name = record.requestedBy, !name.isEmpty {
-                    let isMe = name == context?.profile.name
-                    DetailFact(label: "m.requests.requested_by", value: isMe ? L10n.string("common.you").trimmingCharacters(in: CharacterSet(charactersIn: "()")).localizedCapitalized : name)
-                }
-                if !record.seasons.isEmpty {
-                    DetailFact(label: "fact.seasons", value: record.seasons.sorted().map(String.init).formatted())
+    /// Who asked, the chosen quality and folder: admins only (others see their own request without these).
+    @ViewBuilder private var facts: some View {
+        if model.isAdmin {
+            VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
+                Text("m.requests.details").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
+                VStack(spacing: 0) {
+                    if let name = record.requestedBy, !name.isEmpty {
+                        let isMe = name == context?.profile.name
+                        DetailFact(label: "m.requests.requested_by", value: isMe ? L10n.string("common.you").trimmingCharacters(in: CharacterSet(charactersIn: "()")).localizedCapitalized : name)
+                    }
+                    if let name = record.decidedBy, !name.isEmpty { DetailFact(label: "m.requests.decided_by", value: name) }
+                    if !record.seasons.isEmpty {
+                        DetailFact(label: "fact.seasons", value: record.seasons.sorted().map(String.init).formatted())
+                    }
+                    DetailFact(label: "m.requests.quality_profile", value: profileName)
+                    DetailFact(label: "m.requests.root_folder", value: record.rootFolder ?? options?.defaultFolder ?? L10n.string("m.requests.default_value"))
+                    if record.dryRun { DetailFact(label: "m.requests.dry_run", value: "✓") }
+                    if record.imported { DetailFact(label: "m.requests.imported", value: "✓") }
                 }
             }
-            if !record.seasons.isEmpty { seasonProgress }
         }
+        if !record.seasons.isEmpty { seasonProgress }
+    }
+
+    private var profileName: String {
+        let id = record.qualityProfileId ?? options?.defaultProfileID
+        return options?.profiles.first { $0.id == id }?.name ?? id.map(String.init) ?? L10n.string("m.requests.default_value")
     }
 
     /// One bar per requested season: how much of it Sonarr has or is downloading (as on the web).
@@ -171,10 +189,6 @@ struct RequestDetailView: View {
                 }
                 .buttonStyle(.tipsarr(.primary, fullWidth: true))
             }
-            MediaLink(route: MediaRoute(type: record.type, tmdbId: record.tmdbId, title: record.title)) {
-                Text("media.view_details")
-            }
-            .buttonStyle(.tipsarr(.secondary, fullWidth: true))
             if model.canDelete(record) {
                 Button { confirmDelete = true } label: { Text("m.request.cancel") }
                     .buttonStyle(.tipsarr(.ghost, fullWidth: true))

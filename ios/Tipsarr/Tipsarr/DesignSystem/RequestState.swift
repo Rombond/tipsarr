@@ -30,6 +30,16 @@ enum RequestState: String, CaseIterable, Sendable {
         }
     }
 
+    /// Same symbols without the circle: on a solid badge a circle glyph would look hollow.
+    var solidSymbol: String {
+        switch self {
+        case .approved, .available: "checkmark"
+        case .downloading: "arrow.down"
+        case .declined: "xmark"
+        default: symbol
+        }
+    }
+
     /// Colour is never the only signal: each state has its own symbol.
     var symbol: String {
         switch self {

@@ -12,6 +12,8 @@ struct LibraryItem: Sendable, Hashable, Identifiable {
     var genres: [String]
     /// Server-relative path (`/api/v1/images/jellyfin/<id>?tag=<tag>`).
     var posterPath: String?
+    /// TMDB poster in the person's language (newer servers): preferred, so a title has the same poster on every screen.
+    var tmdbPosterPath: String?
     var watched: Bool
 
     var id: String { "\(type.rawValue)-\(tmdbId)" }
@@ -66,6 +68,8 @@ struct LibraryFilters: Sendable, Equatable {
     var kind: Kind = .all
     var query = ""
     var genres: Set<String> = []
+    /// A title needs one of the genres instead of all of them.
+    var anyGenre = false
     var yearFrom: Int?
     var yearTo: Int?
     var minRating: Double?
@@ -76,7 +80,7 @@ struct LibraryFilters: Sendable, Equatable {
 
     /// Filters from the sheet only (not the chips or the search text).
     var sheetIsDefault: Bool {
-        genres.isEmpty && yearFrom == nil && yearTo == nil && minRating == nil && maxRuntime == nil && sort == .added && descending
+        genres.isEmpty && !anyGenre && yearFrom == nil && yearTo == nil && minRating == nil && maxRuntime == nil && sort == .added && descending
     }
 
     var activeSheetCount: Int {

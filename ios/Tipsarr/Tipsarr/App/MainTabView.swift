@@ -72,12 +72,27 @@ struct MainTabView: View {
             Task { try? await UNUserNotificationCenter.current().setBadgeCount(count) }
         }
         .task {
+            // The server knows the language the app shows (titles and descriptions follow it).
+            let code = Bundle.main.preferredLocalizations.first ?? "en"
+            if !profile.language.lowercased().hasPrefix(code), !(profile.language.isEmpty && code == "en"),
+               let updated = try? await api.updatePreferences(language: code) {
+                session.update(profile: updated)
+            }
+        }
+        .task {
+            // No region yet: the iPhone's one, which the person can change in Settings.
+            if profile.region.isEmpty, let code = Locale.current.region?.identifier, code.count == 2,
+               let updated = try? await api.updatePreferences(region: code.uppercased()) {
+                session.update(profile: updated)
+            }
+        }
+        .task {
             // Admins see their pending count on the icon, so they are asked at once (alerts, sounds and the badge together).
             if profile.isAdmin { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) }
             await PushManager.shared.attach(account: account, pushAvailable: session.serverStatus?.pushAvailable ?? false)
         }
         // A new language or account rebuilds the tabs, so every list is fetched again in that language.
-        .id("\(account.id)|\(settings.language ?? "")")
+        .id("\(account.id)|\(settings.language ?? "")|\(profile.region)")
     }
 
     /// The five tabs inside the system bar (iPhone, narrow windows), or with our own bar: a sidebar on a
@@ -146,7 +161,7 @@ struct MainTabView: View {
 
     @ViewBuilder private func content(_ tab: AppTab) -> some View {
         switch tab {
-        case .discover: DiscoverView(api: api, path: $router.discoverPath) { router.tab = .search }
+        case .discover: DiscoverView(api: api, path: $router.discoverPath)
         case .search: SearchView(api: api)
         case .requests: RequestsView(api: api, isAdmin: profile.isAdmin, path: $router.requestsPath, selection: $router.requestsSelection) { router.tab = .discover }
         case .library: LibraryView(api: api, path: $router.libraryPath)

@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum TipsarrButtonKind: Sendable {
-    case primary, secondary, ghost, destructive
+    case primary, secondary, tonal, ghost, destructive
 }
 
 struct TipsarrButtonStyle: ButtonStyle {
@@ -9,6 +9,8 @@ struct TipsarrButtonStyle: ButtonStyle {
     var fullWidth = false
     /// Smaller button for use inside list rows (design: 32 pt tall, 14 pt text).
     var compact = false
+    /// Fully rounded ends, to sit next to round buttons (detail action row).
+    var capsule = false
 
     @Environment(\.isEnabled) private var isEnabled
 
@@ -19,21 +21,21 @@ struct TipsarrButtonStyle: ButtonStyle {
             .frame(minHeight: compact ? 36 : Tokens.Size.touchTarget)
             .frame(maxWidth: fullWidth ? .infinity : nil)
             .foregroundStyle(foreground)
-            .background(background, in: .rect(cornerRadius: Tokens.Radius.md))
+            .background(background, in: shape)
             .overlay {
-                if kind == .secondary {
-                    RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border)
-                }
+                if kind == .secondary { shape.stroke(Tokens.palette.border) }
             }
             .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.4)
-            .contentShape(.rect(cornerRadius: Tokens.Radius.md))
+            .contentShape(shape)
             .animation(.easeOut(duration: Tokens.Motion.fast), value: configuration.isPressed)
     }
+
+    private var shape: AnyShape { capsule ? AnyShape(.capsule) : AnyShape(.rect(cornerRadius: Tokens.Radius.md)) }
 
     private var foreground: Color {
         switch kind {
         case .primary: Tokens.palette.primaryFg
-        case .secondary, .ghost: Tokens.palette.fg
+        case .secondary, .tonal, .ghost: Tokens.palette.fg
         case .destructive: Tokens.palette.bg
         }
     }
@@ -42,6 +44,7 @@ struct TipsarrButtonStyle: ButtonStyle {
         switch kind {
         case .primary: Tokens.palette.primary
         case .secondary: Tokens.palette.card
+        case .tonal: Tokens.palette.muted
         case .ghost: .clear
         case .destructive: Tokens.palette.destructive
         }
@@ -50,8 +53,8 @@ struct TipsarrButtonStyle: ButtonStyle {
 
 extension ButtonStyle where Self == TipsarrButtonStyle {
     static var tipsarr: TipsarrButtonStyle { .init() }
-    static func tipsarr(_ kind: TipsarrButtonKind, fullWidth: Bool = false, compact: Bool = false) -> TipsarrButtonStyle {
-        .init(kind: kind, fullWidth: fullWidth, compact: compact)
+    static func tipsarr(_ kind: TipsarrButtonKind, fullWidth: Bool = false, compact: Bool = false, capsule: Bool = false) -> TipsarrButtonStyle {
+        .init(kind: kind, fullWidth: fullWidth, compact: compact, capsule: capsule)
     }
 }
 

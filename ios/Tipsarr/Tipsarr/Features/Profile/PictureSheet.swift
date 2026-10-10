@@ -26,7 +26,7 @@ struct PictureSheet: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.tipsarr(.secondary, fullWidth: true))
-                Button("common.cancel") { dismiss() }.buttonStyle(.tipsarr(.ghost, fullWidth: true))
+                Button("common.cancel") { dismiss() }.buttonStyle(.tipsarr(.tonal, fullWidth: true))
             }
             .disabled(working)
             Text("m.picture.footer").font(.footnote).foregroundStyle(Tokens.palette.mutedFg).multilineTextAlignment(.center)

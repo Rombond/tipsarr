@@ -54,19 +54,7 @@ extension ProfileView {
 
     /// Profile card: avatar, name, role, dates and the server. Vertical in the landscape column, horizontal in portrait.
     @ViewBuilder func headerCard(vertical: Bool) -> some View {
-        let avatar = Button { showPicture = true } label: {
-            AvatarView(userID: profile.id, name: profile.name, size: vertical ? 104 : 96, version: avatarVersion)
-                .overlay(alignment: .bottomTrailing) {
-                    Image(systemName: "camera.fill")
-                        .font(.caption2)
-                        .foregroundStyle(Tokens.palette.primaryFg)
-                        .padding(7)
-                        .background(Tokens.palette.primary, in: .circle)
-                        .overlay { Circle().strokeBorder(Tokens.palette.card, lineWidth: 3) }
-                }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("profile.change_picture"))
+        let avatar = AvatarView(userID: profile.id, name: profile.name, size: vertical ? 104 : 96, version: avatarVersion)
         let server = VStack(alignment: vertical ? .leading : .leading, spacing: 2) {
             Label { Text(verbatim: account.serverURL.host() ?? account.serverURL.absoluteString).font(.subheadline.weight(.semibold)) }
                 icon: { Image(systemName: "server.rack").foregroundStyle(Tokens.palette.mutedFg) }
@@ -83,10 +71,6 @@ extension ProfileView {
                     if let line = memberLine { Text(verbatim: line).font(.footnote).foregroundStyle(Tokens.palette.mutedFg).multilineTextAlignment(.center) }
                     Divider()
                     server.frame(maxWidth: .infinity, alignment: .leading)
-                    Button { showPicture = true } label: {
-                        Label { Text("profile.change_picture") } icon: { Image(systemName: "photo") }.frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.tipsarr(.secondary, compact: true))
                 }
                 .padding(Tokens.Spacing.xl)
             } else {
@@ -99,10 +83,6 @@ extension ProfileView {
                         server
                     }
                     Spacer(minLength: 0)
-                    Button { showPicture = true } label: {
-                        Label { Text("profile.change_picture") } icon: { Image(systemName: "photo") }
-                    }
-                    .buttonStyle(.tipsarr(.secondary, compact: true))
                 }
                 .padding(Tokens.Spacing.xl)
             }

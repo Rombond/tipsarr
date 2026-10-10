@@ -65,7 +65,7 @@ struct MediaDetailView: View {
                     self.sheet = nil
                     announce(record)
                 }
-                .tipsarrSheet(detents: [.large])
+                .tipsarrSheet(detents: nil)
             case .report:
                 ReportIssueSheet(title: model.route.title) { kind, message in
                     try await model.report(kind: kind, message: message)
@@ -96,7 +96,7 @@ struct MediaDetailView: View {
                 DetailHeader(detail: detail, badge: model.badge)
                     .padding(.bottom, -Tokens.Spacing.sm)
                 VStack(alignment: .leading, spacing: Tokens.Spacing.xl) {
-                    RatingsStrip(ratings: model.ratings)
+                    RatingsStrip(ratings: model.ratings, link: .init(type: detail.type, tmdbId: detail.tmdbId, title: detail.title, imdbId: detail.imdbId))
                     actionRow(detail)
                     banners
                     overview(detail)
@@ -113,6 +113,8 @@ struct MediaDetailView: View {
             .padding(.bottom, Tokens.Spacing._3xl)
         }
         .ignoresSafeArea(edges: .top)
+        // No blur over the banner under the status bar.
+        .scrollEdgeEffectHidden(true, for: .top)
         .refreshable { await model.load() }
     }
 
@@ -122,6 +124,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
             HStack(spacing: Tokens.Spacing.md) {
                 mainButton
+                trailerButton(detail)
                 menu(detail)
             }
             if case .inProgress(.downloading, _) = model.action, let request = model.request, let percent = live?.progress[request.id]?.percent ?? request.progressPercent {
@@ -151,20 +154,20 @@ struct MediaDetailView: View {
             Button { Task { await startRequest() } } label: {
                 Label { Text(choose(model.busy, "media.requesting", "media.request")) } icon: { Image(systemName: "plus") }
             }
-            .buttonStyle(.tipsarr(.primary, fullWidth: true))
+            .buttonStyle(.tipsarr(.primary, fullWidth: true, capsule: true))
             .disabled(model.busy)
         case .inProgress(let state, let cancellable):
             Button { if cancellable { confirmCancel = true } } label: {
                 Label { Text(state.title) } icon: { Image(systemName: state.symbol) }
             }
-            .buttonStyle(.tipsarr(.secondary, fullWidth: true))
+            .buttonStyle(.tipsarr(.secondary, fullWidth: true, capsule: true))
             .disabled(!cancellable)
         case .available(let url):
             if let url {
                 Link(destination: url) {
                     Label { Text("m.detail.open_jellyfin") } icon: { Image(systemName: "play.fill") }
                 }
-                .buttonStyle(.tipsarr(.primary, fullWidth: true))
+                .buttonStyle(.tipsarr(.primary, fullWidth: true, capsule: true))
             } else {
                 Label { Text(RequestState.available.title) } icon: { Image(systemName: RequestState.available.symbol) }
                     .font(.headline)
@@ -175,14 +178,14 @@ struct MediaDetailView: View {
             Button { Task { await startRequest() } } label: {
                 Label { Text("m.detail.request_again") } icon: { Image(systemName: "arrow.counterclockwise") }
             }
-            .buttonStyle(.tipsarr(.secondary, fullWidth: true))
+            .buttonStyle(.tipsarr(.secondary, fullWidth: true, capsule: true))
             .disabled(model.busy)
         case .failed(let canRetry):
             if canRetry {
                 Button { Task { await run { try await model.retryRequest() } } } label: {
                     Label { Text("common.retry") } icon: { Image(systemName: "arrow.clockwise") }
                 }
-                .buttonStyle(.tipsarr(.primary, fullWidth: true))
+                .buttonStyle(.tipsarr(.primary, fullWidth: true, capsule: true))
                 .disabled(model.busy)
             } else {
                 Label { Text(RequestState.failed.title) } icon: { Image(systemName: RequestState.failed.symbol) }
@@ -190,6 +193,20 @@ struct MediaDetailView: View {
                     .foregroundStyle(RequestState.failed.color)
                     .frame(maxWidth: .infinity, minHeight: Tokens.Size.touchTarget)
             }
+        }
+    }
+
+    /// Between the main button and the menu, as a round button like the menu's.
+    @ViewBuilder private func trailerButton(_ detail: MediaDetail) -> some View {
+        if let key = detail.trailerKey, let url = URL(string: "https://www.youtube.com/watch?v=\(key)") {
+            Link(destination: url) {
+                Image(systemName: "play.rectangle.fill")
+                    .font(.headline)
+                    .frame(width: Tokens.Size.touchTarget, height: Tokens.Size.touchTarget)
+                    .background(Tokens.palette.muted, in: .circle)
+                    .foregroundStyle(Tokens.palette.fg)
+            }
+            .accessibilityLabel(Text("actions.trailer"))
         }
     }
 
@@ -206,9 +223,6 @@ struct MediaDetailView: View {
             } label: {
                 Label { Text(choose(model.flags.blocklisted, "actions.show_again", "media.not_interested")) }
                     icon: { Image(systemName: model.flags.blocklisted ? "eye" : "eye.slash") }
-            }
-            if let key = detail.trailerKey, let url = URL(string: "https://www.youtube.com/watch?v=\(key)") {
-                Link(destination: url) { Label { Text("actions.trailer") } icon: { Image(systemName: "play.rectangle") } }
             }
             Button { sheet = .report } label: {
                 Label { Text("actions.report_short") } icon: { Image(systemName: "flag") }
@@ -336,7 +350,7 @@ struct MediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: Tokens.Spacing.md) {
                     ForEach(detail.recommendations.prefix(15)) { item in
-                        MediaLink(route: item.route) {
+                        MediaLink(route: item.route, requestable: item.state == nil) {
                             PosterCard(item: item)
                                 .frame(width: 110)
                         }

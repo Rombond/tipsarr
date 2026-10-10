@@ -9,26 +9,17 @@ struct StateView: View {
     var action: (() -> Void)?
 
     var body: some View {
-        VStack(spacing: Tokens.Spacing.lg) {
-            Image(systemName: symbol)
-                .font(.largeTitle)
-                .foregroundStyle(Tokens.palette.mutedFg)
-                .accessibilityHidden(true)
-            VStack(spacing: Tokens.Spacing.sm) {
-                Text(title).font(.title3.weight(.semibold))
-                if let message {
-                    Text(message).font(.subheadline).foregroundStyle(Tokens.palette.mutedFg)
-                }
-            }
-            .multilineTextAlignment(.center)
+        ContentUnavailableView {
+            Label { Text(title) } icon: { Image(systemName: symbol) }
+        } description: {
+            if let message { Text(message) }
+        } actions: {
             if let actionTitle, let action {
                 Button(action: action) { Text(actionTitle) }
                     .buttonStyle(.tipsarr(.primary))
             }
         }
-        .padding(Tokens.Spacing._3xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityElement(children: .contain)
     }
 }
 

@@ -37,7 +37,7 @@ struct PosterCarousel: View {
                     Text(title).font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
                     Spacer()
                     ProfileLink(route: seeAll ?? .posterList(PosterListRoute(title: titleKey, rows: rows, ranked: ranked))) {
-                        Text("m.discover.see_all").font(.subheadline)
+                        Text(seeAll == nil ? "m.discover.see_all" : "m.stats.open").font(.subheadline)
                     }
                     .foregroundStyle(Tokens.palette.mutedFg)
                 }

@@ -1002,6 +1002,9 @@ components:
         tmdbId:
           format: int64
           type: integer
+        tmdbPosterPath:
+          description: TMDB poster in the person's language; apps prefer it to posterUrl so every screen shows the same poster
+          type: string
         type:
           enum:
             - movie
@@ -1737,6 +1740,9 @@ components:
         pushRelayUrl:
           description: Address of the push relay, e.g. https://push.example.org
           type: string
+        pushText:
+          description: "Alerts name the media (needs a relay that allows free text for this app); off: generic alerts"
+          type: boolean
         servarrAutoImport:
           description: Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only)
           type: boolean
@@ -1770,6 +1776,7 @@ components:
         - defaultLanguage
         - pushEnabled
         - pushRelayUrl
+        - pushText
         - pushRelayKeyConfigured
         - servarrAutoImport
       type: object
@@ -2217,6 +2224,8 @@ components:
         pushRelayUrl:
           description: Empty string clears it (and turns push off)
           type: string
+        pushText:
+          type: boolean
         servarrAutoImport:
           type: boolean
         tmdbApiKey:
@@ -4625,7 +4634,7 @@ paths:
         - issues
   /library:
     get:
-      description: "Data comes from the library sync (genres, year, rating, runtime, date added from Jellyfin). `genre` may be repeated: a title must have all of them. `watched` is about the logged-in user."
+      description: "Data comes from the library sync (genres, year, rating, runtime, date added from Jellyfin). `genre` may be repeated: with `genreMode=all` (default) a title must have all of them, with `any` at least one. `watched` is about the logged-in user."
       operationId: listLibrary
       parameters:
         - explode: false
@@ -4646,16 +4655,27 @@ paths:
             description: Part of the title
             maxLength: 100
             type: string
-        - description: Repeat for several; all must match
+        - description: Repeat for several; see genreMode
           explode: true
           in: query
           name: genre
           schema:
-            description: Repeat for several; all must match
+            description: Repeat for several; see genreMode
             items:
               type: string
             maxItems: 6
             type: array
+        - description: Titles must have all the genres, or at least one
+          explode: false
+          in: query
+          name: genreMode
+          schema:
+            default: all
+            description: Titles must have all the genres, or at least one
+            enum:
+              - all
+              - any
+            type: string
         - explode: false
           in: query
           name: yearFrom

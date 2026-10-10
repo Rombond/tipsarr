@@ -11,11 +11,8 @@ struct ProviderMark: View {
     var body: some View {
         switch source {
         case .tmdb:
-            // The logo has white letters: it needs TMDB's dark blue behind it on a light screen.
-            logo("RatingTMDB", height: height * 0.6, name: "TMDB")
-                .padding(.horizontal, height * 0.3)
-                .padding(.vertical, height * 0.22)
-                .background(Color(hex: 0x0D253FFF), in: .rect(cornerRadius: height * 0.25))
+            // Two-row logo shipped as PNG: the SVG version lost the "DB" letters in iOS. Smaller than the other logos, which are one line.
+            logo("RatingTMDB", height: height * 0.85, name: "TMDB")
         case .imdb:
             logo("RatingIMDb", height: height, name: "IMDb")
         case .rottenTomatoes:

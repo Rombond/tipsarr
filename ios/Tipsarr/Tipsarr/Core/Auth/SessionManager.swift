@@ -95,6 +95,14 @@ final class SessionManager {
         phase = .ready(account, result.profile)
     }
 
+    /// Settings: stores the login behind Face ID after checking the password. The extra session the check opens is closed again.
+    func rememberLogin(for account: Account, password: String) async throws {
+        let result = try await TipsarrAPI(serverURL: account.serverURL, token: nil)
+            .signIn(username: account.name, password: password, deviceName: UIDevice.current.name)
+        await TipsarrAPI(serverURL: account.serverURL, token: result.token).logout()
+        guard CredentialStore.save(Credential(username: account.name, password: password), accountID: account.id) else { throw APIError.unexpected }
+    }
+
     /// Session ended: Face ID reads the stored login and signs in again. False when there is none or it failed.
     func reauthenticate(_ account: Account, server: Server) async -> Bool {
         guard let credential = await CredentialStore.load(accountID: account.id, reason: L10n.string("m.session.faceid_signin")) else { return false }

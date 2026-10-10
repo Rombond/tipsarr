@@ -48,7 +48,7 @@ struct LibraryView: View {
                 await model.reload()
             }
             .task { await model.loadFacets() }
-            .refreshable { await model.reload() }
+            .refreshable { await model.reload(force: true) }
             .mediaDestinations()
             .sheet(isPresented: $showFilters) {
                 LibraryFiltersSheet(filters: $model.filters, facets: model.facets)
@@ -111,7 +111,8 @@ struct LibraryView: View {
         LazyVGrid(columns: Self.columns, spacing: Tokens.Spacing.lg) {
             ForEach(model.items) { item in
                 MediaLink(route: item.route) {
-                    PosterCard(title: item.title, subtitle: item.year.map(String.init), serverPosterPath: item.posterPath, watched: item.watched,
+                    PosterCard(title: item.title, subtitle: item.year.map(String.init), posterPath: item.tmdbPosterPath,
+                               serverPosterPath: item.tmdbPosterPath == nil ? item.posterPath : nil, watched: item.watched,
                                rating: RatingInput(type: item.type, tmdbId: item.tmdbId, tmdb: item.rating))
                 }
                 .buttonStyle(.plain)
@@ -141,8 +142,12 @@ private struct LibraryRow: View {
 
     var body: some View {
         HStack(spacing: Tokens.Spacing.md) {
-            RemoteImage(serverPath: item.posterPath) {
-                Image(systemName: "film").foregroundStyle(Tokens.palette.mutedFg)
+            Group {
+                if let path = item.tmdbPosterPath {
+                    RemoteImage(path: path, size: .w185) { Image(systemName: "film").foregroundStyle(Tokens.palette.mutedFg) }
+                } else {
+                    RemoteImage(serverPath: item.posterPath) { Image(systemName: "film").foregroundStyle(Tokens.palette.mutedFg) }
+                }
             }
             .frame(width: 56, height: 84)
             .background(Tokens.palette.muted)

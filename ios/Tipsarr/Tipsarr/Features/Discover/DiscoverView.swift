@@ -30,12 +30,13 @@ struct DiscoverView: View {
     @State private var width: CGFloat = 0
     @Environment(\.liveUpdates) private var live
     @Binding var path: NavigationPath
-    var openSearch: () -> Void = {}
 
-    init(api: TipsarrAPI, path: Binding<NavigationPath>, openSearch: @escaping () -> Void = {}) {
+    private let api: TipsarrAPI
+
+    init(api: TipsarrAPI, path: Binding<NavigationPath>) {
+        self.api = api
         _model = State(initialValue: DiscoverModel(api: api))
         _path = path
-        self.openSearch = openSearch
     }
 
     private var wide: Bool { width >= 900 }
@@ -51,7 +52,7 @@ struct DiscoverView: View {
                         chips
                     }
                     switch chip.source {
-                    case nil: ForYouContent(home: model.home)
+                    case nil: ForYouContent(home: model.home, boxOffice: model.boxOffice, api: api)
                     case let source?: MediaGrid(model: model.list(source))
                     }
                 }
@@ -64,12 +65,6 @@ struct DiscoverView: View {
             .onChange(of: live?.requestsTick) { Task { await refreshCurrent() } }
             .background(Tokens.palette.bg)
             .navigationTitle("m.tab.discover")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: openSearch) { Image(systemName: "magnifyingglass") }
-                        .accessibilityLabel(Text("m.discover.search"))
-                }
-            }
             .mediaDestinations()
         }
     }
@@ -79,6 +74,7 @@ struct DiscoverView: View {
             await model.list(source).refresh()
         } else {
             await model.home.refresh()
+            await model.boxOffice.refresh()
         }
     }
 
@@ -97,8 +93,16 @@ struct DiscoverView: View {
 /// "For you" chip: the suggestion rows (the server decides which rows, e.g. trending, because you watched).
 private struct ForYouContent: View {
     let home: DiscoverHomeModel
+    let boxOffice: BoxOfficeModel
+    let api: TipsarrAPI
 
     var body: some View {
+        suggestions
+    }
+
+    private var box: some View { BoxOfficeRail(model: boxOffice, api: api) }
+
+    private var suggestions: some View {
         Group {
             switch home.phase {
             case .idle, .loading:
@@ -106,13 +110,18 @@ private struct ForYouContent: View {
             case .failed(let error):
                 ErrorState(error: error) { await home.refresh() }
             case .loaded where home.rows.isEmpty:
-                StateView(symbol: home.generating ? "hourglass" : "sparkles",
-                          title: home.generating ? "suggest.preparing" : "common.no_results")
-                    .frame(minHeight: 360)
-            case .loaded:
                 VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
-                    ForEach(home.rows) { row in
+                    box
+                    StateView(symbol: home.generating ? "hourglass" : "sparkles",
+                              title: home.generating ? "suggest.preparing" : "common.no_results")
+                        .frame(minHeight: 360)
+                }
+            case .loaded:
+                // The box office comes right after the first row ("Recommended for you").
+                VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
+                    ForEach(Array(home.rows.enumerated()), id: \.element.id) { index, row in
                         Rail(title: LText.verbatim(row.title), items: row.items)
+                        if index == 0 { box }
                     }
                 }
             }
@@ -134,7 +143,7 @@ struct Rail: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: Tokens.Spacing.md) {
                     ForEach(items) { item in
-                        MediaLink(route: item.route) {
+                        MediaLink(route: item.route, requestable: item.state == nil) {
                             PosterCard(item: item)
                                 .frame(width: 120)
                         }
@@ -181,7 +190,7 @@ struct MediaGrid: View {
             case .loaded:
                 LazyVGrid(columns: Self.columns, spacing: Tokens.Spacing.lg) {
                     ForEach(model.items) { item in
-                        MediaLink(route: item.route) {
+                        MediaLink(route: item.route, requestable: item.state == nil) {
                             PosterCard(item: item)
                         }
                         .buttonStyle(.plain)
@@ -253,7 +262,7 @@ private struct Hero: View {
                         Text(verbatim: overview).font(.body).opacity(0.9).lineLimit(3).frame(maxWidth: 560, alignment: .leading)
                     }
                     HStack(spacing: Tokens.Spacing.md) {
-                        MediaLink(route: item.route) {
+                        MediaLink(route: item.route, requestable: item.state == nil) {
                             Label { Text("media.view_details") } icon: { Image(systemName: "info.circle") }
                         }
                         .buttonStyle(.tipsarr(.primary))

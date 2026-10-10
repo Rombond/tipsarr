@@ -12,7 +12,6 @@ struct ProfileView: View {
     @AppStorage("avatarVersion") var avatarVersion = 0
     @Environment(SessionManager.self) var session
     @State var model: ProfileModel
-    @State var showPicture = false
     /// Width of the content area; picks the compact, portrait-iPad or landscape-iPad layout.
     @State private var width: CGFloat = 0
 
@@ -57,10 +56,6 @@ struct ProfileView: View {
             .task { await model.load() }
             .refreshable { await model.load() }
             .onChange(of: live?.requestsTick) { Task { await model.load() } }
-            .sheet(isPresented: $showPicture) {
-                PictureSheet(profile: profile) { avatarVersion += 1 }
-                    .tipsarrSheet(detents: [.medium])
-            }
         }
     }
 
@@ -80,18 +75,7 @@ struct ProfileView: View {
 
     private var header: some View {
         VStack(spacing: Tokens.Spacing.md) {
-            Button { showPicture = true } label: {
-                AvatarView(userID: profile.id, name: profile.name, size: 88, version: avatarVersion)
-                    .overlay(alignment: .bottomTrailing) {
-                        Image(systemName: "camera.fill")
-                            .font(.caption2)
-                            .foregroundStyle(Tokens.palette.primaryFg)
-                            .padding(7)
-                            .background(Tokens.palette.primary, in: .circle)
-                    }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("profile.change_picture"))
+            AvatarView(userID: profile.id, name: profile.name, size: 88, version: avatarVersion)
             Text(verbatim: profile.name).font(.title.weight(.bold))
             if let line = memberLine {
                 Text(verbatim: line).font(.footnote).foregroundStyle(Tokens.palette.mutedFg).multilineTextAlignment(.center)

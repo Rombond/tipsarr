@@ -55,6 +55,7 @@ struct MediaDetail: Sendable {
     var recommendations: [MediaItem]
     var watchURL: URL?
     var trailerKey: String?
+    var imdbId: String?
 
     var year: String? { releaseDate.flatMap { $0.count >= 4 ? String($0.prefix(4)) : nil } }
     var route: MediaRoute { MediaRoute(type: type, tmdbId: tmdbId, title: title) }
@@ -66,6 +67,8 @@ struct RatingsSummary: Sendable, Equatable {
     var imdb: Double?
     var rottenTomatoes: Double?
     var metacritic: Double?
+    /// Rotten Tomatoes' own page when the server found it.
+    var rottenTomatoesURL: URL?
 }
 
 struct QualityProfile: Sendable, Hashable, Identifiable {
@@ -110,6 +113,11 @@ struct RequestRecord: Sendable, Identifiable, Hashable {
     var requestedBy: String?
     var decidedBy: String?
     var dryRun: Bool
+    /// Chosen quality profile and root folder (0 / nil: the instance default). Admins only.
+    var qualityProfileId: Int?
+    var rootFolder: String?
+    /// Imported from what Radarr/Sonarr already monitor.
+    var imported = false
     var createdAt: Date
 
     /// The owner may still cancel until the title is available.

@@ -29,14 +29,46 @@ extension EnvironmentValues {
 /// Opens a title: pushed on the current stack, or shown in the right pane when there is one.
 struct MediaLink<Label: View>: View {
     let route: MediaRoute
+    /// Show "Request" in the long-press menu (the title has no request yet).
+    var requestable = false
     @ViewBuilder var label: Label
     @Environment(\.detailPane) private var pane
+    @Environment(\.appContext) private var context
+    @Environment(ToastCenter.self) private var toast
 
     var body: some View {
-        if let pane {
-            Button { pane.content = .media(route) } label: { label }
-        } else {
-            NavigationLink(value: route) { label }
+        Group {
+            if let pane {
+                Button { pane.content = .media(route) } label: { label }
+            } else {
+                NavigationLink(value: route) { label }
+            }
+        }
+        .contextMenu {
+            if requestable {
+                Button { run("m.menu.requested") { _ = try await $0.createRequest(route.type, tmdbId: route.tmdbId, seasons: nil, profileID: nil, folder: nil) } } label: {
+                    SwiftUI.Label { Text("media.request") } icon: { Image(systemName: "plus") }
+                }
+            }
+            Button { run("m.menu.watchlisted") { try await $0.setWatchlisted(true, route.type, id: route.tmdbId) } } label: {
+                SwiftUI.Label { Text("actions.watchlist") } icon: { Image(systemName: "bookmark") }
+            }
+            Button { run("m.menu.hidden") { try await $0.setBlocklisted(true, route.type, id: route.tmdbId) } } label: {
+                SwiftUI.Label { Text("media.not_interested") } icon: { Image(systemName: "eye.slash") }
+            }
+        }
+    }
+
+    /// Long-press actions: done with the title's defaults, the result shown as a toast.
+    private func run(_ done: LText, _ action: @escaping (TipsarrAPI) async throws -> Void) {
+        guard let api = context?.api else { return }
+        Task {
+            do {
+                try await action(api)
+                toast.show(done.resolved)
+            } catch {
+                toast.show(APIError.from(error).localizedMessage, kind: .error)
+            }
         }
     }
 }

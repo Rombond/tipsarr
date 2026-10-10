@@ -53,7 +53,7 @@ final class MediaDetailModel {
         async let scores = movieScores()
         async let titleFlags = try? context.api.flags(route.type, id: route.tmdbId)
         async let mine = try? context.api.myRequests()
-        if let scores = await scores { ratings.imdb = scores.imdb; ratings.rottenTomatoes = scores.rottenTomatoes; ratings.metacritic = scores.metacritic }
+        if let scores = await scores { ratings.imdb = scores.imdb; ratings.rottenTomatoes = scores.rottenTomatoes; ratings.metacritic = scores.metacritic; ratings.rottenTomatoesURL = scores.rottenTomatoesURL }
         if let titleFlags = await titleFlags { flags = titleFlags }
         if let mine = await mine { apply(requests: mine) }
     }

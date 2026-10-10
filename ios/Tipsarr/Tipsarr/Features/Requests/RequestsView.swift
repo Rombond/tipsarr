@@ -276,7 +276,7 @@ struct DeclineSheet: View {
                 }
                 .buttonStyle(.tipsarr(.destructive, fullWidth: true))
                 .disabled(sending)
-                Button("common.cancel") { dismiss() }.buttonStyle(.tipsarr(.ghost, fullWidth: true))
+                Button("common.cancel") { dismiss() }.buttonStyle(.tipsarr(.tonal, fullWidth: true))
             }
             Spacer(minLength: 0)
         }

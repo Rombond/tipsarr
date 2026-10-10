@@ -10,6 +10,7 @@ struct RequestSheet: View {
     @State private var profileID: Int?
     @State private var folder: String?
     @State private var errorText: String?
+    @State private var contentHeight: CGFloat = 560
 
     private var detail: MediaDetail? { model.detail }
     private var isTV: Bool { model.route.type == .tv }
@@ -34,13 +35,16 @@ struct RequestSheet: View {
                     .buttonStyle(.tipsarr(.primary, fullWidth: true))
                     .disabled(model.busy || (isTV && selectedSeasons.isEmpty))
                     Button("common.cancel") { dismiss() }
-                        .buttonStyle(.tipsarr(.ghost, fullWidth: true))
+                        .buttonStyle(.tipsarr(.tonal, fullWidth: true))
                 }
             }
             .padding(Tokens.Spacing.xl)
             .padding(.top, Tokens.Spacing.md)
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { contentHeight = $0 }
         }
         .scrollBounceBehavior(.basedOnSize)
+        // Only as tall as the form needs (a movie), up to the full height (a long list of seasons).
+        .presentationDetents([.height(min(contentHeight, 640)), .large])
         .onAppear(perform: setDefaults)
     }
 

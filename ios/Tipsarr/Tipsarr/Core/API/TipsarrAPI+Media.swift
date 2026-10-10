@@ -32,7 +32,8 @@ extension TipsarrAPI {
                 scores = try ok.body.json
             }
             return RatingsSummary(tmdb: nil, imdb: scores.imdb?.value, rottenTomatoes: scores.rottenTomatoes?.value,
-                                  metacritic: scores.metacritic?.value)
+                                  metacritic: scores.metacritic?.value,
+                                  rottenTomatoesURL: scores.rottenTomatoesUrl.flatMap { $0.isEmpty ? nil : URL(string: $0) })
         }
     }
 
@@ -137,7 +138,8 @@ extension MediaDetail {
             cast: d.cast.map { CastMember(id: Int($0.id), name: $0.name, character: $0.character, profilePath: $0.profilePath) },
             recommendations: d.recommendations.map(MediaItem.init),
             watchURL: d.watchUrl.flatMap(URL.init(string:)),
-            trailerKey: d.trailerKey
+            trailerKey: d.trailerKey,
+            imdbId: d.imdbId.flatMap { $0.isEmpty ? nil : $0 }
         )
     }
 }
@@ -160,6 +162,9 @@ extension RequestRecord {
             requestedBy: v.requestedBy.name,
             decidedBy: v.decidedBy?.name,
             dryRun: v.dryRun ?? false,
+            qualityProfileId: v.qualityProfileId.flatMap { $0 > 0 ? Int($0) : nil },
+            rootFolder: v.rootFolder.flatMap { $0.isEmpty ? nil : $0 },
+            imported: !(v.source ?? "").isEmpty,
             createdAt: Date(timeIntervalSince1970: TimeInterval(v.createdAt ?? 0))
         )
     }

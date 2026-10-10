@@ -22,7 +22,10 @@ struct SeasonList: View {
                     Button { Task { await toggle(season.number) } } label: { header(season) }
                         .buttonStyle(.plain)
                         .accessibilityAddTraits(open == season.number ? .isSelected : [])
-                    if open == season.number { episodeList(season.number) }
+                    if open == season.number {
+                        Divider()
+                        episodeList(season.number)
+                    }
                 }
                 .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
                 .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
@@ -60,7 +63,6 @@ struct SeasonList: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Tokens.Spacing.md)
-        .background(Tokens.palette.muted.opacity(0.4))
     }
 
     private func meta(_ season: SeasonInfo) -> String {
@@ -96,13 +98,23 @@ private struct EpisodeRow: View {
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 5).padding(.vertical, 2)
-                    .background(.black.opacity(0.7), in: .rect(cornerRadius: 4))
+                    .background(.black.opacity(0.5), in: .rect(cornerRadius: 4))
                     .padding(4)
             }
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: episode.name).font(.subheadline.weight(.semibold))
-                if !info.isEmpty { Text(verbatim: info).font(.caption).foregroundStyle(Tokens.palette.mutedFg) }
+                HStack(spacing: Tokens.Spacing.xs) {
+                    if !info.isEmpty { Text(verbatim: info) }
+                    // Episode scores come from TMDB.
+                    if episode.voteAverage > 0 {
+                        if !info.isEmpty { Text(verbatim: "·") }
+                        ProviderMark(source: .tmdb, height: 10)
+                        Text(verbatim: String(format: "%.1f", episode.voteAverage))
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(Tokens.palette.mutedFg)
                 if let overview = episode.overview {
                     Text(verbatim: overview).font(.caption).foregroundStyle(Tokens.palette.mutedFg).lineLimit(3).padding(.top, 2)
                 }
@@ -115,7 +127,6 @@ private struct EpisodeRow: View {
         var parts: [String] = []
         if let date = episode.airDate, let parsed = Self.parser.date(from: date) { parts.append(parsed.formatted(date: .abbreviated, time: .omitted)) }
         if let minutes = episode.runtimeMinutes, minutes > 0 { parts.append(Plural.text("time.min", count: minutes)) }
-        if episode.voteAverage > 0 { parts.append("★ " + String(format: "%.1f", episode.voteAverage)) }
         return parts.joined(separator: " · ")
     }
 

@@ -64,6 +64,8 @@ final class AppSettings {
 
     init() {
         theme = AppTheme(rawValue: UserDefaults.standard.string(forKey: "theme") ?? "") ?? .system
-        language = AppLanguage.override
+        // The language follows the iPhone's per-app language setting now; forget a choice made in an older build.
+        AppLanguage.override = nil
+        language = nil
     }
 }

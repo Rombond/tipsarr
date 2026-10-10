@@ -20,7 +20,7 @@ struct DetailHeader: View {
                 .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
                 .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
                 .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
+                VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
                     Text(verbatim: detail.title)
                         .font(.title2.weight(.bold))
                         .accessibilityAddTraits(.isHeader)
@@ -37,16 +37,21 @@ struct DetailHeader: View {
         }
     }
 
+    /// Pulling the page down stretches the image instead of showing the edge of the banner.
     private var backdrop: some View {
-        RemoteImage(path: detail.backdropPath ?? detail.posterPath, size: .w780) {
-            Tokens.palette.muted
+        GeometryReader { proxy in
+            let pull = max(0, proxy.frame(in: .scrollView).minY)
+            RemoteImage(path: detail.backdropPath ?? detail.posterPath, size: .w780) {
+                Tokens.palette.muted
+            }
+            .frame(width: proxy.size.width, height: backdropHeight + pull)
+            .clipped()
+            .overlay {
+                LinearGradient(colors: [.clear, Tokens.palette.bg], startPoint: .center, endPoint: .bottom)
+            }
+            .offset(y: -pull)
         }
         .frame(height: backdropHeight)
-        .frame(maxWidth: .infinity)
-        .clipped()
-        .overlay {
-            LinearGradient(colors: [.clear, Tokens.palette.bg], startPoint: .center, endPoint: .bottom)
-        }
         .accessibilityHidden(true)
     }
 

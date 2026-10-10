@@ -12,14 +12,28 @@ struct PosterCard: View {
     var watched = false
     var rating: RatingInput?
     var state: RequestState?
+    /// Chart position, drawn on the poster's bottom-left corner.
+    var rank: Int?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
+        VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
             poster
                 .aspectRatio(1 / Tokens.Size.posterRatio, contentMode: .fit)
                 .overlay(alignment: .topTrailing) {
                     if let state {
-                        StatusBadge(state: state, compact: true).padding(Tokens.Spacing.sm)
+                        StatusBadge(state: state, compact: true, solid: true).padding(Tokens.Spacing.sm)
+                    }
+                }
+                .overlay(alignment: .bottomLeading) {
+                    if let rank {
+                        Text(verbatim: String(rank))
+                            .font(.headline.weight(.heavy))
+                            .monospacedDigit()
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, Tokens.Spacing.sm)
+                            .padding(.vertical, 2)
+                            .background(.black.opacity(0.6), in: .capsule)
+                            .padding(Tokens.Spacing.sm)
                     }
                 }
                 .overlay(alignment: .topLeading) {
@@ -33,6 +47,7 @@ struct PosterCard: View {
                     }
                 }
                 .clipShape(.rect(cornerRadius: Tokens.Radius.md))
+            VStack(alignment: .leading, spacing: 0) {
             Text(title)
                 .font(.subheadline.weight(.medium))
                 .lineLimit(1)
@@ -49,6 +64,7 @@ struct PosterCard: View {
                     if let rating { RatingLabel(input: rating) }
                 }
             }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .contentShape(.hoverEffect, .rect(cornerRadius: Tokens.Radius.md))
@@ -58,7 +74,7 @@ struct PosterCard: View {
     }
 
     init(title: String, subtitle: String? = nil, posterPath: String? = nil, posterSize: TMDBSize = .w342,
-         serverPosterPath: String? = nil, watched: Bool = false, rating: RatingInput? = nil, state: RequestState? = nil) {
+         serverPosterPath: String? = nil, watched: Bool = false, rating: RatingInput? = nil, state: RequestState? = nil, rank: Int? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.posterPath = posterPath
@@ -67,6 +83,7 @@ struct PosterCard: View {
         self.watched = watched
         self.rating = rating
         self.state = state
+        self.rank = rank
     }
 
     /// Standard card for a list item: year, score and request state.

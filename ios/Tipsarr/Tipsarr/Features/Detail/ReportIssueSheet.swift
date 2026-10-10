@@ -51,7 +51,7 @@ struct ReportIssueSheet: View {
                     .buttonStyle(.tipsarr(.primary, fullWidth: true))
                     .disabled(sending || message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     Button("common.cancel") { dismiss() }
-                        .buttonStyle(.tipsarr(.ghost, fullWidth: true))
+                        .buttonStyle(.tipsarr(.tonal, fullWidth: true))
                 }
             }
             .padding(Tokens.Spacing.xl)

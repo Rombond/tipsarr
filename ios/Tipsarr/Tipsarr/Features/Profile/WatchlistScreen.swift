@@ -44,7 +44,7 @@ struct HiddenScreen: View {
     @State private var phase: WatchlistScreen.Phase = .loading
 
     var body: some View {
-        TitleGridScreen(title: "profile.hidden_title", hint: "profile.hidden_desc", items: items, phase: phase, emptyMessage: "profile.nothing_hidden",
+        TitleGridScreen(title: "m.settings.hidden", hint: "profile.hidden_desc", items: items, phase: phase, emptyMessage: "profile.nothing_hidden",
                         actionTitle: "m.library.show_again", actionSymbol: "eye",
                         reload: load) { item in
             guard let context else { return }

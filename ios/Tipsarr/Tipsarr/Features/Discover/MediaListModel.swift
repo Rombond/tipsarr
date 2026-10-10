@@ -104,12 +104,14 @@ final class DiscoverHomeModel {
 @MainActor @Observable
 final class DiscoverModel {
     let home: DiscoverHomeModel
+    let boxOffice: BoxOfficeModel
     private let api: TipsarrAPI
     @ObservationIgnored private var lists: [MediaListModel.Source: MediaListModel] = [:]
 
     init(api: TipsarrAPI) {
         self.api = api
         home = DiscoverHomeModel(api: api)
+        boxOffice = BoxOfficeModel(api: api)
     }
 
     func list(_ source: MediaListModel.Source) -> MediaListModel {

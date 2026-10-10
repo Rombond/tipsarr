@@ -13,6 +13,7 @@ extension TipsarrAPI {
                 _type: kind,
                 q: filters.query.isEmpty ? nil : filters.query,
                 genre: filters.genres.isEmpty ? nil : filters.genres.sorted(),
+                genreMode: filters.anyGenre ? .any : .all,
                 yearFrom: filters.yearFrom.map(Int64.init),
                 yearTo: filters.yearTo.map(Int64.init),
                 minRating: filters.minRating,
@@ -67,6 +68,7 @@ extension LibraryItem {
             runtimeMinutes: item.runtimeMinutes.map(Int.init),
             genres: item.genres,
             posterPath: item.posterUrl.flatMap { $0.isEmpty ? nil : $0 },
+            tmdbPosterPath: item.tmdbPosterPath.flatMap { $0.isEmpty ? nil : $0 },
             watched: item.watched
         )
     }

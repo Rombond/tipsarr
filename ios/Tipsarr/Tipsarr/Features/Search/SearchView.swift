@@ -257,7 +257,7 @@ struct SearchView: View {
     private func titlesGrid(_ titles: [MediaItem]) -> some View {
         LazyVGrid(columns: Self.columns, spacing: Tokens.Spacing.lg) {
             ForEach(titles) { item in
-                MediaLink(route: item.route) {
+                MediaLink(route: item.route, requestable: item.state == nil) {
                     PosterCard(item: item)
                 }
                 .buttonStyle(.plain)

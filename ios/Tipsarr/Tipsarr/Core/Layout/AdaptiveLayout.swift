@@ -38,7 +38,9 @@ extension EnvironmentValues {
 private struct PaneInset: ViewModifier {
     @Environment(\.paneTrailingInset) private var inset
     @ViewBuilder func body(content: Content) -> some View {
-        if inset > 0 { content.ignoresSafeArea(.container, edges: .trailing) } else { content }
+        // Room between the end of the content and the tab bar.
+        let padded = content.contentMargins(.bottom, Tokens.Spacing.lg, for: .scrollContent)
+        if inset > 0 { padded.ignoresSafeArea(.container, edges: .trailing) } else { padded }
     }
 }
 

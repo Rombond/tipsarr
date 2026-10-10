@@ -38,11 +38,9 @@ struct ToastOverlay: ViewModifier {
                             .foregroundStyle(message.kind == .success ? Tokens.Status.available : Tokens.palette.destructive)
                     }
                     .padding(.horizontal, Tokens.Spacing.lg)
-                    .padding(.vertical, Tokens.Spacing.md)
-                    .background(Tokens.palette.card, in: .capsule)
-                    .overlay { Capsule().strokeBorder(Tokens.palette.border) }
-                    .shadow(color: .black.opacity(0.15), radius: 12, y: 4)
-                    .padding(.top, Tokens.Spacing.sm)
+                    .frame(minHeight: Tokens.Size.touchTarget)
+                    // Overlay layer: Liquid Glass. Same row as the toolbar buttons (44 pt, top of the safe area).
+                    .glassEffect(.regular, in: .capsule)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .accessibilityAddTraits(.isStaticText)
                     .onAppear { UIAccessibility.post(notification: .announcement, argument: message.text) }

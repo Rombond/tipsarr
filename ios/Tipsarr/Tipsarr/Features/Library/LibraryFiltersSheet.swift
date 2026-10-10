@@ -21,17 +21,21 @@ struct LibraryFiltersSheet: View {
             .navigationTitle("library.filters")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("library.reset") {
+                ToolbarItemGroup(placement: .topBarLeading) {
+                    Button { dismiss() } label: { Image(systemName: "xmark") }
+                        .accessibilityLabel(Text("m.library.close"))
+                    Button {
                         let kind = filters.kind, query = filters.query
                         filters = LibraryFilters()
                         filters.kind = kind
                         filters.query = query
-                    }
-                    .disabled(filters.sheetIsDefault && filters.watched == .any)
+                    } label: { Image(systemName: "arrow.counterclockwise") }
+                        .disabled(filters.sheetIsDefault && filters.watched == .any)
+                        .accessibilityLabel(Text("library.reset"))
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("m.library.apply") { dismiss() }
+                    Button(role: .confirm) { dismiss() } label: { Image(systemName: "checkmark") }
+                        .accessibilityLabel(Text("m.library.apply"))
                 }
             }
         }
@@ -65,7 +69,13 @@ struct LibraryFiltersSheet: View {
                     .accessibilityAddTraits(selected ? .isSelected : [])
                 }
             }
-            Text("library.genres_all").font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+            if filters.genres.count > 1 {
+                Picker("library.genres", selection: $filters.anyGenre) {
+                    Text("m.library.genre_all").tag(false)
+                    Text("m.library.genre_any").tag(true)
+                }
+                .pickerStyle(.segmented)
+            }
         }
     }
 
@@ -78,18 +88,24 @@ struct LibraryFiltersSheet: View {
         }
     }
 
+    /// The caption stays visible above the menu: a menu picker only shows the chosen value.
     private func yearMenu(_ title: LText, selection: Binding<Int?>, range: ClosedRange<Int>) -> some View {
-        Picker(selection: selection) {
-            Text("library.any").tag(Int?.none)
-            ForEach(Array(range).reversed(), id: \.self) { year in Text(verbatim: String(year)).tag(Int?.some(year)) }
-        } label: {
-            Text(title)
+        VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
+            Text(title).font(.footnote.weight(.medium)).foregroundStyle(Tokens.palette.mutedFg)
+            Picker(selection: selection) {
+                Text("library.any").tag(Int?.none)
+                ForEach(Array(range).reversed(), id: \.self) { year in Text(verbatim: String(year)).tag(Int?.some(year)) }
+            } label: {
+                Text(title)
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, Tokens.Spacing.sm)
+            .frame(minHeight: Tokens.Size.touchTarget)
+            .background(Tokens.palette.muted, in: .rect(cornerRadius: Tokens.Radius.md))
         }
-        .pickerStyle(.menu)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, Tokens.Spacing.sm)
-        .frame(minHeight: Tokens.Size.touchTarget)
-        .background(Tokens.palette.muted, in: .rect(cornerRadius: Tokens.Radius.md))
+        .frame(maxWidth: .infinity)
     }
 
     private var rating: some View {
@@ -110,11 +126,11 @@ struct LibraryFiltersSheet: View {
             VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
                 Slider(
                     value: Binding(get: { Double(filters.maxRuntime ?? facets.maxRuntimeMinutes) },
-                                   set: { filters.maxRuntime = Int($0) >= facets.maxRuntimeMinutes ? nil : Int($0) }),
+                                   set: { filters.maxRuntime = $0 > Double(facets.maxRuntimeMinutes) - 5 ? nil : Int($0) }),
                     in: 20...Double(max(facets.maxRuntimeMinutes, 21)), step: 5
                 )
                 Group {
-                    if let value = filters.maxRuntime { Text(verbatim: L10n.string("library.under", String(value))) } else { Text("library.any") }
+                    if let value = filters.maxRuntime { Text(verbatim: L10n.string("m.library.under", Duration.seconds(value * 60).formatted(.units(allowed: [.hours, .minutes], width: .narrow)))) } else { Text("library.any") }
                 }
                 .font(.footnote)
                 .foregroundStyle(Tokens.palette.mutedFg)
