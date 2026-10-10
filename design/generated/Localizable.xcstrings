@@ -8381,13 +8381,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Downloading %1$@% · %2$@ left"
+            "value": "Downloading %1$@%% · %2$@ left"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Téléchargement %1$@ % · %2$@ restant"
+            "value": "Téléchargement %1$@ %% · %2$@ restant"
           }
         }
       }
@@ -8398,13 +8398,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Downloading %@%"
+            "value": "Downloading %@%%"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Téléchargement %@ %"
+            "value": "Téléchargement %@ %%"
           }
         }
       }

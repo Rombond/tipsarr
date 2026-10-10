@@ -37,7 +37,8 @@ if (missing.length) { console.error(missing.join('\n')); process.exit(1); }
 fs.writeFileSync(path.join(out, 'strings.json'), JSON.stringify(strings, null, 1) + '\n');
 
 // Xcode String Catalog: {name} placeholders become positional %n$@ in order of appearance (the order is kept in the comment)
-const toPos = (s, order) => { const names = []; const text = s.replace(/\{(\w+)\}/g, (_, nm) => { names.push(nm); return `%${(order || names).indexOf(nm) + 1}$@`; }); return { text: names.length === 1 ? text.replace('%1$@', '%@') : text, names }; };
+// A literal % next to placeholders is written %% (a lone % at the end of a format is dropped).
+const toPos = (s, order) => { const names = []; const text = (/\{\w+\}/.test(s) ? s.replace(/%/g, '%%') : s).replace(/\{(\w+)\}/g, (_, nm) => { names.push(nm); return `%${(order || names).indexOf(nm) + 1}$@`; }); return { text: names.length === 1 ? text.replace('%1$@', '%@') : text, names }; };
 const catalog = { sourceLanguage: 'en', version: '1.0', strings: {} };
 for (const k of Object.keys(strings.en).sort()) {
   const e = toPos(strings.en[k]); const f = toPos(strings.fr[k], e.names);

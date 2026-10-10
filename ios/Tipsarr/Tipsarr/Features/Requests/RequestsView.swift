@@ -216,6 +216,7 @@ struct RequestRow: View {
                 Text(verbatim: when).font(.caption).foregroundStyle(Tokens.palette.mutedFg)
                 if record.state == .downloading, let percent = progress?.percent ?? record.progressPercent {
                     ProgressBar(percent: percent).padding(.top, Tokens.Spacing.xs)
+                    Text(verbatim: downloadText(percent)).font(.caption).foregroundStyle(Tokens.palette.mutedFg)
                 }
                 if showRequester && record.state == .requested {
                     HStack(spacing: Tokens.Spacing.sm) {
@@ -234,6 +235,15 @@ struct RequestRow: View {
             }
         }
         .opacity(busy ? 0.6 : 1)
+    }
+
+    /// "Downloading 45% · 12 min left", as on the web.
+    private func downloadText(_ percent: Int) -> String {
+        if let eta = progress?.etaSeconds ?? record.etaSeconds, eta > 0 {
+            let left = Duration.seconds(eta).formatted(.units(allowed: [.hours, .minutes], width: .abbreviated, maximumUnitCount: 2))
+            return L10n.string("req.stage.downloading_eta", String(percent), left)
+        }
+        return L10n.string("req.stage.downloading_pct", String(percent))
     }
 
     private var when: String {
