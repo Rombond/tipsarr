@@ -38,6 +38,7 @@ import com.brebond.tipsarr.core.support.LocalToast
 import com.brebond.tipsarr.core.support.ToastCenter
 import com.brebond.tipsarr.core.support.ToastHost
 import com.brebond.tipsarr.features.detail.MediaDetailScreen
+import com.brebond.tipsarr.features.library.LibraryScreen
 import com.brebond.tipsarr.features.person.PersonScreen
 import com.brebond.tipsarr.features.requests.RequestDetailScreen
 import com.brebond.tipsarr.features.requests.RequestsScreen
@@ -142,6 +143,7 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, onSi
                     }
                 } else Box(Modifier.fillMaxSize().statusBarsPadding()) { when (tab) {
                     AppTab.Discover -> DiscoverScreen(model.discover, onOpenSearch = { tab = AppTab.Search }, onOpenItem = openTitle)
+                    AppTab.Library -> LibraryScreen(model.library, onOpen = { model.openTitle(tab, it) })
                     AppTab.Requests -> RequestsScreen(model.requests, onOpen = { model.openRequest(tab, it) }, onOpenDiscover = { tab = AppTab.Discover })
                     AppTab.Search -> SearchScreen(
                         model.search,

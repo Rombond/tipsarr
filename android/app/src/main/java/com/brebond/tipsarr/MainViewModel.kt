@@ -16,6 +16,7 @@ import com.brebond.tipsarr.features.detail.MediaDetailModel
 import com.brebond.tipsarr.features.detail.MediaRoute
 import com.brebond.tipsarr.features.discover.DiscoverModel
 import com.brebond.tipsarr.features.discover.MediaListModel
+import com.brebond.tipsarr.features.library.LibraryModel
 import com.brebond.tipsarr.features.person.PersonModel
 import com.brebond.tipsarr.features.person.PersonRoute
 import com.brebond.tipsarr.features.requests.RequestsModel
@@ -40,6 +41,7 @@ class MainViewModel(
     val discover = DiscoverModel(api)
     val search = SearchModel(api, context)
     val requests = RequestsModel(api, isAdmin)
+    val library = LibraryModel(api)
 
     /** Requests waiting for approval, shown on the tab for admins. */
     var pendingCount by mutableIntStateOf(0)
