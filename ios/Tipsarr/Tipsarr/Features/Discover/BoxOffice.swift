@@ -3,7 +3,15 @@ import SwiftUI
 
 /// One weekend (or week) of the box office in a region, as the server stores it.
 struct BoxOfficeChart: Sendable {
-    struct Week: Sendable, Hashable { var key: String; var label: String }
+    struct Week: Sendable, Hashable {
+        var key: String
+        /// The server's English label, only used when the dates are missing.
+        var label: String
+        var start: String = ""
+        var end: String = ""
+        /// "Oct 2 – Oct 4" in the phone's language.
+        var title: String { BoxOfficeChart.range(start: start, end: end) ?? label }
+    }
     var region: String
     var regions: [String]
     var week: String
@@ -31,7 +39,7 @@ extension TipsarrAPI {
             let body = try ok.body.json
             return BoxOfficeChart(
                 region: body.region, regions: body.regions, week: body.week, start: body.start ?? "", end: body.end ?? "",
-                weeks: body.weeks.map { .init(key: $0.key, label: $0.label ?? $0.key) },
+                weeks: body.weeks.map { .init(key: $0.key, label: $0.label ?? $0.key, start: $0.start ?? "", end: $0.end ?? "") },
                 entries: body.entries.map {
                     BoxOfficeEntry(position: Int($0.position), title: $0.title, weekendGross: Int($0.weekendGross), totalGross: Int($0.totalGross),
                                    weeksInRelease: Int($0.weeksInRelease), item: $0.item.map(MediaItem.init))
@@ -69,11 +77,17 @@ final class BoxOfficeModel {
 extension BoxOfficeChart {
     /// "Oct 2 – Oct 4 · US"
     var title: String {
+        guard let range = Self.range(start: start, end: end) else { return region }
+        return "\(range) · \(region)"
+    }
+
+    /// "Oct 2 – Oct 4" from two ISO dates, nil when they are missing.
+    static func range(start: String, end: String) -> String? {
         let parser = DateFormatter()
         parser.dateFormat = "yyyy-MM-dd"
         parser.locale = Locale(identifier: "en_US_POSIX")
-        guard let from = parser.date(from: start), let to = parser.date(from: end) else { return region }
-        return "\(from.formatted(.dateTime.month(.abbreviated).day())) – \(to.formatted(.dateTime.month(.abbreviated).day())) · \(region)"
+        guard let from = parser.date(from: start), let to = parser.date(from: end) else { return nil }
+        return "\(from.formatted(.dateTime.month(.abbreviated).day())) – \(to.formatted(.dateTime.month(.abbreviated).day()))"
     }
 
     /// Gross in the region's currency, compact ("$12M").
@@ -162,7 +176,7 @@ struct BoxOfficeScreen: View {
                         ForEach(chart.regions, id: \.self) { code in Text(verbatim: "\(SettingsView.flag(code)) \(code)").tag(code) }
                     }
                     Picker("m.boxoffice.week", selection: Binding(get: { chart.week }, set: { load(region: chart.region, week: $0) })) {
-                        ForEach(chart.weeks, id: \.key) { week in Text(verbatim: week.label).tag(week.key) }
+                        ForEach(chart.weeks, id: \.key) { week in Text(verbatim: week.title).tag(week.key) }
                     }
                 } label: { Image(systemName: "slider.horizontal.3") }
                 .accessibilityLabel(Text("library.filters"))

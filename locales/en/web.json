@@ -713,5 +713,8 @@
   "profile.device_sign_out": "Sign out",
   "profile.devices_sign_out_others": "Sign out everywhere else",
   "profile.device_signed_out": "Device signed out.",
-  "profile.devices_signed_out_others": "Signed out everywhere else."
+  "profile.devices_signed_out_others": "Signed out everywhere else.",
+  "error.bad_rating_source": "That score source is not available.",
+  "error.invalid_server": "That server address is not valid.",
+  "error.ldap_plugin_not_found": "Jellyfin has no LDAP Authentication plugin set up."
 }

@@ -64,6 +64,7 @@ import com.brebond.tipsarr.core.api.users
 import com.brebond.tipsarr.core.live.LocalLive
 import com.brebond.tipsarr.core.live.OnTick
 import com.brebond.tipsarr.core.support.LocalToast
+import com.brebond.tipsarr.core.support.serverMessage
 import com.brebond.tipsarr.core.support.ToastKind
 import com.brebond.tipsarr.core.support.relativeTime
 import com.brebond.tipsarr.core.support.stringByName
@@ -278,7 +279,7 @@ private fun JobCard(job: JobStatus, canRun: Boolean, run: suspend () -> Unit) {
             if (job.lastFinishedAt > 0) stringResource(R.string.m_sync_last, relativeTime(context, job.lastFinishedAt)) else stringResource(R.string.m_sync_never),
             fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg,
         )
-        if (job.message.isNotEmpty()) Text(job.message, fontSize = Tokens.FontSize.footnote, color = if (job.status == "error") Tokens.palette.destructive else Tokens.palette.mutedFg)
+        if (job.message.isNotEmpty()) Text(if (job.status == "error") job.message else serverMessage(LocalContext.current, job.messageCode, job.messageArgs, job.message), fontSize = Tokens.FontSize.footnote, color = if (job.status == "error") Tokens.palette.destructive else Tokens.palette.mutedFg)
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (job.everySeconds > 0) {
                 val minutes = job.everySeconds / 60

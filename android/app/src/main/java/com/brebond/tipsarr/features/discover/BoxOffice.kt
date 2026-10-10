@@ -116,7 +116,7 @@ fun BoxOfficeScreen(api: TipsarrApi, first: BoxOfficeChart, onBack: () -> Unit, 
                     }
                     Text(stringResource(R.string.m_boxoffice_week), Modifier.padding(horizontal = Tokens.Spacing.md, vertical = Tokens.Spacing.xs), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
                     chart.weeks.take(12).forEach { week ->
-                        DropdownMenuItem(text = { Text(week.label, color = Tokens.palette.fg, fontWeight = if (week.key == chart.week) FontWeight.Bold else FontWeight.Normal) }, onClick = { menu = false; load(chart.region, week.key) })
+                        DropdownMenuItem(text = { Text(week.title(), color = Tokens.palette.fg, fontWeight = if (week.key == chart.week) FontWeight.Bold else FontWeight.Normal) }, onClick = { menu = false; load(chart.region, week.key) })
                     }
                 }
             }

@@ -3,7 +3,7 @@
 // Outputs:
 //   design/generated/strings.json, Localizable.xcstrings, InfoPlist.xcstrings    iOS (copied into the app by `make ios-strings`)
 //   design/generated/android/values[-xx]/strings.xml, GeneratedLanguages.kt       Android (copied by `make generate`)
-//   backend/internal/push/locales/<code>.json                                     push alert titles (embedded in the server)
+//   backend/internal/i18n/locales/<code>.json                                     server texts (embedded in the server)
 // A language may leave keys out: Android, iOS, the web app and the server then show the English text.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,8 +23,9 @@ const webOnly = new Set(['settings', 'webhooks', 'services', 'setup', 'job', 'bo
 const keep = (k) => !webOnly.has(k.split('.')[0]);
 const pick = (cat) => Object.fromEntries(Object.entries(cat).filter(([k]) => keep(k)));
 
-// the catalog the apps share: web strings that make sense in an app, then the mobile ones (which win)
-const strings = Object.fromEntries(codes.map((c) => [c, { ...pick(loc.byCode[c].web), ...loc.byCode[c].mobile }]));
+// the catalog the apps share: web strings that make sense in an app, then the mobile ones (which win), then the
+// server texts (job summaries are sent as codes the apps translate with these)
+const strings = Object.fromEntries(codes.map((c) => [c, { ...pick(loc.byCode[c].web), ...loc.byCode[c].mobile, ...loc.byCode[c].server }]));
 fs.writeFileSync(path.join(out, 'strings.json'), JSON.stringify(strings, null, 1) + '\n');
 
 // Xcode String Catalog: {name} placeholders become positional %n$@ in order of appearance (the order is kept in the comment)
@@ -104,7 +105,7 @@ ${kt},
 console.log(`wrote Android strings for ${codes.length} language(s)`);
 
 // Server: push alert titles, embedded by backend/internal/push
-const pushDir = path.join(root, 'backend', 'internal', 'push', 'locales');
+const pushDir = path.join(root, 'backend', 'internal', 'i18n', 'locales');
 fs.rmSync(pushDir, { recursive: true, force: true });
 fs.mkdirSync(pushDir, { recursive: true });
 for (const c of codes) fs.writeFileSync(path.join(pushDir, `${c}.json`), JSON.stringify(loc.byCode[c].server, null, 2) + '\n');

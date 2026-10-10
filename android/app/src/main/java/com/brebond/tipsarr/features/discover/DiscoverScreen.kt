@@ -49,6 +49,7 @@ import com.brebond.tipsarr.R
 import com.brebond.tipsarr.core.api.ApiError
 import com.brebond.tipsarr.core.api.BoxOfficeChart
 import com.brebond.tipsarr.core.api.MediaItem
+import com.brebond.tipsarr.core.api.SuggestionRow
 import com.brebond.tipsarr.core.live.LocalLive
 import com.brebond.tipsarr.core.live.OnTick
 import com.brebond.tipsarr.design.Tokens
@@ -129,13 +130,23 @@ private fun ForYou(model: DiscoverModel, boxOffice: BoxOfficeModel, onOpenChart:
                 // The box office sits right under the first suggestion row ("Recommended for you").
                 itemsIndexed(home.rows, key = { _, row -> row.id }) { index, row ->
                     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg)) {
-                        Rail(row.title, row.items, onOpenItem)
+                        Rail(rowTitle(row), row.items, onOpenItem)
                         if (index == 0) BoxOfficeRail(boxOffice, onOpenItem, onOpenChart)
                     }
                 }
             }
         }
     }
+}
+
+/** The row's title in the app's language: the server sends English plus what the row is based on. */
+@Composable
+private fun rowTitle(row: SuggestionRow): String = when (row.variant) {
+    "personal" -> stringResource(R.string.suggest_personal)
+    "server" -> stringResource(R.string.suggest_server)
+    "trending" -> stringResource(R.string.suggest_trending)
+    "because" -> row.seed?.title?.let { stringResource(R.string.suggest_because, it) } ?: row.title
+    else -> row.title
 }
 
 @Composable

@@ -2176,6 +2176,11 @@ export interface components {
             /** Format: int64 */
             lastStartedAt: number;
             message: string;
+            messageArgs?: string[];
+            messageCode?: string;
+            messageParams?: {
+                [key: string]: string;
+            };
             name: string;
             running: boolean;
             status: string;

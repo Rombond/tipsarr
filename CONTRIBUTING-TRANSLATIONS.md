@@ -12,7 +12,7 @@ locales/
     mobile.json       the iOS and Android apps
     android.json      Android wording that differs from iOS (a few lines)
     ios.json          iOS permission prompts (one line)
-    server.json       titles of push notifications
+    server.json       texts the server sends: push notification titles and background-job summaries
   fr/                 French, same files
 ```
 
@@ -59,6 +59,7 @@ To see the web app in your language: `cd frontend && npm run dev`, then choose t
 
 ## For maintainers
 
-- `make generate` writes `android/app/src/main/res/values-<code>/strings.xml`, `GeneratedLanguages.kt` (the language list of the Android app) and `backend/internal/push/locales/<code>.json` (embedded in the server).
+- `make generate` writes `android/app/src/main/res/values-<code>/strings.xml`, `GeneratedLanguages.kt` (the language list of the Android app) and `backend/internal/i18n/locales/<code>.json` (embedded in the server).
+- The server sends some texts as a code plus values (for example the summary of a finished sync, `srv.job.library.synced` with the number of movies). The apps and the web app translate the code from the same `server.json`, so translators only edit that file. A new server text is added to `locales/en/server.json` and sent with `i18n.M(code, name, value, ...)` in Go.
 - `make ios-strings` copies the string catalogs into the iOS project and adds the language to the project's list of languages.
 - The web app reads `locales/<code>/web.json` directly; nothing to generate.

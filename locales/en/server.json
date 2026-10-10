@@ -6,5 +6,21 @@
   "push.request.created": "New request",
   "push.issue.created": "New issue",
   "push.issue.comment": "New comment on an issue",
-  "push.issue.resolved": "Issue resolved"
+  "push.issue.resolved": "Issue resolved",
+  "srv.job.skip.no_jellyfin_key": "no Jellyfin API key saved",
+  "srv.job.skip.playback_missing": "Playback Reporting is not installed in Jellyfin",
+  "srv.job.skip.import_off": "auto-import is off",
+  "srv.job.interrupted": "interrupted by restart",
+  "srv.job.library.synced": "{movies} movies, {shows} TV shows, {episodes} episodes ({unmatched} without a TMDB id)",
+  "srv.job.history.synced": "{users} users synced ({changed} changed), {titles} watched titles",
+  "srv.job.playback.plays": "{plays} new plays",
+  "srv.job.playback.resolved": "{plays} new plays, {resolved} removed titles recognised",
+  "srv.job.playback.relinked": "{plays} new plays, {linked} titles linked to the library, {resolved} removed titles recognised",
+  "srv.job.import.done": "{count} imported",
+  "srv.job.boxoffice.stored": "{saved} charts stored",
+  "srv.job.boxoffice.stored_matched": "{saved} charts stored, {matched} titles matched in older charts",
+  "srv.job.boxoffice.stored_failed": "{saved} charts stored, {failed} failed",
+  "srv.job.boxoffice.stored_matched_failed": "{saved} charts stored, {matched} titles matched in older charts, {failed} failed",
+  "srv.job.poll.inflight": "{count} requests in flight",
+  "srv.job.housekeeping.purged": "purged"
 }

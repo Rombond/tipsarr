@@ -1,6 +1,11 @@
 package store
 
-import "github.com/uptrace/bun"
+import (
+	"encoding/json"
+
+	"github.com/Rombond/tipsarr/backend/internal/i18n"
+	"github.com/uptrace/bun"
+)
 
 const (
 	RoleAdmin = "admin"
@@ -134,8 +139,29 @@ type JobRun struct {
 	Name           string `bun:"name,pk" json:"name"`
 	LastStartedAt  int64  `bun:"last_started_at" json:"lastStartedAt"`
 	LastFinishedAt int64  `bun:"last_finished_at" json:"lastFinishedAt"`
-	Status         string `bun:"status" json:"status"` // running | ok | error
-	Message        string `bun:"message" json:"message"`
+	Status         string `bun:"status" json:"status"`   // running | ok | error
+	Message        string `bun:"message" json:"message"` // English text; for an error, the technical detail
+	MessageCode    string `bun:"message_code" json:"messageCode,omitempty"`
+	MessageParams  string `bun:"message_params" json:"-"` // JSON object, the values of the code's {placeholders}
+}
+
+// SetMessage stores a message for people: its code, parameters and English text.
+func (r *JobRun) SetMessage(m i18n.Msg) {
+	r.MessageCode, r.MessageParams, r.Message = m.Code, "", m.String()
+	if len(m.Params) > 0 {
+		if raw, err := json.Marshal(m.Params); err == nil {
+			r.MessageParams = string(raw)
+		}
+	}
+}
+
+// Msg returns the stored message (empty when the run ended with a plain text such as an error).
+func (r JobRun) Msg() i18n.Msg {
+	m := i18n.Msg{Code: r.MessageCode}
+	if r.MessageParams != "" {
+		_ = json.Unmarshal([]byte(r.MessageParams), &m.Params)
+	}
+	return m
 }
 
 type ServarrInstance struct {

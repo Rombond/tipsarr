@@ -40,6 +40,7 @@ extension TipsarrAPI {
                 canSync: body.canSync,
                 jobs: body.jobs.map { job in
                     JobStatus(name: job.name, running: job.running, status: job.status, message: job.message,
+                              messageCode: job.messageCode ?? "", messageArgs: job.messageArgs ?? [],
                               lastStarted: job.lastStartedAt > 0 ? Date(timeIntervalSince1970: TimeInterval(job.lastStartedAt)) : nil,
                               lastFinished: job.lastFinishedAt > 0 ? Date(timeIntervalSince1970: TimeInterval(job.lastFinishedAt)) : nil,
                               everySeconds: Int(job.everySeconds))

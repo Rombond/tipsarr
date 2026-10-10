@@ -35,9 +35,21 @@ extension TipsarrAPI {
             guard case .ok(let ok) = try await client.suggestions() else { throw APIError.unexpected }
             let body = try ok.body.json
             return SuggestionResult(
-                rows: body.rows.map { SuggestionRow(id: $0.id, title: $0.title, items: $0.items.map(MediaItem.init)) },
+                rows: body.rows.map { SuggestionRow(id: $0.id, title: Self.rowTitle($0), items: $0.items.map(MediaItem.init)) },
                 generating: body.generating
             )
+        }
+    }
+}
+
+extension TipsarrAPI {
+    /// The row's title in the app's language: the server sends English plus what the row is based on.
+    fileprivate static func rowTitle(_ row: Components.Schemas.Row) -> String {
+        switch row.variant {
+        case .personal: L10n.string("suggest.personal")
+        case .server: L10n.string("suggest.server")
+        case .trending: L10n.string("suggest.trending")
+        case .because: row.seed.map { L10n.string("suggest.because", $0.title) } ?? row.title
         }
     }
 }

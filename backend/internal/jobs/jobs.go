@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Rombond/tipsarr/backend/internal/i18n"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
 
@@ -24,13 +25,13 @@ type Job struct {
 	InitialDelay time.Duration
 	// Quiet jobs run often; their runs are only recorded when they fail (or recover from a failure).
 	Quiet bool
-	// Run returns a short human-readable summary.
-	Run func(ctx context.Context) (string, error)
+	// Run returns a short summary as a message the apps translate (see package i18n).
+	Run func(ctx context.Context) (i18n.Msg, error)
 }
 
 type Manager struct {
 	// OnChange (optional) is called when a non-quiet job starts or finishes.
-	OnChange func(name, status, message string)
+	OnChange func(name, status string, msg i18n.Msg, text string)
 
 	store *store.Store
 	jobs  map[string]Job
@@ -56,7 +57,8 @@ func (m *Manager) Start(ctx context.Context) {
 	if runs, err := m.store.JobRuns(ctx); err == nil {
 		for _, r := range runs {
 			if r.Status == "running" {
-				r.Status, r.Message, r.LastFinishedAt = "error", "interrupted by restart", time.Now().Unix()
+				r.Status, r.LastFinishedAt = "error", time.Now().Unix()
+				r.SetMessage(i18n.M("srv.job.interrupted"))
 				_ = m.store.SaveJobRun(ctx, &r)
 			}
 		}
@@ -141,7 +143,7 @@ func (m *Manager) run(ctx context.Context, j Job) error {
 	rec := &store.JobRun{Name: j.Name, LastStartedAt: time.Now().Unix(), Status: "running"}
 	if !j.Quiet {
 		_ = m.store.SaveJobRun(ctx, rec)
-		m.notifyChange(j.Name, "running", "")
+		m.notifyChange(j.Name, "running", i18n.Msg{}, "")
 	}
 
 	jobCtx, cancel := context.WithTimeout(ctx, 30*time.Minute)
@@ -151,21 +153,23 @@ func (m *Manager) run(ctx context.Context, j Job) error {
 	rec.LastFinishedAt = time.Now().Unix()
 	switch {
 	case errors.Is(err, ErrSkipped):
-		rec.Status, rec.Message, err = "skipped", err.Error(), nil
-		if msg != "" {
-			rec.Message = msg
+		rec.Status, err = "skipped", nil
+		rec.SetMessage(msg)
+		if msg.IsZero() {
+			rec.Message = "skipped"
 		}
 	case err != nil:
-		rec.Status, rec.Message = "error", err.Error()
+		rec.Status, rec.Message = "error", err.Error() // technical detail, shown as it is
 	default:
-		rec.Status, rec.Message = "ok", msg
+		rec.Status = "ok"
+		rec.SetMessage(msg)
 	}
 	m.mu.Lock()
 	record := !j.Quiet || rec.Status == "error" || m.failing[j.Name]
 	m.failing[j.Name] = j.Quiet && rec.Status == "error"
 	m.mu.Unlock()
 	if record {
-		m.notifyChange(j.Name, rec.Status, rec.Message)
+		m.notifyChange(j.Name, rec.Status, rec.Msg(), rec.Message)
 		if serr := m.store.SaveJobRun(context.WithoutCancel(ctx), rec); serr != nil {
 			slog.Warn("save job run", "err", serr)
 		}
@@ -175,8 +179,12 @@ func (m *Manager) run(ctx context.Context, j Job) error {
 
 type Status struct {
 	store.JobRun
-	EverySeconds int  `json:"everySeconds"`
-	Running      bool `json:"running"`
+	// MessageParams are the values for the {placeholders} of MessageCode.
+	MessageParams map[string]string `json:"messageParams,omitempty"`
+	// MessageArgs are the same values in the order of the text's placeholders, for the mobile apps.
+	MessageArgs  []string `json:"messageArgs,omitempty"`
+	EverySeconds int      `json:"everySeconds"`
+	Running      bool     `json:"running"`
 }
 
 // Statuses returns every registered job with its last run.
@@ -200,13 +208,13 @@ func (m *Manager) Statuses(ctx context.Context) ([]Status, error) {
 		if !ok {
 			r = store.JobRun{Name: name, Status: "never"}
 		}
-		out = append(out, Status{JobRun: r, EverySeconds: int(m.jobs[name].Every.Seconds()), Running: m.running[name]})
+		out = append(out, Status{JobRun: r, MessageParams: r.Msg().StringParams(), MessageArgs: r.Msg().OrderedArgs(), EverySeconds: int(m.jobs[name].Every.Seconds()), Running: m.running[name]})
 	}
 	return out, nil
 }
 
-func (m *Manager) notifyChange(name, status, message string) {
+func (m *Manager) notifyChange(name, status string, msg i18n.Msg, text string) {
 	if m.OnChange != nil {
-		m.OnChange(name, status, message)
+		m.OnChange(name, status, msg, text)
 	}
 }

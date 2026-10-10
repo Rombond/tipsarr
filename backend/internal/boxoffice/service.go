@@ -16,6 +16,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/servarr"
+	"github.com/Rombond/tipsarr/backend/internal/i18n"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
@@ -141,13 +142,13 @@ func (s *Service) fetch(ctx context.Context, region, weekKey string, weekly bool
 // Refresh fetches the latest chart(s) of every configured region and stores them. The latest
 // two weekends are always re-read (Monday's actuals replace Sunday's estimates); older weekends
 // are filled in until `keepWeeks` are stored, so the page can show a short history.
-func (s *Service) Refresh(ctx context.Context) (string, error) {
+func (s *Service) Refresh(ctx context.Context) (i18n.Msg, error) {
 	var saved, failed int
 	var firstErr error
 	for _, region := range s.Regions(ctx) {
 		stored, err := s.store.BoxOfficeWeeks(ctx, region)
 		if err != nil {
-			return "", err
+			return i18n.Msg{}, err
 		}
 		for _, weekly := range []bool{false, true} {
 			suffix := ""
@@ -178,7 +179,7 @@ func (s *Service) Refresh(ctx context.Context) (string, error) {
 					select {
 					case <-time.After(s.pause):
 					case <-ctx.Done():
-						return "", ctx.Err()
+						return i18n.Msg{}, ctx.Err()
 					}
 				}
 				label, entries, err := s.fetch(ctx, region, key, weekly)
@@ -199,20 +200,22 @@ func (s *Service) Refresh(ctx context.Context) (string, error) {
 					count++
 				}
 				if err := s.saveWeek(ctx, region, key+suffix, label, entries); err != nil {
-					return "", err
+					return i18n.Msg{}, err
 				}
 				saved++
 			}
 		}
 	}
-	msg := fmt.Sprintf("%d charts stored", saved)
-	if n := s.rematch(ctx); n > 0 {
-		msg += fmt.Sprintf(", %d titles matched in older charts", n)
+	matched := s.rematch(ctx)
+	switch {
+	case matched > 0 && failed > 0:
+		return i18n.M("srv.job.boxoffice.stored_matched_failed", "saved", saved, "matched", matched, "failed", failed), firstErr
+	case matched > 0:
+		return i18n.M("srv.job.boxoffice.stored_matched", "saved", saved, "matched", matched), firstErr
+	case failed > 0:
+		return i18n.M("srv.job.boxoffice.stored_failed", "saved", saved, "failed", failed), firstErr
 	}
-	if failed > 0 {
-		msg += fmt.Sprintf(", %d failed", failed)
-	}
-	return msg, firstErr
+	return i18n.M("srv.job.boxoffice.stored", "saved", saved), firstErr
 }
 
 // rematch tries again the titles that had no TMDB match when their chart was stored. Older charts

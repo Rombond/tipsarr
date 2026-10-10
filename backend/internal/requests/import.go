@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/servarr"
+	"github.com/Rombond/tipsarr/backend/internal/i18n"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
@@ -22,13 +23,13 @@ const maxImportPerRun = 60
 // "approved" requests, so Requests shows (and tracks) everything that is on its way, whoever
 // added it. It only reads from Radarr/Sonarr and writes to Tipsarr's own database: nothing is
 // requested or added anywhere, so it is safe in dry-run mode.
-func (s *Service) ImportFromServarr(ctx context.Context) (string, error) {
+func (s *Service) ImportFromServarr(ctx context.Context) (i18n.Msg, error) {
 	if v, _ := s.store.GetSetting(ctx, SettingAutoImport); v == "false" {
-		return "auto-import is off", nil
+		return i18n.M("srv.job.skip.import_off"), nil
 	}
 	instances, err := s.store.ListServarr(ctx)
 	if err != nil {
-		return "", err
+		return i18n.Msg{}, err
 	}
 	imported, looked := 0, 0
 	var firstErr error
@@ -72,7 +73,7 @@ func (s *Service) ImportFromServarr(ctx context.Context) (string, error) {
 			firstErr = err
 		}
 	}
-	return fmt.Sprintf("%d imported", imported), firstErr
+	return i18n.M("srv.job.import.done", "count", imported), firstErr
 }
 
 type candidate struct {

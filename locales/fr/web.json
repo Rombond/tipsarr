@@ -713,5 +713,8 @@
   "profile.device_sign_out": "Déconnecter",
   "profile.devices_sign_out_others": "Déconnecter partout ailleurs",
   "profile.device_signed_out": "Appareil déconnecté.",
-  "profile.devices_signed_out_others": "Déconnecté partout ailleurs."
+  "profile.devices_signed_out_others": "Déconnecté partout ailleurs.",
+  "error.bad_rating_source": "Cette source de note n’est pas disponible.",
+  "error.invalid_server": "Cette adresse de serveur n’est pas valide.",
+  "error.ldap_plugin_not_found": "Jellyfin n’a pas de plugin d’authentification LDAP configuré."
 }

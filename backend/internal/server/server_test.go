@@ -20,6 +20,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/avatars"
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/events"
+	"github.com/Rombond/tipsarr/backend/internal/i18n"
 	"github.com/Rombond/tipsarr/backend/internal/issues"
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
 	"github.com/Rombond/tipsarr/backend/internal/library"
@@ -369,13 +370,13 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	lib := library.New(st)
 	lib.SetDebounce(20 * time.Millisecond)
 	jm := jobs.New(st)
-	jm.Register(jobs.Job{Name: "library-sync", Every: time.Hour, InitialDelay: time.Hour, Run: func(ctx context.Context) (string, error) {
+	jm.Register(jobs.Job{Name: "library-sync", Every: time.Hour, InitialDelay: time.Hour, Run: func(ctx context.Context) (i18n.Msg, error) {
 		r, err := lib.SyncLibrary(ctx)
-		return r.String(), err
+		return r.Msg(), err
 	}})
-	jm.Register(jobs.Job{Name: "history-sync", Every: time.Hour, InitialDelay: time.Hour, Run: func(ctx context.Context) (string, error) {
+	jm.Register(jobs.Job{Name: "history-sync", Every: time.Hour, InitialDelay: time.Hour, Run: func(ctx context.Context) (i18n.Msg, error) {
 		r, err := lib.SyncHistory(ctx, "")
-		return r.String(), err
+		return r.Msg(), err
 	}})
 	hub := events.New()
 	mediaSvc := media.New(st, tm.URL)
@@ -395,10 +396,10 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	ratingsSvc := ratings.New(st)
 	authSvc := auth.New(st)
 	pb := playback.New(st, mediaSvc)
-	jm.Register(jobs.Job{Name: "playback-sync", Every: time.Hour, InitialDelay: time.Hour, Run: func(ctx context.Context) (string, error) {
+	jm.Register(jobs.Job{Name: "playback-sync", Every: time.Hour, InitialDelay: time.Hour, Run: func(ctx context.Context) (i18n.Msg, error) {
 		msg, err := pb.Sync(ctx)
 		if errors.Is(err, playback.ErrNotInstalled) {
-			return "not installed", jobs.ErrSkipped
+			return i18n.M("srv.job.skip.playback_missing"), jobs.ErrSkipped
 		}
 		return msg, err
 	}})

@@ -662,21 +662,21 @@ func TestImportFromServarr(t *testing.T) {
 	ctx := context.Background()
 
 	msg, err := e.reqs.ImportFromServarr(ctx)
-	if err != nil || msg != "1 imported" {
-		t.Fatalf("import = %q %v", msg, err)
+	if err != nil || msg.Code != "srv.job.import.done" || msg.Params["count"] != 1 || msg.String() != "1 imported" {
+		t.Fatalf("import = %+v %v", msg, err)
 	}
 	_, body := call(t, e.app, "GET", "/api/v1/requests", "", admin)
 	if !strings.Contains(body, `"total":1`) || !strings.Contains(body, `"source":"radarr"`) || !strings.Contains(body, `"status":"approved"`) {
 		t.Fatalf("list = %s", body)
 	}
 	// running again does not duplicate
-	if msg, _ := e.reqs.ImportFromServarr(ctx); msg != "0 imported" {
-		t.Fatalf("second import = %q", msg)
+	if msg, _ := e.reqs.ImportFromServarr(ctx); msg.String() != "0 imported" {
+		t.Fatalf("second import = %+v", msg)
 	}
 	// the toggle turns it off
 	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"servarrAutoImport":false}`, admin)
-	if msg, _ := e.reqs.ImportFromServarr(ctx); msg != "auto-import is off" {
-		t.Fatalf("off = %q", msg)
+	if msg, _ := e.reqs.ImportFromServarr(ctx); msg.Code != "srv.job.skip.import_off" || msg.String() != "auto-import is off" {
+		t.Fatalf("off = %+v", msg)
 	}
 	if w := radarr.writes(); len(w) != 0 {
 		t.Fatalf("import wrote to radarr: %v", w)

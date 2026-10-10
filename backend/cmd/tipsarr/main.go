@@ -19,6 +19,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/config"
 	"github.com/Rombond/tipsarr/backend/internal/events"
+	"github.com/Rombond/tipsarr/backend/internal/i18n"
 	"github.com/Rombond/tipsarr/backend/internal/issues"
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
 	"github.com/Rombond/tipsarr/backend/internal/library"
@@ -80,23 +81,23 @@ func run(cfg config.Config) error {
 
 	lib := library.New(st)
 	jm := jobs.New(st)
-	jm.Register(jobs.Job{Name: "library-sync", Every: 6 * time.Hour, InitialDelay: 10 * time.Second, Run: func(ctx context.Context) (string, error) {
+	jm.Register(jobs.Job{Name: "library-sync", Every: 6 * time.Hour, InitialDelay: 10 * time.Second, Run: func(ctx context.Context) (i18n.Msg, error) {
 		if !lib.Configured(ctx) {
-			return "no Jellyfin API key saved", jobs.ErrSkipped
+			return i18n.M("srv.job.skip.no_jellyfin_key"), jobs.ErrSkipped
 		}
 		r, err := lib.SyncLibrary(ctx)
-		return r.String(), err
+		return r.Msg(), err
 	}})
-	jm.Register(jobs.Job{Name: "history-sync", Every: time.Hour, InitialDelay: 40 * time.Second, Run: func(ctx context.Context) (string, error) {
+	jm.Register(jobs.Job{Name: "history-sync", Every: time.Hour, InitialDelay: 40 * time.Second, Run: func(ctx context.Context) (i18n.Msg, error) {
 		if !lib.Configured(ctx) {
-			return "no Jellyfin API key saved", jobs.ErrSkipped
+			return i18n.M("srv.job.skip.no_jellyfin_key"), jobs.ErrSkipped
 		}
 		r, err := lib.SyncHistory(ctx, "")
-		return r.String(), err
+		return r.Msg(), err
 	}})
 	hub := events.New()
-	jm.OnChange = func(name, status, message string) {
-		hub.Publish("sync.status", "", map[string]string{"job": name, "state": status, "message": message}, true)
+	jm.OnChange = func(name, status string, msg i18n.Msg, text string) {
+		hub.Publish("sync.status", "", map[string]any{"job": name, "state": status, "message": text, "messageCode": msg.Code, "messageParams": msg.StringParams(), "messageArgs": msg.OrderedArgs()}, true)
 	}
 	mediaSvc := media.New(st, "")
 	notifier := notify.New(st, cfg.DryRun)
@@ -108,26 +109,26 @@ func run(cfg config.Config) error {
 	jm.Register(jobs.Job{Name: "boxoffice-refresh", Every: 12 * time.Hour, InitialDelay: time.Minute, Run: box.Refresh})
 	reqSvc := requests.New(st, mediaSvc, hub, notifier, cfg.DryRun)
 	reqSvc.SetLibrary(lib)
-	jm.Register(jobs.Job{Name: "request-poll", Every: 15 * time.Second, InitialDelay: 20 * time.Second, Quiet: true, Run: func(ctx context.Context) (string, error) {
+	jm.Register(jobs.Job{Name: "request-poll", Every: 15 * time.Second, InitialDelay: 20 * time.Second, Quiet: true, Run: func(ctx context.Context) (i18n.Msg, error) {
 		n, err := reqSvc.Poll(ctx)
-		return fmt.Sprintf("%d requests in flight", n), err
+		return i18n.M("srv.job.poll.inflight", "count", n), err
 	}})
 
 	jm.Register(jobs.Job{Name: "servarr-import", Every: time.Hour, InitialDelay: 90 * time.Second, Run: reqSvc.ImportFromServarr})
-	jm.Register(jobs.Job{Name: "housekeeping", Every: time.Hour, InitialDelay: 2 * time.Minute, Quiet: true, Run: func(ctx context.Context) (string, error) {
+	jm.Register(jobs.Job{Name: "housekeeping", Every: time.Hour, InitialDelay: 2 * time.Minute, Quiet: true, Run: func(ctx context.Context) (i18n.Msg, error) {
 		if err := st.PurgeExpiredSessions(ctx); err != nil {
-			return "", err
+			return i18n.Msg{}, err
 		}
-		return "purged", st.PurgeExpiredCache(ctx)
+		return i18n.M("srv.job.housekeeping.purged"), st.PurgeExpiredCache(ctx)
 	}})
 	pb := playback.New(st, mediaSvc)
-	jm.Register(jobs.Job{Name: "playback-sync", Every: time.Hour, InitialDelay: 2*time.Minute + 30*time.Second, Run: func(ctx context.Context) (string, error) {
+	jm.Register(jobs.Job{Name: "playback-sync", Every: time.Hour, InitialDelay: 2*time.Minute + 30*time.Second, Run: func(ctx context.Context) (i18n.Msg, error) {
 		msg, err := pb.Sync(ctx)
 		switch {
 		case errors.Is(err, playback.ErrNotInstalled):
-			return "Playback Reporting is not installed in Jellyfin", jobs.ErrSkipped
+			return i18n.M("srv.job.skip.playback_missing"), jobs.ErrSkipped
 		case errors.Is(err, playback.ErrNoAPIKey):
-			return "no Jellyfin API key saved", jobs.ErrSkipped
+			return i18n.M("srv.job.skip.no_jellyfin_key"), jobs.ErrSkipped
 		}
 		return msg, err
 	}})

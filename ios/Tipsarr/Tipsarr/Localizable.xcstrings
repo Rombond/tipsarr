@@ -1445,6 +1445,22 @@
         }
       }
     },
+    "error.bad_rating_source": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That score source is not available."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette source de note n’est pas disponible."
+          }
+        }
+      }
+    },
     "error.bad_region": {
       "localizations": {
         "en": {
@@ -1605,6 +1621,22 @@
         }
       }
     },
+    "error.invalid_server": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That server address is not valid."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette adresse de serveur n’est pas valide."
+          }
+        }
+      }
+    },
     "error.invalid_token": {
       "localizations": {
         "en": {
@@ -1665,6 +1697,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Il faut au moins un administrateur."
+          }
+        }
+      }
+    },
+    "error.ldap_plugin_not_found": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jellyfin has no LDAP Authentication plugin set up."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jellyfin n’a pas de plugin d’authentification LDAP configuré."
           }
         }
       }
@@ -8478,6 +8526,134 @@
         }
       }
     },
+    "push.issue.comment": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New comment on an issue"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveau commentaire sur un signalement"
+          }
+        }
+      }
+    },
+    "push.issue.created": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New issue"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveau signalement"
+          }
+        }
+      }
+    },
+    "push.issue.resolved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Issue resolved"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signalement résolu"
+          }
+        }
+      }
+    },
+    "push.request.approved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request approved"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande approuvée"
+          }
+        }
+      }
+    },
+    "push.request.available": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now available"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maintenant disponible"
+          }
+        }
+      }
+    },
+    "push.request.created": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New request"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvelle demande"
+          }
+        }
+      }
+    },
+    "push.request.declined": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request declined"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande refusée"
+          }
+        }
+      }
+    },
+    "push.request.failed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request failed"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande en échec"
+          }
+        }
+      }
+    },
     "ratings.mc_hint": {
       "localizations": {
         "en": {
@@ -9846,6 +10022,273 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saisons"
+          }
+        }
+      }
+    },
+    "srv.job.boxoffice.stored": {
+      "comment": "placeholders: saved",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ charts stored"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ classements enregistrés"
+          }
+        }
+      }
+    },
+    "srv.job.boxoffice.stored_failed": {
+      "comment": "placeholders: saved, failed",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ charts stored, %2$@ failed"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ classements enregistrés, %2$@ en échec"
+          }
+        }
+      }
+    },
+    "srv.job.boxoffice.stored_matched": {
+      "comment": "placeholders: saved, matched",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ charts stored, %2$@ titles matched in older charts"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ classements enregistrés, %2$@ titres associés dans d’anciens classements"
+          }
+        }
+      }
+    },
+    "srv.job.boxoffice.stored_matched_failed": {
+      "comment": "placeholders: saved, matched, failed",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ charts stored, %2$@ titles matched in older charts, %3$@ failed"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ classements enregistrés, %2$@ titres associés dans d’anciens classements, %3$@ en échec"
+          }
+        }
+      }
+    },
+    "srv.job.history.synced": {
+      "comment": "placeholders: users, changed, titles",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ users synced (%2$@ changed), %3$@ watched titles"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ utilisateurs synchronisés (%2$@ modifiés), %3$@ titres vus"
+          }
+        }
+      }
+    },
+    "srv.job.housekeeping.purged": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "purged"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nettoyé"
+          }
+        }
+      }
+    },
+    "srv.job.import.done": {
+      "comment": "placeholders: count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ imported"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ importés"
+          }
+        }
+      }
+    },
+    "srv.job.interrupted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "interrupted by restart"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "interrompu par un redémarrage"
+          }
+        }
+      }
+    },
+    "srv.job.library.synced": {
+      "comment": "placeholders: movies, shows, episodes, unmatched",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ movies, %2$@ TV shows, %3$@ episodes (%4$@ without a TMDB id)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ films, %2$@ séries, %3$@ épisodes (%4$@ sans identifiant TMDB)"
+          }
+        }
+      }
+    },
+    "srv.job.playback.plays": {
+      "comment": "placeholders: plays",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ new plays"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ nouvelles lectures"
+          }
+        }
+      }
+    },
+    "srv.job.playback.relinked": {
+      "comment": "placeholders: plays, linked, resolved",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ new plays, %2$@ titles linked to the library, %3$@ removed titles recognised"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ nouvelles lectures, %2$@ titres liés à la bibliothèque, %3$@ titres supprimés reconnus"
+          }
+        }
+      }
+    },
+    "srv.job.playback.resolved": {
+      "comment": "placeholders: plays, resolved",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ new plays, %2$@ removed titles recognised"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ nouvelles lectures, %2$@ titres supprimés reconnus"
+          }
+        }
+      }
+    },
+    "srv.job.poll.inflight": {
+      "comment": "placeholders: count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ requests in flight"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ demandes en cours"
+          }
+        }
+      }
+    },
+    "srv.job.skip.import_off": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "auto-import is off"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "l’import automatique est désactivé"
+          }
+        }
+      }
+    },
+    "srv.job.skip.no_jellyfin_key": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no Jellyfin API key saved"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "aucune clé d’API Jellyfin enregistrée"
+          }
+        }
+      }
+    },
+    "srv.job.skip.playback_missing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playback Reporting is not installed in Jellyfin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playback Reporting n’est pas installé dans Jellyfin"
           }
         }
       }

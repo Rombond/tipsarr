@@ -8,7 +8,19 @@ import java.util.Currency
 import java.util.Locale
 
 @Serializable
-data class BoxOfficeWeek(val key: String, val label: String = "")
+data class BoxOfficeWeek(val key: String, val label: String = "", val start: String = "", val end: String = "") {
+    /** "Oct 2 – Oct 4" in the phone's language; the server's English label when the dates are missing. */
+    fun title(): String = dateRange(start, end) ?: label.ifEmpty { key }
+}
+
+/** "Oct 2 – Oct 4" from two ISO dates, null when they are missing. */
+fun dateRange(start: String, end: String): String? {
+    val from = runCatching { LocalDate.parse(start) }.getOrNull()
+    val to = runCatching { LocalDate.parse(end) }.getOrNull()
+    if (from == null || to == null) return null
+    val short = { d: LocalDate -> d.format(DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())) }
+    return "${short(from)} – ${short(to)}"
+}
 
 @Serializable
 data class BoxOfficeEntry(
@@ -33,13 +45,7 @@ data class BoxOfficeChart(
     val entries: List<BoxOfficeEntry> = emptyList(),
 ) {
     /** "Oct 2 – Oct 4 · US" */
-    fun title(): String {
-        val from = runCatching { LocalDate.parse(start) }.getOrNull()
-        val to = runCatching { LocalDate.parse(end) }.getOrNull()
-        if (from == null || to == null) return region
-        val short = { d: LocalDate -> d.format(DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())) }
-        return "${short(from)} – ${short(to)} · $region"
-    }
+    fun title(): String = dateRange(start, end)?.let { "$it · $region" } ?: region
 
     /** Gross in the region's currency, compact ("$12M"). */
     fun money(amount: Long): String {

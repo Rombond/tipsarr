@@ -6,7 +6,6 @@ package push
 import (
 	"bytes"
 	"context"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Rombond/tipsarr/backend/internal/i18n"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
@@ -230,60 +230,10 @@ func (s *Service) post(ctx context.Context, cfg config, ev notify.PushEvent, dev
 	return out.Items, nil
 }
 
-// The alert titles are translated in locales/<code>/server.json at the repository root; `make generate`
-// copies them to locales/ here so the server embeds them.
-//
-//go:embed locales/*.json
-var localeFiles embed.FS
-
-// alertTitles maps language code -> push event -> title, read from the embedded files.
-var alertTitles = loadAlertTitles()
-
-func loadAlertTitles() map[string]map[string]string {
-	out := map[string]map[string]string{}
-	files, err := localeFiles.ReadDir("locales")
-	if err != nil {
-		panic(err)
-	}
-	for _, f := range files {
-		raw, err := localeFiles.ReadFile("locales/" + f.Name())
-		if err != nil {
-			panic(err)
-		}
-		titles := map[string]string{}
-		if err := json.Unmarshal(raw, &titles); err != nil {
-			panic(fmt.Sprintf("push locales/%s: %v", f.Name(), err))
-		}
-		out[strings.TrimSuffix(f.Name(), ".json")] = titles
-	}
-	return out
-}
-
-// alertTitle is the title for an event in the person's language (fr, fr-FR, pt-BR ...): the exact tag, then
-// the language, then English.
-func alertTitle(event, lang string) (string, bool) {
-	l := strings.ToLower(strings.ReplaceAll(lang, "_", "-"))
-	candidates := []string{l}
-	if base, _, ok := strings.Cut(l, "-"); ok {
-		candidates = append(candidates, base)
-	}
-	candidates = append(candidates, "en")
-	for _, c := range candidates {
-		for code, titles := range alertTitles {
-			if strings.ToLower(code) != c {
-				continue
-			}
-			if t, ok := titles["push."+event]; ok {
-				return t, true
-			}
-		}
-	}
-	return "", false
-}
-
 // alertText returns the title and body of the alert; the title says what happened, the body what it is about.
+// Titles are the "push.*" texts in locales/<code>/server.json, in the person's language.
 func alertText(event, lang, subject string) (title, body string) {
-	t, ok := alertTitle(event, lang)
+	t, ok := i18n.T(lang, "push."+event, nil)
 	if !ok {
 		return "", ""
 	}

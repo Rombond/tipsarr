@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/jellyfin"
+	"github.com/Rombond/tipsarr/backend/internal/i18n"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
 
@@ -67,6 +68,10 @@ func (s *Service) Configured(ctx context.Context) bool {
 
 type LibraryResult struct {
 	Movies, Shows, Episodes, Unmatched int
+}
+
+func (r LibraryResult) Msg() i18n.Msg {
+	return i18n.M("srv.job.library.synced", "movies", r.Movies, "shows", r.Shows, "episodes", r.Episodes, "unmatched", r.Unmatched)
 }
 
 func (r LibraryResult) String() string {
@@ -171,6 +176,10 @@ func (s *Service) Image(ctx context.Context, itemID, tag string) ([]byte, string
 
 type HistoryResult struct {
 	Users, Changed, Titles int
+}
+
+func (r HistoryResult) Msg() i18n.Msg {
+	return i18n.M("srv.job.history.synced", "users", r.Users, "changed", r.Changed, "titles", r.Titles)
 }
 
 func (r HistoryResult) String() string {

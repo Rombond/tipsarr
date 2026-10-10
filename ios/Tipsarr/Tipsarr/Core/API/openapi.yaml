@@ -2042,6 +2042,16 @@ components:
           type: integer
         message:
           type: string
+        messageArgs:
+          items:
+            type: string
+          type: array
+        messageCode:
+          type: string
+        messageParams:
+          additionalProperties:
+            type: string
+          type: object
         name:
           type: string
         running:

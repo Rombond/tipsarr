@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t, hasKey } from '$lib/i18n/index.svelte';
+	import { t, tMsg, hasKey } from '$lib/i18n/index.svelte';
 	import { api, expectOk, errorText } from '$lib/api/client';
 	import { admin } from '$lib/stores/admin-settings.svelte';
 	import { toast } from '$lib/toast.svelte';
@@ -31,8 +31,8 @@
 	const jobName = admin.jobName;
 	const jobDesc = (n: string) => (hasKey(`settings.job.${n}.desc`) ? t(`settings.job.${n}.desc` as 'settings.job_run') : '');
 	const jobSeconds = (j: { lastStartedAt: number; lastFinishedAt: number }) => Math.max(0, j.lastFinishedAt - j.lastStartedAt);
-	const jobMeta = (j: { status: string; message: string; lastStartedAt: number; lastFinishedAt: number }) =>
-		[when(j.lastFinishedAt), j.lastStartedAt ? t('settings.job_took', { seconds: jobSeconds(j) }) : '', j.status === 'error' ? '' : j.message].filter(Boolean).join(' · ');
+	const jobMeta = (j: { status: string; message: string; messageCode?: string; messageParams?: Record<string, unknown>; lastStartedAt: number; lastFinishedAt: number }) =>
+		[when(j.lastFinishedAt), j.lastStartedAt ? t('settings.job_took', { seconds: jobSeconds(j) }) : '', j.status === 'error' ? '' : tMsg(j.messageCode, j.messageParams, j.message)].filter(Boolean).join(' · ');
 	const every = (s: number) => (s >= 3600 ? t('settings.job_every', { hours: Math.round(s / 3600) }) : t('settings.job_every_min', { minutes: Math.max(1, Math.round(s / 60)) }));
 	const when = (unix: number) => (unix ? fmtDateTime(unix) : t('common.never'));
 	const statusLabel = (s: string) => (hasKey(`job.${s}`) ? t(`job.${s}` as 'job.ok') : s);

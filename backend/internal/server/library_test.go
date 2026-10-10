@@ -38,6 +38,27 @@ func TestLibraryBrowse(t *testing.T) {
 			return i >= 0 && strings.Contains(b[i:min(len(b), i+300)], `"status":"ok"`)
 		})
 	}
+	// the summary reaches the apps as a code plus values they translate, with the English text as fallback
+	_, syncBody := call(t, app, "GET", "/api/v1/admin/sync", "", admin)
+	var status struct {
+		Jobs []struct {
+			Name          string         `json:"name"`
+			Message       string         `json:"message"`
+			MessageCode   string         `json:"messageCode"`
+			MessageParams map[string]any `json:"messageParams"`
+		} `json:"jobs"`
+	}
+	if err := json.Unmarshal([]byte(syncBody), &status); err != nil {
+		t.Fatalf("sync status = %s", syncBody)
+	}
+	for _, j := range status.Jobs {
+		if j.Name == "library-sync" && (j.MessageCode != "srv.job.library.synced" || j.MessageParams["movies"] == nil || !strings.Contains(j.Message, "movies")) {
+			t.Fatalf("library-sync message = %+v", j)
+		}
+		if j.Name == "history-sync" && (j.MessageCode != "srv.job.history.synced" || j.MessageParams["users"] == nil) {
+			t.Fatalf("history-sync message = %+v", j)
+		}
+	}
 	list := func(q string, who *http.Cookie) libResp {
 		t.Helper()
 		resp, body := call(t, app, "GET", "/api/v1/library"+q, "", who)

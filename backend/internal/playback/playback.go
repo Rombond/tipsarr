@@ -14,6 +14,7 @@ import (
 	"unicode"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/jellyfin"
+	"github.com/Rombond/tipsarr/backend/internal/i18n"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
@@ -58,14 +59,14 @@ func (s *Service) client(ctx context.Context) (*jellyfin.Client, error) {
 }
 
 // Sync copies the plugin's new play sessions. It returns a short summary.
-func (s *Service) Sync(ctx context.Context) (string, error) {
+func (s *Service) Sync(ctx context.Context) (i18n.Msg, error) {
 	jf, err := s.client(ctx)
 	if err != nil {
-		return "", err
+		return i18n.Msg{}, err
 	}
 	present, err := jf.PlaybackReportingInstalled(ctx)
 	if err != nil {
-		return "", err
+		return i18n.Msg{}, err
 	}
 	state := "missing"
 	if present {
@@ -75,22 +76,22 @@ func (s *Service) Sync(ctx context.Context) (string, error) {
 		_ = s.store.SetSetting(ctx, SettingPlugin, state)
 	}
 	if !present {
-		return "", ErrNotInstalled
+		return i18n.Msg{}, ErrNotInstalled
 	}
 
 	last, err := s.store.MaxWatchEventRow(ctx)
 	if err != nil {
-		return "", err
+		return i18n.Msg{}, err
 	}
 	// the plugin's database was reset or recreated: start over rather than mix two histories
 	_, head, err := jf.PlaybackQuery(ctx, "SELECT COALESCE(MAX(rowid), 0) FROM PlaybackActivity")
 	if err != nil {
-		return "", err
+		return i18n.Msg{}, err
 	}
 	if len(head) == 1 && len(head[0]) == 1 {
 		if remote, _ := strconv.ParseInt(head[0][0], 10, 64); remote < last {
 			if err := s.store.DeleteAllWatchEvents(ctx); err != nil {
-				return "", err
+				return i18n.Msg{}, err
 			}
 			last = 0
 		}
@@ -98,7 +99,7 @@ func (s *Service) Sync(ctx context.Context) (string, error) {
 
 	lib, err := s.store.AllLibrary(ctx)
 	if err != nil {
-		return "", err
+		return i18n.Msg{}, err
 	}
 	byJF := map[string]store.LibraryItem{}
 	for _, it := range lib {
@@ -112,13 +113,13 @@ func (s *Service) Sync(ctx context.Context) (string, error) {
 		q := fmt.Sprintf("SELECT rowid, DateCreated, UserId, ItemId, ItemType, ItemName, PlayDuration FROM PlaybackActivity WHERE rowid > %d ORDER BY rowid LIMIT %d", last, batch)
 		_, rows, err := jf.PlaybackQuery(ctx, q)
 		if err != nil {
-			return "", err
+			return i18n.Msg{}, err
 		}
 		if len(rows) == 0 {
 			break
 		}
 		if err := s.resolveEpisodes(ctx, jf, rows, seriesOf); err != nil {
-			return "", err
+			return i18n.Msg{}, err
 		}
 		events := make([]store.WatchEvent, 0, len(rows))
 		for _, r := range rows {
@@ -132,7 +133,7 @@ func (s *Service) Sync(ctx context.Context) (string, error) {
 			}
 		}
 		if err := s.store.InsertWatchEvents(ctx, events); err != nil {
-			return "", err
+			return i18n.Msg{}, err
 		}
 		total += len(events)
 		if len(rows) < batch {
@@ -142,12 +143,12 @@ func (s *Service) Sync(ctx context.Context) (string, error) {
 	relinked := s.relink(ctx, jf, byJF)
 	resolved := s.resolveTitles(ctx)
 	if relinked > 0 {
-		return fmt.Sprintf("%d new plays, %d titles linked to the library, %d removed titles recognised", total, relinked, resolved), nil
+		return i18n.M("srv.job.playback.relinked", "plays", total, "linked", relinked, "resolved", resolved), nil
 	}
 	if resolved > 0 {
-		return fmt.Sprintf("%d new plays, %d removed titles recognised", total, resolved), nil
+		return i18n.M("srv.job.playback.resolved", "plays", total, "resolved", resolved), nil
 	}
-	return fmt.Sprintf("%d new plays", total), nil
+	return i18n.M("srv.job.playback.plays", "plays", total), nil
 }
 
 // resolveEpisodes asks Jellyfin which show each unknown episode belongs to.

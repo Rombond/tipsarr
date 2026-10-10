@@ -15,6 +15,9 @@ struct JobStatus: Sendable, Identifiable, Hashable {
     var running: Bool
     var status: String
     var message: String
+    /// The server's message as a code plus values in placeholder order; translated on the phone, `message` is the English fallback.
+    var messageCode: String = ""
+    var messageArgs: [String] = []
     var lastStarted: Date?
     var lastFinished: Date?
     var everySeconds: Int

@@ -1,9 +1,12 @@
 // Tiny typed i18n runtime. The catalogs are the plain JSON files in `locales/<code>/web.json` at the repository
 // root; `locales/languages.json` lists the languages. English defines the keys. Another language may leave a key
 // out: the English text is shown instead (`npm run check:i18n` reports gaps and real mistakes).
-import en from '../../../../locales/en/web.json';
+import enWeb from '../../../../locales/en/web.json';
+import enServer from '../../../../locales/en/server.json';
 import languageList from '../../../../locales/languages.json';
 
+// server.json holds the texts the server sends as codes (job summaries), translated here
+const en = { ...enServer, ...enWeb };
 export type Key = keyof typeof en;
 export type Locale = string;
 type Catalog = Partial<Record<Key, string>>;
@@ -11,9 +14,12 @@ type Catalog = Partial<Record<Key, string>>;
 export const LOCALES: { code: Locale; name: string; tag: string }[] = languageList;
 
 // every locales/<code>/web.json is bundled, so adding a language needs no code change
-const files = import.meta.glob('../../../../locales/*/web.json', { eager: true, import: 'default' }) as Record<string, Catalog>;
+const files = import.meta.glob('../../../../locales/*/{web,server}.json', { eager: true, import: 'default' }) as Record<string, Catalog>;
 const catalogs: Record<Locale, Catalog> = {};
-for (const [file, catalog] of Object.entries(files)) catalogs[file.split('/').at(-2)!] = catalog;
+for (const [file, catalog] of Object.entries(files)) {
+	const code = file.split('/').at(-2)!;
+	catalogs[code] = { ...catalogs[code], ...catalog };
+}
 
 const STORAGE_KEY = 'tipsarr-lang';
 
@@ -119,4 +125,13 @@ export function t(key: Key, params?: Record<string, string | number>): string {
 /** True if the key exists (used to fall back to the server's message for unknown error codes). */
 export function hasKey(key: string): key is Key {
 	return key in en;
+}
+
+/**
+ * A message the server sent as a code plus values (job summaries): translated here, with the server's English
+ * text as the fallback for a code this version does not know.
+ */
+export function tMsg(code: string | undefined, params: Record<string, unknown> | undefined, fallback = ''): string {
+	if (code && hasKey(code)) return t(code, params as Record<string, string | number> | undefined);
+	return fallback;
 }

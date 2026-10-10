@@ -1,7 +1,7 @@
 // What the admin settings tabs share: the settings, the background-job status and the jobs this
 // admin started from here (so the end of their run can be announced).
 import { api, unwrap, errorText, type Schemas } from '$lib/api/client';
-import { hasKey, t } from '$lib/i18n/index.svelte';
+import { hasKey, t, tMsg } from '$lib/i18n/index.svelte';
 import { toast } from '$lib/toast.svelte';
 
 class AdminSettings {
@@ -34,7 +34,8 @@ class AdminSettings {
 				if (!(job.name in this.started) || job.running || job.lastFinishedAt === this.started[job.name]) continue;
 				delete this.started[job.name];
 				const name = this.jobName(job.name);
-				const msg = job.message ? `: ${job.message}` : '';
+				const text = tMsg(job.messageCode, job.messageParams, job.message);
+				const msg = text ? `: ${text}` : '';
 				if (job.status === 'error') toast.error(t('settings.job_failed', { name, message: job.message || '' }));
 				else if (job.status === 'skipped') toast.info(`${name} · ${t('job.skipped')}${msg}`);
 				else toast.success(`${name} · ${t('settings.job_done')}${msg}`);

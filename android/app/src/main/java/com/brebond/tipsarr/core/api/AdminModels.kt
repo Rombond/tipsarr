@@ -94,6 +94,9 @@ data class JobStatus(
     val running: Boolean = false,
     val status: String = "",
     val message: String = "",
+    /** The message as a code plus values in placeholder order, translated on the phone; [message] is the English fallback. */
+    val messageCode: String = "",
+    val messageArgs: List<String> = emptyList(),
     val lastStartedAt: Long = 0,
     val lastFinishedAt: Long = 0,
     val everySeconds: Int = 0,

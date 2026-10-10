@@ -101,7 +101,7 @@ private struct JobCard: View {
             .font(.footnote)
             .foregroundStyle(Tokens.palette.mutedFg)
             if !job.message.isEmpty {
-                Text(verbatim: job.message).font(.footnote).foregroundStyle(job.status == "error" ? Tokens.palette.destructive : Tokens.palette.mutedFg)
+                Text(verbatim: job.status == "error" ? job.message : L10n.message(job.messageCode, job.messageArgs, fallback: job.message)).font(.footnote).foregroundStyle(job.status == "error" ? Tokens.palette.destructive : Tokens.palette.mutedFg)
             }
             HStack {
                 if job.everySeconds > 0 {

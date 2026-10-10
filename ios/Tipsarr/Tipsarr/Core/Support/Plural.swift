@@ -13,6 +13,15 @@ enum Plural {
 }
 
 enum L10n {
+    /// A message the server sent as a code plus values (job summaries): the translated text with the values in
+    /// placeholder order, or `fallback` (the server's English text) for a code this version does not know.
+    static func message(_ code: String, _ args: [String], fallback: String) -> String {
+        guard !code.isEmpty else { return fallback }
+        let format = AppLanguage.bundle.localizedString(forKey: code, value: nil, table: nil)
+        guard format != code else { return fallback }
+        return String(format: format, arguments: args.map { $0 as NSString })
+    }
+
     /// Localized string for a dynamic key with `%@` / `%1$@` arguments (SwiftUI cannot do this with a runtime key).
     /// Arguments are turned into text first: a number passed as a C vararg to `%@` crashes.
     static func string(_ key: String, _ args: CustomStringConvertible...) -> String {

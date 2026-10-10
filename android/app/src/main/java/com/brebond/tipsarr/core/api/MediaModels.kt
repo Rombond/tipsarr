@@ -57,7 +57,17 @@ data class MediaPage(val items: List<MediaItem>, val page: Int, val totalPages: 
 }
 
 @Serializable
-data class SuggestionRow(val id: String, val title: String, val items: List<MediaItem> = emptyList())
+data class SuggestionRow(
+    val id: String,
+    val title: String,
+    val items: List<MediaItem> = emptyList(),
+    /** What the row is based on (personal, server, trending, because): the app writes the title in its own language. */
+    val variant: String = "",
+    val seed: SuggestionSeed? = null,
+)
+
+@Serializable
+data class SuggestionSeed(val title: String = "")
 
 @Serializable
 data class SuggestionResult(val rows: List<SuggestionRow>, val generating: Boolean = false)
