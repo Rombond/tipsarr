@@ -5,9 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -15,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.brebond.tipsarr.core.api.MediaItem
+import com.brebond.tipsarr.core.api.RatingSource
 import com.brebond.tipsarr.core.images.RemoteImage
 import com.brebond.tipsarr.core.images.TmdbSize
 import com.brebond.tipsarr.design.Tokens
@@ -37,16 +35,16 @@ fun MediaPoster(item: MediaItem, onClick: () -> Unit, modifier: Modifier = Modif
     )
 }
 
-/** TMDB score with a star (the provider logos of the "score on posters" setting come with Settings). */
+/** Provider logo and score, e.g. the TMDB logo and "7.8". */
 @Composable
 fun ScoreLabel(score: Double, modifier: Modifier = Modifier) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Filled.Star, contentDescription = null, tint = Tokens.Status.requested, modifier = Modifier.size(12.dp))
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
+        ProviderMark(RatingSource.Tmdb, height = 12.dp)
         Text(String.format(Locale.getDefault(), "%.1f", score), fontSize = Tokens.FontSize.footnote, lineHeight = Tokens.FontSize.footnote * 1.25f, fontWeight = FontWeight.Medium, color = Tokens.palette.mutedFg)
     }
 }
 
-/** Score for a poster following the "Score on posters" preference: TMDB with a star, or the chosen provider's name and value. */
+/** Score for a poster following the "Score on posters" preference: the provider's logo and value (TMDB for shows). */
 @Composable
 fun ScoreLabel(type: com.brebond.tipsarr.core.api.MediaType, tmdbId: Int, tmdb: Double?, modifier: Modifier = Modifier) {
     val provider = LocalRatings.current
@@ -54,9 +52,9 @@ fun ScoreLabel(type: com.brebond.tipsarr.core.api.MediaType, tmdbId: Int, tmdb: 
     val reading = provider?.reading(type, tmdbId, tmdb)
     when {
         reading == null -> tmdb?.takeIf { it > 0 }?.let { ScoreLabel(it, modifier) }
-        reading.source == com.brebond.tipsarr.core.api.RatingSource.Tmdb -> ScoreLabel(tmdb ?: 0.0, modifier)
-        else -> Row(modifier, horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(RatingProvider.label(reading.source), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Tokens.palette.mutedFg)
+        reading.source == RatingSource.Metacritic -> MetacriticSquare(reading.text.toDoubleOrNull(), modifier, height = 12.dp)
+        else -> Row(modifier, horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
+            ProviderMark(reading.source, value = reading.text.removeSuffix("%").replace(',', '.').toDoubleOrNull(), height = 12.dp)
             Text(reading.text, fontSize = Tokens.FontSize.footnote, lineHeight = Tokens.FontSize.footnote * 1.25f, fontWeight = FontWeight.Medium, color = Tokens.palette.mutedFg)
         }
     }

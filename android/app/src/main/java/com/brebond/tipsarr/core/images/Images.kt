@@ -37,7 +37,10 @@ fun createImageLoader(context: Context, source: ImageSource): ImageLoader {
         }
         .build()
     return ImageLoader.Builder(context)
-        .components { add(OkHttpNetworkFetcherFactory(callFactory = { client })) }
+        .components {
+            add(OkHttpNetworkFetcherFactory(callFactory = { client }))
+            add(coil3.svg.SvgDecoder.Factory())
+        }
         .memoryCache { MemoryCache.Builder().maxSizePercent(context, 0.2).build() }
         .diskCache { DiskCache.Builder().directory(context.cacheDir.resolve("images").toOkioPath()).maxSizeBytes(200L shl 20).build() }
         .crossfade(true)

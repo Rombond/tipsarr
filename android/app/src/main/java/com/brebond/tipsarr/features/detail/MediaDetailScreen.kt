@@ -86,7 +86,11 @@ import com.brebond.tipsarr.core.api.ApiError
 import com.brebond.tipsarr.core.api.MediaDetail
 import com.brebond.tipsarr.core.api.MediaItem
 import com.brebond.tipsarr.core.api.MediaType
+import com.brebond.tipsarr.core.api.RatingSource
 import com.brebond.tipsarr.core.api.RatingsSummary
+import com.brebond.tipsarr.core.support.RatingProvider
+import com.brebond.tipsarr.ui.MetacriticSquare
+import com.brebond.tipsarr.ui.ProviderMark
 import com.brebond.tipsarr.core.images.RemoteImage
 import com.brebond.tipsarr.core.images.TmdbSize
 import com.brebond.tipsarr.core.live.LocalLive
@@ -296,25 +300,29 @@ private fun DetailSkeleton(title: String) {
     }
 }
 
-/** One row of scores between the poster and the request button. Movies: TMDB, IMDb, Rotten Tomatoes, Metacritic. Shows: TMDB. */
+/** One row of scores between the poster and the request button, each with its provider's logo. Movies: TMDB, IMDb, Rotten Tomatoes, Metacritic. Shows: TMDB. */
 @Composable
 private fun RatingsStrip(ratings: RatingsSummary) {
     val entries = buildList {
-        ratings.tmdb?.let { add("TMDB" to String.format(Locale.getDefault(), "%.1f", it)) }
-        ratings.imdb?.let { add("IMDb" to String.format(Locale.getDefault(), "%.1f", it)) }
-        ratings.rottenTomatoes?.let { add("RT" to "${it.toInt()}%") }
-        ratings.metacritic?.let { add("MC" to it.toInt().toString()) }
+        ratings.tmdb?.let { add(RatingSource.Tmdb to it) }
+        ratings.imdb?.let { add(RatingSource.Imdb to it) }
+        ratings.rottenTomatoes?.let { add(RatingSource.RottenTomatoes to it) }
+        ratings.metacritic?.let { add(RatingSource.Metacritic to it) }
     }
     if (entries.isEmpty()) return
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.Radius.md)).background(Tokens.palette.muted).padding(vertical = Tokens.Spacing.md),
+        Modifier.fillMaxWidth().padding(top = Tokens.Spacing.md).clip(RoundedCornerShape(Tokens.Radius.md)).background(Tokens.palette.muted).padding(vertical = Tokens.Spacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        entries.forEachIndexed { index, (name, value) ->
+        entries.forEachIndexed { index, (source, value) ->
             if (index > 0) Box(Modifier.width(1.dp).height(28.dp).background(Tokens.palette.border))
-            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(value, fontSize = Tokens.FontSize.headline, fontWeight = FontWeight.Bold, color = Tokens.palette.fg)
-                Text(name, fontSize = Tokens.FontSize.caption, color = Tokens.palette.mutedFg)
+            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+                if (source == RatingSource.Metacritic) {
+                    MetacriticSquare(value, height = 18.dp)
+                } else {
+                    ProviderMark(source, value = value, height = 18.dp)
+                    Text(RatingProvider.format(value, source).orEmpty(), fontSize = Tokens.FontSize.headline, fontWeight = FontWeight.Bold, color = Tokens.palette.fg)
+                }
             }
         }
     }
