@@ -1,3 +1,14 @@
 # Tipsarr Android
 
-Kotlin + Jetpack Compose + Material 3 (minSdk 26). Starts after the iOS app works; same API (`../api/openapi.yaml`), same tokens (`../design/tokens.json`, a Kotlin generator is added to `../design/build-tokens.mjs`), same strings, same screens (Android variants are drawn in Penpot when this app starts). Icon layers: `../design/icon/Android-*`.
+Kotlin + Jetpack Compose + Material 3 (minSdk 26, compileSdk 37). It follows the iOS app: same behaviour, same screens, similar UI (`../ios/`). Same API (`../api/openapi.yaml`, copied by `make generate` to `app/src/main/openapi/`), same tokens (`../design/tokens.json`, generated to `app/.../design/Tokens.kt`), same strings (`app/src/main/res/values{,-fr}/strings.xml`, from `../design/strings`). Icon layers come from `../design/icon/Android-*`.
+
+Build and run (Android Studio's bundled JDK, SDK in `~/Library/Android/sdk`):
+
+```sh
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+export ANDROID_HOME=$HOME/Library/Android/sdk
+echo "sdk.dir=$ANDROID_HOME" > local.properties     # once, not committed
+./gradlew installDebug                               # with an emulator or phone connected
+```
+
+`make generate` refreshes the generated files. Do not edit `Tokens.kt`, `strings.xml` or `openapi.yaml` by hand.
