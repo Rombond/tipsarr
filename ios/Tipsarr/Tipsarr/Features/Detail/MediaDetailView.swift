@@ -268,31 +268,7 @@ struct MediaDetailView: View {
     }
 
     private var seasons: some View {
-        VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
-            Text("seasons.title").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
-            ForEach(model.regularSeasons) { season in
-                HStack(spacing: Tokens.Spacing.md) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(verbatim: season.name).font(.body.weight(.semibold))
-                        Text(verbatim: seasonMeta(season)).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
-                    }
-                    Spacer()
-                    if model.coveredSeasons.contains(season.number) {
-                        StatusBadge(state: model.request?.state ?? .requested)
-                    }
-                }
-                .padding(Tokens.Spacing.md)
-                .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
-                .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
-                .accessibilityElement(children: .combine)
-            }
-        }
-    }
-
-    private func seasonMeta(_ season: SeasonInfo) -> String {
-        let episodes = Plural.text("seasons.episodes", count: season.episodeCount)
-        guard let year = season.airDate.flatMap({ $0.count >= 4 ? String($0.prefix(4)) : nil }) else { return episodes }
-        return "\(episodes) · \(year)"
+        SeasonList(tmdbId: model.route.tmdbId, seasons: model.regularSeasons, covered: model.coveredSeasons, state: model.request?.state ?? .requested)
     }
 
     private func facts(_ detail: MediaDetail) -> some View {

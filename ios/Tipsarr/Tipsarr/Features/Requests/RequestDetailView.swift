@@ -128,7 +128,27 @@ struct RequestDetailView: View {
                     DetailFact(label: "fact.seasons", value: record.seasons.sorted().map(String.init).formatted())
                 }
             }
+            if !record.seasons.isEmpty { seasonProgress }
         }
+    }
+
+    /// One bar per requested season: how much of it Sonarr has or is downloading (as on the web).
+    private var seasonProgress: some View {
+        VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
+            ForEach(record.seasons.sorted(), id: \.self) { number in
+                let percent = record.seasonProgress[number]
+                HStack(spacing: Tokens.Spacing.md) {
+                    Text(verbatim: L10n.string("req.season_badge", String(number))).font(.subheadline.weight(.semibold))
+                    ProgressBar(percent: percent ?? 0, tint: percent == 100 ? Tokens.Status.available : Tokens.Status.downloading)
+                    Text(verbatim: percent.map { "\($0)%" } ?? "–")
+                        .font(.footnote.monospacedDigit())
+                        .foregroundStyle(Tokens.palette.mutedFg)
+                        .frame(minWidth: 44, alignment: .trailing)
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .padding(.top, Tokens.Spacing.sm)
     }
 
     @ViewBuilder private var actions: some View {

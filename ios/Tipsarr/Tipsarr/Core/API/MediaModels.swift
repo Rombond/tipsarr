@@ -11,6 +11,17 @@ struct SeasonInfo: Sendable, Hashable, Identifiable {
     var id: Int { number }
 }
 
+struct EpisodeInfo: Sendable, Hashable, Identifiable {
+    var number: Int
+    var name: String
+    var overview: String?
+    var airDate: String?
+    var runtimeMinutes: Int?
+    var stillPath: String?
+    var voteAverage: Double
+    var id: Int { number }
+}
+
 struct CastMember: Sendable, Hashable, Identifiable {
     var id: Int
     var name: String
@@ -92,6 +103,8 @@ struct RequestRecord: Sendable, Identifiable, Hashable {
     var seasons: [Int]
     var progressPercent: Int?
     var etaSeconds: Int?
+    /// Shows only: completion per season (season number to percent).
+    var seasonProgress: [Int: Int] = [:]
     var declineReason: String?
     var error: String?
     var requestedBy: String?

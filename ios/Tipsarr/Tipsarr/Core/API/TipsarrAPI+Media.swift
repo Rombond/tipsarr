@@ -9,6 +9,17 @@ extension TipsarrAPI {
         }
     }
 
+    func episodes(tmdbId: Int, season: Int) async throws -> [EpisodeInfo] {
+        try await load { client in
+            guard case .ok(let ok) = try await client.tvSeason(path: .init(id: Int64(tmdbId), season: Int64(season))) else { throw APIError.unexpected }
+            return try ok.body.json.episodes.map {
+                EpisodeInfo(number: Int($0.number), name: $0.name, overview: $0.overview.flatMap { $0.isEmpty ? nil : $0 },
+                            airDate: $0.airDate.flatMap { $0.isEmpty ? nil : $0 }, runtimeMinutes: $0.runtimeMinutes.map(Int.init),
+                            stillPath: $0.stillPath, voteAverage: $0.voteAverage)
+            }
+        }
+    }
+
     func ratings(_ type: MediaType, id: Int) async throws -> RatingsSummary {
         try await load { client in
             let scores: Components.Schemas.MovieScores
@@ -143,6 +154,7 @@ extension RequestRecord {
             seasons: (v.seasons ?? []).map(Int.init),
             progressPercent: v.progress.map { Int($0.percent) },
             etaSeconds: v.progress.map { Int($0.etaSeconds) },
+            seasonProgress: Dictionary(uniqueKeysWithValues: (v.seasonProgress ?? []).map { (Int($0.season), Int($0.percent)) }),
             declineReason: v.declineReason.flatMap { $0.isEmpty ? nil : $0 },
             error: v.error.flatMap { $0.isEmpty ? nil : $0 },
             requestedBy: v.requestedBy.name,
