@@ -245,9 +245,9 @@
     <string name="m_accounts_server">Server</string>
     <string name="m_accounts_switching">Switching to %1$s…</string>
     <string name="m_accounts_title">Accounts</string>
-    <string name="m_admin_comments" formatted="false">%@ comments</string>
+    <string name="m_admin_comments">%s comments</string>
     <string name="m_admin_no_comments">No comments yet.</string>
-    <string name="m_admin_reported_by" formatted="false">Reported by %@</string>
+    <string name="m_admin_reported_by">Reported by %s</string>
     <string name="m_admin_sync">Sync &amp; jobs</string>
     <string name="m_admin_title">Administration</string>
     <string name="m_common_less">Less</string>
@@ -266,7 +266,7 @@
     <string name="m_detail_open_jellyfin">Open in Jellyfin</string>
     <string name="m_detail_ratings_tv_hint">Only TMDB scores exist for TV shows.</string>
     <string name="m_detail_request_again">Request again</string>
-    <string name="m_detail_seasons_count" formatted="false">%1$@ season | %1$@ seasons</string>
+    <string name="m_detail_seasons_count">%1$s season | %1$s seasons</string>
     <string name="m_detail_share">Share</string>
     <string name="m_discover_chip_for_you">For you</string>
     <string name="m_discover_chip_movies">Movies</string>
@@ -310,8 +310,8 @@
     <string name="m_pane_select">Pick a title to see it here</string>
     <string name="m_pane_trending">Trending now</string>
     <string name="m_person_biography">Biography</string>
-    <string name="m_person_born" formatted="false">Born %@</string>
-    <string name="m_person_died" formatted="false">Died %@</string>
+    <string name="m_person_born">Born %s</string>
+    <string name="m_person_died">Died %s</string>
     <string name="m_person_known_for">Known for</string>
     <string name="m_picture_footer">Pictures are shared with other people on this server. Max 4 MB.</string>
     <string name="m_picture_library">Choose from library</string>
@@ -325,21 +325,21 @@
     <string name="m_request_cancel">Cancel request</string>
     <string name="m_request_cancel_confirm">Cancel your request for %1$s?</string>
     <string name="m_request_keep">Keep request</string>
-    <string name="m_request_selected" formatted="false">%@ selected</string>
+    <string name="m_request_selected">%s selected</string>
     <string name="m_request_sent_to">sent to %1$s · %2$s</string>
     <string name="m_request_user_note">An admin will approve your request.</string>
     <string name="m_requests_approve_all_confirm">Approve all</string>
-    <string name="m_requests_by_ago" formatted="false">%1$@ · %2$@</string>
+    <string name="m_requests_by_ago">%1$s · %2$s</string>
     <string name="m_requests_cancel_swipe">Cancel</string>
     <string name="m_requests_decline_send">Decline</string>
     <string name="m_requests_decline_title">Decline request</string>
     <string name="m_requests_details">Details</string>
     <string name="m_requests_empty_cta">Browse Discover</string>
     <string name="m_requests_progress">Progress</string>
-    <string name="m_requests_requested_ago" formatted="false">Requested %@</string>
+    <string name="m_requests_requested_ago">Requested %s</string>
     <string name="m_requests_requested_by">Requested by</string>
     <string name="m_requests_select">Select a request</string>
-    <string name="m_requests_sent_to_only" formatted="false">sent to %@</string>
+    <string name="m_requests_sent_to_only">sent to %s</string>
     <string name="m_search_clear">Clear</string>
     <string name="m_search_genres">Browse by genre</string>
     <string name="m_search_prompt">Movies, TV shows, people</string>
@@ -366,16 +366,16 @@
     <string name="m_settings_region">Region</string>
     <string name="m_settings_security">Security</string>
     <string name="m_settings_server">Server</string>
-    <string name="m_settings_server_version" formatted="false">Tipsarr %@ · connected</string>
+    <string name="m_settings_server_version">Tipsarr %s · connected</string>
     <string name="m_settings_sign_out">Sign out</string>
     <string name="m_settings_sign_out_confirm">Sign out of Tipsarr on this iPhone?</string>
     <string name="m_settings_theme_footer">Choose how Tipsarr looks. System follows the appearance set in iOS.</string>
     <string name="m_settings_theme_system">System</string>
     <string name="m_settings_theme_system_hint">Follows your iPhone</string>
     <string name="m_settings_title">Settings</string>
-    <string name="m_sync_counts" formatted="false">%1$@ movies and %2$@ shows known in the library.</string>
-    <string name="m_sync_every" formatted="false">Runs every %@</string>
-    <string name="m_sync_last" formatted="false">Last run %@</string>
+    <string name="m_sync_counts">%1$s movies and %2$s shows known in the library.</string>
+    <string name="m_sync_every">Runs every %s</string>
+    <string name="m_sync_last">Last run %s</string>
     <string name="m_sync_need_key">Save a Jellyfin API key in the web Settings to turn the library sync on.</string>
     <string name="m_sync_never">Never run</string>
     <string name="m_sync_run">Run now</string>

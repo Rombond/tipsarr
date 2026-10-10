@@ -2,6 +2,8 @@ package com.brebond.tipsarr.design
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.ui.unit.em
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -32,6 +34,9 @@ fun TipsarrTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () 
         )
     }
     CompositionLocalProvider(LocalPalette provides p) {
-        MaterialTheme(colorScheme = scheme, content = content)
+        MaterialTheme(colorScheme = scheme) {
+            // Material's default text styles carry tall line heights; the app uses compact ones.
+            ProvideTextStyle(MaterialTheme.typography.bodyMedium.copy(lineHeight = 1.3.em), content)
+        }
     }
 }

@@ -20,7 +20,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.activity.compose.BackHandler
+import com.brebond.tipsarr.core.api.MediaItem
+import com.brebond.tipsarr.core.support.LocalToast
+import com.brebond.tipsarr.core.support.ToastCenter
+import com.brebond.tipsarr.core.support.ToastHost
+import com.brebond.tipsarr.features.detail.MediaDetailScreen
+import com.brebond.tipsarr.features.detail.MediaRoute
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -53,16 +62,21 @@ enum class AppTab(val title: Int, val icon: ImageVector) {
 
 /** The signed-in app: five tabs in a bottom bar. Only Discover exists so far. */
 @Composable
-fun MainTabs(account: Account, profile: Profile, onSignOut: () -> Unit) {
+fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, onSignOut: () -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val model: MainViewModel = viewModel(key = account.id, factory = viewModelFactory {
-        initializer { MainViewModel(TipsarrApi(account.serverUrl, account.token)) }
+        initializer { MainViewModel(TipsarrApi(account.serverUrl, account.token), profile.isAdmin, userFolderChoice) }
     })
     val source = remember(account.id) { ImageSource(account.serverUrl, account.token) }
     val loader = remember(account.id) { createImageLoader(context, source) }
     var tab by rememberSaveable { mutableStateOf(AppTab.Discover) }
+    val toasts = remember { ToastCenter(scope) }
+    val openTitle: (MediaItem) -> Unit = { model.open(tab, MediaRoute(it.type, it.tmdbId, it.title)) }
+    BackHandler(enabled = model.top(tab) != null) { model.back(tab) }
 
-    CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader) {
+    CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader, LocalToast provides toasts) {
+      Box(Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = Tokens.palette.bg,
             bottomBar = {
@@ -86,17 +100,24 @@ fun MainTabs(account: Account, profile: Profile, onSignOut: () -> Unit) {
             },
         ) { padding ->
             Box(Modifier.fillMaxSize().background(Tokens.palette.bg).padding(padding)) {
-                when (tab) {
-                    AppTab.Discover -> DiscoverScreen(
-                        model.discover,
-                        onOpenSearch = { tab = AppTab.Search },
-                        onOpenItem = { /* the detail screen arrives with Android step 4 */ },
-                    )
+                val detail = model.top(tab)
+                if (detail != null) {
+                    key(detail) {
+                        MediaDetailScreen(
+                            detail, account.serverUrl,
+                            onBack = { model.back(tab) },
+                            onOpen = { model.open(tab, it) },
+                        )
+                    }
+                } else when (tab) {
+                    AppTab.Discover -> DiscoverScreen(model.discover, onOpenSearch = { tab = AppTab.Search }, onOpenItem = openTitle)
                     AppTab.Profile -> ProfileStub(profile.name, onSignOut)
                     else -> StateView(tab.icon, stringResource(tab.title))
                 }
             }
         }
+        ToastHost(toasts)
+      }
     }
 }
 

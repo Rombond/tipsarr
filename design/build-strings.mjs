@@ -58,8 +58,12 @@ for (const k of Object.keys(strings.en)) {
 }
 const xmlValue = (s, order) => {
   const names = [];
-  const hasPh = /\{\w+\}/.test(s);
-  let t = hasPh ? s.replace(/%/g, '%%') : s;
+  // The mobile strings use the iOS placeholders %@ and %1$@; they become %s and %1$s.
+  const ios = /%(\d+\$)?@/g;
+  const hasPh = /\{\w+\}/.test(s) || ios.test(s);
+  let t = s.replace(/%(\d+\$)?@/g, (_, n) => `\u0001${n || ''}s\u0001`);
+  if (hasPh) t = t.replace(/%/g, '%%');
+  t = t.replace(/\u0001([^\u0001]*)\u0001/g, (_, rest) => `%${rest}`);
   t = t.replace(/\{(\w+)\}/g, (_, nm) => { if (!names.includes(nm)) names.push(nm); return `%${(order || names).indexOf(nm) + 1}$s`; });
   t = t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/^([@?])/, '\\$1').replace(/\n/g, '\\n');
   return { t, names, plain: !hasPh && s.includes('%') };

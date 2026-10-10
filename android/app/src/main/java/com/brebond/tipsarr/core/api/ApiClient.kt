@@ -49,6 +49,19 @@ class ApiClient(
         execute(request(path).post("".toRequestBody(JSON)).build(), retry = false)
     }
 
+    /** POST with a JSON body and no response body that matters (204). */
+    suspend fun <B> postUnit(path: String, body: B, bodySerializer: KSerializer<B>) {
+        execute(request(path).post(json.encodeToString(bodySerializer, body).toRequestBody(JSON)).build(), retry = false)
+    }
+
+    /** POST without a body, returning JSON. */
+    suspend fun <T> postForResult(path: String, serializer: KSerializer<T>): T =
+        decode(execute(request(path).post("".toRequestBody(JSON)).build(), retry = false), serializer)
+
+    suspend fun delete(path: String) {
+        execute(request(path).delete().build(), retry = false)
+    }
+
     private fun request(path: String): Request.Builder = Request.Builder()
         .url(base + path)
         .header("Accept", "application/json")

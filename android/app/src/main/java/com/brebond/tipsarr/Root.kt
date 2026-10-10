@@ -30,7 +30,7 @@ fun Root(session: SessionManager) {
             is SessionPhase.Failed -> FailedScreen(current.error) { scope.launch { session.retry() } }
             is SessionPhase.UpdateRequired -> UpdateRequiredScreen(current.minVersion)
             is SessionPhase.SessionExpired -> SessionExpiredScreen(session, current.account, current.server)
-            is SessionPhase.Ready -> MainTabs(current.account, current.profile) { scope.launch { session.signOut(current.account) } }
+            is SessionPhase.Ready -> MainTabs(current.account, current.profile, session.serverStatus?.userFolderChoice ?: false) { scope.launch { session.signOut(current.account) } }
         }
     }
 }

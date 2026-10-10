@@ -24,5 +24,20 @@ enum class RequestState(@StringRes val title: Int, val color: Color, val icon: I
     Available(R.string.state_available, Tokens.Status.available, Icons.Filled.CheckCircle),
     Partial(R.string.state_partial, Tokens.Status.partial, Icons.Filled.Contrast),
     Declined(R.string.state_declined, Tokens.Status.declined, Icons.Outlined.Cancel),
-    Failed(R.string.state_failed, Tokens.Status.failed, Icons.Outlined.WarningAmber),
+    Failed(R.string.state_failed, Tokens.Status.failed, Icons.Outlined.WarningAmber);
+
+    companion object {
+        /** `stage` is the fine-grained state the server sends; older servers only send `status`. */
+        fun from(stage: String?, status: String): RequestState = when (stage ?: status) {
+            "requested", "pending" -> Requested
+            "approved" -> Approved
+            "searching" -> Searching
+            "downloading" -> Downloading
+            "available" -> Available
+            "partial" -> Partial
+            "declined" -> Declined
+            "failed" -> Failed
+            else -> Requested
+        }
+    }
 }

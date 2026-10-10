@@ -245,9 +245,9 @@
     <string name="m_accounts_server">Serveur</string>
     <string name="m_accounts_switching">Passage à %1$s…</string>
     <string name="m_accounts_title">Comptes</string>
-    <string name="m_admin_comments" formatted="false">%@ commentaires</string>
+    <string name="m_admin_comments">%s commentaires</string>
     <string name="m_admin_no_comments">Pas encore de commentaire.</string>
-    <string name="m_admin_reported_by" formatted="false">Signalé par %@</string>
+    <string name="m_admin_reported_by">Signalé par %s</string>
     <string name="m_admin_sync">Synchro et tâches</string>
     <string name="m_admin_title">Administration</string>
     <string name="m_common_less">Moins</string>
@@ -266,7 +266,7 @@
     <string name="m_detail_open_jellyfin">Ouvrir dans Jellyfin</string>
     <string name="m_detail_ratings_tv_hint">Seules les notes TMDB existent pour les séries.</string>
     <string name="m_detail_request_again">Redemander</string>
-    <string name="m_detail_seasons_count" formatted="false">%1$@ saison | %1$@ saisons</string>
+    <string name="m_detail_seasons_count">%1$s saison | %1$s saisons</string>
     <string name="m_detail_share">Partager</string>
     <string name="m_discover_chip_for_you">Pour vous</string>
     <string name="m_discover_chip_movies">Films</string>
@@ -310,8 +310,8 @@
     <string name="m_pane_select">Choisissez un titre pour le voir ici</string>
     <string name="m_pane_trending">Tendances</string>
     <string name="m_person_biography">Biographie</string>
-    <string name="m_person_born" formatted="false">Né(e) le %@</string>
-    <string name="m_person_died" formatted="false">Décédé(e) le %@</string>
+    <string name="m_person_born">Né(e) le %s</string>
+    <string name="m_person_died">Décédé(e) le %s</string>
     <string name="m_person_known_for">Connu pour</string>
     <string name="m_picture_footer">Les photos sont visibles par les autres personnes de ce serveur. 4 Mo maximum.</string>
     <string name="m_picture_library">Choisir dans la photothèque</string>
@@ -325,21 +325,21 @@
     <string name="m_request_cancel">Annuler la demande</string>
     <string name="m_request_cancel_confirm">Annuler votre demande pour %1$s ?</string>
     <string name="m_request_keep">Garder la demande</string>
-    <string name="m_request_selected" formatted="false">%@ sélectionnée(s)</string>
+    <string name="m_request_selected">%s sélectionnée(s)</string>
     <string name="m_request_sent_to">envoyé à %1$s · %2$s</string>
     <string name="m_request_user_note">Un admin approuvera votre demande.</string>
     <string name="m_requests_approve_all_confirm">Tout approuver</string>
-    <string name="m_requests_by_ago" formatted="false">%1$@ · %2$@</string>
+    <string name="m_requests_by_ago">%1$s · %2$s</string>
     <string name="m_requests_cancel_swipe">Annuler</string>
     <string name="m_requests_decline_send">Refuser</string>
     <string name="m_requests_decline_title">Refuser la demande</string>
     <string name="m_requests_details">Détails</string>
     <string name="m_requests_empty_cta">Parcourir Découvrir</string>
     <string name="m_requests_progress">Progression</string>
-    <string name="m_requests_requested_ago" formatted="false">Demandé %@</string>
+    <string name="m_requests_requested_ago">Demandé %s</string>
     <string name="m_requests_requested_by">Demandé par</string>
     <string name="m_requests_select">Choisissez une demande</string>
-    <string name="m_requests_sent_to_only" formatted="false">envoyé à %@</string>
+    <string name="m_requests_sent_to_only">envoyé à %s</string>
     <string name="m_search_clear">Effacer</string>
     <string name="m_search_genres">Parcourir par genre</string>
     <string name="m_search_prompt">Films, séries, personnes</string>
@@ -366,16 +366,16 @@
     <string name="m_settings_region">Région</string>
     <string name="m_settings_security">Sécurité</string>
     <string name="m_settings_server">Serveur</string>
-    <string name="m_settings_server_version" formatted="false">Tipsarr %@ · connecté</string>
+    <string name="m_settings_server_version">Tipsarr %s · connecté</string>
     <string name="m_settings_sign_out">Se déconnecter</string>
     <string name="m_settings_sign_out_confirm">Se déconnecter de Tipsarr sur cet iPhone ?</string>
     <string name="m_settings_theme_footer">Choisissez l’apparence de Tipsarr. Système suit l’apparence réglée dans iOS.</string>
     <string name="m_settings_theme_system">Système</string>
     <string name="m_settings_theme_system_hint">Suit votre iPhone</string>
     <string name="m_settings_title">Réglages</string>
-    <string name="m_sync_counts" formatted="false">%1$@ films et %2$@ séries connus dans la bibliothèque.</string>
-    <string name="m_sync_every" formatted="false">Toutes les %@</string>
-    <string name="m_sync_last" formatted="false">Dernier lancement %@</string>
+    <string name="m_sync_counts">%1$s films et %2$s séries connus dans la bibliothèque.</string>
+    <string name="m_sync_every">Toutes les %s</string>
+    <string name="m_sync_last">Dernier lancement %s</string>
     <string name="m_sync_need_key">Enregistrez une clé API Jellyfin dans les Réglages web pour activer la synchro de la bibliothèque.</string>
     <string name="m_sync_never">Jamais lancée</string>
     <string name="m_sync_run">Lancer</string>
