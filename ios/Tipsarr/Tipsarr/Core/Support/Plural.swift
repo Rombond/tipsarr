@@ -14,7 +14,8 @@ enum Plural {
 
 enum L10n {
     /// Localized string for a dynamic key with `%@` / `%1$@` arguments (SwiftUI cannot do this with a runtime key).
-    static func string(_ key: String, _ args: CVarArg...) -> String {
-        String(format: AppLanguage.bundle.localizedString(forKey: key, value: nil, table: nil), arguments: args)
+    /// Arguments are turned into text first: a number passed as a C vararg to `%@` crashes.
+    static func string(_ key: String, _ args: CustomStringConvertible...) -> String {
+        String(format: AppLanguage.bundle.localizedString(forKey: key, value: nil, table: nil), arguments: args.map { $0.description as NSString })
     }
 }

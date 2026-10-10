@@ -80,7 +80,7 @@ struct RequestDetailView: View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
             ProgressBar(percent: percent)
             HStack {
-                Text(verbatim: L10n.string("req.stage.downloading_pct", percent))
+                Text(verbatim: L10n.string("req.stage.downloading_pct", String(percent)))
                 if let eta = live?.progress[record.id]?.etaSeconds ?? record.etaSeconds, eta > 0 {
                     Text(Duration.seconds(eta), format: .units(allowed: [.hours, .minutes], width: .abbreviated, maximumUnitCount: 2))
                 }
