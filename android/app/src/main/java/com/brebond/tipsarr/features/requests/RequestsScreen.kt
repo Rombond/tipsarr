@@ -62,6 +62,8 @@ import com.brebond.tipsarr.core.api.RequestFilter
 import com.brebond.tipsarr.core.api.RequestRecord
 import com.brebond.tipsarr.core.images.RemoteImage
 import com.brebond.tipsarr.core.images.TmdbSize
+import com.brebond.tipsarr.core.live.LocalLive
+import com.brebond.tipsarr.core.live.OnTick
 import com.brebond.tipsarr.core.support.LocalToast
 import com.brebond.tipsarr.core.support.ToastKind
 import com.brebond.tipsarr.core.support.relativeTime
@@ -103,6 +105,8 @@ fun RequestsScreen(model: RequestsModel, onOpen: (RequestRecord) -> Unit, onOpen
     var declining by remember { mutableStateOf<RequestRecord?>(null) }
     var deleting by remember { mutableStateOf<RequestRecord?>(null) }
     LaunchedEffect(model.filter) { model.load(model.filter) }
+    val live = LocalLive.current
+    OnTick(live?.requestsTick ?: 0) { model.load() }
 
     fun run(work: suspend () -> Unit) {
         scope.launch { try { work() } catch (e: ApiError) { toast?.show(e.message(context), ToastKind.Error) } }
@@ -154,7 +158,7 @@ fun RequestsScreen(model: RequestsModel, onOpen: (RequestRecord) -> Unit, onOpen
                         LaunchedEffect(index, model.items.size) { model.loadMore(index) }
                         SwipeRow(record, model.canDelete(record), onDelete = { deleting = record }) {
                             RequestRow(
-                                record, showRequester = model.isAdmin, busy = record.id in model.busy,
+                                record.withLive(live), showRequester = model.isAdmin, busy = record.id in model.busy,
                                 onClick = { onOpen(record) },
                                 onApprove = { run { val updated = model.approve(record); toast?.show(approvedText(context, updated, record.title)) } },
                                 onDecline = { declining = record },
@@ -276,4 +280,10 @@ internal fun downloadText(context: android.content.Context, percent: Int, etaSec
     val eta = etaSeconds?.takeIf { it > 0 }
     val pct = context.getString(R.string.req_stage_downloading_pct, percent.toString())
     return if (eta == null) pct else "$pct · ${formatEta(eta)}"
+}
+
+/** The record with the newer progress the server pushed, when there is one. */
+internal fun RequestRecord.withLive(live: com.brebond.tipsarr.core.live.LiveUpdates?): RequestRecord {
+    val pushed = live?.progress?.get(id) ?: return this
+    return copy(progressPercent = pushed.percent, etaSeconds = pushed.etaSeconds)
 }

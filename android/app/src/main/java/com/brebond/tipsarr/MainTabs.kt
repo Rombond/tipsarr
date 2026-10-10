@@ -26,7 +26,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import com.brebond.tipsarr.core.api.request
+import com.brebond.tipsarr.core.live.LocalLive
+import com.brebond.tipsarr.core.live.OnTick
+import com.brebond.tipsarr.core.navigation.DeepLinkTarget
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.key
@@ -103,10 +109,46 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
     LaunchedEffect(tab) { model.refreshPending() }
     LaunchedEffect(profile.ratingSource) { model.ratings.changeSource(RatingSource.from(profile.ratingSource)) }
     var showPicture by remember { mutableStateOf(false) }
+
+    // The event stream runs only while the app is in the foreground.
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle, account.id) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_START -> model.live.start(account.serverUrl, account.token)
+                androidx.lifecycle.Lifecycle.Event.ON_STOP -> model.live.stop()
+                else -> {}
+            }
+        }
+        lifecycle.addObserver(observer)
+        if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) model.live.start(account.serverUrl, account.token)
+        onDispose { lifecycle.removeObserver(observer); model.live.stop() }
+    }
+    OnTick(model.live.requestsTick) { model.refreshPending() }
+
+    // A link for this account's server opens its screen; links for another server wait for that account.
+    val link by session.pendingLink.collectAsState()
+    LaunchedEffect(link) {
+        val pending = link ?: return@LaunchedEffect
+        if (pending.host != account.host) return@LaunchedEffect
+        session.clearPendingLink()
+        when (val target = pending.target) {
+            is DeepLinkTarget.Media -> { model.reset(AppTab.Discover); model.openTitle(AppTab.Discover, MediaRoute(target.type, target.tmdbId, "")); tab = AppTab.Discover }
+            is DeepLinkTarget.Request -> {
+                val record = runCatching { model.api.request(target.id) }.getOrNull()
+                model.reset(AppTab.Requests)
+                if (record != null) model.openRequest(AppTab.Requests, record)
+                tab = AppTab.Requests
+            }
+            is DeepLinkTarget.Issue, DeepLinkTarget.Discover -> { model.reset(AppTab.Discover); tab = AppTab.Discover }
+            DeepLinkTarget.Library -> { model.reset(AppTab.Library); tab = AppTab.Library }
+            DeepLinkTarget.Requests -> { model.reset(AppTab.Requests); tab = AppTab.Requests }
+        }
+    }
     val signOut: () -> Unit = { scope.launch { session.signOut(account) } }
     BackHandler(enabled = model.top(tab) != null) { model.back(tab) }
 
-    CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader, LocalToast provides toasts, LocalRatings provides model.ratings) {
+    CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader, LocalToast provides toasts, LocalRatings provides model.ratings, LocalLive provides model.live) {
       Box(Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = Tokens.palette.bg,

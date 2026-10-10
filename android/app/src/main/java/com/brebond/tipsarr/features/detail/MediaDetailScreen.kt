@@ -89,6 +89,9 @@ import com.brebond.tipsarr.core.api.MediaType
 import com.brebond.tipsarr.core.api.RatingsSummary
 import com.brebond.tipsarr.core.images.RemoteImage
 import com.brebond.tipsarr.core.images.TmdbSize
+import com.brebond.tipsarr.core.live.LocalLive
+import com.brebond.tipsarr.features.requests.withLive
+import com.brebond.tipsarr.core.live.OnTick
 import com.brebond.tipsarr.core.support.LocalToast
 import com.brebond.tipsarr.core.support.ToastKind
 import com.brebond.tipsarr.core.support.formatDate
@@ -128,6 +131,8 @@ fun MediaDetailScreen(model: MediaDetailModel, serverUrl: String, onBack: () -> 
     var confirmCancel by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
     LaunchedEffect(model) { model.load() }
+    val live = LocalLive.current
+    OnTick(live?.requestsTick ?: 0) { model.load() }
 
     fun fail(error: Throwable) = toast?.show(ApiError.from(error).message(context), ToastKind.Error)
     fun run(work: suspend () -> Unit) { scope.launch { try { work() } catch (e: ApiError) { fail(e) } } }
@@ -153,7 +158,7 @@ fun MediaDetailScreen(model: MediaDetailModel, serverUrl: String, onBack: () -> 
         val title = listOfNotNull(detail?.title ?: model.route.title, detail?.year?.let { "($it)" }).joinToString(" ")
         context.startActivity(
             Intent.createChooser(
-                Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, title).putExtra(Intent.EXTRA_TEXT, "$title\n$web"),
+                Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, title).putExtra(Intent.EXTRA_TEXT, "$title\n$web\n${com.brebond.tipsarr.core.navigation.DeepLink.mediaUrl(java.net.URI(serverUrl).host.orEmpty(), model.route.type, model.route.tmdbId)}"),
                 null,
             ),
         )
@@ -359,7 +364,7 @@ private fun ActionRow(
                 }
             }
         }
-        val request = model.request
+        val request = model.request?.withLive(LocalLive.current)
         if (action is DetailAction.InProgress && action.state == RequestState.Downloading && request != null && request.progressPercent != null) {
             ProgressBar(request.progressPercent)
             Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {

@@ -58,6 +58,8 @@ import com.brebond.tipsarr.core.api.MediaType
 import com.brebond.tipsarr.core.api.RequestRecord
 import com.brebond.tipsarr.core.images.RemoteImage
 import com.brebond.tipsarr.core.images.TmdbSize
+import com.brebond.tipsarr.core.live.LocalLive
+import com.brebond.tipsarr.core.live.OnTick
 import com.brebond.tipsarr.core.support.LocalToast
 import com.brebond.tipsarr.core.support.ToastKind
 import com.brebond.tipsarr.core.support.relativeTime
@@ -100,6 +102,8 @@ fun RequestDetailScreen(
         scope.launch { try { work() } catch (e: ApiError) { toast?.show(e.message(context), ToastKind.Error) } }
     }
     LaunchedEffect(initial.id) { reload() }
+    val live = LocalLive.current
+    OnTick(live?.requestsTick ?: 0) { reload() }
 
     TopBarScaffold(stringResource(R.string.m_tab_requests), onBack) {
         PullToRefreshBox(
@@ -113,11 +117,12 @@ fun RequestDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.xl),
                 ) {
                     Header(record)
-                    val percent = record.progressPercent
+                    val shown = record.withLive(live)
+                    val percent = shown.progressPercent
                     if (record.state == RequestState.Downloading && percent != null) {
                         Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
                             ProgressBar(percent)
-                            Text(downloadText(context, percent, record.etaSeconds), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+                            Text(downloadText(context, percent, shown.etaSeconds), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
                         }
                     }
                     when (record.state) {

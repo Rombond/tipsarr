@@ -18,9 +18,15 @@ class MainActivity : ComponentActivity() {
     /** The language picked in Settings (null follows the phone) applies to every resource lookup. */
     override fun attachBaseContext(newBase: Context) = super.attachBaseContext(AppSettings.wrap(newBase))
 
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        intent.data?.let(viewModel::handle)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        intent?.data?.let(viewModel::handle)
         setContent {
             val dark = when (settings.theme) {
                 AppTheme.System -> isSystemInDarkTheme()

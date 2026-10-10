@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import com.brebond.tipsarr.R
 import com.brebond.tipsarr.core.api.ApiError
 import com.brebond.tipsarr.core.api.MediaItem
+import com.brebond.tipsarr.core.live.LocalLive
+import com.brebond.tipsarr.core.live.OnTick
 import com.brebond.tipsarr.design.Tokens
 import com.brebond.tipsarr.design.palette
 import com.brebond.tipsarr.ui.Chip
@@ -65,6 +67,9 @@ fun DiscoverScreen(model: DiscoverModel, onOpenSearch: () -> Unit, onOpenItem: (
     var refreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val source = model.source(model.chip)
+    val live = LocalLive.current
+    OnTick(live?.suggestionsTick ?: 0) { if (model.chip == DiscoverChip.ForYou) model.home.refresh() }
+    OnTick(live?.requestsTick ?: 0) { model.refreshCurrent() }
     PullToRefreshBox(
         isRefreshing = refreshing,
         onRefresh = { scope.launch { refreshing = true; model.refreshCurrent(); refreshing = false } },

@@ -14,4 +14,9 @@ class SessionViewModel(application: Application) : AndroidViewModel(application)
     init {
         viewModelScope.launch { session.start() }
     }
+
+    fun handle(uri: android.net.Uri) {
+        val link = com.brebond.tipsarr.core.navigation.DeepLink.parse(uri) ?: return
+        viewModelScope.launch { session.handle(link) }
+    }
 }

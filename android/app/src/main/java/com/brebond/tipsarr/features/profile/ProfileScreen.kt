@@ -56,6 +56,8 @@ import com.brebond.tipsarr.core.api.Profile
 import com.brebond.tipsarr.core.api.RequestRecord
 import com.brebond.tipsarr.core.images.RemoteImage
 import com.brebond.tipsarr.core.images.TmdbSize
+import com.brebond.tipsarr.core.live.LocalLive
+import com.brebond.tipsarr.core.live.OnTick
 import com.brebond.tipsarr.core.support.plural
 import com.brebond.tipsarr.core.support.relativeTime
 import com.brebond.tipsarr.design.Tokens
@@ -87,6 +89,8 @@ fun ProfileScreen(
     val scope = rememberCoroutineScope()
     var refreshing by remember { mutableStateOf(false) }
     LaunchedEffect(model) { model.load() }
+    val live = LocalLive.current
+    OnTick(live?.requestsTick ?: 0) { model.load() }
     PullToRefreshBox(
         isRefreshing = refreshing,
         onRefresh = { scope.launch { refreshing = true; model.load(); refreshing = false } },

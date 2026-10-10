@@ -7,6 +7,7 @@ import com.brebond.tipsarr.core.api.Profile
 import com.brebond.tipsarr.core.api.Server
 import com.brebond.tipsarr.core.api.ServerStatus
 import com.brebond.tipsarr.core.api.TipsarrApi
+import com.brebond.tipsarr.core.navigation.DeepLink
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +27,10 @@ sealed interface SessionPhase {
 class SessionManager(val accounts: AccountStore) {
     private val _phase = MutableStateFlow<SessionPhase>(SessionPhase.Launching)
     val phase: StateFlow<SessionPhase> = _phase.asStateFlow()
+
+    /** A link opened before the app was ready (or for another account); the tabs consume it. */
+    private val _pendingLink = MutableStateFlow<DeepLink?>(null)
+    val pendingLink: StateFlow<DeepLink?> = _pendingLink.asStateFlow()
 
     /** Status of the active server, read at launch or sign-in. */
     var serverStatus: ServerStatus? = null
@@ -98,6 +103,22 @@ class SessionManager(val accounts: AccountStore) {
     }
 
     fun backToConnect() { _phase.value = SessionPhase.Connect }
+
+    // Deep links
+
+    /** Picks the account of the link's server (switching if needed), asks to sign in when there is none. */
+    suspend fun handle(link: DeepLink) {
+        _pendingLink.value = link
+        if ((_phase.value as? SessionPhase.Ready)?.account?.host == link.host) return
+        val known = accounts.accounts.firstOrNull { it.host == link.host }
+        if (known != null) {
+            switchTo(known)
+        } else {
+            runCatching { connect("https://${link.host}") }.getOrNull()?.let { continueToLogin(it) }
+        }
+    }
+
+    fun clearPendingLink() { _pendingLink.value = null }
 
     /** Switches to another stored account (no password asked). */
     suspend fun switchTo(account: Account) {

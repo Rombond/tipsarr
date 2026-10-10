@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.brebond.tipsarr.core.api.MediaType
 import com.brebond.tipsarr.core.api.RatingSource
+import com.brebond.tipsarr.core.live.LiveUpdates
 import com.brebond.tipsarr.core.support.RatingProvider
 import com.brebond.tipsarr.features.profile.ProfileModel
 import com.brebond.tipsarr.core.api.RequestRecord
@@ -54,6 +55,7 @@ class MainViewModel(
     val library = LibraryModel(api)
     val profile = ProfileModel(api)
     val ratings = RatingProvider(api, ratingSource, viewModelScope)
+    val live = LiveUpdates(viewModelScope)
 
     /** Changes when the profile picture does, so cached copies are not reused. */
     var avatarVersion by mutableIntStateOf(0)
@@ -78,6 +80,9 @@ class MainViewModel(
         push(tab, Screen.Genre(GenreRoute(type, id, name), MediaListModel(MediaListModel.Source.Genre, api, type to id)))
     fun openRequest(tab: AppTab, record: RequestRecord) = push(tab, Screen.Request(record))
     fun open(tab: AppTab, screen: Screen) = push(tab, screen)
+
+    /** Back to the root screen of the tab. */
+    fun reset(tab: AppTab) { stacks[tab]?.clear() }
 
     /** Pops the top screen of the tab; false when only the root is left. */
     fun back(tab: AppTab): Boolean {
