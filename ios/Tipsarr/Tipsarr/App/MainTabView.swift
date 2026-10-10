@@ -95,7 +95,7 @@ struct MainTabView: View {
                     }
                     .frame(width: max(hinge.leftWidth, 0))
                 Color.clear.frame(width: max(hinge.rightStart - hinge.leftWidth, 0))
-                DetailPaneView(pane: pane, tab: router.tab, account: account, profile: profile)
+                DetailPaneView(pane: pane, tab: router.tab, account: account, profile: profile, trailingInset: trailingInset)
                     .frame(maxWidth: .infinity)
             }
         } else {

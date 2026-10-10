@@ -7,18 +7,22 @@ struct DetailPaneView: View {
     let tab: AppTab
     let account: Account
     let profile: Profile
+    /// Window trailing safe area (clock strip on the Duo).
+    var trailingInset: CGFloat = 0
 
     var body: some View {
         NavigationStack {
-            // Cut at the clock strip: carousels do not run behind it.
+            // Full width like the left pane: content may run behind the clock strip.
             Group { content }
-                .mask { Rectangle().ignoresSafeArea(.container, edges: [.top, .bottom, .leading]) }
+                .paneInset()
+                // Destinations belong inside the stack, or a tap on a poster pushes nothing.
+                .mediaDestinations()
+                .navigationDestination(for: ProfileRoute.self) { ProfileDestination(route: $0, account: account, profile: profile).paneInset() }
         }
-        .mediaDestinations()
-        .navigationDestination(for: ProfileRoute.self) { ProfileDestination(route: $0, account: account, profile: profile) }
         .background(Tokens.palette.bg)
         // Links inside the detail push on its own stack (with a back button) instead of replacing it.
         .environment(\.detailPane, nil)
+        .environment(\.paneTrailingInset, trailingInset)
     }
 
     @ViewBuilder private var content: some View {
