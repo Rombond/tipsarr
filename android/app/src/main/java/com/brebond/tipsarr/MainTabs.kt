@@ -44,6 +44,13 @@ import com.brebond.tipsarr.core.support.LocalToast
 import com.brebond.tipsarr.core.support.ToastCenter
 import com.brebond.tipsarr.core.support.ToastHost
 import com.brebond.tipsarr.features.detail.MediaDetailScreen
+import com.brebond.tipsarr.features.admin.IssueDetailScreen
+import com.brebond.tipsarr.features.admin.IssuesScreen
+import com.brebond.tipsarr.features.admin.PosterListScreen
+import com.brebond.tipsarr.features.admin.StatsScreen
+import com.brebond.tipsarr.features.admin.SyncScreen
+import com.brebond.tipsarr.features.admin.UserDetailScreen
+import com.brebond.tipsarr.features.admin.UsersScreen
 import com.brebond.tipsarr.features.library.LibraryScreen
 import com.brebond.tipsarr.features.person.PersonScreen
 import com.brebond.tipsarr.features.requests.RequestDetailScreen
@@ -140,7 +147,8 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
                 if (record != null) model.openRequest(AppTab.Requests, record)
                 tab = AppTab.Requests
             }
-            is DeepLinkTarget.Issue, DeepLinkTarget.Discover -> { model.reset(AppTab.Discover); tab = AppTab.Discover }
+            is DeepLinkTarget.Issue -> { model.reset(AppTab.Profile); model.open(AppTab.Profile, Screen.Issue(target.id)); tab = AppTab.Profile }
+            DeepLinkTarget.Discover -> { model.reset(AppTab.Discover); tab = AppTab.Discover }
             DeepLinkTarget.Library -> { model.reset(AppTab.Library); tab = AppTab.Library }
             DeepLinkTarget.Requests -> { model.reset(AppTab.Requests); tab = AppTab.Requests }
         }
@@ -217,6 +225,13 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
                             Screen.Devices -> DevicesScreen(model.api, onBack = { model.back(tab) })
                             Screen.Watchlist -> WatchlistScreen(model.api, onBack = { model.back(tab) }, onOpen = openTitle)
                             Screen.Hidden -> HiddenScreen(model.api, onBack = { model.back(tab) }, onOpen = openTitle)
+                            Screen.Issues -> IssuesScreen(model.api, onBack = { model.back(tab) }, onOpen = { model.open(tab, Screen.Issue(it)) })
+                            is Screen.Issue -> IssueDetailScreen(model.api, top.id, profile.isAdmin, onBack = { model.back(tab) }, onOpenTitle = { model.openTitle(tab, it) })
+                            Screen.Users -> UsersScreen(model.api, onBack = { model.back(tab) }, onOpen = { model.open(tab, Screen.User(it)) })
+                            is Screen.User -> UserDetailScreen(model.api, top.id, profile.id, onBack = { model.back(tab) })
+                            Screen.Sync -> SyncScreen(model.api, onBack = { model.back(tab) })
+                            Screen.Stats -> StatsScreen(model.api, profile.isAdmin, profile, onBack = { model.back(tab) }, onOpenTitle = { model.openTitle(tab, it) }, onSeeAll = { model.open(tab, Screen.PosterList(it)) })
+                            is Screen.PosterList -> PosterListScreen(top.route, onBack = { model.back(tab) }, onOpen = { model.openTitle(tab, it) })
                         }
                     }
                 } else Box(Modifier.fillMaxSize().statusBarsPadding()) { when (tab) {
@@ -237,6 +252,10 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, serv
                         onOpenTitle = { model.openTitle(tab, it) },
                         onOpenRequest = { model.openRequest(tab, it) },
                         onChangePicture = { showPicture = true },
+                        onOpenStats = { model.open(tab, Screen.Stats) },
+                        onOpenIssues = { model.open(tab, Screen.Issues) },
+                        onOpenUsers = { model.open(tab, Screen.Users) },
+                        onOpenSync = { model.open(tab, Screen.Sync) },
                     )
                     else -> StateView(tab.icon, stringResource(tab.title))
                 } }

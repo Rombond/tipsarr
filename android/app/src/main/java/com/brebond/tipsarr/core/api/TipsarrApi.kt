@@ -26,6 +26,8 @@ class TipsarrApi(val serverUrl: String, val token: String? = null) {
 
     suspend fun delete(path: String) = wrap { client.delete(path) }
 
+    suspend fun postEmpty(path: String) = wrap { client.postEmpty(path) }
+
     suspend fun <B, T> patch(path: String, body: B, bodySerializer: KSerializer<B>, serializer: KSerializer<T>): T =
         wrap { client.patch(path, body, bodySerializer, serializer) }
 

@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,7 +21,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Bookmark
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.RemoveRedEye
@@ -84,6 +89,10 @@ fun ProfileScreen(
     onOpenTitle: (MediaRoute) -> Unit,
     onOpenRequest: (RequestRecord) -> Unit,
     onChangePicture: () -> Unit,
+    onOpenStats: () -> Unit = {},
+    onOpenIssues: () -> Unit = {},
+    onOpenUsers: () -> Unit = {},
+    onOpenSync: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -116,14 +125,33 @@ fun ProfileScreen(
             }
             if (model.topWatched.isNotEmpty()) item {
                 Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
-                    Text(
-                        stringResource(R.string.stats_top), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.Bold, color = Tokens.palette.fg,
-                        modifier = Modifier.padding(horizontal = GUTTER).semantics { heading() },
-                    )
+                    Row(Modifier.padding(horizontal = GUTTER), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            stringResource(R.string.stats_top), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.Bold, color = Tokens.palette.fg,
+                            modifier = Modifier.weight(1f).semantics { heading() },
+                        )
+                        Text(
+                            stringResource(R.string.m_discover_see_all), fontSize = Tokens.FontSize.subhead, color = Tokens.palette.mutedFg,
+                            modifier = Modifier.clickable(onClick = onOpenStats).padding(Tokens.Spacing.sm),
+                        )
+                    }
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), contentPadding = PaddingValues(horizontal = GUTTER)) {
                         items(model.topWatched.take(10), key = { "${it.type}-${it.tmdbId}" }) { top ->
                             TopWatched(top) { onOpenTitle(MediaRoute(top.type, top.tmdbId, top.title)) }
                         }
+                    }
+                }
+            }
+            if (profile.isAdmin) item {
+                Column(Modifier.padding(horizontal = GUTTER), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
+                    Text(stringResource(R.string.m_admin_title), fontSize = Tokens.FontSize.footnote, fontWeight = FontWeight.SemiBold, color = Tokens.palette.mutedFg, modifier = Modifier.padding(horizontal = Tokens.Spacing.xs))
+                    val shape = RoundedCornerShape(Tokens.Radius.md)
+                    Column(Modifier.fillMaxWidth().clip(shape).background(Tokens.palette.card).border(1.dp, Tokens.palette.border, shape)) {
+                        AdminRow(Icons.Outlined.ChatBubbleOutline, Tokens.Status.failed, stringResource(R.string.nav_issues), model.openIssues, onOpenIssues)
+                        HorizontalDivider(Modifier.padding(start = 52.dp), color = Tokens.palette.border)
+                        AdminRow(Icons.Outlined.People, Tokens.Status.approved, stringResource(R.string.nav_users), null, onOpenUsers)
+                        HorizontalDivider(Modifier.padding(start = 52.dp), color = Tokens.palette.border)
+                        AdminRow(Icons.Outlined.Sync, Tokens.Status.searching, stringResource(R.string.m_admin_sync), null, onOpenSync)
                     }
                 }
             }
@@ -207,5 +235,18 @@ private fun TopWatched(top: com.brebond.tipsarr.core.api.StatsTop, onClick: () -
         }
         Text(top.title, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium, color = Tokens.palette.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text("$hours · $plays", fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun AdminRow(icon: ImageVector, color: androidx.compose.ui.graphics.Color, title: String, value: Int?, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).defaultMinSize(minHeight = Tokens.Size.touchTarget + Tokens.Spacing.sm).padding(horizontal = Tokens.Spacing.md),
+        horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = color, modifier = Modifier.size(30.dp).clip(RoundedCornerShape(Tokens.Radius.sm - 2.dp)).background(color.copy(alpha = 0.16f)).padding(5.dp))
+        Text(title, fontSize = Tokens.FontSize.body, color = Tokens.palette.fg, modifier = Modifier.weight(1f))
+        if (value != null && value > 0) Text(value.toString(), fontSize = Tokens.FontSize.subhead, color = Tokens.palette.mutedFg)
+        Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = Tokens.palette.mutedFg)
     }
 }

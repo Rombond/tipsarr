@@ -39,6 +39,13 @@ sealed interface Screen {
     data object Devices : Screen
     data object Watchlist : Screen
     data object Hidden : Screen
+    data object Issues : Screen
+    class Issue(val id: String) : Screen
+    data object Users : Screen
+    class User(val id: String) : Screen
+    data object Sync : Screen
+    data object Stats : Screen
+    class PosterList(val route: com.brebond.tipsarr.features.admin.PosterListRoute) : Screen
 }
 
 /** Everything the signed-in screens own for one account; survives rotation and folding. */
@@ -53,7 +60,7 @@ class MainViewModel(
     val search = SearchModel(api, context)
     val requests = RequestsModel(api, isAdmin)
     val library = LibraryModel(api)
-    val profile = ProfileModel(api)
+    val profile = ProfileModel(api, isAdmin)
     val ratings = RatingProvider(api, ratingSource, viewModelScope)
     val live = LiveUpdates(viewModelScope)
 

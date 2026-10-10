@@ -9,6 +9,7 @@ import com.brebond.tipsarr.core.api.StatsTop
 import com.brebond.tipsarr.core.api.TipsarrApi
 import com.brebond.tipsarr.core.api.WatchedFilter
 import com.brebond.tipsarr.core.api.library
+import com.brebond.tipsarr.core.api.openIssueCount
 import com.brebond.tipsarr.core.api.requests
 import com.brebond.tipsarr.core.api.RequestFilter
 import com.brebond.tipsarr.core.api.statsAll
@@ -17,7 +18,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
 /** Numbers and recent requests shown on the Profile tab. */
-class ProfileModel(private val api: TipsarrApi) {
+class ProfileModel(private val api: TipsarrApi, private val isAdmin: Boolean = false) {
+    /** Open problem reports, shown on the admin row. */
+    var openIssues by mutableStateOf<Int?>(null)
+        private set
+
     var requestCount by mutableStateOf<Int?>(null)
         private set
     var watchlistCount by mutableStateOf<Int?>(null)
@@ -36,6 +41,8 @@ class ProfileModel(private val api: TipsarrApi) {
         val watchlist = async { runCatching { api.watchlist() }.getOrNull() }
         val watched = async { runCatching { api.library(LibraryFilters(watched = WatchedFilter.Yes), 1, 1) }.getOrNull() }
         val stats = async { runCatching { api.statsAll() }.getOrNull() }
+        val issues = async { if (isAdmin) runCatching { api.openIssueCount() }.getOrNull() else null }
+        issues.await()?.let { openIssues = it }
         mine.await()?.let { requestCount = it.total; recent = it.items }
         watchlist.await()?.let { watchlistCount = it.size }
         watched.await()?.let { watchedCount = it.total }
