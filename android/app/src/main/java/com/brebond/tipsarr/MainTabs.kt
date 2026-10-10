@@ -2,6 +2,12 @@ package com.brebond.tipsarr
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -10,6 +16,8 @@ import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.VideoLibrary
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -18,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.key
@@ -29,6 +38,11 @@ import com.brebond.tipsarr.core.support.LocalToast
 import com.brebond.tipsarr.core.support.ToastCenter
 import com.brebond.tipsarr.core.support.ToastHost
 import com.brebond.tipsarr.features.detail.MediaDetailScreen
+import com.brebond.tipsarr.features.person.PersonScreen
+import com.brebond.tipsarr.features.requests.RequestDetailScreen
+import com.brebond.tipsarr.features.requests.RequestsScreen
+import com.brebond.tipsarr.features.search.GenreScreen
+import com.brebond.tipsarr.features.search.SearchScreen
 import com.brebond.tipsarr.features.detail.MediaRoute
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -66,26 +80,33 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, onSi
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val model: MainViewModel = viewModel(key = account.id, factory = viewModelFactory {
-        initializer { MainViewModel(TipsarrApi(account.serverUrl, account.token), profile.isAdmin, userFolderChoice) }
+        initializer { MainViewModel(TipsarrApi(account.serverUrl, account.token), context.applicationContext, profile.isAdmin, userFolderChoice) }
     })
     val source = remember(account.id) { ImageSource(account.serverUrl, account.token) }
     val loader = remember(account.id) { createImageLoader(context, source) }
     var tab by rememberSaveable { mutableStateOf(AppTab.Discover) }
     val toasts = remember { ToastCenter(scope) }
-    val openTitle: (MediaItem) -> Unit = { model.open(tab, MediaRoute(it.type, it.tmdbId, it.title)) }
+    val openTitle: (MediaItem) -> Unit = { model.openTitle(tab, MediaRoute(it.type, it.tmdbId, it.title)) }
+    LaunchedEffect(tab) { model.refreshPending() }
     BackHandler(enabled = model.top(tab) != null) { model.back(tab) }
 
     CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader, LocalToast provides toasts) {
       Box(Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = Tokens.palette.bg,
+            // Top insets belong to each screen: tab roots pad for the status bar, pushed screens draw under it.
+            contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal),
             bottomBar = {
                 NavigationBar(containerColor = Tokens.palette.card) {
                     AppTab.entries.forEach { item ->
                         NavigationBarItem(
                             selected = tab == item,
                             onClick = { tab = item },
-                            icon = { Icon(item.icon, contentDescription = null) },
+                            icon = {
+                                BadgedBox(badge = { if (item == AppTab.Requests && model.pendingCount > 0) Badge { Text(model.pendingCount.toString()) } }) {
+                                    Icon(item.icon, contentDescription = null)
+                                }
+                            },
                             label = { Text(stringResource(item.title)) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Tokens.palette.primaryFg,
@@ -100,20 +121,37 @@ fun MainTabs(account: Account, profile: Profile, userFolderChoice: Boolean, onSi
             },
         ) { padding ->
             Box(Modifier.fillMaxSize().background(Tokens.palette.bg).padding(padding)) {
-                val detail = model.top(tab)
-                if (detail != null) {
-                    key(detail) {
-                        MediaDetailScreen(
-                            detail, account.serverUrl,
-                            onBack = { model.back(tab) },
-                            onOpen = { model.open(tab, it) },
-                        )
+                val top = model.top(tab)
+                if (top != null) {
+                    key(top) {
+                        when (top) {
+                            is Screen.Title -> MediaDetailScreen(
+                                top.model, account.serverUrl,
+                                onBack = { model.back(tab) },
+                                onOpen = { model.openTitle(tab, it) },
+                                onOpenPerson = { model.openPerson(tab, it) },
+                            )
+                            is Screen.Person -> PersonScreen(top.model, onBack = { model.back(tab) }, onOpenItem = openTitle)
+                            is Screen.Genre -> GenreScreen(top.route, top.list, onBack = { model.back(tab) }, onOpenItem = openTitle)
+                            is Screen.Request -> RequestDetailScreen(
+                                top.record, model.requests, profile.name,
+                                onBack = { model.back(tab) },
+                                onOpenTitle = { model.openTitle(tab, it) },
+                            )
+                        }
                     }
-                } else when (tab) {
+                } else Box(Modifier.fillMaxSize().statusBarsPadding()) { when (tab) {
                     AppTab.Discover -> DiscoverScreen(model.discover, onOpenSearch = { tab = AppTab.Search }, onOpenItem = openTitle)
+                    AppTab.Requests -> RequestsScreen(model.requests, onOpen = { model.openRequest(tab, it) }, onOpenDiscover = { tab = AppTab.Discover })
+                    AppTab.Search -> SearchScreen(
+                        model.search,
+                        onOpenItem = openTitle,
+                        onOpenPerson = { model.openPerson(tab, it) },
+                        onOpenGenre = { type, genre -> model.openGenre(tab, type, genre.id, genre.name) },
+                    )
                     AppTab.Profile -> ProfileStub(profile.name, onSignOut)
                     else -> StateView(tab.icon, stringResource(tab.title))
-                }
+                } }
             }
         }
         ToastHost(toasts)

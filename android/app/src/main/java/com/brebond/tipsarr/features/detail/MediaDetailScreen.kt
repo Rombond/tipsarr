@@ -120,7 +120,7 @@ private enum class DetailSheet { Request, Report }
 /** Detail of a movie or show: header, ratings, request button, overview, seasons, facts, cast, recommendations. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MediaDetailScreen(model: MediaDetailModel, serverUrl: String, onBack: () -> Unit, onOpen: (MediaRoute) -> Unit, modifier: Modifier = Modifier) {
+fun MediaDetailScreen(model: MediaDetailModel, serverUrl: String, onBack: () -> Unit, onOpen: (MediaRoute) -> Unit, onOpenPerson: (com.brebond.tipsarr.features.person.PersonRoute) -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val toast = LocalToast.current
     val scope = rememberCoroutineScope()
@@ -194,7 +194,7 @@ fun MediaDetailScreen(model: MediaDetailModel, serverUrl: String, onBack: () -> 
                                 SeasonList(model.api, model.route.tmdbId, model.regularSeasons, model.coveredSeasons, model.request?.state ?: RequestState.Requested)
                             }
                             Facts(detail)
-                            if (detail.cast.isNotEmpty()) Cast(detail)
+                            if (detail.cast.isNotEmpty()) Cast(detail) { onOpenPerson(com.brebond.tipsarr.features.person.PersonRoute(it.id, it.name)) }
                             if (detail.recommendations.isNotEmpty()) Recommendations(detail.recommendations) { onOpen(MediaRoute(it.type, it.tmdbId, it.title)) }
                             ReportRow { sheet = DetailSheet.Report }
                         }
@@ -493,12 +493,12 @@ private fun FactRow(label: String, value: String) {
 }
 
 @Composable
-private fun Cast(detail: MediaDetail) {
+private fun Cast(detail: MediaDetail, onOpen: (com.brebond.tipsarr.core.api.CastMember) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
         SectionTitle(stringResource(R.string.detail_cast))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
             items(detail.cast.take(15), key = { it.id }) { member ->
-                Column(Modifier.width(80.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.xs)) {
+                Column(Modifier.width(80.dp).clickable { onOpen(member) }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.xs)) {
                     Box(Modifier.size(64.dp).clip(CircleShape).background(Tokens.palette.muted), contentAlignment = Alignment.Center) {
                         Icon(Icons.Outlined.Person, null, tint = Tokens.palette.mutedFg)
                         RemoteImage(member.profilePath, TmdbSize.W185, Modifier.fillMaxSize())

@@ -44,3 +44,9 @@ fun languageName(code: String): String? {
     val name = Locale.forLanguageTag(code).getDisplayLanguage(Locale.getDefault())
     return name.takeIf { it.isNotEmpty() && it != code }?.replaceFirstChar { it.titlecase(Locale.getDefault()) }
 }
+
+/** "4 hours ago" in the app's language, from epoch seconds. */
+fun relativeTime(context: Context, epochSeconds: Long): String =
+    android.text.format.DateUtils.getRelativeTimeSpanString(
+        epochSeconds * 1000, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS,
+    ).toString()

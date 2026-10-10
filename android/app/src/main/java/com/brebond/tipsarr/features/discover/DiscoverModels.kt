@@ -8,6 +8,7 @@ import com.brebond.tipsarr.core.api.MediaItem
 import com.brebond.tipsarr.core.api.MediaPage
 import com.brebond.tipsarr.core.api.SuggestionRow
 import com.brebond.tipsarr.core.api.TipsarrApi
+import com.brebond.tipsarr.core.api.byGenre
 import com.brebond.tipsarr.core.api.popularMovies
 import com.brebond.tipsarr.core.api.popularTv
 import com.brebond.tipsarr.core.api.suggestions
@@ -22,8 +23,8 @@ sealed interface Phase {
 }
 
 /** One paged list of titles (infinite scroll). Duplicates across pages are dropped. */
-class MediaListModel(val source: Source, private val api: TipsarrApi) {
-    enum class Source { Trending, Upcoming, Movies, Tv }
+class MediaListModel(val source: Source, private val api: TipsarrApi, private val genre: Pair<com.brebond.tipsarr.core.api.MediaType, Int>? = null) {
+    enum class Source { Trending, Upcoming, Movies, Tv, Genre }
 
     var items by mutableStateOf<List<MediaItem>>(emptyList())
         private set
@@ -74,6 +75,7 @@ class MediaListModel(val source: Source, private val api: TipsarrApi) {
         Source.Upcoming -> api.upcoming(page)
         Source.Movies -> api.popularMovies(page)
         Source.Tv -> api.popularTv(page)
+        Source.Genre -> api.byGenre(genre!!.first, genre.second, page)
     }
 }
 
