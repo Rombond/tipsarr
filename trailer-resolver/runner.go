@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -40,7 +41,11 @@ func (r execRunner) Download(ctx context.Context, key string, maxHeight int, dst
 	if err != nil {
 		return Result{}, err
 	}
-	defer os.RemoveAll(work)
+	defer func() {
+		if err := os.RemoveAll(work); err != nil {
+			slog.Warn("could not remove work folder (cleaned up later)", "dir", work, "err", err)
+		}
+	}()
 
 	h := strconv.Itoa(maxHeight)
 	// H.264 + AAC plays on every phone; fall back to anything that fits the height.

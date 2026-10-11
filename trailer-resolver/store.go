@@ -232,3 +232,18 @@ func (s *Store) Clear() {
 }
 
 var errNotFound = errors.New("not found")
+
+// SweepWork deletes work folders (".work-*") left by a crash or a failed clean-up when they are older than maxAge.
+func (s *Store) SweepWork(maxAge time.Duration) int {
+	dirs, _ := filepath.Glob(filepath.Join(s.dir, ".work-*"))
+	cut := s.now().Add(-maxAge)
+	n := 0
+	for _, d := range dirs {
+		if st, err := os.Stat(d); err == nil && st.IsDir() && st.ModTime().Before(cut) {
+			if os.RemoveAll(d) == nil {
+				n++
+			}
+		}
+	}
+	return n
+}

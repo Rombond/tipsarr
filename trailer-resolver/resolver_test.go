@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -268,5 +269,28 @@ func TestClassify(t *testing.T) {
 		if !errors.As(err, &de) || de.Permanent != want {
 			t.Errorf("%q permanent = %v, want %v", msg, de != nil && de.Permanent, want)
 		}
+	}
+}
+
+func TestSweepWorkRemovesOnlyOldWorkFolders(t *testing.T) {
+	_, _, st, clk := newTest(t, &fakeRunner{})
+	old := filepath.Join(st.dir, ".work-AAAAAAAAAAA-1")
+	fresh := filepath.Join(st.dir, ".work-BBBBBBBBBBB-2")
+	for _, d := range []string{old, fresh} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		os.WriteFile(filepath.Join(d, "in.mp4"), []byte("x"), 0o644)
+	}
+	past := clk.Now().Add(-time.Hour)
+	os.Chtimes(old, past, past)
+	if n := st.SweepWork(10 * time.Minute); n != 1 {
+		t.Fatalf("swept %d", n)
+	}
+	if _, err := os.Stat(old); !os.IsNotExist(err) {
+		t.Fatal("old folder still there")
+	}
+	if _, err := os.Stat(fresh); err != nil {
+		t.Fatal("fresh folder was removed")
 	}
 }

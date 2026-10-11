@@ -32,6 +32,7 @@ func main() {
 	defer stop()
 
 	w := NewWorker(cfg, st, execRunner{cfg: cfg}, time.Now)
+	st.SweepWork(10 * time.Minute)
 	go w.Run(ctx)
 	go housekeeping(ctx, cfg, st)
 
@@ -63,6 +64,7 @@ func housekeeping(ctx context.Context, cfg Config, st *Store) {
 			if n := st.Evict(cfg.CacheLimit, cfg.UnusedAfter); n > 0 {
 				slog.Info("cache cleaned", "deleted", n)
 			}
+			st.SweepWork(10 * time.Minute)
 		case <-update.C:
 			if !cfg.AutoUpdate {
 				continue
