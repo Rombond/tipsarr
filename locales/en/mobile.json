@@ -203,5 +203,16 @@
   "m.boxoffice.weeks_one": "{n} week in release",
   "m.boxoffice.region": "Region",
   "m.boxoffice.week": "Week",
-  "m.boxoffice.empty": "No chart yet. It appears after the next weekend update."
+  "m.boxoffice.empty": "No chart yet. It appears after the next weekend update.",
+  "m.search.filters": "Filters",
+  "m.search.avail": "Availability",
+  "m.search.avail_missing": "Not in library",
+  "m.search.avail_in": "In library",
+  "m.search.sort_relevance": "Relevance",
+  "m.library.genres_any": "Any genre",
+  "m.library.genres_pick": "Choose genres",
+  "m.library.genres_search": "Search genres",
+  "m.library.genres_more": "{first} +{count}",
+  "m.poster.movie": "Movie",
+  "m.poster.tv": "TV"
 }
