@@ -14,6 +14,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/Rombond/tipsarr/backend/internal/clients/jellyfin"
 	"github.com/Rombond/tipsarr/backend/internal/clients/tmdb"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
@@ -529,6 +530,10 @@ func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) 
 	}
 	if d.Availability != AvailabilityNone {
 		d.WatchURL = s.watchURL(ctx, mediaType, d.TMDBID)
+		if d.WatchURL != "" {
+			d.JellyfinItemID = s.store.LibraryJellyfinID(ctx, mediaType, int64(d.TMDBID))
+			d.JellyfinServerID = s.jellyfinServerID(ctx)
+		}
 	}
 	return d, nil
 }
@@ -740,6 +745,28 @@ const (
 	settingJellyfinURL       = "jellyfin.url"
 	SettingJellyfinPublicURL = "jellyfin.public_url"
 )
+
+const settingJellyfinServerID = "jellyfin.server_id"
+
+// jellyfinServerID is the id Jellyfin reports in /System/Info/Public. It is asked once and kept in the
+// settings, so a Jellyfin that is down later does not break the detail page ("" if unknown).
+func (s *Service) jellyfinServerID(ctx context.Context) string {
+	if id, _ := s.store.GetSetting(ctx, settingJellyfinServerID); id != "" {
+		return id
+	}
+	base, _ := s.store.GetSetting(ctx, settingJellyfinURL)
+	if base == "" {
+		return ""
+	}
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	info, err := jellyfin.New(base).PublicInfo(ctx)
+	if err != nil {
+		return ""
+	}
+	_ = s.store.SetSetting(ctx, settingJellyfinServerID, info.ID)
+	return info.ID
+}
 
 // watchURL builds a deep link into Jellyfin's web UI for a title in the library ("" if unknown).
 // The public URL (what browsers can reach) falls back to the URL Tipsarr itself uses.

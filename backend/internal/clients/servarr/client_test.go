@@ -42,6 +42,13 @@ func (f *fakeServarr) handler() http.Handler {
 			f.last = b
 			f.mu.Unlock()
 			_, _ = w.Write([]byte(`{"id":77,"title":"S","tvdbId":81189}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v3/command":
+			var b map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&b)
+			f.mu.Lock()
+			f.last = b
+			f.mu.Unlock()
+			_, _ = w.Write([]byte(`{"id":1}`))
 		case r.URL.Path == "/api/v3/movie":
 			_, _ = w.Write([]byte(`[]`))
 		case r.URL.Path == "/api/v3/series":
@@ -157,5 +164,25 @@ func TestBadKeyIsError(t *testing.T) {
 	defer srv.Close()
 	if _, err := New(KindRadarr, srv.URL, "wrong", true).Status(context.Background()); err == nil {
 		t.Fatal("expected 401 error")
+	}
+}
+
+func TestRefreshDownloads(t *testing.T) {
+	f := &fakeServarr{}
+	srv := httptest.NewServer(f.handler())
+	defer srv.Close()
+	ctx := context.Background()
+
+	if err := New(KindRadarr, srv.URL, "key", true).RefreshDownloads(ctx); !errors.Is(err, ErrDryRun) {
+		t.Fatalf("dry-run err = %v", err)
+	}
+	if w := f.writes(); len(w) != 0 {
+		t.Fatalf("dry-run leaked writes: %v", w)
+	}
+	if err := New(KindSonarr, srv.URL, "key", false).RefreshDownloads(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if f.last["name"] != "RefreshMonitoredDownloads" {
+		t.Fatalf("command body = %v", f.last)
 	}
 }

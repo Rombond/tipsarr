@@ -1429,6 +1429,10 @@ export interface components {
             genres: components["schemas"]["Genre"][];
             homepage?: string;
             imdbId?: string;
+            /** @description Jellyfin id of the title when it is in the library (for links into the Jellyfin apps) */
+            jellyfinItemId?: string;
+            /** @description Id of the Jellyfin server, with the item id enough to build a link into the Swiftfin app */
+            jellyfinServerId?: string;
             /** @description TMDB tags such as "superhero"; searchable */
             keywords: components["schemas"]["Keyword"][];
             /** @description Spoken languages, English names */

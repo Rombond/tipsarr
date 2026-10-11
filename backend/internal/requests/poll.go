@@ -2,6 +2,7 @@ package requests
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -49,6 +50,11 @@ func (s *Service) Poll(ctx context.Context) (int, error) {
 			if err := s.pollOne(ctx, client, &reqs[i], byMedia); err != nil && firstErr == nil {
 				firstErr = err
 			}
+		}
+		// The instance only reads its download clients once a minute; ask for a fresh look now so
+		// the next tick (15 s) sees real progress instead of a minute-old queue. Best effort.
+		if err := client.RefreshDownloads(ctx); err != nil && !errors.Is(err, servarr.ErrDryRun) {
+			slog.Debug("refresh downloads", "instance", inst.Name, "err", err)
 		}
 	}
 	return len(inflight), firstErr

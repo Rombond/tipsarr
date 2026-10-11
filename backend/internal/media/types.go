@@ -116,6 +116,8 @@ type Detail struct {
 	Revenue                int64        `json:"revenue,omitempty"`
 	TrailerKey             string       `json:"trailerKey,omitempty" doc:"YouTube video key of the official trailer"`
 	WatchURL               string       `json:"watchUrl,omitempty" doc:"Deep link to the title in Jellyfin when it is in the library"`
+	JellyfinItemID         string       `json:"jellyfinItemId,omitempty" doc:"Jellyfin id of the title when it is in the library (for links into the Jellyfin apps)"`
+	JellyfinServerID       string       `json:"jellyfinServerId,omitempty" doc:"Id of the Jellyfin server, with the item id enough to build a link into the Swiftfin app"`
 	Recommendations        []Item       `json:"recommendations"`
 	Similar                []Item       `json:"similar"`
 }

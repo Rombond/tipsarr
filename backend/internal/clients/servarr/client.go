@@ -234,6 +234,13 @@ func (c *Client) Queue(ctx context.Context) ([]QueueItem, error) {
 	return out, nil
 }
 
+// RefreshDownloads asks Radarr/Sonarr to poll their download clients now. They do it on their
+// own only once a minute, so a download shows 0% and then 99% between two looks at the queue.
+// It changes nothing in the library, but like every write it goes through send (dry-run blocks it).
+func (c *Client) RefreshDownloads(ctx context.Context) error {
+	return c.send(ctx, http.MethodPost, "/command", map[string]string{"name": "RefreshMonitoredDownloads"}, nil)
+}
+
 // DeleteMedia removes a movie (Radarr) or series (Sonarr) from the app. Files on disk are kept.
 // Like every write it goes through send, so dry-run blocks it.
 func (c *Client) DeleteMedia(ctx context.Context, id int) error {

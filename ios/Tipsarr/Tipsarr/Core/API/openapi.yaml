@@ -332,6 +332,12 @@ components:
           type: string
         imdbId:
           type: string
+        jellyfinItemId:
+          description: Jellyfin id of the title when it is in the library (for links into the Jellyfin apps)
+          type: string
+        jellyfinServerId:
+          description: Id of the Jellyfin server, with the item id enough to build a link into the Swiftfin app
+          type: string
         keywords:
           description: TMDB tags such as "superhero"; searchable
           items:
