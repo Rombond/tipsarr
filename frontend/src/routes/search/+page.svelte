@@ -5,6 +5,10 @@
 	import MediaCard from '$lib/components/media/media-card.svelte';
 	import PersonCard from '$lib/components/media/person-card.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
+	import { Input } from '$lib/components/ui/input';
+	import FilterIcon from '@lucide/svelte/icons/sliders-horizontal';
+	import XIcon from '@lucide/svelte/icons/x';
 
 	let query = $derived(page.url.searchParams.get('q') || '');
 
@@ -14,11 +18,49 @@
 	let error = $state<Error | null>(null);
 	let result = $state<Schemas['SearchResult'] | null>(null);
 
-	const movies = $derived(result?.items.filter((i) => i.type === 'movie') ?? []);
-	const shows = $derived(result?.items.filter((i) => i.type === 'tv') ?? []);
+	// Filters apply to the titles already loaded (people are not filtered).
+	type Sort = 'relevance' | 'rating' | 'year';
+	let panelOpen = $state(false);
+	let yearFrom = $state('');
+	let yearTo = $state('');
+	let minRating = $state('');
+	let avail = $state('any');
+	let sort = $state<Sort>('relevance');
+	const activeFilters = $derived([yearFrom, yearTo, minRating].filter(Boolean).length + (avail !== 'any' ? 1 : 0) + (sort !== 'relevance' ? 1 : 0));
+
+	function yearOf(i: Schemas['Item']) {
+		return Number(i.releaseDate?.slice(0, 4)) || 0;
+	}
+	function refine(items: Schemas['Item'][]) {
+		const from = Number(yearFrom) || 0;
+		const to = Number(yearTo) || 0;
+		const min = Number(minRating) || 0;
+		const out = items.filter((i) => {
+			if (from && yearOf(i) < from) return false;
+			if (to && (!yearOf(i) || yearOf(i) > to)) return false;
+			if (min && i.voteAverage < min) return false;
+			if (avail === 'in' && i.availability !== 'available') return false;
+			if (avail === 'missing' && i.availability === 'available') return false;
+			return true;
+		});
+		if (sort === 'rating') out.sort((a, b) => b.voteAverage - a.voteAverage);
+		if (sort === 'year') out.sort((a, b) => yearOf(b) - yearOf(a));
+		return out;
+	}
+	function resetFilters() {
+		yearFrom = yearTo = minRating = '';
+		avail = 'any';
+		sort = 'relevance';
+	}
+
+	const allMovies = $derived(result?.items.filter((i) => i.type === 'movie') ?? []);
+	const allShows = $derived(result?.items.filter((i) => i.type === 'tv') ?? []);
+	const movies = $derived(refine(allMovies));
+	const shows = $derived(refine(allShows));
 	const people = $derived(result?.people ?? []);
 	const keywords = $derived(result?.keywords ?? []);
-	const tagged = $derived(result?.tagged ?? []);
+	const tagged = $derived(refine(result?.tagged ?? []));
+	const filtering = $derived(activeFilters > 0);
 
 	async function load() {
 		if (!query) {
@@ -36,6 +78,18 @@
 			loading = false;
 		}
 	}
+
+	const sortOptions = $derived([
+		{ value: 'relevance', label: t('search.sort_relevance') },
+		{ value: 'rating', label: t('library.sort_rating') },
+		{ value: 'year', label: t('library.sort_year') },
+	]);
+	const ratingOptions = $derived([{ value: '', label: t('library.any') }, ...[5, 6, 7, 8].map((n) => ({ value: String(n), label: `${n}+` }))]);
+	const availOptions = $derived([
+		{ value: 'any', label: t('library.any') },
+		{ value: 'missing', label: t('search.avail_missing') },
+		{ value: 'in', label: t('search.avail_in') },
+	]);
 
 	$effect(() => {
 		query;
@@ -81,6 +135,48 @@
 		</div>
 	{/if}
 
+	{#if result && !loading && allMovies.length + allShows.length > 0}
+		<div class="grid gap-3">
+			<div class="flex flex-wrap items-center gap-2">
+				<button
+					type="button"
+					aria-expanded={panelOpen}
+					class="flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors {activeFilters ? 'border-primary text-foreground' : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'}"
+					onclick={() => (panelOpen = !panelOpen)}
+				>
+					<FilterIcon class="size-3.5" />{t('search.filters')}{#if activeFilters} ({activeFilters}){/if}
+				</button>
+				{#if activeFilters}
+					<button type="button" class="flex cursor-pointer items-center gap-1 text-sm text-muted-foreground underline-offset-4 hover:underline" onclick={resetFilters}><XIcon class="size-3.5" />{t('search.filters_reset')}</button>
+				{/if}
+			</div>
+			{#if panelOpen}
+				<div class="grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-2 lg:grid-cols-4">
+					<div class="grid gap-1 text-sm">
+						<span class="font-medium">{t('library.year')}</span>
+						<div class="flex items-center gap-2">
+							<Input bind:value={yearFrom} inputmode="numeric" maxlength={4} aria-label={t('library.year_from')} />
+							<span class="text-muted-foreground">–</span>
+							<Input bind:value={yearTo} inputmode="numeric" maxlength={4} aria-label={t('library.year_to')} />
+						</div>
+					</div>
+					<div class="grid gap-1 text-sm">
+						<span class="font-medium">{t('library.min_rating')}</span>
+						<SimpleSelect label={t('library.min_rating')} value={minRating} options={ratingOptions} onchange={(v) => (minRating = v)} class="w-full" />
+					</div>
+					<div class="grid gap-1 text-sm">
+						<span class="font-medium">{t('search.avail')}</span>
+						<SimpleSelect label={t('search.avail')} value={avail} options={availOptions} onchange={(v) => (avail = v)} class="w-full" />
+					</div>
+					<div class="grid gap-1 text-sm">
+						<span class="font-medium">{t('library.sort_by')}</span>
+						<SimpleSelect label={t('library.sort_by')} value={sort} options={sortOptions} onchange={(v) => (sort = v as Sort)} class="w-full" />
+					</div>
+				</div>
+			{/if}
+		</div>
+	{/if}
+
 	{#if loading}
 		<div class="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
 			{#each { length: 12 } as _, i (i)}
@@ -94,8 +190,12 @@
 		</div>
 	{:else if !movies.length && !shows.length && !people.length && !tagged.length}
 		<div class="rounded-xl border border-dashed border-border p-8 text-center">
-			<p class="font-medium">{t('search.nothing', { query })}</p>
-			<p class="mt-1 text-sm text-muted-foreground">{t('search.nothing_hint')}</p>
+			{#if filtering}
+				<p class="font-medium">{t('search.no_match')}</p>
+			{:else}
+				<p class="font-medium">{t('search.nothing', { query })}</p>
+				<p class="mt-1 text-sm text-muted-foreground">{t('search.nothing_hint')}</p>
+			{/if}
 		</div>
 	{:else}
 		{#if movies.length && (tab === 'all' || tab === 'movies')}

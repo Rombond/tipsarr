@@ -765,5 +765,12 @@
   "req.quota_none": "You have used all your requests for now. You can request again from {date}.",
   "error.quota_reached": "You have reached your request limit for now.",
   "error.permission_required": "You do not have permission to do this.",
-  "error.own_permissions": "You cannot change your own permissions."
+  "error.own_permissions": "You cannot change your own permissions.",
+  "search.filters": "Filters",
+  "search.filters_reset": "Reset filters",
+  "search.avail": "Availability",
+  "search.avail_missing": "Not in library",
+  "search.avail_in": "In library",
+  "search.sort_relevance": "Relevance",
+  "search.no_match": "No result matches these filters."
 }

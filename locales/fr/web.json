@@ -765,5 +765,12 @@
   "req.quota_none": "Vous avez utilisé toutes vos demandes pour le moment. Vous pourrez de nouveau demander à partir du {date}.",
   "error.quota_reached": "Vous avez atteint votre limite de demandes pour le moment.",
   "error.permission_required": "Vous n’avez pas la permission de faire ça.",
-  "error.own_permissions": "Vous ne pouvez pas modifier vos propres permissions."
+  "error.own_permissions": "Vous ne pouvez pas modifier vos propres permissions.",
+  "search.filters": "Filtres",
+  "search.filters_reset": "Réinitialiser les filtres",
+  "search.avail": "Disponibilité",
+  "search.avail_missing": "Pas dans la bibliothèque",
+  "search.avail_in": "Dans la bibliothèque",
+  "search.sort_relevance": "Pertinence",
+  "search.no_match": "Aucun résultat ne correspond à ces filtres."
 }
