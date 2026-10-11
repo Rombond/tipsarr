@@ -22,5 +22,7 @@
   "srv.job.boxoffice.stored_failed": "{saved} classements enregistrés, {failed} en échec",
   "srv.job.boxoffice.stored_matched_failed": "{saved} classements enregistrés, {matched} titres associés dans d’anciens classements, {failed} en échec",
   "srv.job.poll.inflight": "{count} demandes en cours",
-  "srv.job.housekeeping.purged": "nettoyé"
+  "srv.job.housekeeping.purged": "nettoyé",
+  "srv.job.skip.teasers_off": "les fichiers de bandes-annonces sont désactivés",
+  "srv.job.trailers.synced": "{ready} fichiers prêts, {pending} en attente, {failed} en échec"
 }

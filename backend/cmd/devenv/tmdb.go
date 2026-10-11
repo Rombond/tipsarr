@@ -136,9 +136,9 @@ func detail(id int, lang string) obj {
 	}
 	crew := []obj{{"id": personFrst + (id*2)%15, "name": personName(personFrst + (id*2)%15), "job": "Director"}, {"id": personFrst + (id*5)%15, "name": personName(personFrst + (id*5)%15), "job": "Writer"}}
 	d["credits"] = obj{"cast": cast, "crew": crew}
-	videos := []obj{{"key": "TRAILEREN" + strconv.Itoa(id), "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "en"}}
+	videos := []obj{{"key": fmt.Sprintf("TRLEN%06d", id), "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "en"}}
 	if id%2 == 0 {
-		videos = append(videos, obj{"key": "TRAILERFR" + strconv.Itoa(id), "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "fr"})
+		videos = append(videos, obj{"key": fmt.Sprintf("TRLFR%06d", id), "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "fr"})
 	}
 	// TIPSARR_FAKE_TRAILER=<YouTube key> makes every trailer a real video, to try playback in the apps.
 	if key := os.Getenv("TIPSARR_FAKE_TRAILER"); key != "" {

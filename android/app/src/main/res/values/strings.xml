@@ -702,6 +702,8 @@
     <string name="srv_job_skip_import_off">auto-import is off</string>
     <string name="srv_job_skip_no_jellyfin_key">no Jellyfin API key saved</string>
     <string name="srv_job_skip_playback_missing">Playback Reporting is not installed in Jellyfin</string>
+    <string name="srv_job_skip_teasers_off">trailer files are off</string>
+    <string name="srv_job_trailers_synced">%1$s trailer files ready, %2$s waiting, %3$s failed</string>
     <string name="state_approved">Approved</string>
     <string name="state_available">Available</string>
     <string name="state_declined">Declined</string>

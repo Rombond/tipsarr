@@ -56,6 +56,7 @@ func main() {
 	serve(":18099", "radarr", newArr("radarr"))
 	serve(":18100", "sonarr", newArr("sonarr"))
 	serve(":18101", "box office", newBoxOffice(*fixture))
+	serve(":18102", "resolver", newFakeResolver())
 	fmt.Println("fake services running; Ctrl-C to stop")
 	select {}
 }

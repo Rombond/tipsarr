@@ -29,4 +29,5 @@ Things to know:
 - The fakes live in `backend/cmd/devenv`; the server finds them through `TIPSARR_TMDB_URL`, `TIPSARR_TMDB_IMAGE_URL`
   and `TIPSARR_BOXOFFICE_URL` (unset = the real services).
 - `TIPSARR_FAKE_TRAILER=dQw4w9WgXcQ dev/run.sh` makes every trailer that real YouTube video, to try playback (the default keys are made up and do not play).
-- Fixed ports: 8088 Tipsarr, 18096 Jellyfin, 18097 TMDB, 18098 images, 18099 Radarr, 18100 Sonarr, 18101 box office.
+- Trailer files (Teasers tab): the fake resolver on 18102 "downloads" a small sample video (`backend/cmd/devenv/testdata/sample.mp4`, 360p, 4 s) into `dev/.data/trailers`, one at a time. `dev/run.sh --reset` seeds the feature as on (resolver `http://127.0.0.1:18102`, key `dev-resolver-key`); an older data folder keeps its settings, so reset once to get it. Knobs for the fake: `DEVENV_RESOLVER_DELAY` (seconds per download, default 4), `DEVENV_RESOLVER_FAIL` (0 to 1, share of keys that fail for good). Without the resolver settings the Teasers tab is hidden and `GET /teasers` answers 404 `teasers_disabled`.
+- Fixed ports: 8088 Tipsarr, 18096 Jellyfin, 18097 TMDB, 18098 images, 18099 Radarr, 18100 Sonarr, 18101 box office, 18102 trailer resolver.

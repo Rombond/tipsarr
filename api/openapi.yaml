@@ -57,6 +57,21 @@ components:
         - password
         - sso
       type: object
+    Breaker:
+      additionalProperties: false
+      properties:
+        state:
+          enum:
+            - closed
+            - open
+          type: string
+        until:
+          format: int64
+          type: integer
+      required:
+        - state
+        - until
+      type: object
     CastMember:
       additionalProperties: false
       properties:
@@ -185,6 +200,27 @@ components:
           type: string
       required:
         - message
+      type: object
+    Counts:
+      additionalProperties: false
+      properties:
+        failed:
+          format: int64
+          type: integer
+        queued:
+          format: int64
+          type: integer
+        ready:
+          format: int64
+          type: integer
+        running:
+          format: int64
+          type: integer
+      required:
+        - queued
+        - running
+        - ready
+        - failed
       type: object
     CreateIssueRequest:
       additionalProperties: false
@@ -644,6 +680,39 @@ components:
       required:
         - flags
         - defaults
+      type: object
+    Health:
+      additionalProperties: false
+      properties:
+        breaker:
+          $ref: "#/components/schemas/Breaker"
+        cacheBytes:
+          format: int64
+          type: integer
+        cacheLimitBytes:
+          format: int64
+          type: integer
+        counts:
+          $ref: "#/components/schemas/Counts"
+        denoVersion:
+          type: string
+        ffmpegVersion:
+          type: string
+        lastError:
+          type: string
+        ok:
+          type: boolean
+        ytdlpVersion:
+          type: string
+      required:
+        - ok
+        - ytdlpVersion
+        - denoVersion
+        - ffmpegVersion
+        - cacheBytes
+        - cacheLimitBytes
+        - counts
+        - breaker
       type: object
     HealthOutputBody:
       additionalProperties: false
@@ -1205,6 +1274,34 @@ components:
         - rootFolder
         - profiles
         - rootFolders
+      type: object
+    Overview:
+      additionalProperties: false
+      properties:
+        available:
+          description: The resolver answered its health check
+          type: boolean
+        configured:
+          description: An address and a key are saved
+          type: boolean
+        enabled:
+          type: boolean
+        error:
+          description: Why the resolver is not available
+          type: string
+        files:
+          additionalProperties:
+            format: int64
+            type: integer
+          description: "Rows per state in Tipsarr's own table: queued, running, ready, failed"
+          type: object
+        health:
+          $ref: "#/components/schemas/Health"
+      required:
+        - enabled
+        - configured
+        - available
+        - files
       type: object
     PermissionDefaults:
       additionalProperties: false
@@ -1905,6 +2002,19 @@ components:
         servarrAutoImport:
           description: Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only)
           type: boolean
+        teasersFilesEnabled:
+          description: Teasers feed with trailer files from the optional trailer-resolver sidecar (off by default)
+          type: boolean
+        teasersFilesKeyConfigured:
+          description: The resolver key is write-only; this only says whether one is saved
+          type: boolean
+        teasersFilesMaxHeight:
+          description: "Largest video height the resolver downloads: 360, 480, 720 or 1080"
+          format: int64
+          type: integer
+        teasersFilesUrl:
+          description: Address of the trailer resolver on the Docker network, e.g. http://trailer-resolver:8080
+          type: string
         tmdbConfigured:
           description: Secrets are write-only; this only says whether a key is saved
           type: boolean
@@ -1934,6 +2044,10 @@ components:
         - pushText
         - pushRelayKeyConfigured
         - servarrAutoImport
+        - teasersFilesEnabled
+        - teasersFilesUrl
+        - teasersFilesKeyConfigured
+        - teasersFilesMaxHeight
       type: object
     SetupInputBody:
       additionalProperties: false
@@ -2228,8 +2342,12 @@ components:
         push:
           description: Push notifications are set up on this server
           type: boolean
+        teasers:
+          description: "The Teasers feed is available: trailer files are on and the resolver answers. Apps hide the Teasers tab otherwise"
+          type: boolean
       required:
         - push
+        - teasers
       type: object
     StatusOutputBody:
       additionalProperties: false
@@ -2303,6 +2421,11 @@ components:
           type: array
         overview:
           type: string
+        player:
+          enum:
+            - file
+            - youtube
+          type: string
         posterPath:
           description: TMDB path, load via /images/tmdb/{size}/{file}
           type: string
@@ -2328,6 +2451,12 @@ components:
             - movie
             - tv
           type: string
+        videoHeight:
+          format: int64
+          type: integer
+        videoUrl:
+          description: Trailer file served by this server (needs the same login as the API); set when player is file
+          type: string
         voteAverage:
           format: double
           type: number
@@ -2336,11 +2465,19 @@ components:
       required:
         - trailerKey
         - watchlisted
+        - player
         - type
         - tmdbId
         - title
         - voteAverage
         - availability
+      type: object
+    TeaserFilesTestRequest:
+      additionalProperties: false
+      properties:
+        key:
+          description: YouTube video key; default is a short public video
+          type: string
       type: object
     TeaserSeenRequest:
       additionalProperties: false
@@ -2357,6 +2494,41 @@ components:
       required:
         - type
         - tmdbId
+      type: object
+    TestResult:
+      additionalProperties: false
+      properties:
+        bytes:
+          format: int64
+          type: integer
+        duration:
+          format: int64
+          type: integer
+        error:
+          type: string
+        height:
+          format: int64
+          type: integer
+        key:
+          type: string
+        seconds:
+          description: How long the resolver took (or how long we waited)
+          format: double
+          type: number
+        status:
+          enum:
+            - queued
+            - running
+            - ready
+            - failed
+          type: string
+      required:
+        - key
+        - status
+        - seconds
+        - bytes
+        - height
+        - duration
       type: object
     TokenBody:
       additionalProperties: false
@@ -2464,6 +2636,19 @@ components:
           type: boolean
         servarrAutoImport:
           type: boolean
+        teasersFilesEnabled:
+          description: Needs the resolver address and key; turning it on with either missing is refused
+          type: boolean
+        teasersFilesKey:
+          description: Write-only; empty string clears it (and turns trailer files off)
+          type: string
+        teasersFilesMaxHeight:
+          description: 360, 480, 720 or 1080
+          format: int64
+          type: integer
+        teasersFilesUrl:
+          description: Empty string clears it (and turns trailer files off)
+          type: string
         tmdbApiKey:
           description: Set or replace the TMDB key (empty string clears it)
           type: string
@@ -3388,6 +3573,135 @@ paths:
         - session: []
         - bearer: []
       summary: Run a sync job now, in the background (admin)
+      tags:
+        - admin
+  /admin/teasers/files:
+    delete:
+      operationId: teaserFilesClear
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+        "502":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Bad Gateway
+      security:
+        - session: []
+        - bearer: []
+      summary: Empty the resolver's cache and forget every file (admin)
+      tags:
+        - admin
+    get:
+      description: The Teasers feed plays trailers from files fetched by the optional trailer-resolver sidecar. The resolver is asked for its health now.
+      operationId: teaserFilesOverview
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Overview"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: "Trailer files: settings state, resolver health and file counts (admin)"
+      tags:
+        - admin
+  /admin/teasers/files/test:
+    post:
+      description: Uses the saved resolver address and key even while the feature is off. Waits up to 90 seconds; if the video is not ready by then the state is queued or running and the test can be repeated.
+      operationId: teaserFilesTest
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeaserFilesTestRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResult"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+        "502":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Bad Gateway
+      security:
+        - session: []
+        - bearer: []
+      summary: Resolve one video through the resolver and report time and size (admin)
       tags:
         - admin
   /admin/users:
@@ -6808,7 +7122,7 @@ paths:
         - suggestions
   /teasers:
     get:
-      description: "Titles you have not swiped past yet, mixed from your suggestions, trending and upcoming, each with a trailer in your language. Skips titles you watched, blocked, requested or already have in the library. Display only: nothing is requested automatically."
+      description: "Answers 404 (code teasers_disabled) when trailer files are not set up on this server: apps then hide the tab. Titles you have not swiped past yet, mixed from your suggestions, trending and upcoming, each with a trailer in your language. Skips titles you watched, blocked, requested or already have in the library. Display only: nothing is requested automatically."
       operationId: teasers
       parameters:
         - explode: false
@@ -6840,6 +7154,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorModel"
           description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Not Found
         "422":
           content:
             application/problem+json:

@@ -43,3 +43,4 @@ vite.config.ts.timestamp-*
 /docs/
 /frontend/skills-lock.json
 /frontend/bun.lock
+/backend/cmd/devenv/devenv

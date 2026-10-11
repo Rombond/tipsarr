@@ -26,6 +26,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/Rombond/tipsarr/backend/internal/suggestions"
 	"github.com/Rombond/tipsarr/backend/internal/teasers"
+	"github.com/Rombond/tipsarr/backend/internal/trailers"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
@@ -51,6 +52,7 @@ type Deps struct {
 	Avatars       *avatars.Service
 	Suggestions   *suggestions.Service
 	Teasers       *teasers.Service
+	Trailers      *trailers.Service // optional: trailer files from the resolver sidecar
 	BoxOffice     *boxoffice.Service
 	Marks         *marks.Service
 	LoginLimiter  *auth.Limiter // optional
@@ -95,6 +97,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerRequests(api, d)
 		registerSuggestions(api, d)
 		registerTeasers(api, d)
+		registerTeaserFiles(api, d)
 		registerBoxOffice(api, d)
 		registerProfile(api, d)
 		registerSessions(api, d)
@@ -111,6 +114,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerStats(api, d)
 		r.Get("/events", eventsHandler(d))
 		r.Get("/images/tmdb/{size}/{file}", imageHandler(d))
+		r.Get("/teasers/video/{key}", teaserVideoHandler(d))
 		r.Get("/images/jellyfin/{id}", jellyfinImageHandler(d))
 		r.Get("/users/{id}/avatar", avatarHandler(d))
 		r.Post("/me/avatar", avatarUploadHandler(d))

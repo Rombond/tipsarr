@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -35,6 +36,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/Rombond/tipsarr/backend/internal/suggestions"
 	"github.com/Rombond/tipsarr/backend/internal/teasers"
+	"github.com/Rombond/tipsarr/backend/internal/trailers"
 )
 
 func main() {
@@ -106,6 +108,14 @@ func run(cfg config.Config) error {
 	pusher := push.New(st, cfg.DryRun)
 	notifier.SetPusher(pusher)
 	sugg := suggestions.New(st, mediaSvc, hub)
+	// Trailer files come from the optional trailer-resolver sidecar, which writes them into a shared folder that is mounted
+	// read-only here (TIPSARR_TRAILERS_DIR, default <config>/trailers). The feature is off until an admin turns it on.
+	trailerDir := os.Getenv("TIPSARR_TRAILERS_DIR")
+	if trailerDir == "" {
+		trailerDir = filepath.Join(cfg.ConfigDir, "trailers")
+	}
+	trailerFiles := trailers.New(st, trailerDir)
+	jm.Register(jobs.Job{Name: "trailer-files-sync", Every: time.Minute, InitialDelay: 45 * time.Second, Quiet: true, Run: trailerFiles.Sync})
 	lib.OnHistoryChanged = sugg.QueueRefresh
 	box := boxoffice.New(st, mediaSvc, os.Getenv("TIPSARR_BOXOFFICE_URL"))
 	jm.Register(jobs.Job{Name: "boxoffice-refresh", Every: 12 * time.Hour, InitialDelay: time.Minute, Run: box.Refresh})
@@ -150,7 +160,7 @@ func run(cfg config.Config) error {
 	}
 
 	handler, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, Teasers: teasers.New(st, mediaSvc, sugg), BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier, Push: pusher,
+		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, Teasers: teasers.New(st, mediaSvc, sugg, trailerFiles), Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier, Push: pusher,
 		DryRun: cfg.DryRun, ConfigDir: cfg.ConfigDir, ImageBaseURL: os.Getenv("TIPSARR_TMDB_IMAGE_URL"),
 	})
 	if cfg.DryRun {

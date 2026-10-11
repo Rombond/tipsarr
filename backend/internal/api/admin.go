@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/Rombond/tipsarr/backend/internal/auth"
@@ -17,6 +18,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/push"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
+	"github.com/Rombond/tipsarr/backend/internal/trailers"
 	"github.com/danielgtaylor/huma/v2"
 )
 
@@ -43,31 +45,39 @@ type settingsBody struct {
 	PushText                 bool   `json:"pushText" doc:"Alerts name the media (needs a relay that allows free text for this app); off: generic alerts"`
 	PushRelayKeyConfigured   bool   `json:"pushRelayKeyConfigured" doc:"The relay key is write-only; this only says whether one is saved"`
 	ServarrAutoImport        bool   `json:"servarrAutoImport" doc:"Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only)"`
+	TeasersFilesEnabled      bool   `json:"teasersFilesEnabled" doc:"Teasers feed with trailer files from the optional trailer-resolver sidecar (off by default)"`
+	TeasersFilesURL          string `json:"teasersFilesUrl" doc:"Address of the trailer resolver on the Docker network, e.g. http://trailer-resolver:8080"`
+	TeasersFilesKeySet       bool   `json:"teasersFilesKeyConfigured" doc:"The resolver key is write-only; this only says whether one is saved"`
+	TeasersFilesMaxHeight    int    `json:"teasersFilesMaxHeight" doc:"Largest video height the resolver downloads: 360, 480, 720 or 1080"`
 }
 
 type settingsOutput struct{ Body settingsBody }
 
 type updateSettingsInput struct {
 	Body struct {
-		TMDBKey           *string `json:"tmdbApiKey,omitempty" doc:"Set or replace the TMDB key (empty string clears it)"`
-		BoxOfficeRegions  *string `json:"boxofficeRegions,omitempty" doc:"Comma-separated region codes; empty resets to US"`
-		JellyfinPublicURL *string `json:"jellyfinPublicUrl,omitempty" doc:"Empty string clears it"`
-		JellyfinAPIKey    *string `json:"jellyfinApiKey,omitempty" doc:"Jellyfin API key (Dashboard > API Keys); empty string clears it"`
-		ServarrAutoImport *bool   `json:"servarrAutoImport,omitempty"`
-		PushEnabled       *bool   `json:"pushEnabled,omitempty" doc:"Needs the relay address and key; turning it on with either missing is refused"`
-		PushText          *bool   `json:"pushText,omitempty"`
-		PushRelayURL      *string `json:"pushRelayUrl,omitempty" doc:"Empty string clears it (and turns push off)"`
-		PushRelayKey      *string `json:"pushRelayKey,omitempty" doc:"Write-only; empty string clears it (and turns push off)"`
-		DefaultLanguage   *string `json:"defaultLanguage,omitempty" doc:"e.g. fr-FR; empty clears it"`
-		LDAPURL           *string `json:"ldapUrl,omitempty" doc:"Empty string turns LDAP pictures off; the connection is tested when saving"`
-		LDAPBindDN        *string `json:"ldapBindDn,omitempty"`
-		LDAPPassword      *string `json:"ldapBindPassword,omitempty" doc:"Write-only"`
-		LDAPBaseDN        *string `json:"ldapBaseDn,omitempty"`
-		OIDCIssuer        *string `json:"oidcIssuer,omitempty" doc:"Empty string turns single sign-on off. The provider is contacted when saving"`
-		OIDCClientID      *string `json:"oidcClientId,omitempty"`
-		OIDCClientSecret  *string `json:"oidcClientSecret,omitempty" doc:"Write-only; empty string clears it"`
-		OIDCAdminGroup    *string `json:"oidcAdminGroup,omitempty"`
-		OIDCGroupsClaim   *string `json:"oidcGroupsClaim,omitempty"`
+		TMDBKey               *string `json:"tmdbApiKey,omitempty" doc:"Set or replace the TMDB key (empty string clears it)"`
+		BoxOfficeRegions      *string `json:"boxofficeRegions,omitempty" doc:"Comma-separated region codes; empty resets to US"`
+		JellyfinPublicURL     *string `json:"jellyfinPublicUrl,omitempty" doc:"Empty string clears it"`
+		JellyfinAPIKey        *string `json:"jellyfinApiKey,omitempty" doc:"Jellyfin API key (Dashboard > API Keys); empty string clears it"`
+		ServarrAutoImport     *bool   `json:"servarrAutoImport,omitempty"`
+		PushEnabled           *bool   `json:"pushEnabled,omitempty" doc:"Needs the relay address and key; turning it on with either missing is refused"`
+		PushText              *bool   `json:"pushText,omitempty"`
+		PushRelayURL          *string `json:"pushRelayUrl,omitempty" doc:"Empty string clears it (and turns push off)"`
+		PushRelayKey          *string `json:"pushRelayKey,omitempty" doc:"Write-only; empty string clears it (and turns push off)"`
+		DefaultLanguage       *string `json:"defaultLanguage,omitempty" doc:"e.g. fr-FR; empty clears it"`
+		LDAPURL               *string `json:"ldapUrl,omitempty" doc:"Empty string turns LDAP pictures off; the connection is tested when saving"`
+		LDAPBindDN            *string `json:"ldapBindDn,omitempty"`
+		LDAPPassword          *string `json:"ldapBindPassword,omitempty" doc:"Write-only"`
+		LDAPBaseDN            *string `json:"ldapBaseDn,omitempty"`
+		OIDCIssuer            *string `json:"oidcIssuer,omitempty" doc:"Empty string turns single sign-on off. The provider is contacted when saving"`
+		OIDCClientID          *string `json:"oidcClientId,omitempty"`
+		OIDCClientSecret      *string `json:"oidcClientSecret,omitempty" doc:"Write-only; empty string clears it"`
+		OIDCAdminGroup        *string `json:"oidcAdminGroup,omitempty"`
+		OIDCGroupsClaim       *string `json:"oidcGroupsClaim,omitempty"`
+		TeasersFilesEnabled   *bool   `json:"teasersFilesEnabled,omitempty" doc:"Needs the resolver address and key; turning it on with either missing is refused"`
+		TeasersFilesURL       *string `json:"teasersFilesUrl,omitempty" doc:"Empty string clears it (and turns trailer files off)"`
+		TeasersFilesKey       *string `json:"teasersFilesKey,omitempty" doc:"Write-only; empty string clears it (and turns trailer files off)"`
+		TeasersFilesMaxHeight *int    `json:"teasersFilesMaxHeight,omitempty" doc:"360, 480, 720 or 1080"`
 	}
 }
 
@@ -99,7 +109,17 @@ func registerAdmin(api huma.API, d Deps) {
 		pushURL, _ := d.Store.GetSetting(ctx, push.SettingURL)
 		pushKey, _ := d.Store.GetSetting(ctx, push.SettingKey)
 		pushText, _ := d.Store.GetSetting(ctx, push.SettingText)
+		tfOn, _ := d.Store.GetSetting(ctx, trailers.SettingEnabled)
+		tfURL, _ := d.Store.GetSetting(ctx, trailers.SettingURL)
+		tfKey, _ := d.Store.GetSetting(ctx, trailers.SettingKey)
+		tfHeight := trailers.DefaultMaxHeight
+		if v, _ := d.Store.GetSetting(ctx, trailers.SettingMaxHeight); v != "" {
+			if n, err := strconv.Atoi(v); err == nil && n > 0 {
+				tfHeight = n
+			}
+		}
 		return settingsBody{
+			TeasersFilesEnabled: tfOn == "true", TeasersFilesURL: tfURL, TeasersFilesKeySet: tfKey != "", TeasersFilesMaxHeight: tfHeight,
 			PushEnabled: pushOn == "true", PushText: pushText == "true", PushRelayURL: pushURL, PushRelayKeyConfigured: pushKey != "",
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
 			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, ServarrAutoImport: autoImport != "false", DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage),
@@ -220,6 +240,9 @@ func registerAdmin(api huma.API, d Deps) {
 			}
 		}
 		if err := updatePush(ctx, d, in.Body.PushEnabled, in.Body.PushRelayURL, in.Body.PushRelayKey); err != nil {
+			return nil, err
+		}
+		if err := updateTeaserFiles(ctx, d, in.Body.TeasersFilesEnabled, in.Body.TeasersFilesURL, in.Body.TeasersFilesKey, in.Body.TeasersFilesMaxHeight); err != nil {
 			return nil, err
 		}
 		if in.Body.PushText != nil {

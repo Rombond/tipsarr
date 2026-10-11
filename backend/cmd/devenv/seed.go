@@ -74,7 +74,7 @@ func seed(base string) {
 	}
 	alice, bob, carol, dave := users["alice"], users["bob"], users["carol"], users["dave"]
 
-	alice.must("PUT", "/admin/settings", pretty(obj{"tmdbApiKey": "devkey", "jellyfinApiKey": "jfkey", "boxofficeRegions": "US,FR", "pushEnabled": false}))
+	alice.must("PUT", "/admin/settings", pretty(obj{"tmdbApiKey": "devkey", "jellyfinApiKey": "jfkey", "boxofficeRegions": "US,FR", "pushEnabled": false, "teasersFilesUrl": "http://127.0.0.1:18102", "teasersFilesKey": "dev-resolver-key", "teasersFilesEnabled": true}))
 	for _, in := range []obj{
 		{"kind": "radarr", "name": "Radarr (fake)", "url": "http://127.0.0.1:18099", "apiKey": "devkey", "qualityProfileId": 4, "rootFolder": "/data/media/movies", "isDefault": true},
 		{"kind": "sonarr", "name": "Sonarr (fake)", "url": "http://127.0.0.1:18100", "apiKey": "devkey", "qualityProfileId": 4, "rootFolder": "/data/media/tv", "isDefault": true},

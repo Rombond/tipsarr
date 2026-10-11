@@ -193,6 +193,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/teasers/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Trailer files: settings state, resolver health and file counts (admin)
+         * @description The Teasers feed plays trailers from files fetched by the optional trailer-resolver sidecar. The resolver is asked for its health now.
+         */
+        get: operations["teaserFilesOverview"];
+        put?: never;
+        post?: never;
+        /** Empty the resolver's cache and forget every file (admin) */
+        delete: operations["teaserFilesClear"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/teasers/files/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve one video through the resolver and report time and size (admin)
+         * @description Uses the saved resolver address and key even while the feature is off. Waits up to 90 seconds; if the video is not ready by then the state is queued or running and the test can be repeated.
+         */
+        post: operations["teaserFilesTest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -1231,7 +1272,7 @@ export interface paths {
         };
         /**
          * The next trailers of the Teasers feed
-         * @description Titles you have not swiped past yet, mixed from your suggestions, trending and upcoming, each with a trailer in your language. Skips titles you watched, blocked, requested or already have in the library. Display only: nothing is requested automatically.
+         * @description Answers 404 (code teasers_disabled) when trailer files are not set up on this server: apps then hide the tab. Titles you have not swiped past yet, mixed from your suggestions, trending and upcoming, each with a trailer in your language. Skips titles you watched, blocked, requested or already have in the library. Display only: nothing is requested automatically.
          */
         get: operations["teasers"];
         put?: never;
@@ -1343,6 +1384,12 @@ export interface components {
             /** @description Name of the provider for the button */
             ssoLabel?: string;
         };
+        Breaker: {
+            /** @enum {string} */
+            state: "closed" | "open";
+            /** Format: int64 */
+            until: number;
+        };
         CastMember: {
             character?: string;
             /** Format: int64 */
@@ -1397,6 +1444,16 @@ export interface components {
         };
         CommentIssueRequest: {
             message: string;
+        };
+        Counts: {
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            queued: number;
+            /** Format: int64 */
+            ready: number;
+            /** Format: int64 */
+            running: number;
         };
         CreateIssueRequest: {
             /**
@@ -1623,6 +1680,19 @@ export interface components {
         GetPermissionsResponse: {
             defaults: components["schemas"]["PermissionDefaults"];
             flags: components["schemas"]["Flag"][];
+        };
+        Health: {
+            breaker: components["schemas"]["Breaker"];
+            /** Format: int64 */
+            cacheBytes: number;
+            /** Format: int64 */
+            cacheLimitBytes: number;
+            counts: components["schemas"]["Counts"];
+            denoVersion: string;
+            ffmpegVersion: string;
+            lastError?: string;
+            ok: boolean;
+            ytdlpVersion: string;
         };
         HealthOutputBody: {
             ok: boolean;
@@ -1881,6 +1951,20 @@ export interface components {
             /** @description The instance default */
             rootFolder: string;
             rootFolders: components["schemas"]["RootFolder"][];
+        };
+        Overview: {
+            /** @description The resolver answered its health check */
+            available: boolean;
+            /** @description An address and a key are saved */
+            configured: boolean;
+            enabled: boolean;
+            /** @description Why the resolver is not available */
+            error?: string;
+            /** @description Rows per state in Tipsarr's own table: queued, running, ready, failed */
+            files: {
+                [key: string]: number;
+            };
+            health?: components["schemas"]["Health"];
         };
         PermissionDefaults: {
             /** Format: int64 */
@@ -2227,6 +2311,17 @@ export interface components {
             pushText: boolean;
             /** @description Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only) */
             servarrAutoImport: boolean;
+            /** @description Teasers feed with trailer files from the optional trailer-resolver sidecar (off by default) */
+            teasersFilesEnabled: boolean;
+            /** @description The resolver key is write-only; this only says whether one is saved */
+            teasersFilesKeyConfigured: boolean;
+            /**
+             * Format: int64
+             * @description Largest video height the resolver downloads: 360, 480, 720 or 1080
+             */
+            teasersFilesMaxHeight: number;
+            /** @description Address of the trailer resolver on the Docker network, e.g. http://trailer-resolver:8080 */
+            teasersFilesUrl: string;
             /** @description Secrets are write-only; this only says whether a key is saved */
             tmdbConfigured: boolean;
             /** @description Path (with secret token) for the Jellyfin webhook plugin to call */
@@ -2364,6 +2459,8 @@ export interface components {
         StatusFeatures: {
             /** @description Push notifications are set up on this server */
             push: boolean;
+            /** @description The Teasers feed is available: trailer files are on and the resolver answers. Apps hide the Teasers tab otherwise */
+            teasers: boolean;
         };
         StatusOutputBody: {
             /** Format: int64 */
@@ -2401,6 +2498,8 @@ export interface components {
             backdropPath?: string;
             genreIds?: number[];
             overview?: string;
+            /** @enum {string} */
+            player: "file" | "youtube";
             /** @description TMDB path, load via /images/tmdb/{size}/{file} */
             posterPath?: string;
             releaseDate?: string;
@@ -2419,15 +2518,40 @@ export interface components {
              * @enum {string}
              */
             type: "movie" | "tv";
+            /** Format: int64 */
+            videoHeight?: number;
+            /** @description Trailer file served by this server (needs the same login as the API); set when player is file */
+            videoUrl?: string;
             /** Format: double */
             voteAverage: number;
             watchlisted: boolean;
+        };
+        TeaserFilesTestRequest: {
+            /** @description YouTube video key; default is a short public video */
+            key?: string;
         };
         TeaserSeenRequest: {
             /** Format: int64 */
             tmdbId: number;
             /** @enum {string} */
             type: "movie" | "tv";
+        };
+        TestResult: {
+            /** Format: int64 */
+            bytes: number;
+            /** Format: int64 */
+            duration: number;
+            error?: string;
+            /** Format: int64 */
+            height: number;
+            key: string;
+            /**
+             * Format: double
+             * @description How long the resolver took (or how long we waited)
+             */
+            seconds: number;
+            /** @enum {string} */
+            status: "queued" | "running" | "ready" | "failed";
         };
         TokenBody: {
             /**
@@ -2490,6 +2614,17 @@ export interface components {
             pushRelayUrl?: string;
             pushText?: boolean;
             servarrAutoImport?: boolean;
+            /** @description Needs the resolver address and key; turning it on with either missing is refused */
+            teasersFilesEnabled?: boolean;
+            /** @description Write-only; empty string clears it (and turns trailer files off) */
+            teasersFilesKey?: string;
+            /**
+             * Format: int64
+             * @description 360, 480, 720 or 1080
+             */
+            teasersFilesMaxHeight?: number;
+            /** @description Empty string clears it (and turns trailer files off) */
+            teasersFilesUrl?: string;
             /** @description Set or replace the TMDB key (empty string clears it) */
             tmdbApiKey?: string;
         };
@@ -3445,6 +3580,185 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    teaserFilesOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Overview"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    teaserFilesClear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    teaserFilesTest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeaserFilesTestRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7469,6 +7783,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

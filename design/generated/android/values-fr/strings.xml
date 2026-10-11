@@ -702,6 +702,8 @@
     <string name="srv_job_skip_import_off">l’import automatique est désactivé</string>
     <string name="srv_job_skip_no_jellyfin_key">aucune clé d’API Jellyfin enregistrée</string>
     <string name="srv_job_skip_playback_missing">Playback Reporting n’est pas installé dans Jellyfin</string>
+    <string name="srv_job_skip_teasers_off">les fichiers de bandes-annonces sont désactivés</string>
+    <string name="srv_job_trailers_synced">%1$s fichiers prêts, %2$s en attente, %3$s en échec</string>
     <string name="state_approved">Approuvé</string>
     <string name="state_available">Disponible</string>
     <string name="state_declined">Refusé</string>

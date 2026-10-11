@@ -15,9 +15,9 @@ func registerTeasers(api huma.API, d Deps) {
 	huma.Register(api, huma.Operation{
 		OperationID: "teasers", Method: http.MethodGet, Path: "/teasers",
 		Summary:     "The next trailers of the Teasers feed",
-		Description: "Titles you have not swiped past yet, mixed from your suggestions, trending and upcoming, each with a trailer in your language. Skips titles you watched, blocked, requested or already have in the library. Display only: nothing is requested automatically.",
+		Description: "Answers 404 (code teasers_disabled) when trailer files are not set up on this server: apps then hide the tab. Titles you have not swiped past yet, mixed from your suggestions, trending and upcoming, each with a trailer in your language. Skips titles you watched, blocked, requested or already have in the library. Display only: nothing is requested automatically.",
 		Tags:        []string{"teasers"}, Security: sec,
-		Errors: []int{http.StatusUnauthorized, http.StatusBadGateway, http.StatusServiceUnavailable},
+		Errors: []int{http.StatusUnauthorized, http.StatusNotFound, http.StatusBadGateway, http.StatusServiceUnavailable},
 	}, func(ctx context.Context, in *struct {
 		Limit   int    `query:"limit" minimum:"1" maximum:"20" default:"8"`
 		Exclude string `query:"exclude" doc:"Comma-separated type:id keys the app already holds, for example movie:603,tv:1399"`
@@ -25,6 +25,9 @@ func registerTeasers(api huma.API, d Deps) {
 		u, err := requireUser(ctx)
 		if err != nil {
 			return nil, err
+		}
+		if !d.Teasers.Enabled(ctx) {
+			return nil, errTeasersDisabled()
 		}
 		exclude := map[string]bool{}
 		for _, k := range strings.Split(in.Exclude, ",") {

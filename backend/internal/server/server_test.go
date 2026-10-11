@@ -36,6 +36,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/Rombond/tipsarr/backend/internal/suggestions"
 	"github.com/Rombond/tipsarr/backend/internal/teasers"
+	"github.com/Rombond/tipsarr/backend/internal/trailers"
 )
 
 // fakeJellyfin accepts alice/secret (admin) and bob/hunter2 (regular).
@@ -220,7 +221,7 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 	mux.HandleFunc("/movie/1", hit(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"id":1,"title":"Movie One","runtime":120,"genres":[{"id":28,"name":"Action"}],
 			"imdb_id":"tt1","budget":63000000,"revenue":463517383,"production_companies":[{"name":"Warner Bros."},{"name":"Village Roadshow"}],"belongs_to_collection":{"id":9,"name":"Saga","backdrop_path":"/sagab.jpg"},
-			"videos":{"results":[{"key":"abc123","site":"YouTube","type":"Trailer","official":false},{"key":"OFFICIAL1","site":"YouTube","type":"Trailer","official":true},{"key":"vim","site":"Vimeo","type":"Trailer","official":true}]},
+			"videos":{"results":[{"key":"abc123","site":"YouTube","type":"Trailer","official":false},{"key":"OFFICIAL001","site":"YouTube","type":"Trailer","official":true},{"key":"vim","site":"Vimeo","type":"Trailer","official":true}]},
 			"credits":{"cast":[{"id":5,"name":"Ann","character":"Hero"}],"crew":[{"id":6,"name":"Dir","job":"Director"},{"id":7,"name":"X","job":"Editor"}]},
 			"recommendations":{"results":[{"id":4,"title":"Rec"}]},"similar":{"results":[]}}`))
 	}))
@@ -274,7 +275,11 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 	for _, id := range []string{"10", "11", "12", "13", "15", "16"} {
 		id := id
 		mux.HandleFunc("/movie/"+id, hit(func(w http.ResponseWriter, r *http.Request) {
-			_, _ = w.Write([]byte(`{"id":` + id + `,"title":"R` + id + `","poster_path":"/r` + id + `.jpg","genres":[],"credits":{"cast":[],"crew":[]},"recommendations":{"results":[]},"similar":{"results":[]}}`))
+			videos := `{"results":[]}`
+			if id == "10" || id == "11" { // two recommended titles with a trailer, to try the Teasers order
+				videos = `{"results":[{"key":"RECTRAILER` + id[1:] + `","site":"YouTube","type":"Trailer","official":true}]}`
+			}
+			_, _ = w.Write([]byte(`{"id":` + id + `,"title":"R` + id + `","poster_path":"/r` + id + `.jpg","genres":[],"videos":` + videos + `,"credits":{"cast":[],"crew":[]},"recommendations":{"results":[]},"similar":{"results":[]}}`))
 		}))
 	}
 	mux.HandleFunc("/movie/904", hit(func(w http.ResponseWriter, r *http.Request) {
@@ -340,6 +345,7 @@ type env struct {
 	lib      *library.Service
 	reqs     *requests.Service
 	sugg     *suggestions.Service
+	files    *trailers.Service
 	box      *boxoffice.Service
 	hub      *events.Hub
 	notifier *notify.Service
@@ -392,6 +398,7 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	box.SetNow(func() time.Time { return time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC) }) // a Tuesday: latest weekend is 2026W40
 	jm.Register(jobs.Job{Name: "boxoffice-refresh", Every: time.Hour, InitialDelay: time.Hour, Run: box.Refresh})
 	sugg := suggestions.New(st, mediaSvc, hub)
+	trailerFiles := trailers.New(st, filepath.Join(t.TempDir(), "trailers"))
 	sugg.SetQueueDelay(20 * time.Millisecond)
 	lib.OnHistoryChanged = sugg.QueueRefresh
 	ratingsSvc := ratings.New(st)
@@ -406,12 +413,12 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	}})
 	authSvc.SetRecheckEvery(0) // tests: ask the fake Jellyfin about the account on every request
 	h, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teasers.New(st, mediaSvc, sugg), BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier, Push: pusher,
+		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teasers.New(st, mediaSvc, sugg, trailerFiles), Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier, Push: pusher,
 		DryRun: dryRun, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)
 	t.Cleanup(app.Close)
-	return &env{app: app, st: st, lib: lib, reqs: reqs, sugg: sugg, box: box, hub: hub, notifier: notifier, ratings: ratingsSvc}
+	return &env{app: app, st: st, lib: lib, reqs: reqs, sugg: sugg, files: trailerFiles, box: box, hub: hub, notifier: notifier, ratings: ratingsSvc}
 }
 
 func call(t *testing.T, app *httptest.Server, method, path, body string, cookies ...*http.Cookie) (*http.Response, string) {
@@ -707,7 +714,7 @@ func TestLibrarySyncAndAvailability(t *testing.T) {
 	if md.Budget != 63000000 || md.Revenue != 463517383 || len(md.Studios) != 2 || md.Studios[0] != "Warner Bros." {
 		t.Fatalf("budget/revenue/studios = %d %d %v", md.Budget, md.Revenue, md.Studios)
 	}
-	if md.TrailerKey != "OFFICIAL1" || md.CollectionBackdropPath != "/sagab.jpg" {
+	if md.TrailerKey != "OFFICIAL001" || md.CollectionBackdropPath != "/sagab.jpg" {
 		t.Fatalf("trailer/collection backdrop = %q %q", md.TrailerKey, md.CollectionBackdropPath)
 	}
 	if want := jf.URL + "/web/#/details?id=aaaa0000000000000000000000000001"; md.WatchURL != want {

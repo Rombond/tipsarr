@@ -11289,6 +11289,39 @@
         }
       }
     },
+    "srv.job.skip.teasers_off": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "trailer files are off"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "les fichiers de bandes-annonces sont désactivés"
+          }
+        }
+      }
+    },
+    "srv.job.trailers.synced": {
+      "comment": "placeholders: ready, pending, failed",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ trailer files ready, %2$@ waiting, %3$@ failed"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ fichiers prêts, %2$@ en attente, %3$@ en échec"
+          }
+        }
+      }
+    },
     "state.approved": {
       "localizations": {
         "en": {

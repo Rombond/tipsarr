@@ -33,6 +33,8 @@ start() { # name, command...
 }
 : >"$DEV/.pids"
 
+# trailer files: the fake resolver writes them here and Tipsarr reads them from the same folder
+export DEVENV_TRAILERS_DIR="$DEV/.data/trailers"
 (cd backend && start devenv "$DEV/.bin/devenv")
 for _ in $(seq 1 50); do curl -fs http://127.0.0.1:18096/System/Info/Public >/dev/null 2>&1 && break; sleep 0.2; done
 
@@ -44,6 +46,7 @@ TIPSARR_JELLYFIN_URL=http://127.0.0.1:18096 \
 TIPSARR_TMDB_URL=http://127.0.0.1:18097 \
 TIPSARR_TMDB_IMAGE_URL=http://127.0.0.1:18098 \
 TIPSARR_BOXOFFICE_URL=http://127.0.0.1:18101 \
+TIPSARR_TRAILERS_DIR="$DEV/.data/trailers" \
   start tipsarr "$DEV/.bin/tipsarr"
 for _ in $(seq 1 100); do curl -fs http://127.0.0.1:$PORT/api/v1/status >/dev/null 2>&1 && break; sleep 0.2; done
 curl -fs http://127.0.0.1:$PORT/api/v1/status >/dev/null || { echo "the server did not start, see dev/.logs/tipsarr.log"; exit 1; }
