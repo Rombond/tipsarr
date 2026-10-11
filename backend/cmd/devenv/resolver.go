@@ -79,7 +79,10 @@ func newFakeResolver() http.Handler {
 	mux.HandleFunc("GET /v1/status/{key}", r.getStatus)
 	mux.HandleFunc("GET /v1/health", r.health)
 	mux.HandleFunc("POST /v1/touch", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
-	mux.HandleFunc("POST /v1/update", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	mux.HandleFunc("POST /v1/update", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"before":"2026.08.19","after":"2026.08.19","updated":false}`))
+	})
 	mux.HandleFunc("DELETE /v1/cache", r.clear)
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.Header.Get("Authorization") != "Bearer "+r.key {
