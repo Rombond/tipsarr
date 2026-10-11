@@ -27,17 +27,19 @@ services:
     container_name: TrailerResolver
     restart: unless-stopped
     environment:
-      RESOLVER_API_KEY: ${RESOLVER_API_KEY}   # a long random string, the same in Tipsarr's settings
+      RESOLVER_API_KEY: ${TRAILER_RESOLVER_KEY}   # a long random string, the same in Tipsarr's settings
       RESOLVER_MAX_HEIGHT: "720"
       RESOLVER_CACHE_GB: "5"
     volumes:
-      - ${ROOT_STORAGE}/servarr/tipsarr/trailers:/cache          # videos and their small .json files
-    user: "911:911"   # same user as Tipsarr so the folder is shared without permission games
+      - ${ROOT_STORAGE}/servarr/tipsarr/trailers:/cache   # videos and their small .json files
   tipsarr:
+    environment:
+      TIPSARR_TRAILERS_DIR: /trailers
     volumes:
-      - ${ROOT_STORAGE}/servarr/tipsarr/config:/config
-      - ${ROOT_STORAGE}/servarr/tipsarr/trailers:/config/trailers:ro   # Tipsarr only reads the videos
+      - ${ROOT_STORAGE}/servarr/tipsarr/trailers:/trailers:ro   # Tipsarr only reads the videos
 ```
+
+The container runs as user `65532` (it needs to own its tools folder so `yt-dlp -U` can replace the binary), so give that user the shared folder once: `mkdir -p <folder> && chown 65532:65532 <folder>`. The videos are world-readable, so Tipsarr (any user) can read them.
 
 Then in Tipsarr (admin settings, trailer files): turn it on, URL `http://trailer-resolver:8090`, the same key. The apps show the Teasers tab once Tipsarr can reach a healthy resolver.
 
