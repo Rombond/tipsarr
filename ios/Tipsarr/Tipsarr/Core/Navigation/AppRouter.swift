@@ -7,6 +7,7 @@ final class AppRouter {
         #if DEBUG
         // `-startTab requests` on the command line: opens that tab (screenshots from the console).
         switch UserDefaults.standard.string(forKey: "startTab") {
+        case "teasers": return .teasers
         case "requests": return .requests
         case "library": return .library
         case "search": return .search
@@ -15,6 +16,7 @@ final class AppRouter {
         #endif
         return .discover
     }()
+    var teasersPath = NavigationPath()
     var discoverPath = NavigationPath()
     var requestsPath = NavigationPath()
     var libraryPath = NavigationPath()

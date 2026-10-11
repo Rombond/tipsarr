@@ -2,7 +2,7 @@ import SwiftUI
 import UserNotifications
 
 enum AppTab: Hashable {
-    case discover, search, requests, library, profile
+    case teasers, discover, search, requests, library, profile
 }
 
 /// iOS 26 floating tab bar.
@@ -147,6 +147,7 @@ struct MainTabView: View {
         if style == .system {
             // iPhone and narrow windows: the system tab bar.
             TabView(selection: $router.tab) {
+                Tab("m.tab.teasers", systemImage: "play.rectangle", value: AppTab.teasers) { content(.teasers) }
                 Tab("m.tab.discover", systemImage: "safari", value: AppTab.discover) { content(.discover) }
                 Tab("m.tab.requests", systemImage: "checklist", value: AppTab.requests) { content(.requests) }
                     .badge(profile.can(.manageRequests) ? pendingCount : 0)
@@ -159,7 +160,7 @@ struct MainTabView: View {
             ZStack {
                 ForEach(AppTab.ordered, id: \.self) { tab in
                     if visited.contains(tab) {
-                        content(tab)
+                        content(tab, bottomInset: style == .bottomBar ? 96 : (style == .sidebar ? 0 : 88))
                             .opacity(router.tab == tab ? 1 : 0)
                             .allowsHitTesting(router.tab == tab)
                             .accessibilityHidden(router.tab != tab)
@@ -170,8 +171,9 @@ struct MainTabView: View {
         }
     }
 
-    @ViewBuilder private func content(_ tab: AppTab) -> some View {
+    @ViewBuilder private func content(_ tab: AppTab, bottomInset: CGFloat = 0) -> some View {
         switch tab {
+        case .teasers: TeasersView(api: api, isSelected: router.tab == .teasers, path: $router.teasersPath, bottomInset: bottomInset)
         case .discover: DiscoverView(api: api, path: $router.discoverPath, openProfile: { router.openProfile() }, openSettings: { router.openSettings() })
         case .search: SearchView(api: api)
         case .requests: RequestsView(api: api, canManage: profile.can(.manageRequests), canViewAll: profile.can(.requestView), path: $router.requestsPath, selection: $router.requestsSelection) { router.tab = .discover }

@@ -3,6 +3,7 @@ import SwiftUI
 extension AppTab {
     var title: LText {
         switch self {
+        case .teasers: "m.tab.teasers"
         case .discover: "m.tab.discover"
         case .search: "m.tab.search"
         case .requests: "m.tab.requests"
@@ -13,6 +14,7 @@ extension AppTab {
 
     var symbol: String {
         switch self {
+        case .teasers: "play.rectangle"
         case .discover: "safari"
         case .search: "magnifyingglass"
         case .requests: "checklist"
@@ -22,7 +24,7 @@ extension AppTab {
     }
 
     /// Same order as the iPhone bar, where Search is the separate last tab. Profile is not a tab: it opens from the top right of Discover (and from the sidebar's account row).
-    static let ordered: [AppTab] = [.discover, .requests, .library, .search]
+    static let ordered: [AppTab] = [.teasers, .discover, .requests, .library, .search]
 }
 
 /// The tab bar of a portrait iPad window: a floating pill at the bottom, as in the Penpot iPad page.
