@@ -28,4 +28,5 @@ Things to know:
 - The catalogue is made up: 120 movies, 40 shows, 15 people, with French titles when the language is French.
 - The fakes live in `backend/cmd/devenv`; the server finds them through `TIPSARR_TMDB_URL`, `TIPSARR_TMDB_IMAGE_URL`
   and `TIPSARR_BOXOFFICE_URL` (unset = the real services).
+- `TIPSARR_FAKE_TRAILER=dQw4w9WgXcQ dev/run.sh` makes every trailer that real YouTube video, to try playback (the default keys are made up and do not play).
 - Fixed ports: 8088 Tipsarr, 18096 Jellyfin, 18097 TMDB, 18098 images, 18099 Radarr, 18100 Sonarr, 18101 box office.

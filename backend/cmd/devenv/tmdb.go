@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -138,6 +139,10 @@ func detail(id int, lang string) obj {
 	videos := []obj{{"key": "TRAILEREN" + strconv.Itoa(id), "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "en"}}
 	if id%2 == 0 {
 		videos = append(videos, obj{"key": "TRAILERFR" + strconv.Itoa(id), "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "fr"})
+	}
+	// TIPSARR_FAKE_TRAILER=<YouTube key> makes every trailer a real video, to try playback in the apps.
+	if key := os.Getenv("TIPSARR_FAKE_TRAILER"); key != "" {
+		videos = []obj{{"key": key, "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "en"}}
 	}
 	d["videos"] = obj{"results": videos}
 	d["recommendations"] = obj{"results": relatedOf(id, lang, 0)}
