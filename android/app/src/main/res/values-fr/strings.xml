@@ -443,6 +443,12 @@
     <string name="m_tab_profile">Profil</string>
     <string name="m_tab_requests">Demandes</string>
     <string name="m_tab_search">Recherche</string>
+    <string name="m_tab_teasers">Teasers</string>
+    <string name="m_teasers_done">Vous avez tout vu pour le moment. Revenez plus tard pour de nouvelles bandes-annonces.</string>
+    <string name="m_teasers_error">Impossible de charger les bandes-annonces.</string>
+    <string name="m_teasers_mute">Couper le son</string>
+    <string name="m_teasers_swipe_hint">Glissez vers le haut pour la bande-annonce suivante</string>
+    <string name="m_teasers_unmute">Activer le son</string>
     <string name="m_update_body">Votre serveur nécessite une version plus récente de l’app Tipsarr. Mettez à jour depuis Google Play pour continuer.</string>
     <string name="m_update_open_store">Ouvrir Google Play</string>
     <string name="m_update_title">Mise à jour requise</string>

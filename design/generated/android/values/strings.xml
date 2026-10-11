@@ -443,6 +443,12 @@
     <string name="m_tab_profile">Profile</string>
     <string name="m_tab_requests">Requests</string>
     <string name="m_tab_search">Search</string>
+    <string name="m_tab_teasers">Teasers</string>
+    <string name="m_teasers_done">You have seen everything for now. Come back later for new trailers.</string>
+    <string name="m_teasers_error">Could not load trailers.</string>
+    <string name="m_teasers_mute">Mute</string>
+    <string name="m_teasers_swipe_hint">Swipe up for the next trailer</string>
+    <string name="m_teasers_unmute">Unmute</string>
     <string name="m_update_body">Your server needs a newer version of the Tipsarr app. Update from Google Play to keep going.</string>
     <string name="m_update_open_store">Open Google Play</string>
     <string name="m_update_title">Update required</string>

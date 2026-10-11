@@ -553,6 +553,20 @@ components:
           format: uri
           type: string
       type: object
+    Feed:
+      additionalProperties: false
+      properties:
+        done:
+          description: True when there is nothing new left to show
+          type: boolean
+        items:
+          items:
+            $ref: "#/components/schemas/Teaser"
+          type: array
+      required:
+        - items
+        - done
+      type: object
     Flag:
       additionalProperties: false
       properties:
@@ -2269,6 +2283,80 @@ components:
         - movies
         - shows
         - jobs
+      type: object
+    Teaser:
+      additionalProperties: false
+      properties:
+        availability:
+          description: Library availability (filled by library sync)
+          enum:
+            - none
+            - partial
+            - available
+          type: string
+        backdropPath:
+          type: string
+        genreIds:
+          items:
+            format: int64
+            type: integer
+          type: array
+        overview:
+          type: string
+        posterPath:
+          description: TMDB path, load via /images/tmdb/{size}/{file}
+          type: string
+        releaseDate:
+          type: string
+        requestStatus:
+          description: Set while an active request exists for this title
+          enum:
+            - pending
+            - approved
+          type: string
+        title:
+          type: string
+        tmdbId:
+          format: int64
+          type: integer
+        trailerKey:
+          description: YouTube video key of the trailer, in the person's language when there is one
+          type: string
+        type:
+          description: movie or tv
+          enum:
+            - movie
+            - tv
+          type: string
+        voteAverage:
+          format: double
+          type: number
+        watchlisted:
+          type: boolean
+      required:
+        - trailerKey
+        - watchlisted
+        - type
+        - tmdbId
+        - title
+        - voteAverage
+        - availability
+      type: object
+    TeaserSeenRequest:
+      additionalProperties: false
+      properties:
+        tmdbId:
+          format: int64
+          minimum: 1
+          type: integer
+        type:
+          enum:
+            - movie
+            - tv
+          type: string
+      required:
+        - type
+        - tmdbId
       type: object
     TokenBody:
       additionalProperties: false
@@ -6718,6 +6806,106 @@ paths:
       summary: Recompute my suggestions in the background (once a minute at most)
       tags:
         - suggestions
+  /teasers:
+    get:
+      description: "Titles you have not swiped past yet, mixed from your suggestions, trending and upcoming, each with a trailer in your language. Skips titles you watched, blocked, requested or already have in the library. Display only: nothing is requested automatically."
+      operationId: teasers
+      parameters:
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            default: 8
+            format: int64
+            maximum: 20
+            minimum: 1
+            type: integer
+        - description: Comma-separated type:id keys the app already holds, for example movie:603,tv:1399
+          explode: false
+          in: query
+          name: exclude
+          schema:
+            description: Comma-separated type:id keys the app already holds, for example movie:603,tv:1399
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Feed"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+        "502":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Bad Gateway
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Service Unavailable
+      security:
+        - session: []
+        - bearer: []
+      summary: The next trailers of the Teasers feed
+      tags:
+        - teasers
+  /teasers/seen:
+    post:
+      operationId: teaserSeen
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeaserSeenRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: Mark a title as swiped past, so the feed never shows it again
+      tags:
+        - teasers
   /users/{id}:
     get:
       description: Everyone can read their own profile; admins can read anyone's.

@@ -214,5 +214,11 @@
   "m.library.genres_search": "Search genres",
   "m.library.genres_more": "{first} +{count}",
   "m.poster.movie": "Movie",
-  "m.poster.tv": "TV"
+  "m.poster.tv": "TV",
+  "m.tab.teasers": "Teasers",
+  "m.teasers.done": "You have seen everything for now. Come back later for new trailers.",
+  "m.teasers.error": "Could not load trailers.",
+  "m.teasers.mute": "Mute",
+  "m.teasers.unmute": "Unmute",
+  "m.teasers.swipe_hint": "Swipe up for the next trailer"
 }

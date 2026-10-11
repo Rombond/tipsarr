@@ -1222,6 +1222,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/teasers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The next trailers of the Teasers feed
+         * @description Titles you have not swiped past yet, mixed from your suggestions, trending and upcoming, each with a trailer in your language. Skips titles you watched, blocked, requested or already have in the library. Display only: nothing is requested automatically.
+         */
+        get: operations["teasers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teasers/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a title as swiped past, so the feed never shows it again */
+        post: operations["teaserSeen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{id}": {
         parameters: {
             query?: never;
@@ -1552,6 +1589,11 @@ export interface components {
              * @example https://example.com/errors/example
              */
             type: string;
+        };
+        Feed: {
+            /** @description True when there is nothing new left to show */
+            done: boolean;
+            items: components["schemas"]["Teaser"][];
         };
         Flag: {
             /** @enum {string} */
@@ -2349,6 +2391,43 @@ export interface components {
              * @description Shows currently known in the Jellyfin library
              */
             shows: number;
+        };
+        Teaser: {
+            /**
+             * @description Library availability (filled by library sync)
+             * @enum {string}
+             */
+            availability: "none" | "partial" | "available";
+            backdropPath?: string;
+            genreIds?: number[];
+            overview?: string;
+            /** @description TMDB path, load via /images/tmdb/{size}/{file} */
+            posterPath?: string;
+            releaseDate?: string;
+            /**
+             * @description Set while an active request exists for this title
+             * @enum {string}
+             */
+            requestStatus?: "pending" | "approved";
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+            /** @description YouTube video key of the trailer, in the person's language when there is one */
+            trailerKey: string;
+            /**
+             * @description movie or tv
+             * @enum {string}
+             */
+            type: "movie" | "tv";
+            /** Format: double */
+            voteAverage: number;
+            watchlisted: boolean;
+        };
+        TeaserSeenRequest: {
+            /** Format: int64 */
+            tmdbId: number;
+            /** @enum {string} */
+            type: "movie" | "tv";
         };
         TokenBody: {
             /**
@@ -7348,6 +7427,124 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    teasers: {
+        parameters: {
+            query?: {
+                limit?: number;
+                /** @description Comma-separated type:id keys the app already holds, for example movie:603,tv:1399 */
+                exclude?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Feed"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    teaserSeen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeaserSeenRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

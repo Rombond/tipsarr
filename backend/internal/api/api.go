@@ -25,6 +25,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/stats"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/Rombond/tipsarr/backend/internal/suggestions"
+	"github.com/Rombond/tipsarr/backend/internal/teasers"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
@@ -49,6 +50,7 @@ type Deps struct {
 	Issues        *issues.Service
 	Avatars       *avatars.Service
 	Suggestions   *suggestions.Service
+	Teasers       *teasers.Service
 	BoxOffice     *boxoffice.Service
 	Marks         *marks.Service
 	LoginLimiter  *auth.Limiter // optional
@@ -92,6 +94,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerSync(api, d)
 		registerRequests(api, d)
 		registerSuggestions(api, d)
+		registerTeasers(api, d)
 		registerBoxOffice(api, d)
 		registerProfile(api, d)
 		registerSessions(api, d)
