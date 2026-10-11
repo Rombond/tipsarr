@@ -56,12 +56,13 @@ func registerSync(api huma.API, d Deps) {
 		DefaultStatus: http.StatusAccepted,
 		Errors:        append(adminErrs, http.StatusConflict, http.StatusServiceUnavailable),
 	}, func(ctx context.Context, in *struct {
-		Job string `path:"job" enum:"library-sync,history-sync,boxoffice-refresh,servarr-import,playback-sync"`
+		Job string `path:"job" enum:"library-sync,history-sync,boxoffice-refresh,servarr-import,playback-sync,ytdlp-update"`
 	}) (*struct{}, error) {
 		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
 		}
-		if in.Job != "boxoffice-refresh" && in.Job != "servarr-import" && !d.Library.Configured(ctx) {
+		// these jobs do not read Jellyfin, so they run without its API key
+		if in.Job != "boxoffice-refresh" && in.Job != "servarr-import" && in.Job != "ytdlp-update" && !d.Library.Configured(ctx) {
 			return nil, fail(503, "jellyfin_key_missing", "save a Jellyfin API key in Settings first")
 		}
 		switch err := d.Jobs.RunNow(ctx, in.Job); {

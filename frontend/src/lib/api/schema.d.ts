@@ -3520,7 +3520,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                job: "library-sync" | "history-sync" | "boxoffice-refresh" | "servarr-import" | "playback-sync";
+                job: "library-sync" | "history-sync" | "boxoffice-refresh" | "servarr-import" | "playback-sync" | "ytdlp-update";
             };
             cookie?: never;
         };

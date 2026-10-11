@@ -13,7 +13,7 @@
 	const settings = $derived(admin.settings);
 	const sync = $derived(admin.sync);
 
-	type JobName = 'library-sync' | 'history-sync' | 'boxoffice-refresh' | 'servarr-import' | 'playback-sync';
+	type JobName = 'library-sync' | 'history-sync' | 'boxoffice-refresh' | 'servarr-import' | 'playback-sync' | 'ytdlp-update';
 
 	async function runJob(job: JobName) {
 		admin.error = null;
@@ -77,7 +77,7 @@
 							variant="outline"
 							size="sm"
 							class="shrink-0"
-							disabled={(job.name !== 'boxoffice-refresh' && job.name !== 'servarr-import' && !sync.canSync) || busy}
+							disabled={(job.name !== 'boxoffice-refresh' && job.name !== 'servarr-import' && job.name !== 'ytdlp-update' && !sync.canSync) || busy}
 							onclick={() => runJob(job.name as JobName)}
 						>
 							{#if busy}<LoaderIcon class="animate-spin" /> {t('settings.job_running_btn')}{:else}<PlayIcon /> {t('settings.job_run')}{/if}

@@ -7,6 +7,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import TrailerFilesCard from '$lib/components/admin/trailer-files-card.svelte';
 
 	const settings = $derived(admin.settings);
 	let tmdbKey = $state('');
@@ -167,6 +168,8 @@
 			<p class="text-xs text-muted-foreground">{t('settings.push_text_hint')}</p>
 		</CardContent>
 	</Card>
+
+	<TrailerFilesCard />
 
 	<Card>
 		<CardHeader>

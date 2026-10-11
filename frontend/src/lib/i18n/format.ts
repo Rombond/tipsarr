@@ -15,6 +15,18 @@ export function fmtNumber(n: number): string {
 	return new Intl.NumberFormat(i18n.tag).format(n);
 }
 
+/** File sizes: 13.6 MB, 4.2 GB (decimal units, as storage is sold). */
+export function fmtBytes(n: number): string {
+	const units = ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'terabyte'];
+	let v = Math.max(0, n);
+	let i = 0;
+	while (v >= 1000 && i < units.length - 1) {
+		v /= 1000;
+		i++;
+	}
+	return new Intl.NumberFormat(i18n.tag, { style: 'unit', unit: units[i], unitDisplay: 'short', maximumFractionDigits: i < 2 ? 0 : 1 }).format(v);
+}
+
 /** $32.0M style amounts. The chart is in US dollars. */
 export function fmtMoneyCompact(n: number): string {
 	if (n <= 0) return '-';
