@@ -6,6 +6,8 @@ struct Teaser: Sendable, Identifiable, Equatable {
     var item: MediaItem
     var trailerKey: String
     var watchlisted: Bool
+    /// A trailer file on this server plays natively; otherwise the YouTube embed plays `trailerKey`.
+    var videoURL: URL?
 
     var id: String { item.id }
 }
@@ -22,7 +24,7 @@ extension TipsarrAPI {
             let keys = exclude.isEmpty ? nil : exclude.joined(separator: ",")
             guard case .ok(let ok) = try await client.teasers(query: .init(limit: Int64(limit), exclude: keys)) else { throw APIError.unexpected }
             let body = try ok.body.json
-            return TeaserFeed(items: body.items.map(Teaser.init), done: body.done)
+            return TeaserFeed(items: body.items.map { Teaser($0, server: serverURL) }, done: body.done)
         }
     }
 
@@ -35,7 +37,7 @@ extension TipsarrAPI {
 }
 
 extension Teaser {
-    init(_ t: Components.Schemas.Teaser) {
+    init(_ t: Components.Schemas.Teaser, server: URL) {
         let state: RequestState? = switch (t.availability, t.requestStatus) {
         case (.available, _): .available
         case (.partial, _): .partial
@@ -57,7 +59,8 @@ extension Teaser {
                 genreIds: (t.genreIds ?? []).map(Int.init)
             ),
             trailerKey: t.trailerKey,
-            watchlisted: t.watchlisted
+            watchlisted: t.watchlisted,
+            videoURL: t.player == .file ? t.videoUrl.flatMap { URL(string: $0, relativeTo: server)?.absoluteURL } : nil
         )
     }
 }

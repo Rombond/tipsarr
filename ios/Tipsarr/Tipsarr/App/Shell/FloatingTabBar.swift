@@ -24,19 +24,23 @@ extension AppTab {
     }
 
     /// Same order as the iPhone bar, where Search is the separate last tab. Profile is not a tab: it opens from the top right of Discover (and from the sidebar's account row).
-    static let ordered: [AppTab] = [.teasers, .discover, .requests, .library, .search]
+    static let ordered: [AppTab] = tabs(teasers: true)
+
+    /// The tabs to show: Teasers only while the server can serve it.
+    static func tabs(teasers: Bool) -> [AppTab] { (teasers ? [.teasers] : []) + [.discover, .requests, .library, .search] }
 }
 
 /// The tab bar of a portrait iPad window: a floating pill at the bottom, as in the Penpot iPad page.
 struct FloatingTabBar: View {
     @Binding var selection: AppTab
+    var tabs: [AppTab] = AppTab.ordered
     var badges: [AppTab: Int] = [:]
     /// Icons only when the bar is narrow (the left pane of the Duo).
     var showsTitles = true
 
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(AppTab.ordered, id: \.self) { tab in
+            ForEach(tabs, id: \.self) { tab in
                 Button { selection = tab } label: {
                     VStack(spacing: 2) {
                         Image(systemName: tab.symbol).font(.title3.weight(selection == tab ? .semibold : .regular))

@@ -3,6 +3,7 @@ import SwiftUI
 /// The tab bar of a landscape iPad window: a sidebar with the app name on top and the account at the bottom.
 struct AppSidebar: View {
     @Binding var selection: AppTab
+    var tabs: [AppTab] = AppTab.ordered
     let account: Account
     let profile: Profile
     var badges: [AppTab: Int] = [:]
@@ -21,7 +22,7 @@ struct AppSidebar: View {
             .padding(.horizontal, Tokens.Spacing.md)
             .padding(.top, Tokens.Spacing.xl)
             .padding(.bottom, Tokens.Spacing._2xl)
-            ForEach(AppTab.ordered, id: \.self) { tab in
+            ForEach(tabs, id: \.self) { tab in
                 Button { selection = tab } label: {
                     HStack(spacing: Tokens.Spacing.md) {
                         Image(systemName: tab.symbol).frame(width: 24)

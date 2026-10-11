@@ -20,6 +20,9 @@ struct MainTabView: View {
     @State private var live = LiveUpdates()
     @State private var pane = DetailPane()
     @State private var foldedHinge = false
+    /// The Teasers tab only exists while the server reports `features.teasers`.
+    private var teasersOn: Bool { session.serverStatus?.teasersAvailable ?? false }
+    private var tabList: [AppTab] { AppTab.tabs(teasers: teasersOn) }
     /// Tabs opened at least once; wide windows keep them alive so each tab keeps its navigation and scroll position.
     @State private var visited: Set<AppTab> = [.discover]
 
@@ -57,7 +60,7 @@ struct MainTabView: View {
         .modifier(ToastOverlay(center: toast))
         // Hardware keyboard: Cmd+1...5 switch tabs, Cmd+F opens Search.
         .background {
-            ForEach(Array(AppTab.ordered.enumerated()), id: \.element) { index, tab in
+            ForEach(Array(tabList.enumerated()), id: \.element) { index, tab in
                 Button("") { router.tab = tab }
                     .keyboardShortcut(KeyEquivalent(Character(String(index + 1))), modifiers: .command)
                     .accessibilityHidden(true)
@@ -66,10 +69,15 @@ struct MainTabView: View {
                 .keyboardShortcut("f", modifiers: .command)
                 .accessibilityHidden(true)
         }
+        // A server without trailer files has no Teasers tab: if it was selected, Discover takes over.
+        .onChange(of: teasersOn, initial: true) { _, on in
+            if !on && router.tab == .teasers { router.tab = .discover }
+        }
+        .task { await session.refreshStatus() }
         .onChange(of: profile.ratingSource) { _, new in ratings.setSource(RatingSource(rawValue: new) ?? .tmdb) }
         .task(id: router.tab) { await refreshPending() }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await refreshPending() } }
+            if phase == .active { Task { await refreshPending(); await session.refreshStatus() } }
         }
         // Server stream: only while the app is in the foreground.
         .task(id: scenePhase) {
@@ -120,7 +128,7 @@ struct MainTabView: View {
                     .environment(\.detailPane, pane)
                     .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 88) }
                     .overlay(alignment: .bottom) {
-                        FloatingTabBar(selection: Binding(get: { router.tab }, set: { router.tab = $0; pane.content = nil }), badges: badges, showsTitles: false).padding(.bottom, Tokens.Spacing.sm)
+                        FloatingTabBar(selection: Binding(get: { router.tab }, set: { router.tab = $0; pane.content = nil }), tabs: tabList, badges: badges, showsTitles: false).padding(.bottom, Tokens.Spacing.sm)
                     }
                     .frame(width: max(hinge.leftWidth, 0))
                 Color.clear.frame(width: max(hinge.rightStart - hinge.leftWidth, 0))
@@ -130,14 +138,14 @@ struct MainTabView: View {
         } else {
             HStack(spacing: 0) {
                 if style == .sidebar {
-                    AppSidebar(selection: $router.tab, account: account, profile: profile, badges: badges) { router.openProfile() }
+                    AppSidebar(selection: $router.tab, tabs: tabList, account: account, profile: profile, badges: badges) { router.openProfile() }
                 }
                 tabs(style)
                     .safeAreaInset(edge: .bottom, spacing: 0) {
                         if style == .bottomBar { Color.clear.frame(height: 96) }
                     }
                     .overlay(alignment: .bottom) {
-                        if style == .bottomBar { FloatingTabBar(selection: $router.tab, badges: badges).padding(.bottom, Tokens.Spacing.sm) }
+                        if style == .bottomBar { FloatingTabBar(selection: $router.tab, tabs: tabList, badges: badges).padding(.bottom, Tokens.Spacing.sm) }
                     }
             }
         }
@@ -147,7 +155,9 @@ struct MainTabView: View {
         if style == .system {
             // iPhone and narrow windows: the system tab bar.
             TabView(selection: $router.tab) {
-                Tab("m.tab.teasers", systemImage: "play.rectangle", value: AppTab.teasers) { content(.teasers) }
+                if teasersOn {
+                    Tab("m.tab.teasers", systemImage: "play.rectangle", value: AppTab.teasers) { content(.teasers) }
+                }
                 Tab("m.tab.discover", systemImage: "safari", value: AppTab.discover) { content(.discover) }
                 Tab("m.tab.requests", systemImage: "checklist", value: AppTab.requests) { content(.requests) }
                     .badge(profile.can(.manageRequests) ? pendingCount : 0)
@@ -158,7 +168,7 @@ struct MainTabView: View {
         } else {
             // Wide windows draw their own bar (sidebar or floating bar), so no TabView: the system bar cannot be hidden on iPad.
             ZStack {
-                ForEach(AppTab.ordered, id: \.self) { tab in
+                ForEach(tabList, id: \.self) { tab in
                     if visited.contains(tab) {
                         content(tab, bottomInset: style == .bottomBar ? 96 : (style == .sidebar ? 0 : 88))
                             .opacity(router.tab == tab ? 1 : 0)
@@ -173,7 +183,12 @@ struct MainTabView: View {
 
     @ViewBuilder private func content(_ tab: AppTab, bottomInset: CGFloat = 0) -> some View {
         switch tab {
-        case .teasers: TeasersView(api: api, isSelected: router.tab == .teasers, path: $router.teasersPath, bottomInset: bottomInset)
+        case .teasers:
+            TeasersView(api: api, isSelected: router.tab == .teasers, path: $router.teasersPath, bottomInset: bottomInset) {
+                // The server stopped serving Teasers while the tab was open.
+                Task { await session.refreshStatus() }
+                router.tab = .discover
+            }
         case .discover: DiscoverView(api: api, path: $router.discoverPath, openProfile: { router.openProfile() }, openSettings: { router.openSettings() })
         case .search: SearchView(api: api)
         case .requests: RequestsView(api: api, canManage: profile.can(.manageRequests), canViewAll: profile.can(.requestView), path: $router.requestsPath, selection: $router.requestsSelection) { router.tab = .discover }

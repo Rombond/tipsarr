@@ -22,7 +22,8 @@ struct TipsarrAPI: Sendable {
                 apiVersion: Int(body.apiVersion),
                 minAppVersion: body.minAppVersion,
                 defaultLanguage: body.defaultLanguage,
-                pushAvailable: body.features.push
+                pushAvailable: body.features.push,
+                teasersAvailable: body.features.teasers
             )
         } catch let error as DecodingError {
             // A reachable server whose /status is not ours is "not a Tipsarr server".

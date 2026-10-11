@@ -8,6 +8,8 @@ struct ServerStatus: Sendable, Equatable {
     var minAppVersion: String
     var defaultLanguage: String
     var pushAvailable: Bool
+    /// The Teasers feed works on this server (trailer files are on and the resolver answers): the tab shows only then.
+    var teasersAvailable: Bool = false
 }
 
 struct Profile: Sendable, Equatable, Codable {

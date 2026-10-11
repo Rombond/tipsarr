@@ -8,11 +8,16 @@ struct TeasersView: View {
     @Binding var path: NavigationPath
     /// Height of our own tab bar when the shell draws one over the content (iPad, Duo); the system bar is already in the safe area.
     var bottomInset: CGFloat = 0
+    /// The server answered "teasers_disabled": the feature was turned off while the tab was open.
+    var onUnavailable: () -> Void = {}
 
     @State private var model: TeasersModel
     @State private var current: String?
     @State private var tapPaused = false
     @State private var draft: RequestDraft?
+    @State private var pool: TeaserVideoPool
+    /// Cards whose file could not be played: they use the YouTube embed instead.
+    @State private var failedFiles: Set<String> = []
     /// Sound stays off for later trailers and launches once the person muted a trailer.
     @AppStorage("teasersMuted") private var muted = false
     @Environment(\.scenePhase) private var scenePhase
@@ -22,8 +27,10 @@ struct TeasersView: View {
 
     private static let endID = "teasers-end"
 
-    init(api: TipsarrAPI, isSelected: Bool, path: Binding<NavigationPath>, bottomInset: CGFloat = 0) {
+    init(api: TipsarrAPI, isSelected: Bool, path: Binding<NavigationPath>, bottomInset: CGFloat = 0, onUnavailable: @escaping () -> Void = {}) {
         _model = State(initialValue: TeasersModel(api: api))
+        _pool = State(initialValue: TeaserVideoPool(token: api.token))
+        self.onUnavailable = onUnavailable
         self.isSelected = isSelected
         _path = path
         self.bottomInset = bottomInset
@@ -43,6 +50,16 @@ struct TeasersView: View {
             .mediaDestinations()
         }
         .task { await model.loadIfNeeded() }
+        .onChange(of: model.phase) { _, phase in
+            if case .failed(let error) = phase, error.code == "teasers_disabled" {
+                toast.show(L10n.string("m.teasers.error"), kind: .error)
+                onUnavailable()
+            }
+        }
+        .onChange(of: current) { _, _ in preload() }
+        .onChange(of: model.items.count) { _, _ in preload() }
+        .onChange(of: isSelected) { _, selected in if !selected { pool.removeAll() } }
+        .onDisappear { pool.removeAll() }
         .onChange(of: isSelected, initial: true) { _, selected in
             // The ambient category follows the silent switch and leaves the person's music alone.
             if selected { try? AVAudioSession.sharedInstance().setCategory(.ambient) }
@@ -77,7 +94,7 @@ struct TeasersView: View {
             LazyVStack(spacing: 0) {
                 ForEach(model.items) { teaser in
                     TeaserPage(
-                        teaser: teaser, isCurrent: current == teaser.id || (current == nil && teaser.id == model.items.first?.id),
+                        teaser: teaser, video: failedFiles.contains(teaser.id) ? nil : pool.video(for: teaser), isCurrent: current == teaser.id || (current == nil && teaser.id == model.items.first?.id),
                         feedActive: feedActive, paused: tapPaused, muted: muted, bottomInset: max(insets.bottom, bottomInset), showsHint: model.items.first?.id == teaser.id,
                         onTap: { tapPaused.toggle() },
                         onMute: { muted.toggle() },
@@ -85,7 +102,8 @@ struct TeasersView: View {
                         onDetails: { open(teaser) },
                         onWatchlist: { Task { await run { try await model.toggleWatchlist(teaser.id) } } },
                         onHide: { Task { await hide(teaser) } },
-                        onPlayerError: { code in if [100, 101, 150, 152].contains(code) { skip(teaser.id) } }
+                        onPlayerError: { code in if [100, 101, 150, 152].contains(code) { skip(teaser.id) } },
+                        onFileFailed: { failedFiles.insert(teaser.id) }
                     )
                     .containerRelativeFrame([.horizontal, .vertical])
                     .id(teaser.id)
@@ -114,6 +132,16 @@ struct TeasersView: View {
     }
 
     // MARK: Actions
+
+    /// The current card and the next one get their video ready (the next one buffers while paused); the rest is released.
+    private func preload() {
+        guard isSelected else { return }
+        let items = model.items
+        guard let index = items.firstIndex(where: { $0.id == current }) ?? (current == nil ? 0 : nil), !items.isEmpty else { return }
+        let wanted = items[index...].prefix(2).filter { !failedFiles.contains($0.id) && $0.videoURL != nil }
+        pool.keep(Set(wanted.map(\.id)))
+        for teaser in wanted { _ = pool.video(for: teaser) }
+    }
 
     private func open(_ teaser: Teaser) {
         if let pane { pane.content = .media(teaser.item.route) } else { path.append(teaser.item.route) }
@@ -175,6 +203,8 @@ private struct RequestDraft: Identifiable {
 
 private struct TeaserPage: View {
     let teaser: Teaser
+    /// The native player of this card, when its trailer file is ready and has not failed.
+    let video: TeaserVideo?
     let isCurrent: Bool
     let feedActive: Bool
     let paused: Bool
@@ -188,10 +218,12 @@ private struct TeaserPage: View {
     var onWatchlist: () -> Void
     var onHide: () -> Void
     var onPlayerError: (Int) -> Void
+    var onFileFailed: () -> Void
 
     @Environment(\.appContext) private var context
 
     private var playing: Bool { isCurrent && feedActive }
+    private var wantsPlay: Bool { playing && !paused }
 
     var body: some View {
         ZStack {
@@ -199,7 +231,16 @@ private struct TeaserPage: View {
             RemoteImage(path: teaser.item.backdropPath ?? teaser.item.posterPath, size: .w780) { Color.black }
                 .opacity(0.55)
                 .blur(radius: 24)
-            if playing {
+            if let video {
+                TeaserVideoView(video: video)
+                    .ignoresSafeArea()
+                    .opacity(video.isReady ? 1 : 0)
+                    .animation(.easeIn(duration: 0.2), value: video.isReady)
+                    .onChange(of: wantsPlay, initial: true) { _, play in video.set(playing: play, muted: muted) }
+                    .onChange(of: muted) { _, now in video.set(playing: wantsPlay, muted: now) }
+                    .onChange(of: video.failed) { _, failed in if failed { onFileFailed() } }
+                if playing, !video.isReady, !paused { ProgressView().tint(.white).allowsHitTesting(false) }
+            } else if playing {
                 TeaserPlayer(videoID: teaser.trailerKey, muted: muted, playing: !paused, onError: onPlayerError)
                     .id(teaser.trailerKey)
                     .transition(.opacity)
@@ -210,8 +251,23 @@ private struct TeaserPage: View {
             }
             LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .center, endPoint: .bottom).allowsHitTesting(false)
             overlay
+            if let video, video.isReady { progressLine(video) }
         }
         .clipped()
+    }
+
+    /// A thin line along the bottom edge: how far the trailer is.
+    private func progressLine(_ video: TeaserVideo) -> some View {
+        VStack {
+            Spacer()
+            GeometryReader { geo in
+                Rectangle().fill(.white.opacity(0.85)).frame(width: geo.size.width * video.progress)
+            }
+            .frame(height: 2)
+            .background(.white.opacity(0.25))
+            .padding(.bottom, bottomInset)
+        }
+        .allowsHitTesting(false)
     }
 
     private var overlay: some View {

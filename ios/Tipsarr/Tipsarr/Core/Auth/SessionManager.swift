@@ -162,6 +162,14 @@ final class SessionManager {
         await switchTo(account)
     }
 
+    /// Reads `/status` again (the Teasers tab follows `features.teasers`, which changes when an admin turns trailer files on or off).
+    func refreshStatus() async {
+        guard case .ready(let account, _) = phase,
+              let status = try? await TipsarrAPI(serverURL: account.serverURL, token: nil).status(),
+              status != serverStatus else { return }
+        serverStatus = status
+    }
+
     /// Profile changed on the server (language, score source): keep the signed-in screens in sync.
     func update(profile: Profile) {
         if case .ready(let account, _) = phase { phase = .ready(account, profile) }
