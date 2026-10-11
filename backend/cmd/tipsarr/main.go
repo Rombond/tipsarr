@@ -99,13 +99,14 @@ func run(cfg config.Config) error {
 	jm.OnChange = func(name, status string, msg i18n.Msg, text string) {
 		hub.Publish("sync.status", "", map[string]any{"job": name, "state": status, "message": text, "messageCode": msg.Code, "messageParams": msg.StringParams(), "messageArgs": msg.OrderedArgs()}, true)
 	}
-	mediaSvc := media.New(st, "")
+	// TIPSARR_TMDB_URL, TIPSARR_TMDB_IMAGE_URL and TIPSARR_BOXOFFICE_URL point the server at fakes (see dev/README.md); unset = the real services.
+	mediaSvc := media.New(st, os.Getenv("TIPSARR_TMDB_URL"))
 	notifier := notify.New(st, cfg.DryRun)
 	pusher := push.New(st, cfg.DryRun)
 	notifier.SetPusher(pusher)
 	sugg := suggestions.New(st, mediaSvc, hub)
 	lib.OnHistoryChanged = sugg.QueueRefresh
-	box := boxoffice.New(st, mediaSvc, "")
+	box := boxoffice.New(st, mediaSvc, os.Getenv("TIPSARR_BOXOFFICE_URL"))
 	jm.Register(jobs.Job{Name: "boxoffice-refresh", Every: 12 * time.Hour, InitialDelay: time.Minute, Run: box.Refresh})
 	reqSvc := requests.New(st, mediaSvc, hub, notifier, cfg.DryRun)
 	reqSvc.SetLibrary(lib)
@@ -149,7 +150,7 @@ func run(cfg config.Config) error {
 
 	handler, _ := server.New(api.Deps{
 		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier, Push: pusher,
-		DryRun: cfg.DryRun, ConfigDir: cfg.ConfigDir,
+		DryRun: cfg.DryRun, ConfigDir: cfg.ConfigDir, ImageBaseURL: os.Getenv("TIPSARR_TMDB_IMAGE_URL"),
 	})
 	if cfg.DryRun {
 		slog.Warn("DRY-RUN is ON: nothing will be sent to Radarr/Sonarr (set TIPSARR_DRY_RUN=false to disable)")

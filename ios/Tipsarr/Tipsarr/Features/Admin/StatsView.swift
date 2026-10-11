@@ -110,11 +110,16 @@ struct StatsView: View {
     }
 
     private func tiles(_ r: StatsReport) -> some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: Tokens.Spacing.md), GridItem(.flexible(), spacing: Tokens.Spacing.md)], spacing: Tokens.Spacing.md) {
-            tile(r.exact ? "stats.tile_hours" : "stats.tile_hours_est", StatsFormat.hours(r.hours), L10n.string("stats.unit_hours_long"))
-            tile("stats.tile_titles", String(r.titles), L10n.string("stats.tile_titles_sub", String(r.movies), String(r.shows)))
-            tile("stats.tile_plays", String(r.plays), r.genres.first.map { L10n.string("stats.tile_plays_sub", $0.name) })
-            tile("stats.tile_requests", String(r.requestsMade), L10n.string("stats.tile_requests_sub", String(r.requestsAvailable), String(r.requestsDeclined)))
+        // a Grid (not a lazy one) gives the two tiles of a row the same height
+        Grid(horizontalSpacing: Tokens.Spacing.md, verticalSpacing: Tokens.Spacing.md) {
+            GridRow {
+                tile(r.exact ? "stats.tile_hours" : "stats.tile_hours_est", StatsFormat.hours(r.hours), L10n.string("stats.unit_hours_long"))
+                tile("stats.tile_titles", String(r.titles), L10n.string("stats.tile_titles_sub", String(r.movies), String(r.shows)))
+            }
+            GridRow {
+                tile("stats.tile_plays", String(r.plays), r.genres.first.map { L10n.string("stats.tile_plays_sub", $0.name) })
+                tile("stats.tile_requests", String(r.requestsMade), L10n.string("stats.tile_requests_sub", String(r.requestsAvailable), String(r.requestsDeclined)))
+            }
         }
     }
 
@@ -124,7 +129,7 @@ struct StatsView: View {
             Text(verbatim: value).font(.title.weight(.bold))
             if let sub { Text(verbatim: sub).font(.caption).foregroundStyle(Tokens.palette.mutedFg) }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(Tokens.Spacing.md)
         .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
         .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }

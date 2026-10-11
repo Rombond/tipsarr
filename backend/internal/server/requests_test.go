@@ -367,8 +367,8 @@ func TestRequestFlowLive(t *testing.T) {
 	}
 	sonarr.hasFile.Store(true)
 	e.reqs.Poll(ctx)
-	if _, b := call(t, e.app, "GET", "/api/v1/requests/"+tv.ID, "", admin); decodeReq(t, b).Status != "available" {
-		t.Fatalf("tv not available: %s", b)
+	if _, b := call(t, e.app, "GET", "/api/v1/requests/"+tv.ID, "", admin); decodeReq(t, b).Status != "available" || !strings.Contains(b, `"seasonProgress":[{"season":2,"percent":100}]`) {
+		t.Fatalf("tv not available, or its season is not complete: %s", b)
 	}
 	_ = requests.ErrDuplicate
 }

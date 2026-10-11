@@ -61,7 +61,15 @@ class BoxOfficeModel(private val api: TipsarrApi) {
     var chart by mutableStateOf<BoxOfficeChart?>(null)
         private set
 
-    suspend fun loadIfNeeded() { if (chart == null) refresh() }
+    /** Loads the chart when there is none yet; a failed load is tried again a few seconds later instead of leaving the row out. */
+    suspend fun loadIfNeeded() {
+        if (chart != null) return
+        repeat(3) { attempt ->
+            refresh()
+            if (chart != null) return
+            kotlinx.coroutines.delay(2_000L shl attempt) // 2, 4, 8 s
+        }
+    }
 
     suspend fun refresh() {
         try { chart = api.boxOffice() } catch (_: ApiError) { /* the row is optional: no chart, no row */ }

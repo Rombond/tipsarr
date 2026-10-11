@@ -155,6 +155,13 @@ func (s *Service) views(ctx context.Context, rows []store.Request) ([]View, erro
 			RequestedBy: UserRef{ID: r.RequestedBy, Name: names[r.RequestedBy]}, DeclineReason: r.DeclineReason,
 			DryRun: r.DryRun == 1, Error: r.Error, Source: r.Source, QualityProfileID: r.ProfileID, RootFolder: r.RootFolder, Progress: prog, SeasonProgress: s.seasonProgress(r.ID), CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
 		}
+		if r.Status == store.StatusAvailable && r.MediaType == "tv" {
+			// nothing is downloading any more: every requested season is complete (the live percentages are gone)
+			v.SeasonProgress = make([]SeasonProgress, 0, len(v.Seasons))
+			for _, n := range v.Seasons {
+				v.SeasonProgress = append(v.SeasonProgress, SeasonProgress{Season: n, Percent: 100})
+			}
+		}
 		if r.DecidedBy != "" {
 			v.DecidedBy = &UserRef{ID: r.DecidedBy, Name: names[r.DecidedBy]}
 		}

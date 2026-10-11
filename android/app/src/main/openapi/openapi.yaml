@@ -1395,8 +1395,17 @@ components:
         lastLoginAt:
           format: int64
           type: integer
+        movieQuotaDays:
+          format: int64
+          type: integer
+        movieQuotaLimit:
+          format: int64
+          type: integer
         name:
           type: string
+        permissions:
+          format: int64
+          type: integer
         ratingSource:
           type: string
         region:
@@ -1408,6 +1417,12 @@ components:
           type: string
         stats:
           $ref: "#/components/schemas/ProfileStats"
+        tvQuotaDays:
+          format: int64
+          type: integer
+        tvQuotaLimit:
+          format: int64
+          type: integer
       required:
         - id
         - name
@@ -1416,6 +1431,7 @@ components:
         - language
         - ratingSource
         - effectivePermissions
+        - permissions
         - createdAt
         - lastLoginAt
         - stats

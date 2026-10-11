@@ -18,7 +18,9 @@ extension TipsarrAPI {
                 profile: Profile(id: v.id, name: v.name, role: v.role.rawValue, region: v.region, language: v.language,
                                  ratingSource: v.ratingSource, createdAt: Date(timeIntervalSince1970: TimeInterval(v.createdAt)),
                                  lastLoginAt: Date(timeIntervalSince1970: TimeInterval(v.lastLoginAt)),
-                                 effectivePermissions: v.effectivePermissions),
+                                 effectivePermissions: v.effectivePermissions, permissions: v.permissions,
+                                 quota: UserQuota(movieLimit: v.movieQuotaLimit.map(Int.init), movieDays: v.movieQuotaDays.map(Int.init),
+                                                  tvLimit: v.tvQuotaLimit.map(Int.init), tvDays: v.tvQuotaDays.map(Int.init))),
                 stats: UserStats(requests: Int(s.requests), movies: Int(s.movies), shows: Int(s.shows), pending: Int(s.pending),
                                  approved: Int(s.approved), available: Int(s.available), declined: Int(s.declined),
                                  failed: Int(s.failed), watchlist: Int(s.watchlist), watched: Int(s.watched))

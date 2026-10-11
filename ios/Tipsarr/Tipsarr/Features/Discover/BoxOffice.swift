@@ -59,8 +59,15 @@ final class BoxOfficeModel {
 
     init(api: TipsarrAPI) { self.api = api }
 
+    /// Loads the chart when there is none yet. A failed load is tried again (a few seconds apart) instead of leaving the
+    /// row out until the next manual reload.
     func loadIfNeeded() async {
-        if phase == .idle { await refresh() }
+        guard chart == nil, phase != .loading else { return }
+        for attempt in 0..<3 {
+            await refresh()
+            if chart != nil || Task.isCancelled { return }
+            try? await Task.sleep(for: .seconds(2 << attempt)) // 2, 4, 8 s
+        }
     }
 
     func refresh() async {

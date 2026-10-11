@@ -1945,12 +1945,22 @@ export interface components {
             language: string;
             /** Format: int64 */
             lastLoginAt: number;
+            /** Format: int64 */
+            movieQuotaDays?: number;
+            /** Format: int64 */
+            movieQuotaLimit?: number;
             name: string;
+            /** Format: int64 */
+            permissions: number;
             ratingSource: string;
             region: string;
             /** @enum {string} */
             role: "admin" | "user";
             stats: components["schemas"]["ProfileStats"];
+            /** Format: int64 */
+            tvQuotaDays?: number;
+            /** Format: int64 */
+            tvQuotaLimit?: number;
         };
         Progress: {
             /** Format: int64 */

@@ -9,11 +9,23 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
+	// a failed load is tried again a few seconds later instead of leaving the row out until the next reload
 	$effect(() => {
-		unwrap(api.GET('/boxoffice'))
-			.then((c) => (chart = c))
-			.catch((e) => (error = errorText(e)))
-			.finally(() => (loading = false));
+		let cancelled = false;
+		(async () => {
+			for (let attempt = 0; attempt < 3 && !cancelled; attempt++) {
+				try {
+					chart = await unwrap(api.GET('/boxoffice'));
+					error = null;
+					break;
+				} catch (e) {
+					error = errorText(e);
+					await new Promise((r) => setTimeout(r, 2000 << attempt));
+				}
+			}
+			if (!cancelled) loading = false;
+		})();
+		return () => (cancelled = true);
 	});
 
 	const money = (n: number) => fmtMoneyCompact(n);

@@ -1,6 +1,8 @@
 package com.brebond.tipsarr.core.api
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.KSerializer
@@ -102,7 +104,8 @@ class ApiClient(
                 val response = http.newCall(request).await()
                 response.use {
                     val code = it.code
-                    val text = it.body.string()
+                    // the body may still be streaming: read it off the main thread (NetworkOnMainThreadException otherwise)
+                    val text = withContext(Dispatchers.IO) { it.body.string() }
                     if (code in 200..299) return text
                     if (retry && (code == 502 || code == 503) && attempt < DELAYS.size) {
                         delay(DELAYS[attempt++])
