@@ -21,8 +21,8 @@ extension AppTab {
         }
     }
 
-    /// Same order as the iPhone bar, where Search is the separate last tab.
-    static let ordered: [AppTab] = [.discover, .requests, .library, .profile, .search]
+    /// Same order as the iPhone bar, where Search is the separate last tab. Profile is not a tab: it opens from the top right of Discover (and from the sidebar's account row).
+    static let ordered: [AppTab] = [.discover, .requests, .library, .search]
 }
 
 /// The tab bar of a portrait iPad window: a floating pill at the bottom, as in the Penpot iPad page.

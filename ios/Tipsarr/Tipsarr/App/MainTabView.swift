@@ -43,6 +43,13 @@ struct MainTabView: View {
         .environment(\.liveUpdates, live)
         .environment(toast)
         .modifier(ToastOverlay(center: toast))
+        .sheet(isPresented: $router.profileOpen) {
+            ProfileView(account: account, profile: profile, api: api, path: $router.profilePath) {
+                router.profileOpen = false
+                router.tab = .requests
+            }
+            .tipsarrSheet(detents: [.large])
+        }
         // Hardware keyboard: Cmd+1...5 switch tabs, Cmd+F opens Search.
         .background {
             ForEach(Array(AppTab.ordered.enumerated()), id: \.element) { index, tab in
@@ -95,7 +102,7 @@ struct MainTabView: View {
         .id("\(account.id)|\(settings.language ?? "")|\(profile.region)")
     }
 
-    /// The five tabs inside the system bar (iPhone, narrow windows), or with our own bar: a sidebar on a
+    /// The four tabs inside the system bar (iPhone, narrow windows), or with our own bar: a sidebar on a
     /// landscape iPad window, a floating bar at the bottom of a portrait one.
     @ViewBuilder private func shell(_ style: ShellStyle, trailingInset: CGFloat = 0) -> some View {
         let badges: [AppTab: Int] = profile.can(.manageRequests) ? [.requests: pendingCount] : [:]
@@ -118,7 +125,7 @@ struct MainTabView: View {
         } else {
             HStack(spacing: 0) {
                 if style == .sidebar {
-                    AppSidebar(selection: $router.tab, account: account, profile: profile, badges: badges)
+                    AppSidebar(selection: $router.tab, account: account, profile: profile, badges: badges) { router.openProfile() }
                 }
                 tabs(style)
                     .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -139,7 +146,6 @@ struct MainTabView: View {
                 Tab("m.tab.requests", systemImage: "checklist", value: AppTab.requests) { content(.requests) }
                     .badge(profile.can(.manageRequests) ? pendingCount : 0)
                 Tab("m.tab.library", systemImage: "books.vertical", value: AppTab.library) { content(.library) }
-                Tab("m.tab.profile", systemImage: "person.crop.circle", value: AppTab.profile) { content(.profile) }
                 // A normal last tab, not the separate search tab: its field stays visible under the title.
                 Tab("m.tab.search", systemImage: "magnifyingglass", value: AppTab.search) { content(.search) }
             }
@@ -161,11 +167,11 @@ struct MainTabView: View {
 
     @ViewBuilder private func content(_ tab: AppTab) -> some View {
         switch tab {
-        case .discover: DiscoverView(api: api, path: $router.discoverPath)
+        case .discover: DiscoverView(api: api, path: $router.discoverPath, openProfile: { router.openProfile() }, openSettings: { router.openProfile(settings: true) })
         case .search: SearchView(api: api)
         case .requests: RequestsView(api: api, canManage: profile.can(.manageRequests), canViewAll: profile.can(.requestView), path: $router.requestsPath, selection: $router.requestsSelection) { router.tab = .discover }
         case .library: LibraryView(api: api, path: $router.libraryPath)
-        case .profile: ProfileView(account: account, profile: profile, api: api, path: $router.profilePath) { router.tab = .requests }
+        case .profile: EmptyView() // not a tab: Profile is the sheet above
         }
     }
 

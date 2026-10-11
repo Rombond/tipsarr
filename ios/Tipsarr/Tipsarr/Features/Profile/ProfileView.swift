@@ -9,6 +9,7 @@ struct ProfileView: View {
     @Environment(\.appContext) private var context
     @Environment(\.liveUpdates) private var live
     @Environment(\.detailPane) private var pane
+    @Environment(\.dismiss) private var dismiss
     @AppStorage("avatarVersion") var avatarVersion = 0
     @Environment(SessionManager.self) var session
     @State var model: ProfileModel
@@ -44,6 +45,10 @@ struct ProfileView: View {
             .background(Tokens.palette.bg)
             .navigationTitle("profile.title")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { dismiss() } label: { Image(systemName: "xmark") }
+                        .accessibilityLabel(Text("m.library.close"))
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink(value: ProfileRoute.settings) { Image(systemName: "gearshape") }
                         .accessibilityLabel(Text("nav.settings"))

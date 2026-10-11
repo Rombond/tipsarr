@@ -20,6 +20,7 @@ struct MediaDetailView: View {
     @State private var confirmCancel = false
     @Environment(ToastCenter.self) private var toast
     @Environment(\.liveUpdates) private var live
+    @Environment(\.appContext) private var context
 
     enum Sheet: Identifiable {
         case request, report
@@ -166,7 +167,7 @@ struct MediaDetailView: View {
             .disabled(!cancellable)
         case .available(let url):
             if let url {
-                Link(destination: url) {
+                Button { openInJellyfin(web: url) } label: {
                     Label { Text("m.detail.open_jellyfin") } icon: { Image(systemName: "play.fill") }
                 }
                 .buttonStyle(.tipsarr(.primary, fullWidth: true, capsule: true))
@@ -385,6 +386,19 @@ struct MediaDetailView: View {
     }
 
     // MARK: Flow
+
+    /// Opens the title in the Swiftfin app when it is installed and knows this server and user, else the Jellyfin web page.
+    /// Swiftfin reads `swiftfin://<server id>/<user id>/item/<item id>`; a failed open means no app handles the scheme.
+    private func openInJellyfin(web: URL) {
+        guard let detail = model.detail, let item = detail.jellyfinItemID, let server = detail.jellyfinServerID, let user = context?.profile.id,
+              let app = URL(string: "swiftfin://\(server)/\(user)/item/\(item)") else {
+            UIApplication.shared.open(web)
+            return
+        }
+        UIApplication.shared.open(app) { opened in
+            if !opened { UIApplication.shared.open(web) }
+        }
+    }
 
     private func startRequest() async {
         if await model.prepareRequest() {

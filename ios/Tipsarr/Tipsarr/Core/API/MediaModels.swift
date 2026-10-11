@@ -54,6 +54,8 @@ struct MediaDetail: Sendable {
     var cast: [CastMember]
     var recommendations: [MediaItem]
     var watchURL: URL?
+    var jellyfinItemID: String?
+    var jellyfinServerID: String?
     var trailerKey: String?
     var imdbId: String?
 

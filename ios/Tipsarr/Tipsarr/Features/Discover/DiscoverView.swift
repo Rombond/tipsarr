@@ -32,9 +32,13 @@ struct DiscoverView: View {
     @Binding var path: NavigationPath
 
     private let api: TipsarrAPI
+    private let openProfile: () -> Void
+    private let openSettings: () -> Void
 
-    init(api: TipsarrAPI, path: Binding<NavigationPath>) {
+    init(api: TipsarrAPI, path: Binding<NavigationPath>, openProfile: @escaping () -> Void = {}, openSettings: @escaping () -> Void = {}) {
         self.api = api
+        self.openProfile = openProfile
+        self.openSettings = openSettings
         _model = State(initialValue: DiscoverModel(api: api))
         _path = path
     }
@@ -65,6 +69,14 @@ struct DiscoverView: View {
             .onChange(of: live?.requestsTick) { Task { await refreshCurrent() } }
             .background(Tokens.palette.bg)
             .navigationTitle("m.tab.discover")
+            .toolbar {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button(action: openSettings) { Image(systemName: "gearshape") }
+                        .accessibilityLabel(Text("m.settings.title"))
+                    Button(action: openProfile) { Image(systemName: "person.crop.circle") }
+                        .accessibilityLabel(Text("m.tab.profile"))
+                }
+            }
             .mediaDestinations()
         }
     }
@@ -106,9 +118,16 @@ private struct ForYouContent: View {
         Group {
             switch home.phase {
             case .idle, .loading:
-                RailSkeleton()
+                // The box office does not wait for the suggestions (a new account has none yet).
+                VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
+                    box
+                    RailSkeleton()
+                }
             case .failed(let error):
-                ErrorState(error: error) { await home.refresh() }
+                VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
+                    box
+                    ErrorState(error: error) { await home.refresh() }
+                }
             case .loaded where home.rows.isEmpty:
                 VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
                     box

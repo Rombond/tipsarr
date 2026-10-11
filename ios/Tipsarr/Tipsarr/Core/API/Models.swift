@@ -79,6 +79,8 @@ struct MediaItem: Sendable, Hashable, Identifiable {
     var state: RequestState?
     var overview: String?
     var backdropPath: String?
+    /// TMDB genre ids (movie or show list, by `type`); used by the search filters.
+    var genreIds: [Int] = []
 
     var id: String { "\(type.rawValue)-\(tmdbId)" }
     var route: MediaRoute { MediaRoute(type: type, tmdbId: tmdbId, title: title) }
@@ -128,10 +130,29 @@ struct PersonRoute: Hashable, Sendable {
     var name: String
 }
 
-struct GenreRoute: Hashable, Sendable {
-    var type: MediaType
-    var id: Int
+/// One genre name with its TMDB id in the movie list and/or in the show list (the two lists differ a little).
+struct MergedGenre: Hashable, Sendable, Identifiable {
     var name: String
+    var movieID: Int?
+    var tvID: Int?
+    var id: String { name }
+
+    /// The two genre lists as one, sorted by name; a name present in both keeps both ids.
+    static func merge(movies: [Genre], shows: [Genre]) -> [MergedGenre] {
+        var byName: [String: MergedGenre] = [:]
+        for genre in movies { byName[genre.name, default: MergedGenre(name: genre.name)].movieID = genre.id }
+        for genre in shows { byName[genre.name, default: MergedGenre(name: genre.name)].tvID = genre.id }
+        return byName.values.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    func id(for type: MediaType) -> Int? { type == .movie ? movieID : tvID }
+    var route: GenreRoute { GenreRoute(name: name, movieID: movieID, tvID: tvID) }
+}
+
+struct GenreRoute: Hashable, Sendable {
+    var name: String
+    var movieID: Int?
+    var tvID: Int?
 }
 
 struct PersonDetail: Sendable {

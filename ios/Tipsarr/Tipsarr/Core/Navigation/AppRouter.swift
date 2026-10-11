@@ -9,7 +9,6 @@ final class AppRouter {
         switch UserDefaults.standard.string(forKey: "startTab") {
         case "requests": return .requests
         case "library": return .library
-        case "profile": return .profile
         case "search": return .search
         default: break
         }
@@ -20,8 +19,22 @@ final class AppRouter {
     var requestsPath = NavigationPath()
     var libraryPath = NavigationPath()
     var profilePath = NavigationPath()
+    /// Profile (with Settings and the admin tools) is a sheet over the tabs.
+    var profileOpen: Bool = {
+        #if DEBUG
+        return UserDefaults.standard.string(forKey: "startTab") == "profile"
+        #else
+        return false
+        #endif
+    }()
     /// Selected request in the two-column Requests screen (wide windows); the stack uses `requestsPath`.
     var requestsSelection: String?
+
+    func openProfile(settings: Bool = false) {
+        profilePath = NavigationPath()
+        if settings { profilePath.append(ProfileRoute.settings) }
+        profileOpen = true
+    }
 
     /// Shows the screen of a link. Titles open at the root of their tab with the new screen on top.
     func open(_ target: DeepLinkTarget, api: TipsarrAPI, pane: DetailPane? = nil) async {
@@ -50,8 +63,8 @@ final class AppRouter {
             } else {
                 profilePath = NavigationPath()
                 profilePath.append(ProfileRoute.issue(id))
+                profileOpen = true
             }
-            tab = .profile
         case .library:
             libraryPath = NavigationPath()
             tab = .library

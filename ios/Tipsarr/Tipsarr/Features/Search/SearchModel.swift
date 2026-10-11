@@ -10,8 +10,8 @@ final class SearchModel {
     private(set) var items: [MediaItem] = []
     private(set) var people: [PersonSummary] = []
     private(set) var loadingMore = false
-    private(set) var movieGenres: [Genre] = []
-    private(set) var tvGenres: [Genre] = []
+    /// Movie and show genres as one list (by name).
+    private(set) var genres: [MergedGenre] = []
     private(set) var recents: [String]
 
     private var page = 0
@@ -27,11 +27,10 @@ final class SearchModel {
     // MARK: Genres (landing)
 
     func loadGenres() async {
-        guard movieGenres.isEmpty else { return }
+        guard genres.isEmpty else { return }
         async let movies = try? api.genres(.movie)
         async let shows = try? api.genres(.tv)
-        movieGenres = await movies ?? []
-        tvGenres = await shows ?? []
+        genres = MergedGenre.merge(movies: await movies ?? [], shows: await shows ?? [])
     }
 
     // MARK: Recents

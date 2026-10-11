@@ -18,6 +18,8 @@ struct SearchView: View {
     @State private var model: SearchModel
     @State private var query = ""
     @State private var scope: SearchScope = .all
+    @State private var filters = SearchFilters()
+    @State private var showFilters = false
     @State private var width: CGFloat = 0
     /// Selected result in the two-column layout.
     @State private var selection: MediaRoute?
@@ -36,6 +38,11 @@ struct SearchView: View {
             if split { splitBody } else { stackBody }
         }
         .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
+        .sheet(isPresented: $showFilters) {
+            SearchFiltersSheet(filters: $filters, genres: model.genres, years: resultYears)
+                .tipsarrSheet(detents: [.large])
+                .task { await model.loadGenres() }
+        }
         .task(id: query) {
             // Debounce: typing cancels this task before the request starts.
             try? await Task.sleep(for: .milliseconds(350))
@@ -85,6 +92,24 @@ struct SearchView: View {
         }
         .background(Tokens.palette.bg)
         .navigationTitle("m.tab.search")
+        .toolbar {
+            if !trimmed.isEmpty && scope != .people {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showFilters = true } label: {
+                        Image(systemName: filters.activeCount == 0 ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                    }
+                    .accessibilityLabel(Text("m.search.filters"))
+                    .accessibilityValue(Text(verbatim: filters.activeCount == 0 ? "" : String(filters.activeCount)))
+                }
+            }
+        }
+    }
+
+    /// Years of the loaded titles, for the year menus of the filter sheet.
+    private var resultYears: ClosedRange<Int>? {
+        let years = model.items.compactMap { $0.releaseYear.flatMap { Int($0) } }
+        guard let low = years.min(), let high = years.max() else { return nil }
+        return low...high
     }
 
     private func searchable<V: View>(_ view: V, placement: SearchFieldPlacement) -> some View {
@@ -127,27 +152,19 @@ struct SearchView: View {
     }
 
     @ViewBuilder private var genres: some View {
-        if !model.movieGenres.isEmpty || !model.tvGenres.isEmpty {
+        if !model.genres.isEmpty {
             VStack(alignment: .leading, spacing: Tokens.Spacing.lg) {
                 Text("m.search.genres").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
-                genreGroup("type.movies", genres: model.movieGenres, type: .movie)
-                genreGroup("type.shows", genres: model.tvGenres, type: .tv)
-            }
-        }
-    }
-
-    private func genreGroup(_ title: LText, genres: [Genre], type: MediaType) -> some View {
-        VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
-            Text(title).font(.subheadline.weight(.medium)).foregroundStyle(Tokens.palette.mutedFg)
-            FlowLayout(spacing: Tokens.Spacing.sm) {
-                ForEach(genres) { genre in
-                    NavigationLink(value: GenreRoute(type: type, id: genre.id, name: genre.name)) {
-                        Text(verbatim: genre.name)
-                            .font(.subheadline.weight(.medium))
-                            .padding(.horizontal, Tokens.Spacing.md)
-                            .frame(minHeight: Tokens.Size.touchTarget - Tokens.Spacing.sm)
-                            .background(Tokens.palette.muted, in: .capsule)
-                            .foregroundStyle(Tokens.palette.fg)
+                FlowLayout(spacing: Tokens.Spacing.sm) {
+                    ForEach(model.genres) { genre in
+                        NavigationLink(value: genre.route) {
+                            Text(verbatim: genre.name)
+                                .font(.subheadline.weight(.medium))
+                                .padding(.horizontal, Tokens.Spacing.md)
+                                .frame(minHeight: Tokens.Size.touchTarget - Tokens.Spacing.sm)
+                                .background(Tokens.palette.muted, in: .capsule)
+                                .foregroundStyle(Tokens.palette.fg)
+                        }
                     }
                 }
             }
@@ -169,7 +186,9 @@ struct SearchView: View {
             ErrorState(error: error) { await model.search(query) }
         case .loaded:
             let titles = visibleTitles
-            if !hasResults {
+            if !hasResults && filters.activeCount > 0 && !model.items.isEmpty {
+                StateView.noResults()
+            } else if !hasResults {
                 StateView(symbol: "magnifyingglass",
                           title: LText.verbatim(L10n.string("search.nothing", trimmed)),
                           message: "search.nothing_hint")
@@ -213,19 +232,20 @@ struct SearchView: View {
 
     private var hasResults: Bool {
         switch scope {
-        case .all: !model.items.isEmpty || !model.people.isEmpty
+        case .all: !visibleTitles.isEmpty || !model.people.isEmpty
         case .people: !model.people.isEmpty
         case .movies, .tv: !visibleTitles.isEmpty
         }
     }
 
     private var visibleTitles: [MediaItem] {
-        switch scope {
+        let titles = switch scope {
         case .all: model.items
         case .movies: model.items.filter { $0.type == .movie }
         case .tv: model.items.filter { $0.type == .tv }
-        case .people: []
+        case .people: [MediaItem]()
         }
+        return filters.apply(to: titles, genreList: model.genres)
     }
 
     @ViewBuilder private var peopleSection: some View {

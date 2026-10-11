@@ -133,7 +133,7 @@ struct BoxOfficeRail: View {
                                     if let item = entry.item {
                                         MediaLink(route: item.route, requestable: item.state == nil) {
                                             PosterCard(title: item.title, subtitle: chart.money(entry.weekendGross), posterPath: item.posterPath,
-                                                       state: item.state, rank: entry.position)
+                                                       kind: item.type, state: item.state, rank: entry.position)
                                                 .frame(width: 120)
                                         }
                                         .buttonStyle(.plain)

@@ -138,6 +138,8 @@ extension MediaDetail {
             cast: d.cast.map { CastMember(id: Int($0.id), name: $0.name, character: $0.character, profilePath: $0.profilePath) },
             recommendations: d.recommendations.map(MediaItem.init),
             watchURL: d.watchUrl.flatMap(URL.init(string:)),
+            jellyfinItemID: d.jellyfinItemId,
+            jellyfinServerID: d.jellyfinServerId,
             trailerKey: d.trailerKey,
             imdbId: d.imdbId.flatMap { $0.isEmpty ? nil : $0 }
         )

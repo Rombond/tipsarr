@@ -10,6 +10,8 @@ struct PosterCard: View {
     /// Poster served by the Tipsarr server itself (library titles come from Jellyfin); wins over `posterPath`.
     var serverPosterPath: String?
     var watched = false
+    /// Movie or show: a small label on the poster's top-left corner.
+    var kind: MediaType?
     var rating: RatingInput?
     var state: RequestState?
     /// Chart position, drawn on the poster's bottom-left corner.
@@ -37,14 +39,26 @@ struct PosterCard: View {
                     }
                 }
                 .overlay(alignment: .topLeading) {
-                    if watched {
-                        Image(systemName: "eye.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.white)
-                            .padding(Tokens.Spacing.xs + 2)
-                            .background(.black.opacity(0.55), in: .circle)
-                            .padding(Tokens.Spacing.sm)
+                    HStack(spacing: Tokens.Spacing.xs) {
+                        if let kind {
+                            Text(choose(kind == .tv, "m.poster.tv", "m.poster.movie"))
+                                .font(.system(size: 10, weight: .semibold))
+                                .textCase(.uppercase)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, Tokens.Spacing.sm)
+                                .padding(.vertical, 2)
+                                .background(.black.opacity(0.7), in: .capsule)
+                                .accessibilityHidden(true)
+                        }
+                        if watched {
+                            Image(systemName: "eye.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.white)
+                                .padding(Tokens.Spacing.xs + 2)
+                                .background(.black.opacity(0.55), in: .circle)
+                        }
                     }
+                    .padding(Tokens.Spacing.sm)
                 }
                 .clipShape(.rect(cornerRadius: Tokens.Radius.md))
             VStack(alignment: .leading, spacing: 0) {
@@ -74,13 +88,14 @@ struct PosterCard: View {
     }
 
     init(title: String, subtitle: String? = nil, posterPath: String? = nil, posterSize: TMDBSize = .w342,
-         serverPosterPath: String? = nil, watched: Bool = false, rating: RatingInput? = nil, state: RequestState? = nil, rank: Int? = nil) {
+         serverPosterPath: String? = nil, watched: Bool = false, kind: MediaType? = nil, rating: RatingInput? = nil, state: RequestState? = nil, rank: Int? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.posterPath = posterPath
         self.posterSize = posterSize
         self.serverPosterPath = serverPosterPath
         self.watched = watched
+        self.kind = kind
         self.rating = rating
         self.state = state
         self.rank = rank
@@ -89,7 +104,7 @@ struct PosterCard: View {
     /// Standard card for a list item: year, score and request state.
     init(item: MediaItem, posterSize: TMDBSize = .w342) {
         self.init(title: item.title, subtitle: item.releaseYear, posterPath: item.posterPath, posterSize: posterSize,
-                  rating: RatingInput(type: item.type, tmdbId: item.tmdbId, tmdb: item.voteAverage), state: item.state)
+                  kind: item.type, rating: RatingInput(type: item.type, tmdbId: item.tmdbId, tmdb: item.voteAverage), state: item.state)
     }
 
     private var poster: some View {
@@ -114,6 +129,7 @@ struct PosterCard: View {
 
     private var accessibilityText: Text {
         var text = Text(verbatim: title)
+        if let kind { text = text + Text(verbatim: ", ") + Text(choose(kind == .tv, "type.tv", "type.movie")) }
         if let subtitle { text = text + Text(verbatim: ", \(subtitle)") }
         if let state { text = text + Text(verbatim: ", ") + Text(state.title) }
         return text

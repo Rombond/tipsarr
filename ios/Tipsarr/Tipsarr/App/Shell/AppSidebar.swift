@@ -6,6 +6,7 @@ struct AppSidebar: View {
     let account: Account
     let profile: Profile
     var badges: [AppTab: Int] = [:]
+    var openProfile: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
@@ -38,7 +39,7 @@ struct AppSidebar: View {
                 .accessibilityAddTraits(selection == tab ? .isSelected : [])
             }
             Spacer(minLength: 0)
-            Button { selection = .profile } label: {
+            Button(action: openProfile) {
                 HStack(spacing: Tokens.Spacing.md) {
                     AvatarView(userID: profile.id, name: profile.name, size: 36)
                     VStack(alignment: .leading, spacing: 2) {

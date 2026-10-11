@@ -112,7 +112,7 @@ struct LibraryView: View {
             ForEach(model.items) { item in
                 MediaLink(route: item.route) {
                     PosterCard(title: item.title, subtitle: item.year.map(String.init), posterPath: item.tmdbPosterPath,
-                               serverPosterPath: item.tmdbPosterPath == nil ? item.posterPath : nil, watched: item.watched,
+                               serverPosterPath: item.tmdbPosterPath == nil ? item.posterPath : nil, watched: item.watched, kind: item.type,
                                rating: RatingInput(type: item.type, tmdbId: item.tmdbId, tmdb: item.rating))
                 }
                 .buttonStyle(.plain)

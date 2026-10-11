@@ -52,30 +52,7 @@ struct LibraryFiltersSheet: View {
 
     private func genres(_ facets: LibraryFacets) -> some View {
         section("library.genres") {
-            FlowLayout(spacing: Tokens.Spacing.sm) {
-                ForEach(facets.genres.prefix(30)) { genre in
-                    let selected = filters.genres.contains(genre.name)
-                    Button {
-                        if selected { filters.genres.remove(genre.name) } else if filters.genres.count < 6 { filters.genres.insert(genre.name) }
-                    } label: {
-                        Text(verbatim: genre.name)
-                            .font(.subheadline.weight(.medium))
-                            .padding(.horizontal, Tokens.Spacing.md)
-                            .frame(minHeight: Tokens.Size.touchTarget - Tokens.Spacing.sm)
-                            .foregroundStyle(selected ? Tokens.palette.primaryFg : Tokens.palette.fg)
-                            .background(selected ? Tokens.palette.primary : Tokens.palette.muted, in: .capsule)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(selected ? .isSelected : [])
-                }
-            }
-            if filters.genres.count > 1 {
-                Picker("library.genres", selection: $filters.anyGenre) {
-                    Text("m.library.genre_all").tag(false)
-                    Text("m.library.genre_any").tag(true)
-                }
-                .pickerStyle(.segmented)
-            }
+            GenrePickerRow(names: facets.genres.map(\.name), selection: $filters.genres, anyGenre: $filters.anyGenre)
         }
     }
 
