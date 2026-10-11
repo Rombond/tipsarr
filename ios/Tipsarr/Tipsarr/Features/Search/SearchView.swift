@@ -92,17 +92,31 @@ struct SearchView: View {
         }
         .background(Tokens.palette.bg)
         .navigationTitle("m.tab.search")
-        .toolbar {
-            if !trimmed.isEmpty && scope != .people {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showFilters = true } label: {
-                        Image(systemName: filters.activeCount == 0 ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                    }
-                    .accessibilityLabel(Text("m.search.filters"))
-                    .accessibilityValue(Text(verbatim: filters.activeCount == 0 ? "" : String(filters.activeCount)))
-                }
+        // The navigation bar (and its toolbar) is hidden while the search field is presented, so narrow windows get the button in the content.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if !split && showsFilters {
+                filtersButton
+                    .padding(.horizontal, Tokens.Spacing.lg)
+                    .padding(.vertical, Tokens.Spacing.xs)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
+        .toolbar {
+            if split && showsFilters { ToolbarItem(placement: .topBarTrailing) { filtersButton } }
+        }
+    }
+
+    private var showsFilters: Bool { !trimmed.isEmpty && scope != .people }
+
+    private var filtersButton: some View {
+        Button { showFilters = true } label: {
+            Image(systemName: filters.activeCount == 0 ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                .font(.title3)
+                .frame(minWidth: Tokens.Size.touchTarget, minHeight: Tokens.Size.touchTarget)
+                .contentShape(.rect)
+        }
+        .accessibilityLabel(Text("m.search.filters"))
+        .accessibilityValue(Text(verbatim: filters.activeCount == 0 ? "" : String(filters.activeCount)))
     }
 
     /// Years of the loaded titles, for the year menus of the filter sheet.

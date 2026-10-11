@@ -378,8 +378,8 @@
     <string name="m_requests_select">Choisissez une demande</string>
     <string name="m_requests_sent_to_only">envoyé à %s</string>
     <string name="m_search_avail">Disponibilité</string>
-    <string name="m_search_avail_in">Dans la bibliothèque</string>
-    <string name="m_search_avail_missing">Pas dans la bibliothèque</string>
+    <string name="m_search_avail_in">Présents</string>
+    <string name="m_search_avail_missing">Absents</string>
     <string name="m_search_clear">Effacer</string>
     <string name="m_search_filters">Filtres</string>
     <string name="m_search_genres">Parcourir par genre</string>
@@ -553,7 +553,7 @@
     <string name="profile_hidden_desc">Les titres que vous avez marqués « pas intéressé ».</string>
     <string name="profile_hidden_title">Masqués de mes suggestions</string>
     <string name="profile_language">Langue</string>
-    <string name="profile_last_seen">dernière visite le %1$s</string>
+    <string name="profile_last_seen">dernière visite : %1$s</string>
     <string name="profile_manage_user">Gérer les utilisateurs</string>
     <string name="profile_member_since">Membre depuis le %1$s</string>
     <string name="profile_no_requests">Aucune demande pour l’instant.</string>

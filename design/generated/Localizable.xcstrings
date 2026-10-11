@@ -6067,7 +6067,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dans la bibliothèque"
+            "value": "Présents"
           }
         }
       }
@@ -6083,7 +6083,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pas dans la bibliothèque"
+            "value": "Absents"
           }
         }
       }
@@ -8873,7 +8873,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "dernière visite le %@"
+            "value": "dernière visite : %@"
           }
         }
       }

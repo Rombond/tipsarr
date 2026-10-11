@@ -37,12 +37,7 @@ struct MainTabView: View {
             shell(ShellStyle.style(size: proxy.size, compact: sizeClass == .compact, hinge: FoldInfo.verticalHinge(proxy)), trailingInset: proxy.safeAreaInsets.trailing)
         }
         .onGeometryChange(for: Bool.self, of: { FoldInfo.verticalHinge($0) != nil }) { foldedHinge = $0 }
-        .environment(\.imageSource, ImageSource(serverURL: account.serverURL, token: account.token))
-        .environment(\.appContext, AppContext(api: api, profile: profile))
-        .environment(\.ratingProvider, ratings)
-        .environment(\.liveUpdates, live)
-        .environment(toast)
-        .modifier(ToastOverlay(center: toast))
+        // Attached before the environment values below: a sheet only inherits what is injected inside it.
         .sheet(isPresented: $router.profileOpen) {
             ProfileView(account: account, profile: profile, api: api, path: $router.profilePath) {
                 router.profileOpen = false
@@ -50,6 +45,12 @@ struct MainTabView: View {
             }
             .tipsarrSheet(detents: [.large])
         }
+        .environment(\.imageSource, ImageSource(serverURL: account.serverURL, token: account.token))
+        .environment(\.appContext, AppContext(api: api, profile: profile))
+        .environment(\.ratingProvider, ratings)
+        .environment(\.liveUpdates, live)
+        .environment(toast)
+        .modifier(ToastOverlay(center: toast))
         // Hardware keyboard: Cmd+1...5 switch tabs, Cmd+F opens Search.
         .background {
             ForEach(Array(AppTab.ordered.enumerated()), id: \.element) { index, tab in

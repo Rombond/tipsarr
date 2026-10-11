@@ -146,6 +146,8 @@ private struct ForYouContent: View {
             }
         }
         .task { await home.loadIfNeeded() }
+        // Here, not only in the row: a row that has no chart yet draws nothing, and a task needs a view to run.
+        .task { await boxOffice.loadIfNeeded() }
     }
 }
 
