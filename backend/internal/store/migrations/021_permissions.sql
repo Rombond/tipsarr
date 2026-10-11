@@ -11,5 +11,5 @@ ALTER TABLE users ADD COLUMN tv_quota_days INT;
 UPDATE users SET permissions = permissions | 8192
     WHERE EXISTS (SELECT 1 FROM settings WHERE skey = 'requests.user_folder' AND svalue = 'true');
 INSERT INTO settings (skey, svalue)
-    SELECT 'permissions.default', '4988960' WHERE EXISTS (SELECT 1 FROM settings WHERE skey = 'requests.user_folder' AND svalue = 'true');
+    SELECT 'permissions.default', '4988960' FROM settings WHERE skey = 'requests.user_folder' AND svalue = 'true';
 DELETE FROM settings WHERE skey = 'requests.user_folder';

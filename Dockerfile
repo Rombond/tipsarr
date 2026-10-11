@@ -5,6 +5,8 @@ WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
+# the web app reads the translation files from ../locales
+COPY locales/ /app/locales/
 RUN npm run build
 
 # 2) build the Go binary with the SPA embedded (pure Go, no CGO)
