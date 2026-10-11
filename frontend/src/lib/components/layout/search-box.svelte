@@ -62,7 +62,15 @@
 		}, 250);
 	}
 
+	// Drops the pending request and any answer still on its way, so a late answer cannot reopen the list.
+	function cancelPending() {
+		clearTimeout(timer);
+		seq++;
+		loading = false;
+	}
+
 	function go(href: string) {
+		cancelPending();
 		open = false;
 		query = '';
 		hits = [];
@@ -81,10 +89,13 @@
 		} else if (e.key === 'Enter') {
 			if (open && active >= 0 && hits[active]) go(hits[active].href);
 			else if (query.trim()) {
+				cancelPending();
 				open = false;
+				hits = [];
 				goto(`/search?q=${encodeURIComponent(query.trim())}`);
 			}
 		} else if (e.key === 'Escape') {
+			cancelPending();
 			open = false;
 			input?.blur();
 		}
