@@ -34,7 +34,10 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,6 +47,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,9 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.brebond.tipsarr.R
 import com.brebond.tipsarr.core.api.ApiError
-import com.brebond.tipsarr.core.api.Genre
 import com.brebond.tipsarr.core.api.MediaItem
-import com.brebond.tipsarr.core.api.MediaType
 import com.brebond.tipsarr.core.api.PersonSummary
 import com.brebond.tipsarr.core.images.RemoteImage
 import com.brebond.tipsarr.core.images.TmdbSize
@@ -81,14 +86,12 @@ import kotlinx.coroutines.launch
 
 private val GUTTER = Tokens.Spacing.lg
 
-class GenreOpen(val type: MediaType, val genre: Genre)
-
 @Composable
 fun SearchScreen(
     model: SearchModel,
     onOpenItem: (MediaItem) -> Unit,
     onOpenPerson: (PersonRoute) -> Unit,
-    onOpenGenre: (MediaType, Genre) -> Unit,
+    onOpenGenre: (MergedGenre) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // Debounce: typing restarts this effect before the request starts.
@@ -104,11 +107,23 @@ fun SearchScreen(
             )
             SearchField(model)
             if (model.trimmed.isNotEmpty()) {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
-                    items(SearchScope.entries) { scope ->
-                        Chip(stringResource(scope.title()), selected = model.scope == scope, onClick = { model.scope = scope })
+                var filtersOpen by remember { mutableStateOf(false) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    LazyRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
+                        items(SearchScope.entries) { scope ->
+                            Chip(stringResource(scope.title()), selected = model.scope == scope, onClick = { model.scope = scope })
+                        }
+                    }
+                    if (model.scope != SearchScope.People) {
+                        val active = model.filters.activeCount
+                        IconButton({ filtersOpen = true }) {
+                            BadgedBox(badge = { if (active > 0) Badge { Text(active.toString()) } }) {
+                                Icon(Icons.Outlined.Tune, stringResource(R.string.m_search_filters), tint = Tokens.palette.fg)
+                            }
+                        }
                     }
                 }
+                if (filtersOpen) SearchFiltersSheet(model) { filtersOpen = false }
             }
         }
         Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -152,7 +167,7 @@ private fun SearchField(model: SearchModel) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Landing(model: SearchModel, onOpenGenre: (MediaType, Genre) -> Unit) {
+private fun Landing(model: SearchModel, onOpenGenre: (MergedGenre) -> Unit) {
     LaunchedEffect(Unit) { model.loadGenres() }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(GUTTER), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.x2xl)) {
         if (model.recents.isNotEmpty()) item {
@@ -172,11 +187,10 @@ private fun Landing(model: SearchModel, onOpenGenre: (MediaType, Genre) -> Unit)
                 }
             }
         }
-        if (model.movieGenres.isNotEmpty() || model.tvGenres.isNotEmpty()) item {
+        if (model.genres.isNotEmpty()) item {
             Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg)) {
                 SectionTitle(stringResource(R.string.m_search_genres))
-                GenreGroup(stringResource(R.string.type_movies), model.movieGenres) { onOpenGenre(MediaType.Movie, it) }
-                GenreGroup(stringResource(R.string.type_shows), model.tvGenres) { onOpenGenre(MediaType.Tv, it) }
+                GenreChips(model.genres, onOpenGenre)
             }
         }
     }
@@ -189,18 +203,15 @@ private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun GenreGroup(title: String, genres: List<Genre>, onClick: (Genre) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
-        Text(title, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium, color = Tokens.palette.mutedFg)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
-            genres.forEach { genre ->
-                Text(
-                    genre.name, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium, color = Tokens.palette.fg,
-                    modifier = Modifier.defaultMinSize(minHeight = Tokens.Size.touchTarget - Tokens.Spacing.sm).clip(CircleShape)
-                        .background(Tokens.palette.muted).clickable { onClick(genre) }.padding(horizontal = Tokens.Spacing.md)
-                        .wrapContentHeightCentered(),
-                )
-            }
+private fun GenreChips(genres: List<MergedGenre>, onClick: (MergedGenre) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
+        genres.forEach { genre ->
+            Text(
+                genre.name, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium, color = Tokens.palette.fg,
+                modifier = Modifier.defaultMinSize(minHeight = Tokens.Size.touchTarget - Tokens.Spacing.sm).clip(CircleShape)
+                    .background(Tokens.palette.muted).clickable { onClick(genre) }.padding(horizontal = Tokens.Spacing.md)
+                    .wrapContentHeightCentered(),
+            )
         }
     }
 }
@@ -223,7 +234,11 @@ private fun Results(model: SearchModel, onOpenItem: (MediaItem) -> Unit, onOpenP
             else StateView(Icons.Outlined.WarningAmber, phase.error.message(context), actionTitle = stringResource(R.string.common_retry), onAction = { scope.launch { model.search() } })
         }
         Phase.Loaded -> if (!model.hasResults) {
-            StateView(Icons.Outlined.Search, stringResource(R.string.search_nothing, model.trimmed), message = stringResource(R.string.search_nothing_hint))
+            if (model.filters.activeCount > 0 && model.scope != SearchScope.People && model.items.isNotEmpty()) {
+                StateView(Icons.Outlined.Search, stringResource(R.string.common_no_results))
+            } else {
+                StateView(Icons.Outlined.Search, stringResource(R.string.search_nothing, model.trimmed), message = stringResource(R.string.search_nothing_hint))
+            }
         } else {
             val titles = model.visibleTitles
             LazyVerticalGrid(

@@ -5,8 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,7 +46,7 @@ import com.brebond.tipsarr.core.api.WatchedFilter
 import com.brebond.tipsarr.design.Tokens
 import com.brebond.tipsarr.design.palette
 import com.brebond.tipsarr.ui.ButtonKind
-import com.brebond.tipsarr.ui.Chip
+import com.brebond.tipsarr.ui.GenrePicker
 import com.brebond.tipsarr.ui.TipsarrButton
 import com.brebond.tipsarr.ui.TipsarrSheet
 import java.util.Locale
@@ -63,7 +61,7 @@ private fun LibrarySort.title(): Int = when (this) {
 }
 
 /** Genres, year range, minimum rating, runtime, watched state and sort order. Changes apply as you make them. */
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryFiltersSheet(initial: LibraryFilters, facets: LibraryFacets?, onDismiss: () -> Unit, onChange: (LibraryFilters) -> Unit) {
     var filters by remember { mutableStateOf(initial) }
@@ -76,22 +74,16 @@ fun LibraryFiltersSheet(initial: LibraryFilters, facets: LibraryFacets?, onDismi
         ) {
             Text(stringResource(R.string.library_filters), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg, modifier = Modifier.semantics { heading() })
             if (facets != null && facets.genres.isNotEmpty()) Section(stringResource(R.string.library_genres)) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
-                    facets.genres.take(30).forEach { genre ->
-                        val selected = genre.name in filters.genres
-                        Chip(genre.name, selected = selected, onClick = {
-                            if (selected) update(filters.copy(genres = filters.genres - genre.name))
-                            else if (filters.genres.size < 6) update(filters.copy(genres = filters.genres + genre.name))
-                        })
-                    }
-                }
-                val modes = listOf(false to R.string.m_library_genre_all, true to R.string.m_library_genre_any)
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    modes.forEachIndexed { index, (any, label) ->
-                        SegmentedButton(
-                            selected = filters.anyGenre == any, onClick = { update(filters.copy(anyGenre = any)) },
-                            shape = SegmentedButtonDefaults.itemShape(index, modes.size),
-                        ) { Text(stringResource(label)) }
+                GenrePicker(facets.genres.map { it.name }, filters.genres, { update(filters.copy(genres = it)) })
+                if (filters.genres.size > 1) {
+                    val modes = listOf(false to R.string.m_library_genre_all, true to R.string.m_library_genre_any)
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        modes.forEachIndexed { index, (any, label) ->
+                            SegmentedButton(
+                                selected = filters.anyGenre == any, onClick = { update(filters.copy(anyGenre = any)) },
+                                shape = SegmentedButtonDefaults.itemShape(index, modes.size),
+                            ) { Text(stringResource(label)) }
+                        }
                     }
                 }
             }
@@ -163,7 +155,7 @@ fun LibraryFiltersSheet(initial: LibraryFilters, facets: LibraryFacets?, onDismi
 }
 
 @Composable
-private fun Section(title: String, content: @Composable () -> Unit) {
+internal fun Section(title: String, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
         Text(title, fontSize = Tokens.FontSize.headline, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg)
         content()
@@ -171,7 +163,7 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun MenuField(text: String, onClick: () -> Unit) {
+internal fun MenuField(text: String, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().defaultMinSize(minHeight = Tokens.Size.touchTarget).clip(RoundedCornerShape(Tokens.Radius.md))
             .background(Tokens.palette.muted).clickable(onClick = onClick).padding(horizontal = Tokens.Spacing.md),
@@ -183,7 +175,7 @@ private fun MenuField(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun YearMenu(label: String, selected: Int?, years: List<Int>, onSelect: (Int?) -> Unit) {
+internal fun YearMenu(label: String, selected: Int?, years: List<Int>, onSelect: (Int?) -> Unit) {
     var menu by remember { mutableStateOf(false) }
     Box {
         MenuField(selected?.toString() ?: label) { menu = true }

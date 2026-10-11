@@ -70,6 +70,7 @@ fun MediaPoster(item: MediaItem, onClick: () -> Unit, modifier: Modifier = Modif
             modifier = if (menu == null) modifier.clickable(onClick = onClick) else modifier.combinedClickable(onClick = onClick, onLongClick = { open = true }),
             subtitle = subtitle ?: item.releaseYear,
             rank = rank,
+            kind = item.type,
             state = item.state,
             rating = { ScoreLabel(item.type, item.tmdbId, item.voteAverage) },
             poster = { RemoteImage(item.posterPath, TmdbSize.W342, Modifier.fillMaxSize()) },

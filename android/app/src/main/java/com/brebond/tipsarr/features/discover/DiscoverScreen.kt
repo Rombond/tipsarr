@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,9 +20,11 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.HourglassTop
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -66,7 +69,10 @@ private val GUTTER = Tokens.Spacing.lg
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DiscoverScreen(model: DiscoverModel, boxOffice: BoxOfficeModel, onOpenChart: (BoxOfficeChart) -> Unit, onOpenItem: (MediaItem) -> Unit, modifier: Modifier = Modifier) {
+fun DiscoverScreen(
+    model: DiscoverModel, boxOffice: BoxOfficeModel, onOpenChart: (BoxOfficeChart) -> Unit, onOpenItem: (MediaItem) -> Unit,
+    onOpenProfile: () -> Unit, onOpenSettings: () -> Unit, modifier: Modifier = Modifier,
+) {
     var refreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val source = model.source(model.chip)
@@ -78,18 +84,23 @@ fun DiscoverScreen(model: DiscoverModel, boxOffice: BoxOfficeModel, onOpenChart:
         onRefresh = { scope.launch { refreshing = true; model.refreshCurrent(); if (model.chip == DiscoverChip.ForYou) boxOffice.refresh(); refreshing = false } },
         modifier = modifier.fillMaxSize(),
     ) {
-        if (source == null) ForYou(model, boxOffice, onOpenChart, onOpenItem) else Grid(model, model.list(source), onOpenItem)
+        if (source == null) ForYou(model, boxOffice, onOpenChart, onOpenItem, onOpenProfile, onOpenSettings) else Grid(model, model.list(source), onOpenItem, onOpenProfile, onOpenSettings)
     }
 }
 
 @Composable
-private fun Header(model: DiscoverModel, gutter: Dp = GUTTER) {
+private fun Header(model: DiscoverModel, onOpenProfile: () -> Unit, onOpenSettings: () -> Unit, gutter: Dp = GUTTER) {
     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
         Row(Modifier.fillMaxWidth().padding(start = gutter, end = gutter, top = Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 stringResource(R.string.m_tab_discover), fontSize = Tokens.FontSize.largeTitle, fontWeight = FontWeight.Bold,
                 color = Tokens.palette.fg, modifier = Modifier.weight(1f).semantics { heading() },
             )
+            // The buttons' own padding sits in the gutter, so the icons line up with the chips below.
+            Row(Modifier.offset(x = Tokens.Spacing.sm)) {
+                IconButton(onOpenProfile) { Icon(Icons.Outlined.AccountCircle, stringResource(R.string.m_tab_profile), tint = Tokens.palette.fg) }
+                IconButton(onOpenSettings) { Icon(Icons.Outlined.Settings, stringResource(R.string.nav_settings), tint = Tokens.palette.fg) }
+            }
         }
         LazyRow(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), contentPadding = PaddingValues(horizontal = gutter)) {
             items(DiscoverChip.entries) { item ->
@@ -109,14 +120,24 @@ private fun DiscoverChip.title(): Int = when (this) {
 
 /** "For you" chip: the suggestion rows (the server decides which rows, e.g. trending, because you watched). */
 @Composable
-private fun ForYou(model: DiscoverModel, boxOffice: BoxOfficeModel, onOpenChart: (BoxOfficeChart) -> Unit, onOpenItem: (MediaItem) -> Unit) {
+private fun ForYou(
+    model: DiscoverModel, boxOffice: BoxOfficeModel, onOpenChart: (BoxOfficeChart) -> Unit, onOpenItem: (MediaItem) -> Unit,
+    onOpenProfile: () -> Unit, onOpenSettings: () -> Unit,
+) {
     val home = model.home
     LaunchedEffect(home) { home.loadIfNeeded() }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Tokens.Spacing.lg), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg)) {
-        item { Header(model) }
+        item { Header(model, onOpenProfile, onOpenSettings) }
         when (val phase = home.phase) {
-            Phase.Idle, Phase.Loading -> item { RailSkeleton() }
-            is Phase.Failed -> item { ErrorBlock(phase.error) { home.refresh() } }
+            // The box office does not wait for the suggestions (a new account has none yet).
+            Phase.Idle, Phase.Loading -> {
+                item { BoxOfficeRail(boxOffice, onOpenItem, onOpenChart) }
+                item { RailSkeleton() }
+            }
+            is Phase.Failed -> {
+                item { BoxOfficeRail(boxOffice, onOpenItem, onOpenChart) }
+                item { ErrorBlock(phase.error) { home.refresh() } }
+            }
             Phase.Loaded -> if (home.rows.isEmpty()) {
                 item { BoxOfficeRail(boxOffice, onOpenItem, onOpenChart) }
                 item {
@@ -176,7 +197,7 @@ private fun RailSkeleton() {
 
 /** Grid chips (Trending, Upcoming, Movies, TV): adaptive grid with infinite scroll. */
 @Composable
-private fun Grid(model: DiscoverModel, list: MediaListModel, onOpenItem: (MediaItem) -> Unit) {
+private fun Grid(model: DiscoverModel, list: MediaListModel, onOpenItem: (MediaItem) -> Unit, onOpenProfile: () -> Unit, onOpenSettings: () -> Unit) {
     LaunchedEffect(list) { list.loadIfNeeded() }
     LazyVerticalGrid(
         columns = GridCells.Adaptive(104.dp),
@@ -185,7 +206,7 @@ private fun Grid(model: DiscoverModel, list: MediaListModel, onOpenItem: (MediaI
         verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg),
         horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md),
     ) {
-        item(span = { GridItemSpan(maxLineSpan) }) { Header(model, gutter = 0.dp) }
+        item(span = { GridItemSpan(maxLineSpan) }) { Header(model, onOpenProfile, onOpenSettings, gutter = 0.dp) }
         when (val phase = list.phase) {
             Phase.Idle, Phase.Loading -> items(9) { PosterSkeleton() }
             is Phase.Failed -> item(span = { GridItemSpan(maxLineSpan) }) { ErrorBlock(phase.error) { list.refresh() } }

@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.RemoveRedEye
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -93,6 +94,7 @@ fun ProfileScreen(
     onOpenIssues: () -> Unit = {},
     onOpenUsers: () -> Unit = {},
     onOpenSync: () -> Unit = {},
+    onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -107,7 +109,8 @@ fun ProfileScreen(
     ) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Tokens.Spacing.lg), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.x2xl)) {
             item {
-                Row(Modifier.fillMaxWidth().padding(start = GUTTER, end = Tokens.Spacing.sm, top = Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().padding(start = if (onBack != null) Tokens.Spacing.xs else GUTTER, end = Tokens.Spacing.sm, top = Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                    if (onBack != null) IconButton(onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.common_back), tint = Tokens.palette.fg) }
                     Text(
                         stringResource(R.string.m_tab_profile), fontSize = Tokens.FontSize.largeTitle, fontWeight = FontWeight.Bold,
                         color = Tokens.palette.fg, modifier = Modifier.weight(1f).semantics { heading() },

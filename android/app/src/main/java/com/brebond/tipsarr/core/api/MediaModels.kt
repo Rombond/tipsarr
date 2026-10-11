@@ -36,6 +36,7 @@ data class MediaItem(
     val overview: String? = null,
     val releaseDate: String? = null,
     val requestStatus: RequestStatus? = null,
+    val genreIds: List<Int> = emptyList(),
 ) {
     val id: String get() = "${type.name}-$tmdbId"
     val releaseYear: String? get() = releaseDate?.take(4)?.takeIf { it.isNotEmpty() }

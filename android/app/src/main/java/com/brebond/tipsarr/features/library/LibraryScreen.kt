@@ -145,7 +145,7 @@ fun LibraryScreen(model: LibraryModel, onOpen: (MediaRoute) -> Unit, modifier: M
                                 Column { LibraryRow(item, open); HorizontalDivider(color = Tokens.palette.border) }
                             } else {
                                 PosterCard(
-                                    title = item.title, modifier = Modifier.clickable(onClick = open), subtitle = item.year?.toString(), watched = item.watched,
+                                    title = item.title, modifier = Modifier.clickable(onClick = open), subtitle = item.year?.toString(), watched = item.watched, kind = item.type,
                                     rating = { ScoreLabel(item.type, item.tmdbId, item.rating) },
                                     poster = { RemoteImage(item.posterPath, TmdbSize.W342, Modifier.fillMaxSize(), server = true) },
                                 )

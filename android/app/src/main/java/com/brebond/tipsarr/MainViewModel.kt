@@ -29,13 +29,15 @@ import com.brebond.tipsarr.features.person.PersonModel
 import com.brebond.tipsarr.features.person.PersonRoute
 import com.brebond.tipsarr.features.requests.RequestsModel
 import com.brebond.tipsarr.features.search.GenreRoute
+import com.brebond.tipsarr.features.search.MergedGenre
 import com.brebond.tipsarr.features.search.SearchModel
 
 /** A screen pushed above a tab's root (the iOS `NavigationPath` entries). */
 sealed interface Screen {
     class Title(val model: MediaDetailModel) : Screen
     class Person(val model: PersonModel) : Screen
-    class Genre(val route: GenreRoute, val list: MediaListModel) : Screen
+    class Genre(val route: GenreRoute, val movies: MediaListModel?, val shows: MediaListModel?) : Screen
+    data object Profile : Screen
     class Request(val record: RequestRecord) : Screen
     data object Settings : Screen
     data object Accounts : Screen
@@ -92,8 +94,14 @@ class MainViewModel(
 
     fun openTitle(tab: AppTab, route: MediaRoute) = push(tab, Screen.Title(MediaDetailModel(route, api) { me }))
     fun openPerson(tab: AppTab, route: PersonRoute) = push(tab, Screen.Person(PersonModel(route, api)))
-    fun openGenre(tab: AppTab, type: MediaType, id: Int, name: String) =
-        push(tab, Screen.Genre(GenreRoute(type, id, name), MediaListModel(MediaListModel.Source.Genre, api, type to id)))
+    fun openGenre(tab: AppTab, genre: MergedGenre) = push(
+        tab,
+        Screen.Genre(
+            GenreRoute(genre.name, genre.movieId, genre.tvId),
+            genre.movieId?.let { MediaListModel(MediaListModel.Source.Genre, api, MediaType.Movie to it) },
+            genre.tvId?.let { MediaListModel(MediaListModel.Source.Genre, api, MediaType.Tv to it) },
+        ),
+    )
     fun openRequest(tab: AppTab, record: RequestRecord) = push(tab, Screen.Request(record))
     fun open(tab: AppTab, screen: Screen) = push(tab, screen)
 

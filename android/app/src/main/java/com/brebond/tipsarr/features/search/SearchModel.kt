@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.brebond.tipsarr.core.api.ApiError
+import com.brebond.tipsarr.core.api.Availability
 import com.brebond.tipsarr.core.api.Genre
 import com.brebond.tipsarr.core.api.MediaItem
 import com.brebond.tipsarr.core.api.MediaType
@@ -17,6 +18,36 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
 enum class SearchScope { All, Movies, Tv, People }
+
+/** TMDB keeps one genre list for movies and another for shows; a name that exists in both is one entry here. */
+data class MergedGenre(val name: String, val movieId: Int?, val tvId: Int?)
+
+fun mergeGenres(movies: List<Genre>, shows: List<Genre>): List<MergedGenre> {
+    val byName = linkedMapOf<String, MergedGenre>()
+    movies.forEach { byName[it.name.lowercase()] = MergedGenre(it.name, it.id, null) }
+    shows.forEach { g ->
+        val key = g.name.lowercase()
+        byName[key] = byName[key]?.copy(tvId = g.id) ?: MergedGenre(g.name, null, g.id)
+    }
+    return byName.values.sortedBy { it.name.lowercase() }
+}
+
+enum class SearchAvailability { Any, Missing, InLibrary }
+
+enum class SearchSort { Relevance, Rating, Year }
+
+/** What the Filters sheet on Search can change. They apply on the titles already loaded. */
+data class SearchFilters(
+    val genres: Set<String> = emptySet(),
+    val yearFrom: Int? = null,
+    val yearTo: Int? = null,
+    val minRating: Double? = null,
+    val availability: SearchAvailability = SearchAvailability.Any,
+    val sort: SearchSort = SearchSort.Relevance,
+) {
+    val activeCount: Int
+        get() = listOf(genres.isNotEmpty(), yearFrom != null || yearTo != null, minRating != null, availability != SearchAvailability.Any, sort != SearchSort.Relevance).count { it }
+}
 
 class SearchModel(private val api: TipsarrApi, context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("search", Context.MODE_PRIVATE)
@@ -31,10 +62,9 @@ class SearchModel(private val api: TipsarrApi, context: Context) {
         private set
     var loadingMore by mutableStateOf(false)
         private set
-    var movieGenres by mutableStateOf<List<Genre>>(emptyList())
+    var genres by mutableStateOf<List<MergedGenre>>(emptyList())
         private set
-    var tvGenres by mutableStateOf<List<Genre>>(emptyList())
-        private set
+    var filters by mutableStateOf(SearchFilters())
     var recents by mutableStateOf(prefs.getString(RECENTS, null)?.split('\n')?.filter { it.isNotEmpty() } ?: emptyList())
         private set
 
@@ -44,29 +74,55 @@ class SearchModel(private val api: TipsarrApi, context: Context) {
 
     val trimmed: String get() = query.trim()
 
-    /** Titles for the selected scope (people have their own section). */
+    /** Titles for the selected scope (people have their own section), after the filters. */
     val visibleTitles: List<MediaItem>
-        get() = when (scope) {
-            SearchScope.All -> items
-            SearchScope.Movies -> items.filter { it.type == MediaType.Movie }
-            SearchScope.Tv -> items.filter { it.type == MediaType.Tv }
-            SearchScope.People -> emptyList()
+        get() {
+            val scoped = when (scope) {
+                SearchScope.All -> items
+                SearchScope.Movies -> items.filter { it.type == MediaType.Movie }
+                SearchScope.Tv -> items.filter { it.type == MediaType.Tv }
+                SearchScope.People -> return emptyList()
+            }
+            return applyFilters(scoped)
         }
+
+    private fun applyFilters(list: List<MediaItem>): List<MediaItem> {
+        val f = filters
+        if (f.activeCount == 0) return list
+        val ids = HashSet<Int>()
+        genres.filter { it.name in f.genres }.forEach { g -> g.movieId?.let(ids::add); g.tvId?.let(ids::add) }
+        val kept = list.filter { item ->
+            val year = item.releaseYear?.toIntOrNull()
+            (f.genres.isEmpty() || item.genreIds.any { it in ids }) &&
+                (f.yearFrom == null || (year != null && year >= f.yearFrom)) &&
+                (f.yearTo == null || (year != null && year <= f.yearTo)) &&
+                (f.minRating == null || item.voteAverage >= f.minRating) &&
+                when (f.availability) {
+                    SearchAvailability.Any -> true
+                    SearchAvailability.Missing -> item.availability == Availability.None
+                    SearchAvailability.InLibrary -> item.availability != Availability.None
+                }
+        }
+        return when (f.sort) {
+            SearchSort.Relevance -> kept
+            SearchSort.Rating -> kept.sortedByDescending { it.voteAverage }
+            SearchSort.Year -> kept.sortedByDescending { it.releaseDate.orEmpty() }
+        }
+    }
 
     val hasResults: Boolean
         get() = when (scope) {
-            SearchScope.All -> items.isNotEmpty() || people.isNotEmpty()
+            SearchScope.All -> visibleTitles.isNotEmpty() || people.isNotEmpty()
             SearchScope.People -> people.isNotEmpty()
             else -> visibleTitles.isNotEmpty()
         }
 
     suspend fun loadGenres() {
-        if (movieGenres.isNotEmpty()) return
+        if (genres.isNotEmpty()) return
         coroutineScope {
             val movies = async { runCatching { api.genres(MediaType.Movie) }.getOrNull() }
             val shows = async { runCatching { api.genres(MediaType.Tv) }.getOrNull() }
-            movieGenres = movies.await().orEmpty()
-            tvGenres = shows.await().orEmpty()
+            genres = mergeGenres(movies.await().orEmpty(), shows.await().orEmpty())
         }
     }
 

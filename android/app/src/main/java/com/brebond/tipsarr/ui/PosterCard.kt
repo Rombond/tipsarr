@@ -29,6 +29,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.brebond.tipsarr.R
+import com.brebond.tipsarr.core.api.MediaType
 import com.brebond.tipsarr.design.Tokens
 import com.brebond.tipsarr.design.palette
 
@@ -43,6 +46,7 @@ fun PosterCard(
     subtitle: String? = null,
     state: RequestState? = null,
     watched: Boolean = false,
+    kind: MediaType? = null,
     rank: Int? = null,
     rating: (@Composable () -> Unit)? = null,
     poster: @Composable () -> Unit = {},
@@ -53,8 +57,9 @@ fun PosterCard(
         if (subtitle != null) append(", ").append(subtitle)
     }
     val stateLabel = state?.let { stringResource(it.title) }
+    val kindLabel = kind?.let { stringResource(if (it == MediaType.Tv) R.string.m_poster_tv else R.string.m_poster_movie) }
     Column(
-        modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = description + (stateLabel?.let { ", $it" } ?: "") },
+        modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = description + (kindLabel?.let { ", $it" } ?: "") + (stateLabel?.let { ", $it" } ?: "") },
         verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm),
     ) {
         Box(
@@ -69,10 +74,18 @@ fun PosterCard(
                     modifier = Modifier.align(Alignment.BottomStart).padding(Tokens.Spacing.sm).clip(CircleShape).background(Color.Black.copy(alpha = 0.6f)).defaultMinSize(minWidth = 22.dp, minHeight = 22.dp).wrapContentSize(),
                 )
             }
+            if (kindLabel != null) {
+                // Top left, like the web card; the watched eye (library only) moves below it.
+                Text(
+                    kindLabel.uppercase(), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1,
+                    modifier = Modifier.align(Alignment.TopStart).padding(Tokens.Spacing.sm).clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.7f)).padding(horizontal = 7.dp, vertical = 2.dp),
+                )
+            }
             if (watched) {
                 Icon(
                     Icons.Filled.Visibility, contentDescription = null, tint = Color.White,
-                    modifier = Modifier.align(Alignment.TopStart).padding(Tokens.Spacing.sm).clip(CircleShape)
+                    modifier = Modifier.align(Alignment.TopStart).padding(start = Tokens.Spacing.sm, top = if (kindLabel != null) 30.dp else Tokens.Spacing.sm).clip(CircleShape)
                         .background(Color.Black.copy(alpha = 0.55f)).padding(5.dp).size(12.dp),
                 )
             }

@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Search
@@ -108,16 +107,15 @@ import com.brebond.tipsarr.design.palette
 import com.brebond.tipsarr.features.discover.DiscoverScreen
 import com.brebond.tipsarr.ui.StateView
 
-/** Same order as the iOS app: Discover, Requests, Library, Profile, Search (Search is the last tab). */
+/** Bottom tabs: Discover, Requests, Library, Search. Profile and Settings open from the top right of Discover. */
 enum class AppTab(val title: Int, val icon: ImageVector) {
     Discover(R.string.m_tab_discover, Icons.Outlined.Explore),
     Requests(R.string.m_tab_requests, Icons.Outlined.Checklist),
     Library(R.string.m_tab_library, Icons.Outlined.VideoLibrary),
-    Profile(R.string.m_tab_profile, Icons.Outlined.AccountCircle),
     Search(R.string.m_tab_search, Icons.Outlined.Search),
 }
 
-/** The signed-in app: five tabs in a bottom bar. Only Discover exists so far. */
+/** The signed-in app: four tabs in a bottom bar (a rail on wide windows). */
 @Composable
 fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session: SessionManager, settings: AppSettings, onLanguageChanged: () -> Unit) {
     val context = LocalContext.current
@@ -170,7 +168,7 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                 if (record != null) model.openRequest(AppTab.Requests, record)
                 tab = AppTab.Requests
             }
-            is DeepLinkTarget.Issue -> { model.reset(AppTab.Profile); model.open(AppTab.Profile, Screen.Issue(target.id)); tab = AppTab.Profile }
+            is DeepLinkTarget.Issue -> { model.reset(AppTab.Discover); model.open(AppTab.Discover, Screen.Issue(target.id)); tab = AppTab.Discover }
             DeepLinkTarget.Discover -> { model.reset(AppTab.Discover); tab = AppTab.Discover }
             DeepLinkTarget.Library -> { model.reset(AppTab.Library); tab = AppTab.Library }
             DeepLinkTarget.Requests -> { model.reset(AppTab.Requests); tab = AppTab.Requests }
@@ -193,12 +191,27 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                                 onOpenPerson = { model.openPerson(tab, it) },
                             )
                             is Screen.Person -> PersonScreen(top.model, onBack = { model.back(tab) }, onOpenItem = openTitle)
-                            is Screen.Genre -> GenreScreen(top.route, top.list, onBack = { model.back(tab) }, onOpenItem = openTitle)
+                            is Screen.Genre -> GenreScreen(top.route, top.movies, top.shows, onBack = { model.back(tab) }, onOpenItem = openTitle)
                             is Screen.Request -> RequestDetailScreen(
                                 top.record, model.requests, profile.name,
                                 onBack = { model.back(tab) },
                                 onOpenTitle = { model.openTitle(tab, it) },
                             )
+                            Screen.Profile -> Box(Modifier.fillMaxSize().statusBarsPadding()) {
+                                ProfileScreen(
+                                    model.profile, profile, model.avatarVersion,
+                                    onOpenSettings = { model.open(tab, Screen.Settings) },
+                                    onOpenRequests = { tab = AppTab.Requests },
+                                    onOpenWatchlist = { model.open(tab, Screen.Watchlist) },
+                                    onOpenTitle = { model.openTitle(tab, it) },
+                                    onOpenRequest = { model.openRequest(tab, it) },
+                                    onOpenStats = { model.open(tab, Screen.Stats) },
+                                    onOpenIssues = { model.open(tab, Screen.Issues) },
+                                    onOpenUsers = { model.open(tab, Screen.Users) },
+                                    onOpenSync = { model.open(tab, Screen.Sync) },
+                                    onBack = { model.back(tab) },
+                                )
+                            }
                             Screen.Settings -> SettingsScreen(
                                 account, profile, model.api, settings, session.accounts.accounts.size, serverVersion,
                                 onBack = { model.back(tab) },
@@ -234,26 +247,17 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
     val renderRoot: @Composable (AppTab) -> Unit = { current ->
         when (current) {
 
-                    AppTab.Discover -> DiscoverScreen(model.discover, model.boxOffice, onOpenChart = { model.open(tab, Screen.BoxOffice(it)) }, onOpenItem = openTitle)
+                    AppTab.Discover -> DiscoverScreen(
+                        model.discover, model.boxOffice, onOpenChart = { model.open(tab, Screen.BoxOffice(it)) }, onOpenItem = openTitle,
+                        onOpenProfile = { model.open(tab, Screen.Profile) }, onOpenSettings = { model.open(tab, Screen.Settings) },
+                    )
                     AppTab.Library -> LibraryScreen(model.library, onOpen = { model.openTitle(tab, it) })
                     AppTab.Requests -> RequestsScreen(model.requests, onOpen = { model.openRequest(tab, it) }, onOpenDiscover = { tab = AppTab.Discover })
                     AppTab.Search -> SearchScreen(
                         model.search,
                         onOpenItem = openTitle,
                         onOpenPerson = { model.openPerson(tab, it) },
-                        onOpenGenre = { type, genre -> model.openGenre(tab, type, genre.id, genre.name) },
-                    )
-                    AppTab.Profile -> ProfileScreen(
-                        model.profile, profile, model.avatarVersion,
-                        onOpenSettings = { model.open(tab, Screen.Settings) },
-                        onOpenRequests = { tab = AppTab.Requests },
-                        onOpenWatchlist = { model.open(tab, Screen.Watchlist) },
-                        onOpenTitle = { model.openTitle(tab, it) },
-                        onOpenRequest = { model.openRequest(tab, it) },
-                        onOpenStats = { model.open(tab, Screen.Stats) },
-                        onOpenIssues = { model.open(tab, Screen.Issues) },
-                        onOpenUsers = { model.open(tab, Screen.Users) },
-                        onOpenSync = { model.open(tab, Screen.Sync) },
+                        onOpenGenre = { model.openGenre(tab, it) },
                     )
             else -> StateView(current.icon, stringResource(current.title))
         }
@@ -261,7 +265,6 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
     /** What the right pane shows while nothing is opened. */
     val renderEmpty: @Composable (AppTab) -> Unit = { current ->
         when (current) {
-            AppTab.Profile -> renderScreen(Screen.Stats)
             AppTab.Search -> TrendingPane(model.trending, openTitle)
             else -> StateView(Icons.Outlined.ViewSidebar, stringResource(R.string.m_pane_select))
         }
