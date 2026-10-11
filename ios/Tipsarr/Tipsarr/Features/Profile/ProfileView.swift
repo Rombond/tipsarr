@@ -49,10 +49,6 @@ struct ProfileView: View {
                     Button { dismiss() } label: { Image(systemName: "xmark") }
                         .accessibilityLabel(Text("m.library.close"))
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(value: ProfileRoute.settings) { Image(systemName: "gearshape") }
-                        .accessibilityLabel(Text("nav.settings"))
-                }
             }
             .navigationDestination(for: ProfileRoute.self) { ProfileDestination(route: $0, account: account, profile: profile).paneInset() }
             .mediaDestinations()

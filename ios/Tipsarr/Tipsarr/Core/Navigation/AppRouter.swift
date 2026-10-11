@@ -30,10 +30,18 @@ final class AppRouter {
     /// Selected request in the two-column Requests screen (wide windows); the stack uses `requestsPath`.
     var requestsSelection: String?
 
-    func openProfile(settings: Bool = false) {
+    /// Settings is its own sheet, separate from Profile.
+    var settingsOpen = false
+    var settingsPath = NavigationPath()
+
+    func openProfile() {
         profilePath = NavigationPath()
-        if settings { profilePath.append(ProfileRoute.settings) }
         profileOpen = true
+    }
+
+    func openSettings() {
+        settingsPath = NavigationPath()
+        settingsOpen = true
     }
 
     /// Shows the screen of a link. Titles open at the root of their tab with the new screen on top.

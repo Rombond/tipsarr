@@ -45,6 +45,10 @@ struct MainTabView: View {
             }
             .tipsarrSheet(detents: [.large])
         }
+        .sheet(isPresented: $router.settingsOpen) {
+            SettingsScreen(account: account, profile: profile, path: $router.settingsPath) { router.settingsOpen = false }
+                .tipsarrSheet(detents: [.large])
+        }
         .environment(\.imageSource, ImageSource(serverURL: account.serverURL, token: account.token))
         .environment(\.appContext, AppContext(api: api, profile: profile))
         .environment(\.ratingProvider, ratings)
@@ -168,7 +172,7 @@ struct MainTabView: View {
 
     @ViewBuilder private func content(_ tab: AppTab) -> some View {
         switch tab {
-        case .discover: DiscoverView(api: api, path: $router.discoverPath, openProfile: { router.openProfile() }, openSettings: { router.openProfile(settings: true) })
+        case .discover: DiscoverView(api: api, path: $router.discoverPath, openProfile: { router.openProfile() }, openSettings: { router.openSettings() })
         case .search: SearchView(api: api)
         case .requests: RequestsView(api: api, canManage: profile.can(.manageRequests), canViewAll: profile.can(.requestView), path: $router.requestsPath, selection: $router.requestsSelection) { router.tab = .discover }
         case .library: LibraryView(api: api, path: $router.libraryPath)

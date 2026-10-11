@@ -22,19 +22,6 @@ extension ProfileView {
             VStack(spacing: Tokens.Spacing.lg) {
                 headerCard(vertical: true)
                 statTiles(vertical: true)
-                NavigationLink(value: ProfileRoute.settings) {
-                    HStack(spacing: Tokens.Spacing.md) {
-                        Image(systemName: "gearshape").frame(width: 24)
-                        Text("nav.settings").font(.body.weight(.medium))
-                        Spacer()
-                        Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg)
-                    }
-                    .padding(.horizontal, Tokens.Spacing.lg)
-                    .frame(minHeight: 56)
-                    .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
-                    .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
-                }
-                .buttonStyle(.plain)
             }
             .frame(width: 300)
             VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {

@@ -138,6 +138,7 @@ struct SettingsView: View {
                     // Full row width: the dialog points at the middle of the row, right above the text.
                     Label { Text("m.settings.sign_out") } icon: { Image(systemName: "rectangle.portrait.and.arrow.right") }
                         .frame(maxWidth: .infinity, alignment: .center)
+                        .foregroundStyle(Tokens.palette.destructive)
                 }
                 // On the button itself, so the dialog appears next to it.
                 .confirmationDialog(Text("m.settings.sign_out_confirm"), isPresented: $confirmSignOut, titleVisibility: .visible) {
@@ -307,6 +308,27 @@ private extension RatingSource {
         case .imdb: "m.settings.rating_imdb"
         case .metacritic: "m.settings.rating_metacritic"
         case .rottenTomatoes: "m.settings.rating_rt"
+        }
+    }
+}
+
+/// Settings as its own sheet (opened from Discover), with its own navigation stack for Devices, Accounts and the icon picker.
+struct SettingsScreen: View {
+    let account: Account
+    let profile: Profile
+    @Binding var path: NavigationPath
+    var close: () -> Void = {}
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            SettingsView(account: account, profile: profile)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(action: close) { Image(systemName: "xmark") }
+                            .accessibilityLabel(Text("m.library.close"))
+                    }
+                }
+                .navigationDestination(for: ProfileRoute.self) { ProfileDestination(route: $0, account: account, profile: profile).paneInset() }
         }
     }
 }
