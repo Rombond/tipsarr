@@ -19,6 +19,15 @@ class AppSettings(context: Context) {
     var language by mutableStateOf(prefs.getString(LANGUAGE, null))
         private set
 
+    /** Teasers sound: off once the person muted a trailer, until they turn it back on. Sound is on by default. */
+    var teaserMuted by mutableStateOf(prefs.getBoolean(TEASER_MUTED, false))
+        private set
+
+    fun updateTeaserMuted(value: Boolean) {
+        teaserMuted = value
+        prefs.edit().putBoolean(TEASER_MUTED, value).apply()
+    }
+
     fun updateTheme(value: AppTheme) {
         theme = value
         prefs.edit().putString(THEME, value.name).apply()
@@ -33,6 +42,7 @@ class AppSettings(context: Context) {
         private const val PREFS = "app_settings"
         private const val THEME = "theme"
         private const val LANGUAGE = "language"
+        private const val TEASER_MUTED = "teaser_muted"
         /** The languages of locales/languages.json (generated). */
         val supported = GeneratedLanguages.all
 

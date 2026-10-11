@@ -1,0 +1,109 @@
+package com.brebond.tipsarr.features.teasers
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.brebond.tipsarr.core.api.ApiError
+import com.brebond.tipsarr.core.api.RequestStatus
+import com.brebond.tipsarr.core.api.Teaser
+import com.brebond.tipsarr.core.api.TipsarrApi
+import com.brebond.tipsarr.core.api.markTeaserSeen
+import com.brebond.tipsarr.core.api.setBlocklisted
+import com.brebond.tipsarr.core.api.setWatchlisted
+import com.brebond.tipsarr.core.api.teasers
+import com.brebond.tipsarr.features.discover.Phase
+
+/**
+ * The Teasers feed. Lives in the main view model, so the card the person was on is still there after
+ * opening a title and coming back. A title is reported as seen when they swipe past it.
+ */
+class TeasersModel(private val api: TipsarrApi) {
+    val items = mutableStateListOf<Teaser>()
+    var phase by mutableStateOf<Phase>(Phase.Idle)
+        private set
+    /** True when the server has nothing new left. */
+    var done by mutableStateOf(false)
+        private set
+    var loadingMore by mutableStateOf(false)
+        private set
+    /** The card on screen. */
+    var page by mutableIntStateOf(0)
+
+    private val seen = HashSet<String>()
+
+    suspend fun loadIfNeeded() {
+        if (phase == Phase.Idle) refresh()
+    }
+
+    suspend fun refresh() {
+        phase = Phase.Loading
+        try {
+            val feed = api.teasers(BATCH, emptyList())
+            items.clear()
+            items.addAll(feed.items)
+            seen.clear()
+            page = 0
+            done = feed.done
+            phase = Phase.Loaded
+        } catch (e: ApiError) {
+            phase = Phase.Failed(e)
+        }
+    }
+
+    /** Loads the next batch when the person is near the end. */
+    suspend fun loadMore() {
+        if (phase != Phase.Loaded || done || loadingMore) return
+        loadingMore = true
+        try {
+            val feed = api.teasers(BATCH, items.map { it.key })
+            val known = items.map { it.id }.toSet()
+            items.addAll(feed.items.filter { it.id !in known })
+            if (feed.done || feed.items.isEmpty()) done = true
+        } catch (_: ApiError) {
+            // try again on the next swipe
+        } finally {
+            loadingMore = false
+        }
+    }
+
+    /** Reports the card as swiped past (once). Best effort. */
+    suspend fun markSeen(teaser: Teaser) {
+        if (!seen.add(teaser.id)) return
+        try { api.markTeaserSeen(teaser.type, teaser.tmdbId) } catch (_: ApiError) { seen.remove(teaser.id) }
+    }
+
+    /** "Not interested": blocklist the title and drop the card (the next one slides in). */
+    suspend fun hide(teaser: Teaser) {
+        api.setBlocklisted(true, teaser.type, teaser.tmdbId)
+        items.remove(teaser)
+        if (page >= items.size) page = (items.size - 1).coerceAtLeast(0)
+    }
+
+    /** The trailer cannot be embedded: skip it for good without any message. */
+    suspend fun skip(teaser: Teaser) {
+        markSeen(teaser)
+        items.remove(teaser)
+        if (page >= items.size) page = (items.size - 1).coerceAtLeast(0)
+    }
+
+    suspend fun toggleWatchlist(teaser: Teaser) {
+        val on = !teaser.watchlisted
+        api.setWatchlisted(on, teaser.type, teaser.tmdbId)
+        replace(teaser) { it.copy(watchlisted = on) }
+    }
+
+    /** A request was made from the card: show it as requested, or approved when it was approved at once. */
+    fun requested(teaser: Teaser, approved: Boolean) =
+        replace(teaser) { it.copy(requestStatus = if (approved) RequestStatus.Approved else RequestStatus.Pending) }
+
+    private fun replace(teaser: Teaser, change: (Teaser) -> Teaser) {
+        val at = items.indexOfFirst { it.id == teaser.id }
+        if (at >= 0) items[at] = change(items[at])
+    }
+
+    private companion object {
+        const val BATCH = 8
+    }
+}

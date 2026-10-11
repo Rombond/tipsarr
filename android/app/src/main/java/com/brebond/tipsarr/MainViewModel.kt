@@ -31,6 +31,7 @@ import com.brebond.tipsarr.features.requests.RequestsModel
 import com.brebond.tipsarr.features.search.GenreRoute
 import com.brebond.tipsarr.features.search.MergedGenre
 import com.brebond.tipsarr.features.search.SearchModel
+import com.brebond.tipsarr.features.teasers.TeasersModel
 
 /** A screen pushed above a tab's root (the iOS `NavigationPath` entries). */
 sealed interface Screen {
@@ -69,6 +70,7 @@ class MainViewModel(
     val search = SearchModel(api, context)
     val requests = RequestsModel(api) { me }
     val library = LibraryModel(api)
+    val teasers = TeasersModel(api)
     /** Right-pane default of the Search tab on wide windows. */
     val trending = MediaListModel(MediaListModel.Source.Trending, api)
     val profile = ProfileModel(api) { me }

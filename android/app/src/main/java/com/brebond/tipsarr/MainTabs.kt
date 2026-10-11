@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.Badge
@@ -73,6 +74,7 @@ import com.brebond.tipsarr.features.requests.RequestDetailScreen
 import com.brebond.tipsarr.features.requests.RequestsScreen
 import com.brebond.tipsarr.features.search.GenreScreen
 import com.brebond.tipsarr.features.search.SearchScreen
+import com.brebond.tipsarr.features.teasers.TeasersScreen
 import com.brebond.tipsarr.features.detail.MediaRoute
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -107,15 +109,16 @@ import com.brebond.tipsarr.design.palette
 import com.brebond.tipsarr.features.discover.DiscoverScreen
 import com.brebond.tipsarr.ui.StateView
 
-/** Bottom tabs: Discover, Requests, Library, Search. Profile and Settings open from the top right of Discover. */
+/** Bottom tabs: Teasers, Discover (the start tab), Requests, Library, Search. Profile and Settings open from the top right of Discover. */
 enum class AppTab(val title: Int, val icon: ImageVector) {
+    Teasers(R.string.m_tab_teasers, Icons.Outlined.PlayCircle),
     Discover(R.string.m_tab_discover, Icons.Outlined.Explore),
     Requests(R.string.m_tab_requests, Icons.Outlined.Checklist),
     Library(R.string.m_tab_library, Icons.Outlined.VideoLibrary),
     Search(R.string.m_tab_search, Icons.Outlined.Search),
 }
 
-/** The signed-in app: four tabs in a bottom bar (a rail on wide windows). */
+/** The signed-in app: five tabs in a bottom bar (a rail on wide windows). */
 @Composable
 fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session: SessionManager, settings: AppSettings, onLanguageChanged: () -> Unit) {
     val context = LocalContext.current
@@ -251,6 +254,7 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                         model.discover, model.boxOffice, onOpenChart = { model.open(tab, Screen.BoxOffice(it)) }, onOpenItem = openTitle,
                         onOpenProfile = { model.open(tab, Screen.Profile) }, onOpenSettings = { model.open(tab, Screen.Settings) },
                     )
+                    AppTab.Teasers -> TeasersScreen(model.teasers, model.api, { model.me }, settings, onOpenItem = openTitle)
                     AppTab.Library -> LibraryScreen(model.library, onOpen = { model.openTitle(tab, it) })
                     AppTab.Requests -> RequestsScreen(model.requests, onOpen = { model.openRequest(tab, it) }, onOpenDiscover = { tab = AppTab.Discover })
                     AppTab.Search -> SearchScreen(
@@ -294,14 +298,14 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                 // Requests and Search split into list and detail on a wide window; every tab does next to a hinge.
                 val split = hinge != null || (maxWidth >= 700.dp && (tab == AppTab.Requests || tab == AppTab.Search))
                 val single: @Composable () -> Unit = {
-                    if (top != null) renderScreen(top) else Box(Modifier.fillMaxSize().statusBarsPadding()) { renderRoot(tab) }
+                    if (top != null) renderScreen(top) else Box(Modifier.fillMaxSize().rootInsets(tab)) { renderRoot(tab) }
                 }
                 val body: @Composable () -> Unit = {
                     if (!split) {
                         single()
                     } else {
                         Row(Modifier.fillMaxSize()) {
-                            Box(Modifier.width(400.dp).fillMaxHeight().statusBarsPadding()) { renderRoot(tab) }
+                            Box(Modifier.width(400.dp).fillMaxHeight().rootInsets(tab)) { renderRoot(tab) }
                             VerticalDivider(color = Tokens.palette.border)
                             Box(Modifier.weight(1f).fillMaxHeight()) {
                                 if (top != null) renderScreen(top) else Box(Modifier.fillMaxSize().statusBarsPadding()) { renderEmpty(tab) }
@@ -317,7 +321,7 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                             contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Start),
                             bottomBar = navigationBar,
                         ) { padding ->
-                            Box(Modifier.fillMaxSize().padding(padding).statusBarsPadding()) { renderRoot(tab) }
+                            Box(Modifier.fillMaxSize().padding(padding).rootInsets(tab)) { renderRoot(tab) }
                         }
                         Spacer(Modifier.width(hinge.right - hinge.left).fillMaxHeight())
                         Box(Modifier.weight(1f).fillMaxHeight()) {
@@ -356,6 +360,9 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
         }
     }
 }
+
+/** Tab roots pad for the status bar; the Teasers video runs edge to edge. */
+private fun Modifier.rootInsets(tab: AppTab): Modifier = if (tab == AppTab.Teasers) this else statusBarsPadding()
 
 @Composable
 private fun TabIcon(item: AppTab, pending: Int) {
