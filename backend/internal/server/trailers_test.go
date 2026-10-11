@@ -1,7 +1,9 @@
 package server_test
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Rombond/tipsarr/backend/internal/jobs"
 	"github.com/Rombond/tipsarr/backend/internal/trailers"
 )
 
@@ -29,6 +32,8 @@ type fakeResolver struct {
 	resolved []string
 	touched  []string
 	cleared  int
+	updates  int
+	newer    string // the version yt-dlp "updates" to
 	health   trailers.Health
 }
 
@@ -95,6 +100,16 @@ func newFakeResolver(t *testing.T, dir string, instant bool) *fakeResolver {
 		f.touched = append(f.touched, in.Keys...)
 		f.mu.Unlock()
 		w.WriteHeader(204)
+	})
+	mux.HandleFunc("/v1/update", func(w http.ResponseWriter, r *http.Request) {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		f.updates++
+		before := f.health.YtdlpVersion
+		if f.newer != "" {
+			f.health.YtdlpVersion = f.newer
+		}
+		reply(w, 200, map[string]any{"before": before, "after": f.health.YtdlpVersion, "updated": f.newer != ""})
 	})
 	mux.HandleFunc("/v1/cache", func(w http.ResponseWriter, r *http.Request) {
 		f.mu.Lock()
@@ -478,5 +493,31 @@ func TestTeaserVideoEndpoint(t *testing.T) {
 	_ = os.Remove(filepath.Join(e.files.Dir(), key+".mp4"))
 	if resp, _ := rangeGet(t, e, path, "", bob); resp.StatusCode != 404 {
 		t.Fatalf("missing file = %d", resp.StatusCode)
+	}
+}
+
+func TestYtdlpUpdateJob(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, _ := setupUsers(t, e)
+	f := newFakeResolver(t, filepath.Join(t.TempDir(), "trailers"), true)
+	trailerSvc := trailers.New(e.st, t.TempDir())
+
+	// off: skipped, the resolver is not called
+	if _, err := trailerSvc.UpdateTools(context.Background()); !errors.Is(err, jobs.ErrSkipped) || f.updates != 0 {
+		t.Fatalf("disabled = %v, updates %d", err, f.updates)
+	}
+	enableFiles(t, e, admin, f)
+
+	msg, err := trailerSvc.UpdateTools(context.Background())
+	if err != nil || msg.Code != "srv.job.ytdlp.current" || f.updates != 1 {
+		t.Fatalf("up to date = %+v %v (updates %d)", msg, err, f.updates)
+	}
+	f.newer = "2026.10.20"
+	msg, err = trailerSvc.UpdateTools(context.Background())
+	if err != nil || msg.Code != "srv.job.ytdlp.updated" {
+		t.Fatalf("updated = %+v %v", msg, err)
+	}
+	if msg.Params["from"] != "2026.10.10" || msg.Params["to"] != "2026.10.20" {
+		t.Fatalf("params = %v", msg.Params)
 	}
 }

@@ -24,5 +24,7 @@
   "srv.job.poll.inflight": "{count} demandes en cours",
   "srv.job.housekeeping.purged": "nettoyé",
   "srv.job.skip.teasers_off": "les fichiers de bandes-annonces sont désactivés",
-  "srv.job.trailers.synced": "{ready} fichiers prêts, {pending} en attente, {failed} en échec"
+  "srv.job.trailers.synced": "{ready} fichiers prêts, {pending} en attente, {failed} en échec",
+  "srv.job.ytdlp.updated": "yt-dlp mis à jour de {from} vers {to}",
+  "srv.job.ytdlp.current": "yt-dlp est à jour ({version})"
 }

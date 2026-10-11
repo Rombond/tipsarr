@@ -220,5 +220,7 @@
   "m.teasers.error": "Impossible de charger les bandes-annonces.",
   "m.teasers.mute": "Couper le son",
   "m.teasers.unmute": "Activer le son",
-  "m.teasers.swipe_hint": "Glissez vers le haut pour la bande-annonce suivante"
+  "m.teasers.swipe_hint": "Glissez vers le haut pour la bande-annonce suivante",
+  "m.job.ytdlp-update": "Mise à jour de yt-dlp",
+  "m.job.ytdlp-update.desc": "Cherche une nouvelle version de yt-dlp et remplace aussitôt le binaire du résolveur de bandes-annonces. Ne tourne que lorsque les fichiers de bandes-annonces sont activés."
 }

@@ -220,5 +220,7 @@
   "m.teasers.error": "Could not load trailers.",
   "m.teasers.mute": "Mute",
   "m.teasers.unmute": "Unmute",
-  "m.teasers.swipe_hint": "Swipe up for the next trailer"
+  "m.teasers.swipe_hint": "Swipe up for the next trailer",
+  "m.job.ytdlp-update": "yt-dlp update",
+  "m.job.ytdlp-update.desc": "Checks for a new yt-dlp release and replaces the binary of the trailer resolver right away. Only runs while trailer files are on."
 }

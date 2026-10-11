@@ -152,7 +152,7 @@ func (s *Server) update(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadGateway, map[string]any{"error": oneLine(string(out)), "before": before, "after": after})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"before": before, "after": after})
+	writeJSON(w, http.StatusOK, map[string]any{"before": before, "after": after, "updated": before != after})
 }
 
 func (s *Server) clear(w http.ResponseWriter, r *http.Request) {

@@ -772,5 +772,7 @@
   "search.avail_missing": "Not in library",
   "search.avail_in": "In library",
   "search.sort_relevance": "Relevance",
-  "search.no_match": "No result matches these filters."
+  "search.no_match": "No result matches these filters.",
+  "settings.job.ytdlp-update": "yt-dlp update",
+  "settings.job.ytdlp-update.desc": "Checks for a new yt-dlp release and replaces the binary of the trailer resolver right away. Only runs while trailer files are on."
 }

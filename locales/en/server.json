@@ -24,5 +24,7 @@
   "srv.job.poll.inflight": "{count} requests in flight",
   "srv.job.housekeeping.purged": "purged",
   "srv.job.skip.teasers_off": "trailer files are off",
-  "srv.job.trailers.synced": "{ready} trailer files ready, {pending} waiting, {failed} failed"
+  "srv.job.trailers.synced": "{ready} trailer files ready, {pending} waiting, {failed} failed",
+  "srv.job.ytdlp.updated": "yt-dlp updated from {from} to {to}",
+  "srv.job.ytdlp.current": "yt-dlp is up to date ({version})"
 }

@@ -772,5 +772,7 @@
   "search.avail_missing": "Pas dans la bibliothèque",
   "search.avail_in": "Dans la bibliothèque",
   "search.sort_relevance": "Pertinence",
-  "search.no_match": "Aucun résultat ne correspond à ces filtres."
+  "search.no_match": "Aucun résultat ne correspond à ces filtres.",
+  "settings.job.ytdlp-update": "Mise à jour de yt-dlp",
+  "settings.job.ytdlp-update.desc": "Cherche une nouvelle version de yt-dlp et remplace aussitôt le binaire du résolveur de bandes-annonces. Ne tourne que lorsque les fichiers de bandes-annonces sont activés."
 }

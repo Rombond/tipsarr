@@ -310,6 +310,8 @@
     <string name="m_job_playback_sync_desc">Copie les lectures enregistrées par le plugin Playback Reporting de Jellyfin (facultatif) pour la page Statistiques.</string>
     <string name="m_job_servarr_import">Import Radarr / Sonarr</string>
     <string name="m_job_servarr_import_desc">Ajoute à la liste des demandes les films et séries déjà dans Radarr ou Sonarr.</string>
+    <string name="m_job_ytdlp_update">Mise à jour de yt-dlp</string>
+    <string name="m_job_ytdlp_update_desc">Cherche une nouvelle version de yt-dlp et remplace aussitôt le binaire du résolveur de bandes-annonces. Ne tourne que lorsque les fichiers de bandes-annonces sont activés.</string>
     <string name="m_library_apply">Appliquer</string>
     <string name="m_library_close">Fermer</string>
     <string name="m_library_genre_all">Tous les genres</string>
@@ -704,6 +706,8 @@
     <string name="srv_job_skip_playback_missing">Playback Reporting n’est pas installé dans Jellyfin</string>
     <string name="srv_job_skip_teasers_off">les fichiers de bandes-annonces sont désactivés</string>
     <string name="srv_job_trailers_synced">%1$s fichiers prêts, %2$s en attente, %3$s en échec</string>
+    <string name="srv_job_ytdlp_current">yt-dlp est à jour (%1$s)</string>
+    <string name="srv_job_ytdlp_updated">yt-dlp mis à jour de %1$s vers %2$s</string>
     <string name="state_approved">Approuvé</string>
     <string name="state_available">Disponible</string>
     <string name="state_declined">Refusé</string>

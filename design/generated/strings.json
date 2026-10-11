@@ -790,6 +790,8 @@
   "m.teasers.mute": "Mute",
   "m.teasers.unmute": "Unmute",
   "m.teasers.swipe_hint": "Swipe up for the next trailer",
+  "m.job.ytdlp-update": "yt-dlp update",
+  "m.job.ytdlp-update.desc": "Checks for a new yt-dlp release and replaces the binary of the trailer resolver right away. Only runs while trailer files are on.",
   "push.request.approved": "Request approved",
   "push.request.declined": "Request declined",
   "push.request.failed": "Request failed",
@@ -815,7 +817,9 @@
   "srv.job.poll.inflight": "{count} requests in flight",
   "srv.job.housekeeping.purged": "purged",
   "srv.job.skip.teasers_off": "trailer files are off",
-  "srv.job.trailers.synced": "{ready} trailer files ready, {pending} waiting, {failed} failed"
+  "srv.job.trailers.synced": "{ready} trailer files ready, {pending} waiting, {failed} failed",
+  "srv.job.ytdlp.updated": "yt-dlp updated from {from} to {to}",
+  "srv.job.ytdlp.current": "yt-dlp is up to date ({version})"
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -1608,6 +1612,8 @@
   "m.teasers.mute": "Couper le son",
   "m.teasers.unmute": "Activer le son",
   "m.teasers.swipe_hint": "Glissez vers le haut pour la bande-annonce suivante",
+  "m.job.ytdlp-update": "Mise à jour de yt-dlp",
+  "m.job.ytdlp-update.desc": "Cherche une nouvelle version de yt-dlp et remplace aussitôt le binaire du résolveur de bandes-annonces. Ne tourne que lorsque les fichiers de bandes-annonces sont activés.",
   "push.request.approved": "Demande approuvée",
   "push.request.declined": "Demande refusée",
   "push.request.failed": "Demande en échec",
@@ -1633,6 +1639,8 @@
   "srv.job.poll.inflight": "{count} demandes en cours",
   "srv.job.housekeeping.purged": "nettoyé",
   "srv.job.skip.teasers_off": "les fichiers de bandes-annonces sont désactivés",
-  "srv.job.trailers.synced": "{ready} fichiers prêts, {pending} en attente, {failed} en échec"
+  "srv.job.trailers.synced": "{ready} fichiers prêts, {pending} en attente, {failed} en échec",
+  "srv.job.ytdlp.updated": "yt-dlp mis à jour de {from} vers {to}",
+  "srv.job.ytdlp.current": "yt-dlp est à jour ({version})"
  }
 }

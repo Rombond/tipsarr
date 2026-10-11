@@ -103,6 +103,24 @@ func (s *Service) Enabled(ctx context.Context) bool {
 	return ok
 }
 
+// UpdateTools is the job that keeps yt-dlp current: YouTube changes often and an old yt-dlp stops working. It asks
+// the resolver to update its binary and replaces it directly when a newer release exists. Off when trailer files are off.
+func (s *Service) UpdateTools(ctx context.Context) (i18n.Msg, error) {
+	c, _, err := s.client(ctx)
+	if err != nil {
+		return i18n.M("srv.job.skip.teasers_off"), jobs.ErrSkipped
+	}
+	res, err := c.Update(ctx)
+	if err != nil {
+		return i18n.Msg{}, err
+	}
+	s.ResetHealth() // the next status check shows the new version
+	if res.Updated || (res.Before != "" && res.Before != res.After) {
+		return i18n.M("srv.job.ytdlp.updated", "from", res.Before, "to", res.After), nil
+	}
+	return i18n.M("srv.job.ytdlp.current", "version", res.After), nil
+}
+
 // Health asks the resolver now.
 func (s *Service) Health(ctx context.Context) (*Health, error) {
 	c, _, err := s.client(ctx)

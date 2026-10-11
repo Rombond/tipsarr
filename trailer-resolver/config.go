@@ -45,7 +45,7 @@ func loadConfig() (Config, error) {
 		FFmpeg:       env("RESOLVER_FFMPEG", "ffmpeg"),
 		FFprobe:      env("RESOLVER_FFPROBE", "ffprobe"),
 		Deno:         env("RESOLVER_DENO", "deno"),
-		AutoUpdate:   env("RESOLVER_AUTO_UPDATE", "true") == "true",
+		AutoUpdate:   env("RESOLVER_AUTO_UPDATE", "false") == "true",
 		BreakerAfter: envInt("RESOLVER_BREAKER_AFTER", 5),
 		BreakerFor:   time.Duration(envInt("RESOLVER_BREAKER_HOURS", 6)) * time.Hour,
 		UnusedAfter:  time.Duration(envInt("RESOLVER_UNUSED_DAYS", 30)) * 24 * time.Hour,

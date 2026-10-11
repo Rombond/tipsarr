@@ -157,6 +157,22 @@ func (c *Client) Touch(ctx context.Context, keys []string) error {
 	return err
 }
 
+// UpdateResult is what the resolver reports after asking yt-dlp to update itself.
+type UpdateResult struct {
+	Before  string `json:"before"`
+	After   string `json:"after"`
+	Updated bool   `json:"updated"`
+}
+
+// Update asks the resolver to replace its yt-dlp binary with the newest release. It can take a while.
+func (c *Client) Update(ctx context.Context) (*UpdateResult, error) {
+	long := *c
+	long.http = &http.Client{Timeout: 3 * time.Minute}
+	var out UpdateResult
+	_, err := long.do(ctx, http.MethodPost, "/v1/update", nil, &out)
+	return &out, err
+}
+
 // ClearCache deletes every file the resolver holds.
 func (c *Client) ClearCache(ctx context.Context) error {
 	_, err := c.do(ctx, http.MethodDelete, "/v1/cache", nil, nil)

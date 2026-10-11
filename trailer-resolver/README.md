@@ -58,7 +58,7 @@ Do **not** publish port 8090 outside the Docker network.
 | `RESOLVER_TIMEOUT_SECONDS` | `120` | Per download |
 | `RESOLVER_WORKERS` | `1` | Downloads at the same time |
 | `RESOLVER_BREAKER_AFTER` / `_HOURS` | `5` / `6` | After that many temporary failures in a row, pause downloads for that long |
-| `RESOLVER_AUTO_UPDATE` | `true` | Run `yt-dlp -U` once a day |
+| `RESOLVER_AUTO_UPDATE` | `false` | Run `yt-dlp -U` once a day on its own. Normally off: Tipsarr's job `ytdlp-update` (every 12 hours, only while trailer files are on) asks for the update instead |
 
 ## API (internal, `Authorization: Bearer <key>`)
 
@@ -66,7 +66,7 @@ Do **not** publish port 8090 outside the Docker network.
 - `GET /v1/status/{key}` returns `{status: queued|running|ready|failed, bytes, height, duration, error, permanent}`.
 - `GET /v1/health` returns tool versions, cache size, counts, breaker state and the last error.
 - `POST /v1/touch` `{"keys":[...]}` tells the cache which videos were played (for the cleanup order).
-- `POST /v1/update` runs `yt-dlp -U`. `DELETE /v1/cache` empties the cache.
+- `POST /v1/update` runs `yt-dlp -U` and answers `{before, after, updated}`. `DELETE /v1/cache` empties the cache.
 - `GET /healthz` (no key) is only for the Docker health check.
 
 Only an 11-character YouTube key is accepted (never a URL) and yt-dlp is started with an argument list, never a shell.

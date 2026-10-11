@@ -115,6 +115,7 @@ func run(cfg config.Config) error {
 		trailerDir = filepath.Join(cfg.ConfigDir, "trailers")
 	}
 	trailerFiles := trailers.New(st, trailerDir)
+	jm.Register(jobs.Job{Name: "ytdlp-update", Every: 12 * time.Hour, InitialDelay: 10 * time.Minute, Run: trailerFiles.UpdateTools})
 	jm.Register(jobs.Job{Name: "trailer-files-sync", Every: time.Minute, InitialDelay: 45 * time.Second, Quiet: true, Run: trailerFiles.Sync})
 	lib.OnHistoryChanged = sugg.QueueRefresh
 	box := boxoffice.New(st, mediaSvc, os.Getenv("TIPSARR_BOXOFFICE_URL"))

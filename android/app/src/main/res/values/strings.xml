@@ -310,6 +310,8 @@
     <string name="m_job_playback_sync_desc">Copies the plays recorded by Jellyfin’s Playback Reporting plugin (optional) for the Stats page.</string>
     <string name="m_job_servarr_import">Radarr / Sonarr import</string>
     <string name="m_job_servarr_import_desc">Adds movies and TV shows already in Radarr or Sonarr to the requests list.</string>
+    <string name="m_job_ytdlp_update">yt-dlp update</string>
+    <string name="m_job_ytdlp_update_desc">Checks for a new yt-dlp release and replaces the binary of the trailer resolver right away. Only runs while trailer files are on.</string>
     <string name="m_library_apply">Apply</string>
     <string name="m_library_close">Close</string>
     <string name="m_library_genre_all">All selected</string>
@@ -704,6 +706,8 @@
     <string name="srv_job_skip_playback_missing">Playback Reporting is not installed in Jellyfin</string>
     <string name="srv_job_skip_teasers_off">trailer files are off</string>
     <string name="srv_job_trailers_synced">%1$s trailer files ready, %2$s waiting, %3$s failed</string>
+    <string name="srv_job_ytdlp_current">yt-dlp is up to date (%1$s)</string>
+    <string name="srv_job_ytdlp_updated">yt-dlp updated from %1$s to %2$s</string>
     <string name="state_approved">Approved</string>
     <string name="state_available">Available</string>
     <string name="state_declined">Declined</string>

@@ -4963,6 +4963,38 @@
         }
       }
     },
+    "m.job.ytdlp-update": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yt-dlp update"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mise à jour de yt-dlp"
+          }
+        }
+      }
+    },
+    "m.job.ytdlp-update.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checks for a new yt-dlp release and replaces the binary of the trailer resolver right away. Only runs while trailer files are on."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cherche une nouvelle version de yt-dlp et remplace aussitôt le binaire du résolveur de bandes-annonces. Ne tourne que lorsque les fichiers de bandes-annonces sont activés."
+          }
+        }
+      }
+    },
     "m.library.apply": {
       "localizations": {
         "en": {
@@ -11318,6 +11350,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ fichiers prêts, %2$@ en attente, %3$@ en échec"
+          }
+        }
+      }
+    },
+    "srv.job.ytdlp.current": {
+      "comment": "placeholders: version",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yt-dlp is up to date (%@)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yt-dlp est à jour (%@)"
+          }
+        }
+      }
+    },
+    "srv.job.ytdlp.updated": {
+      "comment": "placeholders: from, to",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yt-dlp updated from %1$@ to %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yt-dlp mis à jour de %1$@ vers %2$@"
           }
         }
       }
