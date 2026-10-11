@@ -28,6 +28,9 @@ class TeasersModel(private val api: TipsarrApi) {
         private set
     var loadingMore by mutableStateOf(false)
         private set
+    /** The server answered `teasers_disabled`: the feature was turned off, the tab goes away. */
+    var disabled by mutableStateOf(false)
+        private set
     /** The card on screen. */
     var page by mutableIntStateOf(0)
 
@@ -48,6 +51,7 @@ class TeasersModel(private val api: TipsarrApi) {
             done = feed.done
             phase = Phase.Loaded
         } catch (e: ApiError) {
+            if (e.isTeasersDisabled) disabled = true
             phase = Phase.Failed(e)
         }
     }
@@ -61,8 +65,8 @@ class TeasersModel(private val api: TipsarrApi) {
             val known = items.map { it.id }.toSet()
             items.addAll(feed.items.filter { it.id !in known })
             if (feed.done || feed.items.isEmpty()) done = true
-        } catch (_: ApiError) {
-            // try again on the next swipe
+        } catch (e: ApiError) {
+            if (e.isTeasersDisabled) disabled = true // otherwise: try again on the next swipe
         } finally {
             loadingMore = false
         }
@@ -102,6 +106,8 @@ class TeasersModel(private val api: TipsarrApi) {
         val at = items.indexOfFirst { it.id == teaser.id }
         if (at >= 0) items[at] = change(items[at])
     }
+
+    private val ApiError.isTeasersDisabled: Boolean get() = this is ApiError.Http && status == 404 && code == "teasers_disabled"
 
     private companion object {
         const val BATCH = 8

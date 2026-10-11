@@ -3529,6 +3529,7 @@ paths:
               - boxoffice-refresh
               - servarr-import
               - playback-sync
+              - ytdlp-update
             type: string
       responses:
         "202":

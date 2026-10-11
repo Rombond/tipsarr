@@ -59,6 +59,7 @@ import com.brebond.tipsarr.core.support.LocalTitleMenu
 import com.brebond.tipsarr.core.support.LocalToast
 import com.brebond.tipsarr.core.support.TitleMenu
 import com.brebond.tipsarr.core.support.ToastCenter
+import com.brebond.tipsarr.core.support.ToastKind
 import com.brebond.tipsarr.core.support.ToastHost
 import com.brebond.tipsarr.features.detail.MediaDetailScreen
 import com.brebond.tipsarr.features.admin.IssueDetailScreen
@@ -124,7 +125,7 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val model: MainViewModel = viewModel(key = account.id, factory = viewModelFactory {
-        initializer { MainViewModel(TipsarrApi(account.serverUrl, account.token), context.applicationContext, profile, RatingSource.from(profile.ratingSource)) }
+        initializer { MainViewModel(TipsarrApi(account.serverUrl, account.token), context.applicationContext, profile, RatingSource.from(profile.ratingSource), session.serverStatus?.features?.teasers == true) }
     })
     val source = remember(account.id) { ImageSource(account.serverUrl, account.token) }
     val loader = remember(account.id) { createImageLoader(context, source) }
@@ -156,6 +157,18 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
         onDispose { lifecycle.removeObserver(observer); model.live.stop() }
     }
     OnTick(model.live.requestsTick) { model.refreshPending() }
+
+    // The Teasers tab only exists while the server has trailer files on: read it at launch and whenever the app comes back.
+    LaunchedEffect(account.id) { model.refreshFeatures() }
+    DisposableEffect(lifecycle, account.id) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) scope.launch { model.refreshFeatures() }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(model.teasersOn) { if (!model.teasersOn && tab == AppTab.Teasers) tab = AppTab.Discover }
+    val tabs = AppTab.entries.filter { it != AppTab.Teasers || model.teasersOn }
 
     // A link for this account's server opens its screen; links for another server wait for that account.
     val link by session.pendingLink.collectAsState()
@@ -254,7 +267,17 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                         model.discover, model.boxOffice, onOpenChart = { model.open(tab, Screen.BoxOffice(it)) }, onOpenItem = openTitle,
                         onOpenProfile = { model.open(tab, Screen.Profile) }, onOpenSettings = { model.open(tab, Screen.Settings) },
                     )
-                    AppTab.Teasers -> TeasersScreen(model.teasers, model.api, { model.me }, settings, onOpenItem = openTitle)
+                    AppTab.Teasers -> if (model.teasersOn) {
+                        val context = LocalContext.current
+                        TeasersScreen(
+                            model.teasers, model.api, { model.me }, settings, onOpenItem = openTitle,
+                            onDisabled = {
+                                model.teasersGone()
+                                tab = AppTab.Discover
+                                toasts.show(context.getString(R.string.m_teasers_error), ToastKind.Error)
+                            },
+                        )
+                    }
                     AppTab.Library -> LibraryScreen(model.library, onOpen = { model.openTitle(tab, it) })
                     AppTab.Requests -> RequestsScreen(model.requests, onOpen = { model.openRequest(tab, it) }, onOpenDiscover = { tab = AppTab.Discover })
                     AppTab.Search -> SearchScreen(
@@ -275,7 +298,7 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
     }
     val navigationBar: @Composable () -> Unit = {
         NavigationBar(containerColor = Tokens.palette.card) {
-            AppTab.entries.forEach { item ->
+            tabs.forEach { item ->
                 NavigationBarItem(
                     selected = tab == item,
                     onClick = { tab = item },
@@ -331,7 +354,7 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                     rail -> Row(Modifier.fillMaxSize()) {
                         NavigationRail(containerColor = Tokens.palette.card, modifier = Modifier.statusBarsPadding()) {
                             Spacer(Modifier.weight(1f))
-                            AppTab.entries.forEach { item ->
+                            tabs.forEach { item ->
                                 NavigationRailItem(
                                     selected = tab == item,
                                     onClick = { tab = item },

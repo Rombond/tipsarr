@@ -18,7 +18,13 @@ data class Teaser(
     val requestStatus: RequestStatus? = null,
     val genreIds: List<Int> = emptyList(),
     val watchlisted: Boolean = false,
+    /** "file": a downloaded copy the server serves ([videoUrl]); "youtube": the embedded player ([trailerKey]). */
+    val player: String = "youtube",
+    val videoUrl: String? = null,
+    val videoHeight: Int = 0,
 ) {
+    val hasFile: Boolean get() = player == "file" && !videoUrl.isNullOrEmpty()
+
     val id: String get() = "${type.name}-$tmdbId"
 
     /** The key the server uses to exclude titles the app already holds (`movie:603`). */

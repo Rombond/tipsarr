@@ -61,6 +61,7 @@ class MainViewModel(
     context: Context,
     profile: Profile,
     ratingSource: RatingSource,
+    teasersAvailable: Boolean = false,
 ) : ViewModel() {
     /** The signed-in person; replaced when the session reads the profile again, so rights follow changes. */
     var me by mutableStateOf(profile)
@@ -71,6 +72,15 @@ class MainViewModel(
     val requests = RequestsModel(api) { me }
     val library = LibraryModel(api)
     val teasers = TeasersModel(api)
+    /** The server has trailer files switched on and its resolver answers: only then the Teasers tab exists. */
+    var teasersOn by mutableStateOf(teasersAvailable)
+        private set
+    fun teasersGone() { teasersOn = false }
+
+    /** Reads `/status` again (launch, resume, account switch): the owner can turn the feature on or off any time. */
+    suspend fun refreshFeatures() {
+        runCatching { api.status() }.getOrNull()?.let { teasersOn = it.features.teasers }
+    }
     /** Right-pane default of the Search tab on wide windows. */
     val trending = MediaListModel(MediaListModel.Source.Trending, api)
     val profile = ProfileModel(api) { me }

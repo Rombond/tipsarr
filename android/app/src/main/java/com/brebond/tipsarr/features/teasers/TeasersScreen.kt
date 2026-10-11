@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,6 +48,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -97,9 +100,12 @@ fun TeasersScreen(
     settings: AppSettings,
     onOpenItem: (MediaItem) -> Unit,
     modifier: Modifier = Modifier,
+    onDisabled: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     LaunchedEffect(model) { model.loadIfNeeded() }
+    // The server turned trailer files off: the tab goes away (the caller shows a message and returns to Discover).
+    LaunchedEffect(model.disabled) { if (model.disabled) onDisabled() }
     // A narrow 9:16 column in the middle on wide windows, the whole width on a phone.
     BoxWithConstraints(modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
         val column = minOf(maxWidth, maxHeight * 9f / 16f)
@@ -198,7 +204,7 @@ private fun Feed(model: TeasersModel, api: TipsarrApi, me: () -> Profile, settin
         scope.launch { try { work() } catch (e: ApiError) { toast?.show(e.message(context), ToastKind.Error) } }
     }
 
-    VerticalPager(pager, Modifier.fillMaxSize(), key = { index -> model.items.getOrNull(index)?.id ?: "end" }) { index ->
+    VerticalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1, key = { index -> model.items.getOrNull(index)?.id ?: "end" }) { index ->
         val teaser = model.items.getOrNull(index)
         if (teaser == null) {
             DarkState(stringResource(R.string.m_teasers_done))
@@ -206,6 +212,8 @@ private fun Feed(model: TeasersModel, api: TipsarrApi, me: () -> Profile, settin
             TeaserCard(
                 teaser = teaser,
                 active = index == settled && resumed,
+                preload = index == settled + 1,
+                api = api,
                 muted = settings.teaserMuted,
                 showHint = index == 0 && !hintGone,
                 mayRequest = me().mayRequest(teaser.type),
@@ -233,6 +241,8 @@ private fun Feed(model: TeasersModel, api: TipsarrApi, me: () -> Profile, settin
 private fun TeaserCard(
     teaser: Teaser,
     active: Boolean,
+    preload: Boolean,
+    api: TipsarrApi,
     muted: Boolean,
     showHint: Boolean,
     mayRequest: Boolean,
@@ -245,17 +255,33 @@ private fun TeaserCard(
     onUnplayable: () -> Unit,
 ) {
     var playing by remember(teaser.id) { mutableStateOf(false) }
+    // A card with a downloaded file plays it natively; if that fails once, the YouTube embed takes over for this card.
+    var fileFailed by remember(teaser.id) { mutableStateOf(false) }
+    val native = teaser.hasFile && !fileFailed
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        // The backdrop shows until the video runs (and stays behind it).
-        RemoteImage(teaser.backdropPath ?: teaser.posterPath, TmdbSize.W780, Modifier.fillMaxSize().alpha(if (playing) 0f else 0.55f))
-        if (active) {
-            YouTubePlayer(
-                teaser.trailerKey, muted, Modifier.fillMaxSize(),
-                onPlaying = { playing = it },
-                onUnplayable = onUnplayable,
-            )
-            // The WebView would swallow the swipe; this layer lets the pager see it.
-            Box(Modifier.fillMaxSize().pointerInput(Unit) {})
+        if (native) {
+            // Own player: the whole 16:9 picture over a blurred, dimmed copy of the backdrop (cropping a trailer to 9:16 would lose
+            // two thirds of the picture). The next card is prepared in advance, paused.
+            RemoteImage(teaser.backdropPath ?: teaser.posterPath, TmdbSize.W780, Modifier.fillMaxSize().alpha(0.45f).blur(36.dp))
+            if (active || preload) {
+                FilePlayer(
+                    url = api.serverUrl.trimEnd('/') + teaser.videoUrl, token = api.token, active = active, muted = muted,
+                    modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).align(Alignment.Center).offset(y = (-96).dp),
+                    onFailed = { fileFailed = true },
+                )
+            }
+        } else {
+            // The backdrop shows until the video runs (and stays behind it).
+            RemoteImage(teaser.backdropPath ?: teaser.posterPath, TmdbSize.W780, Modifier.fillMaxSize().alpha(if (playing) 0f else 0.55f))
+            if (active) {
+                YouTubePlayer(
+                    teaser.trailerKey, muted, Modifier.fillMaxSize(),
+                    onPlaying = { playing = it },
+                    onUnplayable = onUnplayable,
+                )
+                // The WebView would swallow the swipe; this layer lets the pager see it.
+                Box(Modifier.fillMaxSize().pointerInput(Unit) {})
+            }
         }
         Box(Modifier.fillMaxWidth().fillMaxHeight(0.45f).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)))))
 

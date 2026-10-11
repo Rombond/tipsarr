@@ -12,7 +12,7 @@ data class ServerStatus(
     val features: Features,
 ) {
     @Serializable
-    data class Features(val push: Boolean)
+    data class Features(val push: Boolean, val teasers: Boolean = false)
 }
 
 @Serializable
