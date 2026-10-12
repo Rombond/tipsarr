@@ -34,6 +34,9 @@ type fakeArr struct {
 	rt          atomic.Int32 // the Rotten Tomatoes score Radarr reports (0 = none)
 	downloading atomic.Bool
 	moviesJSON  atomic.Value // string: body of GET /movie without a tmdbId filter
+	seriesJSON  atomic.Value // string: body of GET /series?tvdbId=... (the series Sonarr already tracks)
+	episodeJSON atomic.Value // string: body of GET /episode
+	movieByTMDB atomic.Value // string: body of GET /movie?tmdbId=...
 }
 
 func newFakeArr(t *testing.T, kind string) *fakeArr {
@@ -74,6 +77,10 @@ func newFakeArr(t *testing.T, kind string) *fakeArr {
 			w.WriteHeader(http.StatusCreated)
 			out(`{"id":42,"tmdbId":5}`)
 		case kind == "radarr" && p == "/movie":
+			if v, ok := f.movieByTMDB.Load().(string); ok && r.URL.Query().Get("tmdbId") != "" {
+				out(v)
+				return
+			}
 			if r.URL.Query().Get("tmdbId") == "" {
 				if v, ok := f.moviesJSON.Load().(string); ok {
 					out(v)
@@ -93,7 +100,17 @@ func newFakeArr(t *testing.T, kind string) *fakeArr {
 			f.recordPost(r)
 			w.WriteHeader(http.StatusCreated)
 			out(`{"id":77,"tvdbId":81189}`)
+		case kind == "sonarr" && p == "/episode":
+			if v, ok := f.episodeJSON.Load().(string); ok {
+				out(v)
+				return
+			}
+			out(`[]`)
 		case kind == "sonarr" && p == "/series":
+			if v, ok := f.seriesJSON.Load().(string); ok && r.URL.Query().Get("tvdbId") != "" {
+				out(v)
+				return
+			}
 			out(`[]`)
 		case kind == "sonarr" && p == "/series/lookup":
 			out(`[{"title":"Show Two","tvdbId":81189,"seasons":[{"seasonNumber":0,"monitored":false},{"seasonNumber":1,"monitored":false},{"seasonNumber":2,"monitored":false}]}]`)
@@ -778,5 +795,57 @@ func TestUnwatchedRequests(t *testing.T) {
 	_, body = call(t, e.app, "GET", "/api/v1/requests/counts", "", admin)
 	if strings.Contains(body, "unwatched") {
 		t.Fatalf("the counts are about statuses only: %s", body)
+	}
+}
+
+// A show Sonarr already monitors cannot be requested again: the seasons say so, and the server refuses them.
+func TestSonarrMonitoringBlocksRequests(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	sonarr := newFakeArr(t, "sonarr")
+	addInstance(t, e, admin, "sonarr", sonarr)
+	// Sonarr tracks tvdb 81189 (TMDB show 2): season 1 and 2 monitored, season 1 has 4 files out of 10
+	sonarr.seriesJSON.Store(`[{"id":77,"tvdbId":81189,"monitored":true,"seasons":[{"seasonNumber":1,"monitored":true},{"seasonNumber":2,"monitored":true}]}]`)
+	sonarr.episodeJSON.Store(`[{"seasonNumber":1,"episodeNumber":1,"hasFile":true,"monitored":true},{"seasonNumber":1,"episodeNumber":2,"hasFile":false,"monitored":true},{"seasonNumber":1,"episodeNumber":3,"hasFile":false,"monitored":false}]`)
+
+	_, body := call(t, e.app, "GET", "/api/v1/media/tv/2", "", bob)
+	if strings.Count(body, `"monitored":true`) != 2 {
+		t.Fatalf("detail should flag both seasons as monitored: %s", body)
+	}
+	_, body = call(t, e.app, "GET", "/api/v1/media/tv/2/seasons/1", "", bob)
+	if !strings.Contains(body, `"state":"available"`) || !strings.Contains(body, `"state":"monitored"`) || !strings.Contains(body, `"state":"missing"`) {
+		t.Fatalf("episode states = %s", body)
+	}
+	for _, in := range []string{`{"type":"tv","tmdbId":2,"seasons":[2]}`, `{"type":"tv","tmdbId":2}`} {
+		resp, body := call(t, e.app, "POST", "/api/v1/requests", in, bob)
+		if resp.StatusCode != http.StatusConflict || !strings.Contains(body, "already_monitored") {
+			t.Fatalf("request %s = %d %s", in, resp.StatusCode, body)
+		}
+	}
+	// a season Sonarr does not monitor can still be asked for
+	sonarr.seriesJSON.Store(`[{"id":77,"tvdbId":81189,"monitored":true,"seasons":[{"seasonNumber":1,"monitored":true},{"seasonNumber":2,"monitored":false}]}]`)
+	if resp, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"tv","tmdbId":2,"seasons":[2]}`, bob); resp.StatusCode != http.StatusCreated {
+		t.Fatalf("unmonitored season = %d %s", resp.StatusCode, body)
+	}
+	if w := sonarr.writes(); len(w) != 0 {
+		t.Fatalf("DRY-RUN LEAK: %v", w)
+	}
+}
+
+// A movie Radarr monitors without a file cannot be requested again.
+func TestRadarrMonitoringBlocksRequests(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	radarr := newFakeArr(t, "radarr")
+	addInstance(t, e, admin, "radarr", radarr)
+	radarr.moviesJSON.Store(`[{"id":42,"tmdbId":5,"monitored":true,"hasFile":false}]`)
+	// /movie?tmdbId=5 is answered with the same list through the fake's filter-free branch only; use the tmdbId branch
+	radarr.movieByTMDB.Store(`[{"id":42,"tmdbId":5,"monitored":true,"hasFile":false}]`)
+	_, body := call(t, e.app, "GET", "/api/v1/media/movie/5", "", bob)
+	if !strings.Contains(body, `"monitored":true`) {
+		t.Fatalf("movie detail should say Radarr monitors it: %s", body)
+	}
+	if resp, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5}`, bob); resp.StatusCode != http.StatusConflict || !strings.Contains(body, "already_monitored") {
+		t.Fatalf("request = %d %s", resp.StatusCode, body)
 	}
 }

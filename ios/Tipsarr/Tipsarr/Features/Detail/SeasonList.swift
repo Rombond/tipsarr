@@ -66,7 +66,10 @@ struct SeasonList: View {
     }
 
     private func meta(_ season: SeasonInfo) -> String {
-        let count = Plural.text("seasons.episodes", count: season.episodeCount)
+        var count = Plural.text("seasons.episodes", count: season.episodeCount)
+        if season.isComplete { count = L10n.string("req.season_in_library") + " · " + count }
+        else if season.libraryEpisodes > 0 { count = L10n.string("req.season_partial", "\(season.libraryEpisodes)", "\(season.episodeCount)") }
+        if season.monitored && !season.isComplete { count += " · " + L10n.string("req.season_monitored") }
         guard let year = season.airDate.flatMap({ $0.count >= 4 ? String($0.prefix(4)) : nil }) else { return count }
         return "\(count) · \(year)"
     }
@@ -103,7 +106,10 @@ private struct EpisodeRow: View {
             }
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: episode.name).font(.subheadline.weight(.semibold))
+                HStack(spacing: Tokens.Spacing.sm) {
+                    Text(verbatim: episode.name).font(.subheadline.weight(.semibold))
+                    if let state = episode.state { Text(verbatim: L10n.string("seasons.ep_\(state)")).font(.caption2.weight(.semibold)).foregroundStyle(Self.color(state)) }
+                }
                 HStack(spacing: Tokens.Spacing.xs) {
                     if !info.isEmpty { Text(verbatim: info) }
                     // Episode scores come from TMDB.
@@ -121,6 +127,14 @@ private struct EpisodeRow: View {
             }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    private static func color(_ state: String) -> Color {
+        switch state {
+        case "available": Tokens.Status.available
+        case "monitored": Tokens.Status.approved
+        default: Tokens.palette.mutedFg
+        }
     }
 
     private var info: String {

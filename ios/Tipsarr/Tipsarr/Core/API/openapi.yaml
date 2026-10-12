@@ -398,6 +398,9 @@ components:
           items:
             type: string
           type: array
+        monitored:
+          description: Radarr (movie) already monitors this title and looks for it
+          type: boolean
         numberOfEpisodes:
           format: int64
           type: integer
@@ -548,6 +551,12 @@ components:
         runtimeMinutes:
           format: int64
           type: integer
+        state:
+          enum:
+            - available
+            - monitored
+            - missing
+          type: string
         stillPath:
           type: string
         voteAverage:
@@ -1936,6 +1945,9 @@ components:
           description: Episodes of this season already in the library
           format: int64
           type: integer
+        monitored:
+          description: Sonarr already monitors this season
+          type: boolean
         name:
           type: string
         number:
@@ -1948,6 +1960,7 @@ components:
         - name
         - episodeCount
         - libraryEpisodes
+        - monitored
       type: object
     SeasonDetail:
       additionalProperties: false

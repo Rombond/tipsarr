@@ -87,6 +87,8 @@ type Season struct {
 	PosterPath   string `json:"posterPath,omitempty"`
 	// LibraryEpisodes counts the episodes of this season the Jellyfin library holds (0 when the show is not in it).
 	LibraryEpisodes int `json:"libraryEpisodes" doc:"Episodes of this season already in the library"`
+	// Monitored: Sonarr already tracks this season, it fetches what is missing by itself (and airing episodes as they come).
+	Monitored bool `json:"monitored" doc:"Sonarr already monitors this season"`
 }
 
 // Complete says the library holds every announced episode of the season.
@@ -125,6 +127,7 @@ type Detail struct {
 	JellyfinServerID       string       `json:"jellyfinServerId,omitempty" doc:"Id of the Jellyfin server, with the item id enough to build a link into the Swiftfin app"`
 	Recommendations        []Item       `json:"recommendations"`
 	Similar                []Item       `json:"similar"`
+	Monitored              bool         `json:"monitored,omitempty" doc:"Radarr (movie) already monitors this title and looks for it"`
 }
 
 type Episode struct {
@@ -135,6 +138,9 @@ type Episode struct {
 	StillPath   string  `json:"stillPath,omitempty"`
 	Runtime     int     `json:"runtimeMinutes,omitempty"`
 	VoteAverage float64 `json:"voteAverage"`
+	// State is what Sonarr knows: "available" (a file exists), "monitored" (no file yet, Sonarr looks for it),
+	// "missing" (no file and not monitored). Empty when no Sonarr instance could tell.
+	State string `json:"state,omitempty" enum:"available,monitored,missing"`
 }
 
 type SeasonDetail struct {

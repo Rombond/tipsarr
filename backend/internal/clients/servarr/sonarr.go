@@ -39,6 +39,20 @@ func (s Series) MissingSeasons() []int {
 	return out
 }
 
+// Episode is the part of a Sonarr episode the app needs.
+type Episode struct {
+	SeasonNumber  int  `json:"seasonNumber"`
+	EpisodeNumber int  `json:"episodeNumber"`
+	HasFile       bool `json:"hasFile"`
+	Monitored     bool `json:"monitored"`
+}
+
+// Episodes lists the episodes of one season of a series.
+func (c *Client) Episodes(ctx context.Context, seriesID, season int) ([]Episode, error) {
+	var out []Episode
+	return out, c.get(ctx, fmt.Sprintf("/episode?seriesId=%d&seasonNumber=%d", seriesID, season), &out)
+}
+
 // AllSeries lists every series Sonarr tracks.
 func (c *Client) AllSeries(ctx context.Context) ([]Series, error) {
 	var out []Series

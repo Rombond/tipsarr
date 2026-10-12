@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 data class Genre(val id: Int, val name: String)
 
 @Serializable
-data class SeasonInfo(val number: Int, val name: String, val episodeCount: Int = 0, val airDate: String? = null, val libraryEpisodes: Int = 0) {
+data class SeasonInfo(val number: Int, val name: String, val episodeCount: Int = 0, val airDate: String? = null, val libraryEpisodes: Int = 0, val monitored: Boolean = false) {
     val id: Int get() = number
     /** The library holds every announced episode: nothing left to request. */
     val isComplete: Boolean get() = episodeCount > 0 && libraryEpisodes >= episodeCount
@@ -153,6 +153,8 @@ data class Episode(
     val airDate: String? = null,
     val runtimeMinutes: Int? = null,
     val stillPath: String? = null,
+    /** "available", "monitored" or "missing" as Sonarr knows it; null when no Sonarr could tell. */
+    val state: String? = null,
 ) {
     val id: Int get() = number
 }

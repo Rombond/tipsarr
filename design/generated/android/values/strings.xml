@@ -88,6 +88,7 @@
     <string name="discover_upcoming_hint">Movies that are about to be released.</string>
     <string name="error_admin_only">Only administrators can do this.</string>
     <string name="error_already_available">This title is already available in the library.</string>
+    <string name="error_already_monitored">Radarr/Sonarr already monitors this title and will fetch what is missing.</string>
     <string name="error_api_key_required">An API key is required.</string>
     <string name="error_bad_genre_roots">Genre folders must map genre ids to folders.</string>
     <string name="error_bad_language">The language must look like fr or fr-FR.</string>
@@ -640,6 +641,7 @@
     <string name="req_root_folder">Folder</string>
     <string name="req_season_badge">Season %1$s</string>
     <string name="req_season_in_library">In library</string>
+    <string name="req_season_monitored">Already monitored</string>
     <string name="req_season_partial">%1$s of %2$s episodes in library</string>
     <string name="req_seasons">Season %1$s | Seasons %1$s</string>
     <string name="req_select_all">Select all</string>
@@ -702,6 +704,9 @@
     <string name="search_tab_all">All</string>
     <string name="search_tagged">Tagged “%1$s”</string>
     <string name="search_tags">Tags:</string>
+    <string name="seasons_ep_available">In library</string>
+    <string name="seasons_ep_missing">Missing</string>
+    <string name="seasons_ep_monitored">Searching</string>
     <string name="seasons_episodes">%1$s episode | %1$s episodes</string>
     <string name="seasons_loading">Loading episodes…</string>
     <string name="seasons_no_preview">No preview</string>

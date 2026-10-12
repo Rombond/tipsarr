@@ -23,6 +23,8 @@ func reqErr(err error) error {
 		return fail(503, "tmdb_not_configured", "TMDB API key is not configured")
 	case errors.Is(err, requests.ErrAlreadyAvailable):
 		return fail(409, "already_available", err.Error())
+	case errors.Is(err, requests.ErrAlreadyMonitored):
+		return fail(409, "already_monitored", err.Error())
 	case errors.Is(err, requests.ErrDuplicate):
 		return fail(409, "duplicate_request", err.Error())
 	case errors.Is(err, requests.ErrBadState):

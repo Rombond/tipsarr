@@ -74,7 +74,7 @@ fun RequestSheet(model: MediaDetailModel, onDismiss: () -> Unit, onDone: (Reques
     val scope = rememberCoroutineScope()
     val detail = model.detail
     val isTv = model.route.type == MediaType.Tv
-    val selectable = model.regularSeasons.filter { it.number !in model.coveredSeasons && !it.isComplete }
+    val selectable = model.regularSeasons.filter { it.number !in model.coveredSeasons && !it.isComplete && !it.monitored }
     var selected by remember { mutableStateOf(selectable.map { it.number }.toSet()) }
     var profileId by remember { mutableStateOf(model.options?.qualityProfileId) }
     var folder by remember { mutableStateOf(model.options?.let { it.rootFolder.ifEmpty { it.rootFolders.firstOrNull()?.path } }) }
@@ -126,7 +126,8 @@ fun RequestSheet(model: MediaDetailModel, onDismiss: () -> Unit, onDone: (Reques
                     }
                     model.regularSeasons.forEach { season ->
                         val inLibrary = season.isComplete
-                        val covered = season.number in model.coveredSeasons || inLibrary
+                        val tracked = season.monitored && !inLibrary
+                        val covered = season.number in model.coveredSeasons || inLibrary || tracked
                         val isSelected = season.number in selected
                         Row(
                             Modifier.fillMaxWidth().defaultMinSize(minHeight = Tokens.Size.touchTarget + Tokens.Spacing.md)
@@ -144,12 +145,13 @@ fun RequestSheet(model: MediaDetailModel, onDismiss: () -> Unit, onDone: (Reques
                                 Text(
                                     when {
                                         inLibrary -> context.getString(R.string.req_season_in_library)
+                                        tracked -> context.getString(R.string.req_season_monitored)
                                         season.libraryEpisodes > 0 -> context.getString(R.string.req_season_partial, season.libraryEpisodes, season.episodeCount)
                                         else -> context.plural("seasons_episodes", season.episodeCount)
                                     },
                                     fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
                             }
-                            if (covered && !inLibrary) StatusBadge(model.request?.state ?: com.brebond.tipsarr.ui.RequestState.Requested)
+                            if (covered && !inLibrary && !tracked) StatusBadge(model.request?.state ?: com.brebond.tipsarr.ui.RequestState.Requested)
                         }
                     }
                 }

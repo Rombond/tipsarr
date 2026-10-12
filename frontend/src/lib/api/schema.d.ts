@@ -1625,6 +1625,8 @@ export interface components {
             keywords: components["schemas"]["Keyword"][];
             /** @description Spoken languages, English names */
             languages?: string[];
+            /** @description Radarr (movie) already monitors this title and looks for it */
+            monitored?: boolean;
             /** Format: int64 */
             numberOfEpisodes?: number;
             /** Format: int64 */
@@ -1696,6 +1698,8 @@ export interface components {
             overview?: string;
             /** Format: int64 */
             runtimeMinutes?: number;
+            /** @enum {string} */
+            state?: "available" | "monitored" | "missing";
             stillPath?: string;
             /** Format: double */
             voteAverage: number;
@@ -2372,6 +2376,8 @@ export interface components {
              * @description Episodes of this season already in the library
              */
             libraryEpisodes: number;
+            /** @description Sonarr already monitors this season */
+            monitored: boolean;
             name: string;
             /** Format: int64 */
             number: number;

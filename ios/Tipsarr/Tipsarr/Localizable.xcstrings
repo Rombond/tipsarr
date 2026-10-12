@@ -1397,6 +1397,22 @@
         }
       }
     },
+    "error.already_monitored": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radarr/Sonarr already monitors this title and will fetch what is missing."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radarr/Sonarr suit déjà ce titre et récupérera ce qui manque."
+          }
+        }
+      }
+    },
     "error.api_key_required": {
       "localizations": {
         "en": {
@@ -10269,6 +10285,22 @@
         }
       }
     },
+    "req.season_monitored": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already monitored"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déjà suivie"
+          }
+        }
+      }
+    },
     "req.season_partial": {
       "comment": "placeholders: have, total",
       "localizations": {
@@ -11273,6 +11305,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mots-clés :"
+          }
+        }
+      }
+    },
+    "seasons.ep_available": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In library"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dans la bibliothèque"
+          }
+        }
+      }
+    },
+    "seasons.ep_missing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missing"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manquant"
+          }
+        }
+      }
+    },
+    "seasons.ep_monitored": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Searching"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche en cours"
           }
         }
       }

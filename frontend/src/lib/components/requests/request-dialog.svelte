@@ -33,7 +33,7 @@
 
 	const regular = $derived(seasons.filter((s) => s.number > 0));
 	// seasons the library already holds in full cannot be asked for again
-	const wanted = $derived(regular.filter((s) => !(s.episodeCount > 0 && s.libraryEpisodes >= s.episodeCount)));
+	const wanted = $derived(regular.filter((s) => !(s.episodeCount > 0 && s.libraryEpisodes >= s.episodeCount) && !s.monitored));
 	const askSeasons = $derived(type === 'tv' && regular.length > 1);
 	let picked = $state<number[]>([]);
 	let profile = $state('');
@@ -93,6 +93,8 @@
 						<span class="ml-auto text-muted-foreground">
 							{#if complete}
 								{t('req.season_in_library')}
+							{:else if s.monitored}
+								{t('req.season_monitored')}{#if have > 0} · {t('req.season_partial', { have, total: s.episodeCount })}{/if}
 							{:else if have > 0}
 								{t('req.season_partial', { have, total: s.episodeCount })}
 							{:else}

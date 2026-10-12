@@ -10,6 +10,8 @@ struct SeasonInfo: Sendable, Hashable, Identifiable {
     var airDate: String?
     /// Episodes of this season the library already holds.
     var libraryEpisodes: Int = 0
+    /// Sonarr already monitors the season and fetches what is missing.
+    var monitored: Bool = false
     /// The library holds every announced episode: nothing left to request.
     var isComplete: Bool { episodeCount > 0 && libraryEpisodes >= episodeCount }
     var id: Int { number }
@@ -23,6 +25,8 @@ struct EpisodeInfo: Sendable, Hashable, Identifiable {
     var runtimeMinutes: Int?
     var stillPath: String?
     var voteAverage: Double
+    /// "available", "monitored" or "missing" as Sonarr knows it; nil when no Sonarr could tell.
+    var state: String?
     var id: Int { number }
 }
 

@@ -209,6 +209,9 @@ func registerDiscover(api huma.API, d Deps) {
 			return nil, err
 		}
 		r, err := d.Media.Detail(ctx, o, in.Type, in.ID)
+		if err == nil {
+			d.Requests.Annotate(ctx, r) // what Radarr/Sonarr already monitor
+		}
 		return &struct{ Body *media.Detail }{r}, mediaErr(err)
 	})
 
@@ -224,6 +227,9 @@ func registerDiscover(api huma.API, d Deps) {
 			return nil, err
 		}
 		r, err := d.Media.Season(ctx, o, in.ID, in.Season)
+		if err == nil {
+			d.Requests.AnnotateEpisodes(ctx, o, in.ID, r) // which episodes Sonarr already has
+		}
 		return &struct{ Body *media.SeasonDetail }{r}, mediaErr(err)
 	})
 

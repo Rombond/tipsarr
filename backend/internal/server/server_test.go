@@ -230,6 +230,10 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 			"seasons":[{"season_number":1,"name":"Season 1","episode_count":10},{"season_number":2,"name":"Season 2","episode_count":10}],
 			"external_ids":{"imdb_id":"tt2","tvdb_id":81189},"recommendations":{"results":[]},"similar":{"results":[]}}`))
 	}))
+	mux.HandleFunc("/tv/2/season/1", hit(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"season_number":1,"name":"Season 1","episodes":[
+			{"episode_number":1,"name":"One"},{"episode_number":2,"name":"Two"},{"episode_number":3,"name":"Three"}]}`))
+	}))
 	mux.HandleFunc("/search/multi", hit(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"page":1,"total_pages":1,"results":[
 			{"id":1,"media_type":"movie","title":"Movie One"},{"id":8,"media_type":"person","name":"Zed","profile_path":"/z.jpg"}]}`))

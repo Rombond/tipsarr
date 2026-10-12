@@ -49,6 +49,9 @@
 					{:else if (s.libraryEpisodes ?? 0) > 0}
 						<span class="text-teal-600 dark:text-teal-400">{t('req.season_partial', { have: s.libraryEpisodes ?? 0, total: s.episodeCount })}</span>
 					{/if}
+					{#if s.monitored && !(s.episodeCount > 0 && (s.libraryEpisodes ?? 0) >= s.episodeCount)}
+						<span class="text-sky-600 dark:text-sky-400">{t('req.season_monitored')}</span> ·
+					{/if}
 					{t('seasons.episodes', { count: s.episodeCount })}{#if s.airDate}&nbsp;· {s.airDate.slice(0, 4)}{/if}
 					<ChevronIcon class="size-4 transition-transform {openSeason === s.number ? 'rotate-180' : ''}" />
 				</span>
@@ -73,7 +76,12 @@
 										<span class="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-semibold text-white">E{e.number}</span>
 									</div>
 									<div class="min-w-0 py-0.5">
-										<p class="font-medium leading-snug">{e.name}</p>
+										<p class="font-medium leading-snug">
+											{e.name}
+											{#if e.state}
+												<span class="ml-1 rounded px-1.5 py-0.5 align-middle text-[11px] font-semibold {e.state === 'available' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : e.state === 'monitored' ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400' : 'bg-muted text-muted-foreground'}">{t(e.state === 'available' ? 'seasons.ep_available' : e.state === 'monitored' ? 'seasons.ep_monitored' : 'seasons.ep_missing')}</span>
+											{/if}
+										</p>
 										<p class="text-xs text-muted-foreground">
 											{date(e.airDate)}{#if e.runtimeMinutes} · {t('time.min', { count: e.runtimeMinutes })}{/if}{#if e.voteAverage} · ★ {e.voteAverage.toFixed(1)}{/if}
 										</p>

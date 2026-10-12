@@ -30,6 +30,7 @@ import (
 var (
 	ErrAlreadyAvailable = errors.New("already available in the library")
 	ErrDuplicate        = errors.New("this title already has an active request")
+	ErrAlreadyMonitored = errors.New("Radarr/Sonarr already monitors it and will fetch what is missing")
 	ErrNoInstance       = errors.New("no Radarr/Sonarr instance is configured for this media type")
 	ErrBadState         = errors.New("request is not in a state that allows this")
 	ErrForbidden        = errors.New("not allowed")
@@ -289,6 +290,10 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 	if d.Availability == media.AvailabilityAvailable {
 		return nil, ErrAlreadyAvailable
 	}
+	s.Annotate(ctx, d)
+	if d.Monitored {
+		return nil, ErrAlreadyMonitored
+	}
 	active, err := s.store.ActiveRequestStatuses(ctx, p.Type, []int{p.TMDBID})
 	if err != nil {
 		return nil, err
@@ -299,11 +304,12 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 
 	var seasons []int
 	if p.Type == "tv" {
-		valid, done := map[int]bool{}, map[int]bool{}
+		valid, done, tracked := map[int]bool{}, map[int]bool{}, map[int]bool{}
 		for _, sn := range d.Seasons {
 			if sn.Number > 0 {
 				valid[sn.Number] = true
-				done[sn.Number] = sn.Complete()
+				tracked[sn.Number] = sn.Monitored && !sn.Complete()
+				done[sn.Number] = sn.Complete() || sn.Monitored
 			}
 		}
 		if len(valid) == 0 {
@@ -316,6 +322,11 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 				}
 			}
 			if len(seasons) == 0 {
+				for n := range tracked {
+					if tracked[n] {
+						return nil, ErrAlreadyMonitored
+					}
+				}
 				return nil, ErrAlreadyAvailable
 			}
 		} else {
@@ -323,6 +334,9 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 			for _, n := range p.Seasons {
 				if !valid[n] {
 					return nil, fmt.Errorf("%w: season %d does not exist", ErrInvalid, n)
+				}
+				if tracked[n] {
+					return nil, fmt.Errorf("%w: season %d", ErrAlreadyMonitored, n)
 				}
 				if done[n] {
 					return nil, fmt.Errorf("%w: season %d is already in the library", ErrAlreadyAvailable, n)

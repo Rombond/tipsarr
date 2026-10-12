@@ -15,7 +15,7 @@ extension TipsarrAPI {
             return try ok.body.json.episodes.map {
                 EpisodeInfo(number: Int($0.number), name: $0.name, overview: $0.overview.flatMap { $0.isEmpty ? nil : $0 },
                             airDate: $0.airDate.flatMap { $0.isEmpty ? nil : $0 }, runtimeMinutes: $0.runtimeMinutes.map(Int.init),
-                            stillPath: $0.stillPath, voteAverage: $0.voteAverage)
+                            stillPath: $0.stillPath, voteAverage: $0.voteAverage, state: $0.state?.rawValue)
             }
         }
     }
@@ -130,7 +130,7 @@ extension MediaDetail {
             availability: availability,
             requestOpen: d.requestStatus != nil,
             seasons: (d.seasons ?? []).map {
-                SeasonInfo(number: Int($0.number), name: $0.name, episodeCount: Int($0.episodeCount), airDate: $0.airDate, libraryEpisodes: Int($0.libraryEpisodes))
+                SeasonInfo(number: Int($0.number), name: $0.name, episodeCount: Int($0.episodeCount), airDate: $0.airDate, libraryEpisodes: Int($0.libraryEpisodes), monitored: $0.monitored)
             },
             numberOfSeasons: d.numberOfSeasons.map(Int.init),
             numberOfEpisodes: d.numberOfEpisodes.map(Int.init),
