@@ -24,7 +24,7 @@ struct RequestSheet: View {
         return Plural.text(isTV ? "req.quota_tv" : "req.quota_movie", count: left, [String(left), String(q.days)])
     }
     private var isTV: Bool { model.route.type == .tv }
-    private var selectable: [SeasonInfo] { model.regularSeasons.filter { !model.coveredSeasons.contains($0.number) } }
+    private var selectable: [SeasonInfo] { model.regularSeasons.filter { !model.coveredSeasons.contains($0.number) && !$0.isComplete } }
 
     var body: some View {
         ScrollView {
@@ -93,7 +93,8 @@ struct RequestSheet: View {
                 .disabled(selectable.isEmpty)
             }
             ForEach(model.regularSeasons) { season in
-                let covered = model.coveredSeasons.contains(season.number)
+                let inLibrary = season.isComplete
+                let covered = model.coveredSeasons.contains(season.number) || inLibrary
                 Button { toggle(season.number) } label: {
                     HStack(spacing: Tokens.Spacing.md) {
                         Image(systemName: selectedSeasons.contains(season.number) || covered ? "checkmark.circle.fill" : "circle")
@@ -101,11 +102,13 @@ struct RequestSheet: View {
                             .foregroundStyle(covered ? Tokens.palette.mutedFg : Tokens.palette.fg)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(verbatim: season.name).font(.body.weight(.semibold))
-                            Text(verbatim: Plural.text("seasons.episodes", count: season.episodeCount))
+                            Text(verbatim: inLibrary ? L10n.string("req.season_in_library")
+                                : season.libraryEpisodes > 0 ? L10n.string("req.season_partial", "\(season.libraryEpisodes)", "\(season.episodeCount)")
+                                : Plural.text("seasons.episodes", count: season.episodeCount))
                                 .font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                         }
                         Spacer()
-                        if covered { StatusBadge(state: model.request?.state ?? .requested) }
+                        if covered && !inLibrary { StatusBadge(state: model.request?.state ?? .requested) }
                     }
                     .padding(Tokens.Spacing.md)
                     .frame(minHeight: Tokens.Size.touchTarget + Tokens.Spacing.md)

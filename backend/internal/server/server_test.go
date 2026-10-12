@@ -744,6 +744,16 @@ func TestLibrarySyncAndAvailability(t *testing.T) {
 	if td.Availability != "partial" {
 		t.Fatalf("tv detail availability = %q", td.Availability)
 	}
+	if len(td.Seasons) != 2 || td.Seasons[0].LibraryEpisodes != 10 || td.Seasons[1].LibraryEpisodes != 0 {
+		t.Fatalf("per-season library counts = %+v", td.Seasons)
+	}
+	// a season the library already holds cannot be requested; "every season" asks only for what is missing
+	if resp, _ := call(t, app, "POST", "/api/v1/requests", `{"type":"tv","tmdbId":2,"seasons":[1]}`, bob); resp.StatusCode != http.StatusConflict {
+		t.Fatalf("request of a complete season = %d", resp.StatusCode)
+	}
+	if resp, body := call(t, app, "POST", "/api/v1/requests", `{"type":"tv","tmdbId":2}`, bob); resp.StatusCode != http.StatusCreated || strings.Contains(body, `"season":1`) {
+		t.Fatalf("request of every missing season = %d %s", resp.StatusCode, body)
+	}
 }
 
 func TestHistorySyncAndWebhook(t *testing.T) {

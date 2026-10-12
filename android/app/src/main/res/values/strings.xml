@@ -639,6 +639,8 @@
     <string name="req_retry">Retry</string>
     <string name="req_root_folder">Folder</string>
     <string name="req_season_badge">Season %1$s</string>
+    <string name="req_season_in_library">In library</string>
+    <string name="req_season_partial">%1$s of %2$s episodes in library</string>
     <string name="req_seasons">Season %1$s | Seasons %1$s</string>
     <string name="req_select_all">Select all</string>
     <string name="req_select_none">Select none</string>

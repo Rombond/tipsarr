@@ -130,7 +130,7 @@ extension MediaDetail {
             availability: availability,
             requestOpen: d.requestStatus != nil,
             seasons: (d.seasons ?? []).map {
-                SeasonInfo(number: Int($0.number), name: $0.name, episodeCount: Int($0.episodeCount), airDate: $0.airDate)
+                SeasonInfo(number: Int($0.number), name: $0.name, episodeCount: Int($0.episodeCount), airDate: $0.airDate, libraryEpisodes: Int($0.libraryEpisodes))
             },
             numberOfSeasons: d.numberOfSeasons.map(Int.init),
             numberOfEpisodes: d.numberOfEpisodes.map(Int.init),

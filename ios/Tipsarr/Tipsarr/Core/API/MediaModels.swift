@@ -8,6 +8,10 @@ struct SeasonInfo: Sendable, Hashable, Identifiable {
     var name: String
     var episodeCount: Int
     var airDate: String?
+    /// Episodes of this season the library already holds.
+    var libraryEpisodes: Int = 0
+    /// The library holds every announced episode: nothing left to request.
+    var isComplete: Bool { episodeCount > 0 && libraryEpisodes >= episodeCount }
     var id: Int { number }
 }
 

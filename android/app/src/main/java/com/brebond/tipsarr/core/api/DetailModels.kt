@@ -7,8 +7,10 @@ import kotlinx.serialization.Serializable
 data class Genre(val id: Int, val name: String)
 
 @Serializable
-data class SeasonInfo(val number: Int, val name: String, val episodeCount: Int = 0, val airDate: String? = null) {
+data class SeasonInfo(val number: Int, val name: String, val episodeCount: Int = 0, val airDate: String? = null, val libraryEpisodes: Int = 0) {
     val id: Int get() = number
+    /** The library holds every announced episode: nothing left to request. */
+    val isComplete: Boolean get() = episodeCount > 0 && libraryEpisodes >= episodeCount
 }
 
 @Serializable

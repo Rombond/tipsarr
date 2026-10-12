@@ -32,6 +32,8 @@
 	} = $props();
 
 	const regular = $derived(seasons.filter((s) => s.number > 0));
+	// seasons the library already holds in full cannot be asked for again
+	const wanted = $derived(regular.filter((s) => !(s.episodeCount > 0 && s.libraryEpisodes >= s.episodeCount)));
 	const askSeasons = $derived(type === 'tv' && regular.length > 1);
 	let picked = $state<number[]>([]);
 	let profile = $state('');
@@ -40,7 +42,7 @@
 	// every season starts selected, and the profile/folder start at the instance defaults
 	$effect(() => {
 		if (!open) return;
-		picked = regular.map((s) => s.number);
+		picked = wanted.map((s) => s.number);
 		profile = options ? String(options.qualityProfileId) : '';
 		folder = options?.rootFolder ?? '';
 	});
@@ -51,7 +53,7 @@
 
 	function submit() {
 		const choice: RequestChoice = {};
-		if (type === 'tv') choice.seasons = askSeasons ? picked : regular.map((s) => s.number);
+		if (type === 'tv') choice.seasons = askSeasons ? picked : wanted.map((s) => s.number);
 		if (options) {
 			if (Number(profile) !== options.qualityProfileId) choice.qualityProfileId = Number(profile);
 			if (options.rootFolders.length && folder !== options.rootFolder) choice.rootFolder = folder;
@@ -77,16 +79,26 @@
 					<button
 						type="button"
 						class="cursor-pointer text-xs underline"
-						onclick={() => (picked = picked.length === regular.length ? [] : regular.map((s) => s.number))}
+						onclick={() => (picked = picked.length === wanted.length ? [] : wanted.map((s) => s.number))}
 					>
-						{picked.length === regular.length ? t('req.select_none') : t('req.select_all')}
+						{picked.length === wanted.length ? t('req.select_none') : t('req.select_all')}
 					</button>
 				</div>
 				{#each regular as s (s.number)}
-					<label class="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2">
-						<input type="checkbox" checked={picked.includes(s.number)} onchange={() => toggle(s.number)} />
+					{@const have = s.libraryEpisodes ?? 0}
+					{@const complete = !wanted.includes(s)}
+					<label class="flex items-center gap-2 rounded-md border border-border px-3 py-2 {complete ? 'opacity-60' : 'cursor-pointer'}">
+						<input type="checkbox" disabled={complete} checked={picked.includes(s.number)} onchange={() => toggle(s.number)} />
 						<span class="font-medium">{s.name || t('seasons.season', { n: s.number })}</span>
-						<span class="ml-auto text-muted-foreground">{t('seasons.episodes', { count: s.episodeCount })}</span>
+						<span class="ml-auto text-muted-foreground">
+							{#if complete}
+								{t('req.season_in_library')}
+							{:else if have > 0}
+								{t('req.season_partial', { have, total: s.episodeCount })}
+							{:else}
+								{t('seasons.episodes', { count: s.episodeCount })}
+							{/if}
+						</span>
 					</label>
 				{/each}
 			</div>

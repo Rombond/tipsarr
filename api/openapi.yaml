@@ -1932,6 +1932,10 @@ components:
         episodeCount:
           format: int64
           type: integer
+        libraryEpisodes:
+          description: Episodes of this season already in the library
+          format: int64
+          type: integer
         name:
           type: string
         number:
@@ -1943,6 +1947,7 @@ components:
         - number
         - name
         - episodeCount
+        - libraryEpisodes
       type: object
     SeasonDetail:
       additionalProperties: false

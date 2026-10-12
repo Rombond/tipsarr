@@ -85,7 +85,12 @@ type Season struct {
 	EpisodeCount int    `json:"episodeCount"`
 	AirDate      string `json:"airDate,omitempty"`
 	PosterPath   string `json:"posterPath,omitempty"`
+	// LibraryEpisodes counts the episodes of this season the Jellyfin library holds (0 when the show is not in it).
+	LibraryEpisodes int `json:"libraryEpisodes" doc:"Episodes of this season already in the library"`
 }
+
+// Complete says the library holds every announced episode of the season.
+func (s Season) Complete() bool { return s.EpisodeCount > 0 && s.LibraryEpisodes >= s.EpisodeCount }
 
 type Detail struct {
 	Item

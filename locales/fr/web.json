@@ -394,6 +394,8 @@
   "req.which_seasons": "Quelles saisons ?",
   "req.select_none": "Tout désélectionner",
   "req.select_all": "Tout sélectionner",
+  "req.season_in_library": "Dans la bibliothèque",
+  "req.season_partial": "{have} épisodes sur {total} dans la bibliothèque",
   "req.request_seasons": "Demander {count} saison | Demander {count} saisons",
   "req.toast_approved_generic": "Demande approuvée",
   "req.toast_requested_generic": "Demandé",

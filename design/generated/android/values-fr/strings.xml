@@ -639,6 +639,8 @@
     <string name="req_retry">Réessayer</string>
     <string name="req_root_folder">Dossier</string>
     <string name="req_season_badge">Saison %1$s</string>
+    <string name="req_season_in_library">Dans la bibliothèque</string>
+    <string name="req_season_partial">%1$s épisodes sur %2$s dans la bibliothèque</string>
     <string name="req_seasons">Saison %1$s | Saisons %1$s</string>
     <string name="req_select_all">Tout sélectionner</string>
     <string name="req_select_none">Tout désélectionner</string>

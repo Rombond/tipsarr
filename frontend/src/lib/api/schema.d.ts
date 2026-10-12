@@ -2367,6 +2367,11 @@ export interface components {
             airDate?: string;
             /** Format: int64 */
             episodeCount: number;
+            /**
+             * Format: int64
+             * @description Episodes of this season already in the library
+             */
+            libraryEpisodes: number;
             name: string;
             /** Format: int64 */
             number: number;

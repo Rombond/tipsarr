@@ -74,7 +74,7 @@ fun RequestSheet(model: MediaDetailModel, onDismiss: () -> Unit, onDone: (Reques
     val scope = rememberCoroutineScope()
     val detail = model.detail
     val isTv = model.route.type == MediaType.Tv
-    val selectable = model.regularSeasons.filter { it.number !in model.coveredSeasons }
+    val selectable = model.regularSeasons.filter { it.number !in model.coveredSeasons && !it.isComplete }
     var selected by remember { mutableStateOf(selectable.map { it.number }.toSet()) }
     var profileId by remember { mutableStateOf(model.options?.qualityProfileId) }
     var folder by remember { mutableStateOf(model.options?.let { it.rootFolder.ifEmpty { it.rootFolders.firstOrNull()?.path } }) }
@@ -125,7 +125,8 @@ fun RequestSheet(model: MediaDetailModel, onDismiss: () -> Unit, onDone: (Reques
                         }
                     }
                     model.regularSeasons.forEach { season ->
-                        val covered = season.number in model.coveredSeasons
+                        val inLibrary = season.isComplete
+                        val covered = season.number in model.coveredSeasons || inLibrary
                         val isSelected = season.number in selected
                         Row(
                             Modifier.fillMaxWidth().defaultMinSize(minHeight = Tokens.Size.touchTarget + Tokens.Spacing.md)
@@ -140,9 +141,15 @@ fun RequestSheet(model: MediaDetailModel, onDismiss: () -> Unit, onDone: (Reques
                             )
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(season.name, fontSize = Tokens.FontSize.body, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg)
-                                Text(context.plural("seasons_episodes", season.episodeCount), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+                                Text(
+                                    when {
+                                        inLibrary -> context.getString(R.string.req_season_in_library)
+                                        season.libraryEpisodes > 0 -> context.getString(R.string.req_season_partial, season.libraryEpisodes, season.episodeCount)
+                                        else -> context.plural("seasons_episodes", season.episodeCount)
+                                    },
+                                    fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
                             }
-                            if (covered) StatusBadge(model.request?.state ?: com.brebond.tipsarr.ui.RequestState.Requested)
+                            if (covered && !inLibrary) StatusBadge(model.request?.state ?: com.brebond.tipsarr.ui.RequestState.Requested)
                         }
                     }
                 }

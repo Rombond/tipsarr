@@ -299,10 +299,11 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 
 	var seasons []int
 	if p.Type == "tv" {
-		valid := map[int]bool{}
+		valid, done := map[int]bool{}, map[int]bool{}
 		for _, sn := range d.Seasons {
 			if sn.Number > 0 {
 				valid[sn.Number] = true
+				done[sn.Number] = sn.Complete()
 			}
 		}
 		if len(valid) == 0 {
@@ -310,13 +311,21 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 		}
 		if len(p.Seasons) == 0 {
 			for n := range valid {
-				seasons = append(seasons, n)
+				if !done[n] {
+					seasons = append(seasons, n) // "every season" means every season the library still lacks
+				}
+			}
+			if len(seasons) == 0 {
+				return nil, ErrAlreadyAvailable
 			}
 		} else {
 			seen := map[int]bool{}
 			for _, n := range p.Seasons {
 				if !valid[n] {
 					return nil, fmt.Errorf("%w: season %d does not exist", ErrInvalid, n)
+				}
+				if done[n] {
+					return nil, fmt.Errorf("%w: season %d is already in the library", ErrAlreadyAvailable, n)
 				}
 				if !seen[n] {
 					seen[n] = true

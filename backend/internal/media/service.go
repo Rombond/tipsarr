@@ -146,7 +146,8 @@ func (s *Service) showAvailability(ctx context.Context, d *Detail) {
 		return
 	}
 	complete, anyEpisode := true, false
-	for _, sn := range d.Seasons {
+	for i, sn := range d.Seasons {
+		d.Seasons[i].LibraryEpisodes = lib[sn.Number]
 		if sn.Number == 0 || sn.EpisodeCount == 0 {
 			continue // specials and announced-but-empty seasons don't count
 		}

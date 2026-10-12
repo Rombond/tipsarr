@@ -44,6 +44,11 @@
 			>
 				<span class="font-medium">{s.name || t('seasons.season', { n: s.number })}</span>
 				<span class="flex items-center gap-2 text-muted-foreground">
+					{#if s.episodeCount > 0 && (s.libraryEpisodes ?? 0) >= s.episodeCount}
+						<span class="text-emerald-600 dark:text-emerald-400">{t('req.season_in_library')}</span> ·
+					{:else if (s.libraryEpisodes ?? 0) > 0}
+						<span class="text-teal-600 dark:text-teal-400">{t('req.season_partial', { have: s.libraryEpisodes ?? 0, total: s.episodeCount })}</span>
+					{/if}
 					{t('seasons.episodes', { count: s.episodeCount })}{#if s.airDate}&nbsp;· {s.airDate.slice(0, 4)}{/if}
 					<ChevronIcon class="size-4 transition-transform {openSeason === s.number ? 'rotate-180' : ''}" />
 				</span>

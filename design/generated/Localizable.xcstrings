@@ -10253,6 +10253,39 @@
         }
       }
     },
+    "req.season_in_library": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In library"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dans la bibliothèque"
+          }
+        }
+      }
+    },
+    "req.season_partial": {
+      "comment": "placeholders: have, total",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ of %2$@ episodes in library"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ épisodes sur %2$@ dans la bibliothèque"
+          }
+        }
+      }
+    },
     "req.seasons": {
       "comment": "placeholders: list, list",
       "localizations": {

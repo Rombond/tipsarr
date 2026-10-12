@@ -82,8 +82,9 @@
 		quota = await unwrap(api.GET('/me/quota')).catch(() => null);
 		busy = false;
 		const regular = known.filter((s) => s.number > 0);
+		const wanted = regular.filter((s) => !(s.episodeCount > 0 && (s.libraryEpisodes ?? 0) >= s.episodeCount));
 		if (options || (type === 'tv' && regular.length > 1)) open = true;
-		else submit(type === 'tv' ? { seasons: regular.map((s) => s.number) } : {});
+		else submit(type === 'tv' ? { seasons: wanted.map((s) => s.number) } : {});
 	}
 </script>
 
