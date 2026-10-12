@@ -3,6 +3,8 @@
 	import type { Schemas } from '$lib/api/client';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import StatusBadge from '$lib/components/ui/status-badge.svelte';
+	import { seasonStatuses } from '$lib/status';
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 
 	export type RequestChoice = { seasons?: number[]; qualityProfileId?: number; rootFolder?: string };
@@ -85,21 +87,15 @@
 					</button>
 				</div>
 				{#each regular as s (s.number)}
-					{@const have = s.libraryEpisodes ?? 0}
 					{@const complete = !wanted.includes(s)}
 					<label class="flex items-center gap-2 rounded-md border border-border px-3 py-2 {complete ? 'opacity-60' : 'cursor-pointer'}">
 						<input type="checkbox" disabled={complete} checked={picked.includes(s.number)} onchange={() => toggle(s.number)} />
 						<span class="font-medium">{s.name || t('seasons.season', { n: s.number })}</span>
-						<span class="ml-auto text-muted-foreground">
-							{#if complete}
-								{t('req.season_in_library')}
-							{:else if s.monitored}
-								{t('req.season_monitored')}{#if have > 0} · {t('req.season_partial', { have, total: s.episodeCount })}{/if}
-							{:else if have > 0}
-								{t('req.season_partial', { have, total: s.episodeCount })}
-							{:else}
-								{t('seasons.episodes', { count: s.episodeCount })}
-							{/if}
+						<span class="ml-auto flex items-center gap-1.5 text-muted-foreground">
+							{#each seasonStatuses(s) as st (st)}
+								<StatusBadge status={st}>{t(`state.${st}` as 'state.available')}</StatusBadge>
+							{/each}
+							{#if !complete}{t('seasons.episodes', { count: s.episodeCount })}{/if}
 						</span>
 					</label>
 				{/each}

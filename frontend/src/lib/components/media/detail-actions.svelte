@@ -66,6 +66,7 @@
 		seasons={details.seasons}
 		availability={details.availability}
 		requestStatus={details.requestStatus}
+		monitored={details.monitored}
 		title={details.title}
 	/>
 	{/if}

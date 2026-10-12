@@ -103,13 +103,11 @@ struct RequestSheet: View {
                             .foregroundStyle(covered ? Tokens.palette.mutedFg : Tokens.palette.fg)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(verbatim: season.name).font(.body.weight(.semibold))
-                            Text(verbatim: inLibrary ? L10n.string("req.season_in_library")
-                                : tracked ? L10n.string("req.season_monitored")
-                                : season.libraryEpisodes > 0 ? L10n.string("req.season_partial", "\(season.libraryEpisodes)", "\(season.episodeCount)")
-                                : Plural.text("seasons.episodes", count: season.episodeCount))
+                            Text(verbatim: Plural.text("seasons.episodes", count: season.episodeCount))
                                 .font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                         }
                         Spacer()
+                        ForEach(season.badges, id: \.self) { StatusBadge(state: $0) }
                         if covered && !inLibrary && !tracked { StatusBadge(state: model.request?.state ?? .requested) }
                     }
                     .padding(Tokens.Spacing.md)

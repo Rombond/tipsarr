@@ -129,6 +129,7 @@ extension MediaDetail {
             originalLanguage: d.originalLanguage,
             availability: availability,
             requestOpen: d.requestStatus != nil,
+            monitored: d.monitored ?? false,
             seasons: (d.seasons ?? []).map {
                 SeasonInfo(number: Int($0.number), name: $0.name, episodeCount: Int($0.episodeCount), airDate: $0.airDate, libraryEpisodes: Int($0.libraryEpisodes), monitored: $0.monitored)
             },

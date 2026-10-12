@@ -135,7 +135,16 @@ class MediaDetailModel(
                 if (request.state == RequestState.Failed) return DetailAction.Failed(canRetry = canManageRequests)
             }
             if (detail.requestOpen) return DetailAction.InProgress(RequestState.Requested, cancellable = false)
+            if (nothingLeftToRequest) return DetailAction.InProgress(RequestState.Approved, cancellable = false)
             return DetailAction.Request
+        }
+
+    /** Radarr monitors the movie, or every season of the show is in the library or monitored by Sonarr. */
+    private val nothingLeftToRequest: Boolean
+        get() {
+            val detail = detail ?: return false
+            if (route.type == MediaType.Movie) return detail.monitored
+            return regularSeasons.isNotEmpty() && regularSeasons.all { it.isComplete || it.monitored }
         }
 
     /** The badge next to the title. */

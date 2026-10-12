@@ -11,6 +11,11 @@ data class SeasonInfo(val number: Int, val name: String, val episodeCount: Int =
     val id: Int get() = number
     /** The library holds every announced episode: nothing left to request. */
     val isComplete: Boolean get() = episodeCount > 0 && libraryEpisodes >= episodeCount
+    /** Badges of the season: in the library, partly in it, and/or tracked by Sonarr (shown like an approved request). */
+    val badges: List<RequestState> get() = when {
+        isComplete -> listOf(RequestState.Available)
+        else -> listOfNotNull(RequestState.Partial.takeIf { libraryEpisodes > 0 }, RequestState.Approved.takeIf { monitored })
+    }
 }
 
 @Serializable
@@ -34,6 +39,8 @@ data class MediaDetail(
     val status: String? = null,
     val originalLanguage: String? = null,
     val requestStatus: RequestStatus? = null,
+    /** Radarr monitors the movie and looks for it. */
+    val monitored: Boolean = false,
     val seasons: List<SeasonInfo>? = null,
     val numberOfSeasons: Int? = null,
     val studios: List<String>? = null,
@@ -157,6 +164,8 @@ data class Episode(
     val state: String? = null,
 ) {
     val id: Int get() = number
+    /** A file exists, or Sonarr is looking for it; missing and unknown show no badge. */
+    val badge: RequestState? get() = when (state) { "available" -> RequestState.Available; "monitored" -> RequestState.Approved; else -> null }
 }
 
 @Serializable

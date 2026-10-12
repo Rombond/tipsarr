@@ -91,6 +91,7 @@ final class MediaDetailModel {
             if request.state == .failed { return .failed(canRetry: canManage) }
         }
         if detail.requestOpen { return .inProgress(.requested, cancellable: false) }
+        if nothingLeftToRequest { return .inProgress(.approved, cancellable: false) }
         return .request
     }
 
@@ -103,6 +104,13 @@ final class MediaDetailModel {
         case .failed: .failed
         case .request: detail?.availability == .partial ? .partial : nil
         }
+    }
+
+    /// Radarr monitors the movie, or every season of the show is in the library or monitored by Sonarr.
+    private var nothingLeftToRequest: Bool {
+        guard let detail else { return false }
+        if route.type == .movie { return detail.monitored }
+        return !regularSeasons.isEmpty && regularSeasons.allSatisfy { $0.isComplete || $0.monitored }
     }
 
     var regularSeasons: [SeasonInfo] { (detail?.seasons ?? []).filter { $0.number > 0 } }

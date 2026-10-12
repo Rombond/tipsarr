@@ -14,6 +14,14 @@ struct SeasonInfo: Sendable, Hashable, Identifiable {
     var monitored: Bool = false
     /// The library holds every announced episode: nothing left to request.
     var isComplete: Bool { episodeCount > 0 && libraryEpisodes >= episodeCount }
+    /// Badges of the season: in the library, partly in it, and/or tracked by Sonarr (shown like an approved request).
+    var badges: [RequestState] {
+        if isComplete { return [.available] }
+        var out: [RequestState] = []
+        if libraryEpisodes > 0 { out.append(.partial) }
+        if monitored { out.append(.approved) }
+        return out
+    }
     var id: Int { number }
 }
 
@@ -27,6 +35,8 @@ struct EpisodeInfo: Sendable, Hashable, Identifiable {
     var voteAverage: Double
     /// "available", "monitored" or "missing" as Sonarr knows it; nil when no Sonarr could tell.
     var state: String?
+    /// A file exists, or Sonarr is looking for it; missing and unknown show no badge.
+    var badge: RequestState? { state == "available" ? .available : state == "monitored" ? .approved : nil }
     var id: Int { number }
 }
 
@@ -55,6 +65,8 @@ struct MediaDetail: Sendable {
     var availability: Availability
     /// `pending` or `approved` while the signed-in user's (or anyone's) request is open.
     var requestOpen: Bool
+    /// Radarr monitors the movie and looks for it.
+    var monitored: Bool = false
     var seasons: [SeasonInfo]
     var numberOfSeasons: Int?
     var numberOfEpisodes: Int?

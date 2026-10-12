@@ -10,6 +10,7 @@
 		seasons = [],
 		availability,
 		requestStatus,
+		monitored = false,
 		onRequested,
 		title = '',
 	}: {
@@ -18,6 +19,8 @@
 		seasons?: Schemas['Season'][];
 		availability: string;
 		requestStatus?: string;
+		/** Radarr monitors the movie. */
+		monitored?: boolean;
 		onRequested?: (r: Schemas['View']) => void;
 		title?: string;
 	} = $props();
@@ -26,7 +29,12 @@
 	let busy = $state(false);
 	let flow: { start: () => void } | undefined = $state();
 
-	const status = $derived(created ?? requestStatus ?? null);
+	// nothing left to ask for: every season is in the library or monitored by Sonarr, or Radarr monitors the movie
+	const regular = $derived(seasons.filter((s) => s.number > 0));
+	const tracked = $derived(
+		type === 'movie' ? monitored : regular.length > 0 && regular.every((s) => s.monitored || (s.episodeCount > 0 && (s.libraryEpisodes ?? 0) >= s.episodeCount)),
+	);
+	const status = $derived(created ?? requestStatus ?? (tracked ? 'approved' : null));
 	const label = $derived(
 		availability === 'available'
 			? t('media.available')

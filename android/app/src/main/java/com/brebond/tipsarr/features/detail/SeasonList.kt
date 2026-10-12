@@ -93,14 +93,11 @@ fun SeasonList(api: TipsarrApi, tmdbId: Int, seasons: List<SeasonInfo>, covered:
                 ) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(season.name, fontSize = Tokens.FontSize.body, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg)
-                        val complete = season.isComplete
-                        var count = context.plural("seasons_episodes", season.episodeCount)
-                        if (complete) count = context.getString(R.string.req_season_in_library) + " · " + count
-                        else if (season.libraryEpisodes > 0) count = context.getString(R.string.req_season_partial, season.libraryEpisodes, season.episodeCount)
-                        if (season.monitored && !complete) count += " · " + context.getString(R.string.req_season_monitored)
+                        val count = context.plural("seasons_episodes", season.episodeCount)
                         val year = season.airDate?.takeIf { it.length >= 4 }?.take(4)
                         Text(if (year != null) "$count · $year" else count, fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
                     }
+                    season.badges.forEach { StatusBadge(it) }
                     if (season.number in covered) StatusBadge(state)
                     Icon(
                         Icons.Outlined.KeyboardArrowDown, null, tint = Tokens.palette.mutedFg,
@@ -144,12 +141,7 @@ private fun EpisodeRow(episode: Episode) {
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(episode.name, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg)
-            when (episode.state) {
-                "available" -> R.string.seasons_ep_available to Tokens.Status.available
-                "monitored" -> R.string.seasons_ep_monitored to Tokens.Status.approved
-                "missing" -> R.string.seasons_ep_missing to Tokens.palette.mutedFg
-                else -> null
-            }?.let { (label, color) -> Text(stringResource(label), fontSize = Tokens.FontSize.caption, fontWeight = FontWeight.SemiBold, color = color) }
+            episode.badge?.let { StatusBadge(it, compact = true) }
             if (info.isNotEmpty()) Text(info, fontSize = Tokens.FontSize.caption, color = Tokens.palette.mutedFg)
             episode.overview?.takeIf { it.isNotEmpty() }?.let {
                 Text(it, fontSize = Tokens.FontSize.caption, color = Tokens.palette.mutedFg, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))

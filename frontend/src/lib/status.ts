@@ -21,6 +21,21 @@ export const STATUS: Record<StatusKey, { icon: typeof CheckIcon; solid: string; 
 	failed: { icon: TriangleAlertIcon, solid: 'bg-orange-600 text-white', soft: 'bg-orange-500/15 text-orange-700 dark:text-orange-300' },
 };
 
+/** Badges of one season: in the library, partly in it, and/or tracked by Sonarr (shown like an approved request). */
+export function seasonStatuses(s: { episodeCount: number; libraryEpisodes?: number; monitored?: boolean }): StatusKey[] {
+	const have = s.libraryEpisodes ?? 0;
+	if (s.episodeCount > 0 && have >= s.episodeCount) return ['available'];
+	const out: StatusKey[] = [];
+	if (have > 0) out.push('partial');
+	if (s.monitored) out.push('approved');
+	return out;
+}
+
+/** The badge of one episode as Sonarr knows it: a file, or being looked for. Missing and unknown show none. */
+export function episodeStatus(state?: string): StatusKey | null {
+	return state === 'available' ? 'available' : state === 'monitored' ? 'approved' : null;
+}
+
 /** The state a MediaItem shows: availability wins, then the active request. */
 export function itemStatus(item: { availability: string; requestStatus?: string | null }, extra?: { tracked?: boolean; hasFile?: boolean }): StatusKey | null {
 	if (item.availability === 'available') return 'available';
