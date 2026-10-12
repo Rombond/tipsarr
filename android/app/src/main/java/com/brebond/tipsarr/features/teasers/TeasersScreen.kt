@@ -136,6 +136,11 @@ fun TeasersScreen(
 ) {
     val scope = rememberCoroutineScope()
     LaunchedEffect(model) { model.loadIfNeeded() }
+    // While this screen is up it owns the players: the background preparation stands aside.
+    DisposableEffect(model) {
+        model.screenShown = true
+        onDispose { model.screenShown = false }
+    }
     // The server turned trailer files off: the tab goes away (the caller shows a message and returns to Discover).
     // Trailers still being prepared: ask again every 8 s. Ends with the composition (tab left) or once cards arrive.
     LaunchedEffect(model, model.preparing) { model.pollWhilePreparing() }
@@ -278,6 +283,7 @@ private fun Feed(model: TeasersModel, api: TipsarrApi, me: () -> Profile, settin
                 active = index == settled && resumed,
                 preload = index == settled + 1,
                 api = api,
+                takePrepared = model::takePrepared,
                 muted = settings.teaserMuted,
                 showHint = index == 0 && !hintGone,
                 landscape = landscape,
@@ -316,6 +322,7 @@ private fun TeaserCard(
     active: Boolean,
     preload: Boolean,
     api: TipsarrApi,
+    takePrepared: (Teaser) -> TeaserVideo?,
     muted: Boolean,
     showHint: Boolean,
     landscape: Boolean,
@@ -332,7 +339,7 @@ private fun TeaserCard(
     onUnplayable: () -> Unit,
 ) {
     // The current card and the next one hold a player (the next one buffers, paused).
-    val video = if (active || preload) rememberTeaserVideo(api.serverUrl.trimEnd('/') + teaser.videoUrl, api.token, onUnplayable) else null
+    val video = if (active || preload) rememberTeaserVideo(api.serverUrl.trimEnd('/') + teaser.videoUrl, api.token, { takePrepared(teaser) }, onUnplayable) else null
     var paused by remember(teaser.id) { mutableStateOf(false) }
     var fast by remember { mutableStateOf(false) }
     var overviewOpen by remember(teaser.id) { mutableStateOf(false) }

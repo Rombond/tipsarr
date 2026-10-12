@@ -34,7 +34,7 @@ import com.brebond.tipsarr.R
  * Sound follows the media volume (USAGE_MEDIA, movie content, audio focus). Loops; [loops] counts the completed ones.
  */
 @OptIn(UnstableApi::class)
-class TeaserVideo(context: Context, url: String, token: String?, private val onFailed: () -> Unit) {
+class TeaserVideo(context: Context, url: String, token: String?, var onFailed: () -> Unit) {
     val player: ExoPlayer
 
     /** 0..1 through the trailer. */
@@ -58,6 +58,10 @@ class TeaserVideo(context: Context, url: String, token: String?, private val onF
         private set
 
     private var wantPlaying = false
+
+    /** True once [release] ran: the player cannot be used any more. */
+    var released = false
+        private set
 
     init {
         val http = DefaultHttpDataSource.Factory().apply {
@@ -126,15 +130,27 @@ class TeaserVideo(context: Context, url: String, token: String?, private val onF
         player.setSeekParameters(SeekParameters.DEFAULT)
     }
 
-    fun release() = player.release()
+    /** Prepared and buffering, nothing broken: good to hand to a card. */
+    val usable: Boolean get() = !released && player.playerError == null
+
+    fun release() {
+        if (released) return
+        released = true
+        player.release()
+    }
 }
 
-/** A [TeaserVideo] for this file: created with the composable, released when it leaves the composition. */
+/**
+ * A [TeaserVideo] for this file: the one [prepared] hands over (already buffering) or else a new one, released when it
+ * leaves the composition.
+ */
 @Composable
-fun rememberTeaserVideo(url: String, token: String?, onFailed: () -> Unit): TeaserVideo {
+fun rememberTeaserVideo(url: String, token: String?, prepared: () -> TeaserVideo? = { null }, onFailed: () -> Unit): TeaserVideo {
     val context = LocalContext.current
     val failed by rememberUpdatedState(onFailed)
-    val video = remember(url, token) { TeaserVideo(context.applicationContext, url, token) { failed() } }
+    val video = remember(url, token) {
+        (prepared() ?: TeaserVideo(context.applicationContext, url, token) { failed() }).also { it.onFailed = { failed() } }
+    }
     DisposableEffect(video) { onDispose { video.release() } }
     return video
 }

@@ -67,6 +67,7 @@ struct ProfileView: View {
             stats
             // See all goes to the full Stats page.
             PosterCarousel(title: "stats.top", titleKey: "stats.top", rows: model.topWatched.map(\.row), ranked: true, seeAll: .stats)
+            if session.serverStatus?.teasersAvailable ?? false { TeasersGroup() }
             if profile.canAny(.viewIssues, .manageUsers, .manageSettings) { AdminGroup(profile: profile, openIssues: model.openIssues) }
             recentRequests
         }
@@ -151,7 +152,7 @@ struct ProfileView: View {
     }
 }
 
-enum ProfileRoute: Hashable { case watchlist, hidden, settings, devices, accounts, appIcon, issues, issue(String), users, user(String), sync, stats, posterList(PosterListRoute) }
+enum ProfileRoute: Hashable { case watchlist, hidden, teaserHistory, settings, devices, accounts, appIcon, issues, issue(String), users, user(String), sync, stats, posterList(PosterListRoute) }
 
 /// Number with an icon and a label.
 struct StatTile: View {
@@ -205,6 +206,35 @@ struct StatCard: View {
             Button(action: action) { StatTile(symbol: symbol, value: value, label: label, horizontal: horizontal) }.buttonStyle(.plain)
         } else {
             StatTile(symbol: symbol, value: value, label: label, horizontal: horizontal)
+        }
+    }
+}
+
+/// Teasers: one row to the history of swiped titles (everyone).
+struct TeasersGroup: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
+            Text("m.tab.teasers").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg).padding(.horizontal, Tokens.Spacing.xs)
+            VStack(spacing: 0) {
+                ProfileLink(route: .teaserHistory) {
+                    HStack(spacing: Tokens.Spacing.md) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Tokens.Status.searching)
+                            .frame(width: 30, height: 30)
+                            .background(Tokens.Status.searching.opacity(0.16), in: .rect(cornerRadius: Tokens.Radius.sm - 2))
+                        Text("m.teasers.history.title").font(.body)
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg)
+                    }
+                    .padding(.horizontal, Tokens.Spacing.md)
+                    .frame(minHeight: Tokens.Size.touchTarget + Tokens.Spacing.sm)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+            }
+            .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
+            .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
         }
     }
 }
@@ -266,6 +296,7 @@ struct ProfileDestination: View {
         switch route {
         case .watchlist: WatchlistScreen()
         case .hidden: HiddenScreen()
+        case .teaserHistory: TeaserHistoryScreen()
         case .settings: SettingsView(account: account, profile: profile)
         case .devices: DevicesView()
         case .accounts: AccountsView()

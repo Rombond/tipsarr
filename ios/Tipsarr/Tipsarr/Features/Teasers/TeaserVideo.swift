@@ -109,6 +109,9 @@ final class TeaserVideo {
         if wantPlaying { player.play() }
     }
 
+    /// The layer has a frame to show (even while paused): the picture can appear before the first play.
+    func markReady() { isReady = true }
+
     /// Stops everything (the card left the pool).
     func stop() {
         wantPlaying = false
@@ -167,10 +170,24 @@ struct TeaserVideoView: UIViewRepresentable {
     private func configure(_ view: PlayerLayerView) {
         if view.playerLayer.player !== video.player { view.playerLayer.player = video.player }
         view.playerLayer.videoGravity = (video.fillsPage || zoomed) ? .resizeAspectFill : .resizeAspect
+        view.onReady = { [video] in video.markReady() }
     }
 
     final class PlayerLayerView: UIView {
         override static var layerClass: AnyClass { AVPlayerLayer.self }
         var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+        /// Called when the layer has its first frame, so a buffered trailer shows at once.
+        var onReady: () -> Void = {}
+        private var observation: NSKeyValueObservation?
+
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            observation = playerLayer.observe(\.isReadyForDisplay, options: [.initial, .new]) { [weak self] layer, _ in
+                guard layer.isReadyForDisplay else { return }
+                Task { @MainActor in self?.onReady() }
+            }
+        }
+
+        required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
     }
 }

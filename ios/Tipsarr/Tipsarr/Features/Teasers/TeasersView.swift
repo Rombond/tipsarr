@@ -11,7 +11,8 @@ struct TeasersView: View {
     /// The server answered "teasers_disabled": the feature was turned off while the tab was open.
     var onUnavailable: () -> Void = {}
 
-    @State private var model: TeasersModel
+    /// Owned by the main screen: the feed loads and the first trailers buffer before this tab is opened.
+    let model: TeasersModel
     @State private var current: String?
     @State private var tapPaused = false
     /// Pinched in: the picture fills the screen and most of the interface is hidden.
@@ -20,7 +21,7 @@ struct TeasersView: View {
     @State private var uiHidden = false
     @State private var landscape = false
     @State private var draft: RequestDraft?
-    @State private var pool: TeaserVideoPool
+    let pool: TeaserVideoPool
     /// Sound stays off for later trailers and launches once the person muted a trailer.
     @AppStorage("teasersMuted") private var muted = false
     @Environment(\.scenePhase) private var scenePhase
@@ -30,10 +31,11 @@ struct TeasersView: View {
 
     private static let endID = "teasers-end"
     private static let waitID = "teasers-wait"
+    private static let audioQueue = DispatchQueue(label: "tipsarr.teasers.audio", qos: .userInitiated)
 
-    init(api: TipsarrAPI, isSelected: Bool, path: Binding<NavigationPath>, bottomInset: CGFloat = 0, onUnavailable: @escaping () -> Void = {}) {
-        _model = State(initialValue: TeasersModel(api: api))
-        _pool = State(initialValue: TeaserVideoPool(token: api.token))
+    init(model: TeasersModel, pool: TeaserVideoPool, isSelected: Bool, path: Binding<NavigationPath>, bottomInset: CGFloat = 0, onUnavailable: @escaping () -> Void = {}) {
+        self.model = model
+        self.pool = pool
         self.onUnavailable = onUnavailable
         self.isSelected = isSelected
         _path = path
@@ -75,15 +77,17 @@ struct TeasersView: View {
         .onChange(of: current) { _, _ in preload() }
         .onChange(of: model.items.count) { _, _ in preload() }
         .onChange(of: isSelected, initial: true) { _, selected in
-            // Playback follows the media volume, not the ringer switch.
-            let session = AVAudioSession.sharedInstance()
-            if selected {
-                try? session.setCategory(.playback, mode: .moviePlayback)
-                try? session.setActive(true)
-            } else {
-                zoomed = false
-                uiHidden = false
-                try? session.setActive(false, options: .notifyOthersOnDeactivation)
+            // Playback follows the media volume, not the ringer switch. The audio session calls can block for a
+            // moment, so they run in order on their own queue and never hold up the tab switch.
+            if !selected { zoomed = false; uiHidden = false }
+            Self.audioQueue.async {
+                let session = AVAudioSession.sharedInstance()
+                if selected {
+                    try? session.setCategory(.playback, mode: .moviePlayback)
+                    try? session.setActive(true)
+                } else {
+                    try? session.setActive(false, options: .notifyOthersOnDeactivation)
+                }
             }
         }
         .sheet(item: $draft) { draft in

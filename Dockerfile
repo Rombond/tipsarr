@@ -14,12 +14,14 @@ RUN npm run build
 FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS backend
 ARG TARGETOS
 ARG TARGETARCH
+# the release tag, shown in the apps (Settings > server version)
+ARG VERSION=dev
 WORKDIR /app/backend
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ ./
 COPY --from=frontend /app/frontend/build ./internal/web/dist
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /tipsarr ./cmd/tipsarr
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w -X github.com/Rombond/tipsarr/backend/internal/api.Version=${VERSION}" -o /tipsarr ./cmd/tipsarr
 RUN mkdir /config-empty
 
 # 3) tiny runtime

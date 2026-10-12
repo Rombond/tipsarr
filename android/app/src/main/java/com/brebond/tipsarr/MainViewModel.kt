@@ -45,6 +45,7 @@ sealed interface Screen {
     data object Devices : Screen
     data object Watchlist : Screen
     data object Hidden : Screen
+    data object TeasersHistory : Screen
     data object Issues : Screen
     class Issue(val id: String) : Screen
     data object Users : Screen
@@ -71,7 +72,7 @@ class MainViewModel(
     val search = SearchModel(api, context)
     val requests = RequestsModel(api) { me }
     val library = LibraryModel(api)
-    val teasers = TeasersModel(api)
+    val teasers = TeasersModel(api, context)
     /** The server has trailer files switched on and its resolver answers: only then the Teasers tab exists. */
     var teasersOn by mutableStateOf(teasersAvailable)
         private set
@@ -91,6 +92,8 @@ class MainViewModel(
     var avatarVersion by mutableIntStateOf(0)
         private set
     fun avatarChanged() { avatarVersion++ }
+
+    override fun onCleared() { teasers.releasePrepared() }
 
     /** Requests waiting for approval, shown on the tab for admins. */
     var pendingCount by mutableIntStateOf(0)

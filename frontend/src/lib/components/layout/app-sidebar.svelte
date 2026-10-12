@@ -77,7 +77,7 @@
 <Sidebar.Root>
 	<Sidebar.Header>
 		<a href="/discover" class="flex items-center gap-3 px-3 py-3 font-bold text-xl" onclick={() => sidebar.setOpenMobile(false)}>
-			<span class="inline-flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">T</span>
+			<img src="/icon.svg" alt="" class="size-9 rounded-lg" />
 			Tipsarr
 		</a>
 	</Sidebar.Header>

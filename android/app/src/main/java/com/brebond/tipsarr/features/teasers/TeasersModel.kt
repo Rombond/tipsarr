@@ -1,5 +1,6 @@
 package com.brebond.tipsarr.features.teasers
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -20,7 +21,7 @@ import kotlinx.coroutines.delay
  * The Teasers feed. Lives in the main view model, so the card the person was on is still there after
  * opening a title and coming back. A title is reported as seen when they swipe past it.
  */
-class TeasersModel(private val api: TipsarrApi) {
+class TeasersModel(private val api: TipsarrApi, private val context: Context) {
     val items = mutableStateListOf<Teaser>()
     var phase by mutableStateOf<Phase>(Phase.Idle)
         private set
@@ -44,11 +45,52 @@ class TeasersModel(private val api: TipsarrApi) {
     /** The server is still preparing trailer files: nothing to show yet, ask again shortly. */
     val preparing: Boolean get() = phase == Phase.Loaded && items.isEmpty() && !done
 
+    /** The Teasers screen is composed: it creates and owns its players, [prefetch] does nothing meanwhile. */
+    var screenShown = false
+
+    /** Players of the first cards, prepared (buffering, not playing) before the screen is opened. Keyed by [Teaser.id]. */
+    private val prepared = HashMap<String, TeaserVideo>()
+
     suspend fun loadIfNeeded() {
-        if (phase == Phase.Idle) refresh()
+        // A failed background load is tried again when the person opens the tab (unless the feature went away).
+        if (phase == Phase.Idle || (phase is Phase.Failed && !disabled)) refresh()
+    }
+
+    /**
+     * Background warm-up, once the Teasers feature is on: loads the first batch, then prepares the player of the
+     * current card and of the next one (paused, so nothing is heard). Safe to call again; call from the main thread.
+     */
+    suspend fun prefetch() {
+        if (screenShown || disabled) return
+        loadIfNeeded()
+        if (screenShown || phase != Phase.Loaded) return
+        val wanted = items.drop(page.coerceIn(0, (items.size - 1).coerceAtLeast(0))).take(2)
+        val keep = wanted.map { it.id }.toSet()
+        prepared.keys.filter { it !in keep }.forEach { prepared.remove(it)?.release() }
+        for (teaser in wanted) {
+            if (prepared[teaser.id]?.usable == true) continue
+            prepared.remove(teaser.id)?.release()
+            prepared[teaser.id] = TeaserVideo(context, api.serverUrl.trimEnd('/') + teaser.videoUrl, api.token) { discard(teaser.id) }
+        }
+    }
+
+    private fun discard(id: String) { prepared.remove(id)?.release() }
+
+    /** Hands the prepared player of this card over (the caller owns and releases it), or null: create one as usual. */
+    fun takePrepared(teaser: Teaser): TeaserVideo? {
+        val video = prepared.remove(teaser.id) ?: return null
+        if (!video.usable) { video.release(); return null }
+        return video
+    }
+
+    /** Frees the prepared players (app in the background, feature off, signed out). */
+    fun releasePrepared() {
+        prepared.values.forEach { it.release() }
+        prepared.clear()
     }
 
     suspend fun refresh() {
+        releasePrepared()
         phase = Phase.Loading
         try {
             val feed = api.teasers(BATCH, emptyList())

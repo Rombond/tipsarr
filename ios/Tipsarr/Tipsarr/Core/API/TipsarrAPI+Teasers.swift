@@ -66,3 +66,60 @@ extension Teaser {
         )
     }
 }
+
+/// A title the person swiped past in Teasers, and when.
+struct TeaserHistoryEntry: Sendable, Identifiable, Equatable {
+    var item: MediaItem
+    var seenAt: Date
+    var id: String { item.id }
+}
+
+extension TipsarrAPI {
+    /// The history, newest first, with how many titles it holds in all.
+    func teaserHistory(offset: Int, limit: Int = 40) async throws -> (entries: [TeaserHistoryEntry], total: Int) {
+        try await load { client in
+            guard case .ok(let ok) = try await client.teaserHistory(query: .init(limit: Int64(limit), offset: Int64(offset))) else { throw APIError.unexpected }
+            let body = try ok.body.json
+            return (body.items.map(TeaserHistoryEntry.init), Int(body.total))
+        }
+    }
+
+    /// The title can show up in the feed again.
+    func forgetTeaser(_ type: MediaType, id: Int) async throws {
+        try await load { client in
+            _ = try await client.teaserForget(path: .init(_type: .init(rawValue: type.rawValue)!, id: Int64(id)))
+        }
+    }
+
+    /// Wipes the whole history of the signed-in person.
+    func forgetAllTeasers() async throws {
+        try await load { client in _ = try await client.teaserForgetAll() }
+    }
+}
+
+extension TeaserHistoryEntry {
+    init(_ h: Components.Schemas.HistoryItem) {
+        let state: RequestState? = switch (h.availability, h.requestStatus) {
+        case (.available, _): .available
+        case (.partial, _): .partial
+        case (_, .approved): .approved
+        case (_, .pending): .requested
+        default: nil
+        }
+        self.init(
+            item: MediaItem(
+                type: h._type == .tv ? .tv : .movie,
+                tmdbId: Int(h.tmdbId),
+                title: h.title,
+                posterPath: h.posterPath,
+                releaseYear: h.releaseDate.map { String($0.prefix(4)) }.flatMap { $0.isEmpty ? nil : $0 },
+                voteAverage: h.voteAverage,
+                state: state,
+                overview: h.overview.flatMap { $0.isEmpty ? nil : $0 },
+                backdropPath: h.backdropPath.flatMap { $0.isEmpty ? nil : $0 },
+                genreIds: (h.genreIds ?? []).map(Int.init)
+            ),
+            seenAt: Date(timeIntervalSince1970: TimeInterval(h.seenAt))
+        )
+    }
+}

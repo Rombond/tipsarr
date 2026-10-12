@@ -32,7 +32,11 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-const Version = "0.1.0"
+// Version is the release; the image build sets it with -ldflags "-X .../internal/api.Version=<tag>".
+var Version = "dev"
+
+// specVersion is the version written in the OpenAPI document; it stays fixed so the generated clients do not change at every release.
+const specVersion = "0.1.0"
 
 // APIVersion is bumped only for a breaking change to /api/v1 (apps then need an update); additions never bump it.
 const APIVersion = 1
@@ -75,7 +79,7 @@ type sessionCtxKey struct{}
 // NewHuma mounts the API on r under /api/v1 and returns the huma API (used to export the spec).
 func NewHuma(r chi.Router, d Deps) huma.API {
 	huma.DefaultArrayNullable = false // services always return non-nil slices; keeps generated TS types free of `| null`
-	cfg := huma.DefaultConfig("Tipsarr", Version)
+	cfg := huma.DefaultConfig("Tipsarr", specVersion)
 	cfg.Servers = []*huma.Server{{URL: "/api/v1"}}
 	cfg.CreateHooks = nil // no "$schema" link fields in responses
 	cfg.DocsPath = ""     // spec only; no bundled docs UI

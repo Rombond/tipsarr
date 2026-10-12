@@ -450,6 +450,15 @@
     <string name="m_tab_teasers">Teasers</string>
     <string name="m_teasers_done">Vous avez tout vu pour le moment. Revenez plus tard pour de nouvelles bandes-annonces.</string>
     <string name="m_teasers_error">Impossible de charger les bandes-annonces.</string>
+    <string name="m_teasers_history_confirm_all">Effacer tout votre historique Teasers ? Chaque titre pourra revenir dans le fil.</string>
+    <string name="m_teasers_history_empty">Rien pour l\'instant. Les titres que vous passez dans Teasers apparaîtront ici.</string>
+    <string name="m_teasers_history_forget">Oublier</string>
+    <string name="m_teasers_history_forget_all">Tout effacer</string>
+    <string name="m_teasers_history_forgot">%s pourra revenir</string>
+    <string name="m_teasers_history_hint">Les titres que vous avez passés dans Teasers. Ils restent hors du fil tant que vous ne les oubliez pas.</string>
+    <string name="m_teasers_history_seen_on">Vu %s</string>
+    <string name="m_teasers_history_title">Historique Teasers</string>
+    <string name="m_teasers_history_wiped">Historique Teasers effacé</string>
     <string name="m_teasers_mute">Couper le son</string>
     <string name="m_teasers_preparing">Préparation de vos bandes-annonces. Cela peut prendre une minute la première fois.</string>
     <string name="m_teasers_show_interface">Afficher les commandes</string>

@@ -162,3 +162,75 @@ func TestTeasersFeedSurvivesADeadResolver(t *testing.T) {
 		t.Fatalf("feed = %+v", feed)
 	}
 }
+
+// Everyone sees their own Teasers history and can forget one title or all of them.
+func TestTeaserHistory(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	history := func(c *http.Cookie) (int, []int) {
+		t.Helper()
+		resp, body := call(t, e.app, "GET", "/api/v1/teasers/history", "", c)
+		if resp.StatusCode != 200 {
+			t.Fatalf("history = %d %s", resp.StatusCode, body)
+		}
+		var h struct {
+			Items []struct {
+				TMDBID int    `json:"tmdbId"`
+				Title  string `json:"title"`
+				SeenAt int64  `json:"seenAt"`
+			} `json:"items"`
+			Total int `json:"total"`
+		}
+		if err := json.Unmarshal([]byte(body), &h); err != nil {
+			t.Fatalf("decode %s: %v", body, err)
+		}
+		var ids []int
+		for _, it := range h.Items {
+			if it.Title == "" || it.SeenAt == 0 {
+				t.Fatalf("history item without title or date: %s", body)
+			}
+			ids = append(ids, it.TMDBID)
+		}
+		return h.Total, ids
+	}
+	seen := func(id string, c *http.Cookie) {
+		t.Helper()
+		if resp, body := call(t, e.app, "POST", "/api/v1/teasers/seen", `{"type":"movie","tmdbId":`+id+`}`, c); resp.StatusCode != 204 {
+			t.Fatalf("seen = %d %s", resp.StatusCode, body)
+		}
+	}
+	seen("7", bob)
+	seen("1", bob)
+	seen("7", admin)
+	if total, ids := history(bob); total != 2 || len(ids) != 2 {
+		t.Fatalf("bob's history = %d %v", total, ids)
+	}
+	if total, _ := history(admin); total != 1 {
+		t.Fatalf("history leaks between people: admin has %d", total)
+	}
+	// forget one
+	if resp, _ := call(t, e.app, "DELETE", "/api/v1/teasers/seen/movie/7", "", bob); resp.StatusCode != 204 {
+		t.Fatalf("forget = %d", resp.StatusCode)
+	}
+	if total, ids := history(bob); total != 1 || ids[0] != 1 {
+		t.Fatalf("after forgetting 7: %d %v", total, ids)
+	}
+	// forget everything: only this person's rows go
+	if resp, _ := call(t, e.app, "DELETE", "/api/v1/teasers/seen", "", bob); resp.StatusCode != 204 {
+		t.Fatalf("forget all = %d", resp.StatusCode)
+	}
+	if total, _ := history(bob); total != 0 {
+		t.Fatalf("bob after wiping = %d", total)
+	}
+	if total, _ := history(admin); total != 1 {
+		t.Fatalf("admin's history was wiped too: %d", total)
+	}
+	for _, path := range []string{"/api/v1/teasers/history"} {
+		if resp, _ := call(t, e.app, "GET", path, ""); resp.StatusCode != 401 {
+			t.Fatalf("anonymous %s = %d", path, resp.StatusCode)
+		}
+	}
+	if resp, _ := call(t, e.app, "DELETE", "/api/v1/teasers/seen", ""); resp.StatusCode != 401 {
+		t.Fatalf("anonymous wipe = %d", resp.StatusCode)
+	}
+}

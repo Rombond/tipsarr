@@ -75,6 +75,58 @@ func (s *Service) MarkSeen(ctx context.Context, userID, mediaType string, tmdbID
 	return s.store.MarkTeaserSeen(ctx, userID, mediaType, int64(tmdbID))
 }
 
+// HistoryItem is a title the person swiped past, with when.
+type HistoryItem struct {
+	media.Item
+	SeenAt int64 `json:"seenAt" doc:"Unix time of the swipe"`
+}
+
+// History lists what a person swiped past, newest first, with the titles as the lists show them.
+// A title TMDB no longer answers for is left out of the page (the total still counts it).
+func (s *Service) History(ctx context.Context, u *store.User, limit, offset int) ([]HistoryItem, int, error) {
+	rows, total, err := s.store.TeaserSeenPage(ctx, u.ID, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	o := media.Opts{Language: u.Language, Region: u.Region}
+	found := make([]*HistoryItem, len(rows))
+	sem := make(chan struct{}, 6)
+	var wg sync.WaitGroup
+	for i, r := range rows {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			d, err := s.media.Detail(ctx, o, r.MediaType, int(r.TMDBID))
+			if err != nil {
+				return
+			}
+			found[i] = &HistoryItem{Item: d.Item, SeenAt: r.SeenAt}
+		}()
+	}
+	wg.Wait()
+	out := make([]HistoryItem, 0, len(rows))
+	for _, h := range found {
+		if h != nil {
+			out = append(out, *h)
+		}
+	}
+	return out, total, nil
+}
+
+// Forget makes one title eligible for the feed again.
+func (s *Service) Forget(ctx context.Context, userID, mediaType string, tmdbID int) error {
+	_, err := s.store.DeleteTeaserSeen(ctx, userID, mediaType, int64(tmdbID))
+	return err
+}
+
+// ForgetAll clears the whole history of a person.
+func (s *Service) ForgetAll(ctx context.Context, userID string) error {
+	_, err := s.store.ClearTeaserSeen(ctx, userID)
+	return err
+}
+
 func scopeOf(language, region string) string { return language + "|" + region }
 
 // cand is a title with the YouTube key of its trailer.

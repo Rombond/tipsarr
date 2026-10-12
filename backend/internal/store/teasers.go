@@ -44,6 +44,34 @@ func (s *Store) TeaserSeenSet(ctx context.Context, userID string, since int64) (
 	return out, nil
 }
 
+// TeaserSeenPage returns a page of the titles a person swiped past, newest first, and how many there are in all.
+func (s *Store) TeaserSeenPage(ctx context.Context, userID string, limit, offset int) ([]TeaserSeen, int, error) {
+	var rows []TeaserSeen
+	total, err := s.DB.NewSelect().Model(&rows).Where("user_id = ?", userID).
+		Order("seen_at DESC", "tmdb_id").Limit(int64(limit)).Offset(int64(offset)).ScanAndCount(ctx)
+	return rows, int(total), err
+}
+
+// DeleteTeaserSeen makes one title eligible for the feed again; it reports whether there was a row.
+func (s *Store) DeleteTeaserSeen(ctx context.Context, userID, mediaType string, tmdbID int64) (bool, error) {
+	res, err := s.DB.NewDelete().Model((*TeaserSeen)(nil)).Where("user_id = ?", userID).Where("media_type = ?", mediaType).Where("tmdb_id = ?", tmdbID).Exec(ctx)
+	if err != nil {
+		return false, err
+	}
+	n, _ := res.RowsAffected()
+	return n > 0, nil
+}
+
+// ClearTeaserSeen forgets everything a person swiped past and returns how many titles that was.
+func (s *Store) ClearTeaserSeen(ctx context.Context, userID string) (int, error) {
+	res, err := s.DB.NewDelete().Model((*TeaserSeen)(nil)).Where("user_id = ?", userID).Exec(ctx)
+	if err != nil {
+		return 0, err
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
+}
+
 // TeaserPoolRow is one title of the always-ready pool of a language and region.
 type TeaserPoolRow struct {
 	bun.BaseModel `bun:"table:teaser_pool"`

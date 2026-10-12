@@ -1283,6 +1283,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/teasers/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Titles you swiped past in the Teasers feed, newest first
+         * @description Open to every signed-in person (their own history). Titles are looked up in your language.
+         */
+        get: operations["teaserHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/teasers/seen": {
         parameters: {
             query?: never;
@@ -1294,7 +1314,25 @@ export interface paths {
         put?: never;
         /** Mark a title as swiped past, so the feed never shows it again */
         post: operations["teaserSeen"];
-        delete?: never;
+        /** Wipe your whole Teasers history: every title can come back in the feed */
+        delete: operations["teaserForgetAll"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teasers/seen/{type}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Forget one title of your Teasers history */
+        delete: operations["teaserForget"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1696,6 +1734,39 @@ export interface components {
         };
         HealthOutputBody: {
             ok: boolean;
+        };
+        HistoryItem: {
+            /**
+             * @description Library availability (filled by library sync)
+             * @enum {string}
+             */
+            availability: "none" | "partial" | "available";
+            backdropPath?: string;
+            genreIds?: number[];
+            overview?: string;
+            /** @description TMDB path, load via /images/tmdb/{size}/{file} */
+            posterPath?: string;
+            releaseDate?: string;
+            /**
+             * @description Set while an active request exists for this title
+             * @enum {string}
+             */
+            requestStatus?: "pending" | "approved";
+            /**
+             * Format: int64
+             * @description Unix time of the swipe
+             */
+            seenAt: number;
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+            /**
+             * @description movie or tv
+             * @enum {string}
+             */
+            type: "movie" | "tv";
+            /** Format: double */
+            voteAverage: number;
         };
         ImportUsersResponse: {
             /** Format: int64 */
@@ -2527,6 +2598,14 @@ export interface components {
         TeaserFilesTestRequest: {
             /** @description YouTube video key; default is a short public video */
             key?: string;
+        };
+        TeaserHistoryResponse: {
+            items: components["schemas"]["HistoryItem"][];
+            /**
+             * Format: int64
+             * @description How many titles the history holds in all
+             */
+            total: number;
         };
         TeaserSeenRequest: {
             /** Format: int64 */
@@ -7835,6 +7914,56 @@ export interface operations {
             };
         };
     };
+    teaserHistory: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeaserHistoryResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     teaserSeen: {
         parameters: {
             query?: never;
@@ -7847,6 +7976,90 @@ export interface operations {
                 "application/json": components["schemas"]["TeaserSeenRequest"];
             };
         };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    teaserForgetAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    teaserForget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type: "movie" | "tv";
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {

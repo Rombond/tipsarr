@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.RemoveRedEye
 import androidx.compose.material.icons.outlined.Settings
@@ -94,6 +95,8 @@ fun ProfileScreen(
     onOpenIssues: () -> Unit = {},
     onOpenUsers: () -> Unit = {},
     onOpenSync: () -> Unit = {},
+    teasersOn: Boolean = false,
+    onOpenTeasersHistory: () -> Unit = {},
     onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -150,17 +153,12 @@ fun ProfileScreen(
                 if (profile.can(Permission.MANAGE_USERS)) add { AdminRow(Icons.Outlined.People, Tokens.Status.approved, stringResource(R.string.nav_users), null, onOpenUsers) }
                 if (profile.can(Permission.MANAGE_SETTINGS)) add { AdminRow(Icons.Outlined.Sync, Tokens.Status.searching, stringResource(R.string.m_admin_sync), null, onOpenSync) }
             }
-            if (adminRows.isNotEmpty()) item {
-                Column(Modifier.padding(horizontal = GUTTER), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
-                    Text(stringResource(R.string.m_admin_title), fontSize = Tokens.FontSize.footnote, fontWeight = FontWeight.SemiBold, color = Tokens.palette.mutedFg, modifier = Modifier.padding(horizontal = Tokens.Spacing.xs))
-                    val shape = RoundedCornerShape(Tokens.Radius.md)
-                    Column(Modifier.fillMaxWidth().clip(shape).background(Tokens.palette.card).border(1.dp, Tokens.palette.border, shape)) {
-                        adminRows.forEachIndexed { index, row ->
-                            if (index > 0) HorizontalDivider(Modifier.padding(start = 52.dp), color = Tokens.palette.border)
-                            row()
-                        }
-                    }
-                }
+            if (adminRows.isNotEmpty()) item { RowGroup(stringResource(R.string.m_admin_title), adminRows) }
+            // Open to everyone, but only while the server has the Teasers feature on.
+            if (teasersOn) item {
+                RowGroup(stringResource(R.string.m_tab_teasers), buildList<@Composable () -> Unit> {
+                    add { AdminRow(Icons.Outlined.History, Tokens.Status.approved, stringResource(R.string.m_teasers_history_title), null, onOpenTeasersHistory) }
+                })
             }
             if (model.recent.isNotEmpty()) item {
                 Column(Modifier.padding(horizontal = GUTTER), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
@@ -189,6 +187,21 @@ fun ProfileScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/** A small label over a rounded card holding [rows] separated by dividers (the Administration look). */
+@Composable
+private fun RowGroup(label: String, rows: List<@Composable () -> Unit>) {
+    Column(Modifier.padding(horizontal = GUTTER), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
+        Text(label, fontSize = Tokens.FontSize.footnote, fontWeight = FontWeight.SemiBold, color = Tokens.palette.mutedFg, modifier = Modifier.padding(horizontal = Tokens.Spacing.xs))
+        val shape = RoundedCornerShape(Tokens.Radius.md)
+        Column(Modifier.fillMaxWidth().clip(shape).background(Tokens.palette.card).border(1.dp, Tokens.palette.border, shape)) {
+            rows.forEachIndexed { index, row ->
+                if (index > 0) HorizontalDivider(Modifier.padding(start = 52.dp), color = Tokens.palette.border)
+                row()
             }
         }
     }

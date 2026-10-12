@@ -11,6 +11,7 @@ extension ProfileView {
             statTiles(vertical: false)
             mostWatched(posterWidth: 116)
             recentGrid
+            if session.serverStatus?.teasersAvailable ?? false { TeasersGroup() }
             if profile.canAny(.viewIssues, .manageUsers, .manageSettings) { AdminTiles(profile: profile, openIssues: model.openIssues) }
         }
     }
@@ -27,6 +28,7 @@ extension ProfileView {
             VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
                 mostWatched(posterWidth: 114)
                 recentGrid
+                if session.serverStatus?.teasersAvailable ?? false { TeasersGroup() }
                 if profile.canAny(.viewIssues, .manageUsers, .manageSettings) { AdminTiles(profile: profile, openIssues: model.openIssues) }
             }
             .frame(maxWidth: .infinity)

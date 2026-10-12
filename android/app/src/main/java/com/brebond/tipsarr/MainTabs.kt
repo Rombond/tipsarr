@@ -53,6 +53,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.activity.compose.BackHandler
 import com.brebond.tipsarr.core.api.MediaItem
 import com.brebond.tipsarr.core.support.LocalTitleMenu
@@ -75,6 +76,7 @@ import com.brebond.tipsarr.features.requests.RequestDetailScreen
 import com.brebond.tipsarr.features.requests.RequestsScreen
 import com.brebond.tipsarr.features.search.GenreScreen
 import com.brebond.tipsarr.features.search.SearchScreen
+import com.brebond.tipsarr.features.teasers.TeasersHistoryScreen
 import com.brebond.tipsarr.features.teasers.TeasersScreen
 import com.brebond.tipsarr.features.detail.MediaRoute
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -131,6 +133,7 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
     val source = remember(account.id) { ImageSource(account.serverUrl, account.token) }
     val loader = remember(account.id) { createImageLoader(context, source) }
     var tab by rememberSaveable { mutableStateOf(AppTab.Discover) }
+    val tabNow = rememberUpdatedState(tab)
     val toasts = remember { ToastCenter(scope) }
     val openTitle: (MediaItem) -> Unit = { model.openTitle(tab, MediaRoute(it.type, it.tmdbId, it.title)) }
     LaunchedEffect(profile) { model.me = profile }
@@ -163,12 +166,26 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
     LaunchedEffect(account.id) { model.refreshFeatures() }
     DisposableEffect(lifecycle, account.id) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) scope.launch { model.refreshFeatures() }
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> scope.launch {
+                    model.refreshFeatures()
+                    if (model.teasersOn && tabNow.value != AppTab.Teasers) model.teasers.prefetch()
+                }
+                // Nothing buffers or holds a decoder while the app is out of sight.
+                androidx.lifecycle.Lifecycle.Event.ON_STOP -> model.teasers.releasePrepared()
+                else -> {}
+            }
         }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
     LaunchedEffect(model.teasersOn) { if (!model.teasersOn && tab == AppTab.Teasers) tab = AppTab.Discover }
+    // Feature on and signed in: the first feed batch loads in the background and the first two trailers are prepared,
+    // so the tab opens on a ready picture. Off: nothing is held.
+    LaunchedEffect(model.teasersOn, tab) {
+        if (!model.teasersOn) model.teasers.releasePrepared()
+        else if (tab != AppTab.Teasers && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) model.teasers.prefetch()
+    }
     val tabs = AppTab.entries.filter { it != AppTab.Teasers || model.teasersOn }
 
     // A link for this account's server opens its screen; links for another server wait for that account.
@@ -226,6 +243,8 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                                     onOpenIssues = { model.open(tab, Screen.Issues) },
                                     onOpenUsers = { model.open(tab, Screen.Users) },
                                     onOpenSync = { model.open(tab, Screen.Sync) },
+                                    teasersOn = model.teasersOn,
+                                    onOpenTeasersHistory = { model.open(tab, Screen.TeasersHistory) },
                                     onBack = { model.back(tab) },
                                 )
                             }
@@ -250,6 +269,7 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                             Screen.Devices -> DevicesScreen(model.api, onBack = { model.back(tab) })
                             Screen.Watchlist -> WatchlistScreen(model.api, onBack = { model.back(tab) }, onOpen = openTitle)
                             Screen.Hidden -> HiddenScreen(model.api, onBack = { model.back(tab) }, onOpen = openTitle)
+                            Screen.TeasersHistory -> TeasersHistoryScreen(model.api, onBack = { model.back(tab) }, onOpen = openTitle)
                             Screen.Issues -> IssuesScreen(model.api, onBack = { model.back(tab) }, onOpen = { model.open(tab, Screen.Issue(it)) })
                             is Screen.Issue -> IssueDetailScreen(model.api, top.id, profile.can(Permission.MANAGE_ISSUES), profile.id, onBack = { model.back(tab) }, onOpenTitle = { model.openTitle(tab, it) })
                             Screen.Users -> UsersScreen(model.api, profile, onBack = { model.back(tab) }, onOpen = { model.open(tab, Screen.User(it)) })

@@ -17,6 +17,9 @@ struct MainTabView: View {
     @State private var toast = ToastCenter()
     @State private var pendingCount = 0
     @State private var ratings: RatingProvider
+    /// The Teasers feed and its first trailers are prepared here, so opening the tab shows a picture at once.
+    @State private var teasersModel: TeasersModel
+    @State private var teaserVideos: TeaserVideoPool
     @State private var live = LiveUpdates()
     @State private var pane = DetailPane()
     @State private var foldedHinge = false
@@ -33,6 +36,8 @@ struct MainTabView: View {
             api: TipsarrAPI(serverURL: account.serverURL, token: account.token),
             source: RatingSource(rawValue: profile.ratingSource) ?? .tmdb
         ))
+        _teasersModel = State(initialValue: TeasersModel(api: TipsarrAPI(serverURL: account.serverURL, token: account.token)))
+        _teaserVideos = State(initialValue: TeaserVideoPool(token: account.token))
     }
 
     var body: some View {
@@ -74,6 +79,12 @@ struct MainTabView: View {
             if !on && router.tab == .teasers { router.tab = .discover }
         }
         .task { await session.refreshStatus() }
+        .task(id: teasersOn) {
+            // The first two trailers start buffering now (paused), long before the tab is opened.
+            guard teasersOn else { return }
+            await teasersModel.loadIfNeeded()
+            for teaser in teasersModel.items.prefix(2) { _ = teaserVideos.video(for: teaser) }
+        }
         .onChange(of: profile.ratingSource) { _, new in ratings.setSource(RatingSource(rawValue: new) ?? .tmdb) }
         .task(id: router.tab) { await refreshPending() }
         .onChange(of: scenePhase) { _, phase in
@@ -184,7 +195,7 @@ struct MainTabView: View {
     @ViewBuilder private func content(_ tab: AppTab, bottomInset: CGFloat = 0) -> some View {
         switch tab {
         case .teasers:
-            TeasersView(api: api, isSelected: router.tab == .teasers, path: $router.teasersPath, bottomInset: bottomInset) {
+            TeasersView(model: teasersModel, pool: teaserVideos, isSelected: router.tab == .teasers, path: $router.teasersPath, bottomInset: bottomInset) {
                 // The server stopped serving Teasers while the tab was open.
                 Task { await session.refreshStatus() }
                 router.tab = .discover

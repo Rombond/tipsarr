@@ -7208,6 +7208,150 @@
         }
       }
     },
+    "m.teasers.history.confirm_all": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wipe your whole Teasers history? Every title can show up in the feed again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacer tout votre historique Teasers ? Chaque titre pourra revenir dans le fil."
+          }
+        }
+      }
+    },
+    "m.teasers.history.empty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing here yet. Titles you swipe past in Teasers will show up in this list."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien pour l'instant. Les titres que vous passez dans Teasers apparaîtront ici."
+          }
+        }
+      }
+    },
+    "m.teasers.history.forget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forget"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oublier"
+          }
+        }
+      }
+    },
+    "m.teasers.history.forget_all": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wipe all"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout effacer"
+          }
+        }
+      }
+    },
+    "m.teasers.history.forgot": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ can show up again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pourra revenir"
+          }
+        }
+      }
+    },
+    "m.teasers.history.hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titles you swiped past in Teasers. They stay out of the feed until you forget them."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les titres que vous avez passés dans Teasers. Ils restent hors du fil tant que vous ne les oubliez pas."
+          }
+        }
+      }
+    },
+    "m.teasers.history.seen_on": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seen %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vu %@"
+          }
+        }
+      }
+    },
+    "m.teasers.history.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teasers history"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique Teasers"
+          }
+        }
+      }
+    },
+    "m.teasers.history.wiped": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teasers history wiped"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique Teasers effacé"
+          }
+        }
+      }
+    },
     "m.teasers.mute": {
       "localizations": {
         "en": {

@@ -55,4 +55,63 @@ func registerTeasers(api huma.API, d Deps) {
 		}
 		return &struct{}{}, d.Teasers.MarkSeen(ctx, u.ID, in.Body.Type, in.Body.TMDBID)
 	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "teaserHistory", Method: http.MethodGet, Path: "/teasers/history",
+		Summary:     "Titles you swiped past in the Teasers feed, newest first",
+		Description: "Open to every signed-in person (their own history). Titles are looked up in your language.",
+		Tags:        []string{"teasers"}, Security: sec, Errors: []int{http.StatusUnauthorized},
+	}, func(ctx context.Context, in *struct {
+		Limit  int `query:"limit" minimum:"1" maximum:"100" default:"40"`
+		Offset int `query:"offset" minimum:"0" default:"0"`
+	}) (*struct {
+		Body struct {
+			Items []teasers.HistoryItem `json:"items"`
+			Total int                   `json:"total" doc:"How many titles the history holds in all"`
+		}
+	}, error) {
+		u, err := requireUser(ctx)
+		if err != nil {
+			return nil, err
+		}
+		items, total, err := d.Teasers.History(ctx, u, in.Limit, in.Offset)
+		if err != nil {
+			return nil, mediaErr(err)
+		}
+		out := &struct {
+			Body struct {
+				Items []teasers.HistoryItem `json:"items"`
+				Total int                   `json:"total" doc:"How many titles the history holds in all"`
+			}
+		}{}
+		out.Body.Items, out.Body.Total = items, total
+		return out, nil
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "teaserForgetAll", Method: http.MethodDelete, Path: "/teasers/seen",
+		Summary: "Wipe your whole Teasers history: every title can come back in the feed", Tags: []string{"teasers"}, Security: sec,
+		DefaultStatus: http.StatusNoContent, Errors: []int{http.StatusUnauthorized},
+	}, func(ctx context.Context, in *struct{}) (*struct{}, error) {
+		u, err := requireUser(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &struct{}{}, d.Teasers.ForgetAll(ctx, u.ID)
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "teaserForget", Method: http.MethodDelete, Path: "/teasers/seen/{type}/{id}",
+		Summary: "Forget one title of your Teasers history", Tags: []string{"teasers"}, Security: sec,
+		DefaultStatus: http.StatusNoContent, Errors: []int{http.StatusUnauthorized},
+	}, func(ctx context.Context, in *struct {
+		Type string `path:"type" enum:"movie,tv"`
+		ID   int    `path:"id" minimum:"1"`
+	}) (*struct{}, error) {
+		u, err := requireUser(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &struct{}{}, d.Teasers.Forget(ctx, u.ID, in.Type, in.ID)
+	})
 }

@@ -450,6 +450,15 @@
     <string name="m_tab_teasers">Teasers</string>
     <string name="m_teasers_done">You have seen everything for now. Come back later for new trailers.</string>
     <string name="m_teasers_error">Could not load trailers.</string>
+    <string name="m_teasers_history_confirm_all">Wipe your whole Teasers history? Every title can show up in the feed again.</string>
+    <string name="m_teasers_history_empty">Nothing here yet. Titles you swipe past in Teasers will show up in this list.</string>
+    <string name="m_teasers_history_forget">Forget</string>
+    <string name="m_teasers_history_forget_all">Wipe all</string>
+    <string name="m_teasers_history_forgot">%s can show up again</string>
+    <string name="m_teasers_history_hint">Titles you swiped past in Teasers. They stay out of the feed until you forget them.</string>
+    <string name="m_teasers_history_seen_on">Seen %s</string>
+    <string name="m_teasers_history_title">Teasers history</string>
+    <string name="m_teasers_history_wiped">Teasers history wiped</string>
     <string name="m_teasers_mute">Mute</string>
     <string name="m_teasers_preparing">Preparing your trailers. This can take a minute the first time.</string>
     <string name="m_teasers_show_interface">Show controls</string>
