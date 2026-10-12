@@ -176,7 +176,7 @@ func TestRequestRights(t *testing.T) {
 func TestQuota(t *testing.T) {
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
-	now := time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC)
+	now := time.Now() // requests are stamped with the real time, so the fake clock starts from it
 	e.reqs.SetClock(func() time.Time { return now })
 	bobID := userID(t, e, bob)
 
