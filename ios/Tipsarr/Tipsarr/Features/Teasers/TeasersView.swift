@@ -14,6 +14,11 @@ struct TeasersView: View {
     @State private var model: TeasersModel
     @State private var current: String?
     @State private var tapPaused = false
+    /// Pinched in: the picture fills the screen and most of the interface is hidden.
+    @State private var zoomed = false
+    /// Pinching hid the interface: it stays hidden until the next trailer or the button that brings it back.
+    @State private var uiHidden = false
+    @State private var landscape = false
     @State private var draft: RequestDraft?
     @State private var pool: TeaserVideoPool
     /// Cards whose file could not be played: they use the YouTube embed instead.
@@ -42,11 +47,17 @@ struct TeasersView: View {
     var body: some View {
         NavigationStack(path: $path) {
             GeometryReader { geo in
-                content(insets: geo.safeAreaInsets, width: geo.size.width)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // The feed fills the whole screen; `insets` tell the cards where the notch, the home bar and the tab bar are.
+                let insets = geo.safeAreaInsets
+                content(insets: insets, width: geo.size.width)
+                    .frame(width: geo.size.width + insets.leading + insets.trailing, height: geo.size.height + insets.top + insets.bottom)
+                    .offset(x: -insets.leading, y: -insets.top)
             }
+            .onGeometryChange(for: Bool.self, of: { $0.size.width > $0.size.height }) { landscape = $0 }
             .background(Color.black)
             .toolbar(.hidden, for: .navigationBar)
+            // The tab bar gives way in landscape.
+            .toolbarVisibility(landscape || (uiHidden && !zoomed) ? .hidden : .automatic, for: .tabBar)
             .mediaDestinations()
         }
         .task { await model.loadIfNeeded() }
@@ -58,11 +69,17 @@ struct TeasersView: View {
         }
         .onChange(of: current) { _, _ in preload() }
         .onChange(of: model.items.count) { _, _ in preload() }
-        .onChange(of: isSelected) { _, selected in if !selected { pool.removeAll() } }
-        .onDisappear { pool.removeAll() }
         .onChange(of: isSelected, initial: true) { _, selected in
-            // The ambient category follows the silent switch and leaves the person's music alone.
-            if selected { try? AVAudioSession.sharedInstance().setCategory(.ambient) }
+            // Playback follows the media volume, not the ringer switch.
+            let session = AVAudioSession.sharedInstance()
+            if selected {
+                try? session.setCategory(.playback, mode: .moviePlayback)
+                try? session.setActive(true)
+            } else {
+                zoomed = false
+                uiHidden = false
+                try? session.setActive(false, options: .notifyOthersOnDeactivation)
+            }
         }
         .sheet(item: $draft) { draft in
             RequestSheet(model: draft.model) { record in
@@ -95,8 +112,11 @@ struct TeasersView: View {
                 ForEach(model.items) { teaser in
                     TeaserPage(
                         teaser: teaser, video: failedFiles.contains(teaser.id) ? nil : pool.video(for: teaser), isCurrent: current == teaser.id || (current == nil && teaser.id == model.items.first?.id),
-                        feedActive: feedActive, paused: tapPaused, muted: muted, bottomInset: max(insets.bottom, bottomInset), showsHint: model.items.first?.id == teaser.id,
+                        feedActive: feedActive, paused: tapPaused, muted: muted, uiHidden: uiHidden, bottomInset: max(insets.bottom, bottomInset), topInset: insets.top,
+                        leadingInset: insets.leading, trailingInset: insets.trailing, showsHint: model.items.first?.id == teaser.id,
                         onTap: { tapPaused.toggle() },
+                        onZoom: { zoomed = $0; if $0 { uiHidden = true } },
+                        onShowUI: { uiHidden = false },
                         onMute: { muted.toggle() },
                         onRequest: { Task { await request(teaser) } },
                         onDetails: { open(teaser) },
@@ -121,12 +141,13 @@ struct TeasersView: View {
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $current)
         .scrollIndicators(.hidden)
-        // A phone-shaped column on wide windows.
-        .frame(maxWidth: width > 700 ? 520 : .infinity)
+        .scrollDisabled(zoomed)
+        // A phone-shaped column on wide windows (tablets), never on a phone turned sideways.
+        .frame(maxWidth: width > 700 && UIDevice.current.userInterfaceIdiom != .phone ? 520 : .infinity)
         .frame(maxWidth: .infinity)
-        .ignoresSafeArea()
         .onChange(of: current) { _, id in
             tapPaused = false
+            uiHidden = false
             if id == Self.endID { model.reachedEnd() } else { Task { await model.visible(id) } }
         }
     }
@@ -209,9 +230,16 @@ private struct TeaserPage: View {
     let feedActive: Bool
     let paused: Bool
     let muted: Bool
+    let uiHidden: Bool
     let bottomInset: CGFloat
+    let topInset: CGFloat
+    /// Sideways, the notch side: the title and description keep clear of it, the action buttons do not.
+    let leadingInset: CGFloat
+    let trailingInset: CGFloat
     let showsHint: Bool
     var onTap: () -> Void
+    var onZoom: (Bool) -> Void
+    var onShowUI: () -> Void
     var onMute: () -> Void
     var onRequest: () -> Void
     var onDetails: () -> Void
@@ -221,9 +249,28 @@ private struct TeaserPage: View {
     var onFileFailed: () -> Void
 
     @Environment(\.appContext) private var context
+    /// Hold on a side of the page: 2x speed.
+    @State private var fast = false
+    /// A finger is on the progress bar.
+    @State private var scrubbing = false
+    @State private var overviewOpen = false
+    /// Times the YouTube fallback played to its end (the file player counts its own).
+    @State private var embedLoops = 0
+    /// Pinch scale while the fingers are down; it springs back to 1 on release.
+    @GestureState private var live = Pinch()
+
+    private struct Pinch: Equatable {
+        var scale: CGFloat = 1
+        var anchor: UnitPoint = .center
+    }
+
+    /// Fingers are pinching: the interface is hidden.
+    private var zoomed: Bool { live.scale > 1.01 }
+    private var hidden: Bool { uiHidden || zoomed }
 
     private var playing: Bool { isCurrent && feedActive }
     private var wantsPlay: Bool { playing && !paused }
+    private var loopCount: Int { max(video?.loops ?? 0, embedLoops) }
 
     var body: some View {
         ZStack {
@@ -233,41 +280,135 @@ private struct TeaserPage: View {
                 .blur(radius: 24)
             if let video {
                 TeaserVideoView(video: video)
+                    .id(ObjectIdentifier(video))
+                    .scaleEffect(live.scale, anchor: live.anchor)
+                    .animation(live.scale == 1 ? .spring(duration: 0.3) : nil, value: live.scale)
                     .ignoresSafeArea()
                     .opacity(video.isReady ? 1 : 0)
                     .animation(.easeIn(duration: 0.2), value: video.isReady)
                     .onChange(of: wantsPlay, initial: true) { _, play in video.set(playing: play, muted: muted) }
                     .onChange(of: muted) { _, now in video.set(playing: wantsPlay, muted: now) }
+                    .onChange(of: fast) { _, now in video.setFast(now) }
                     .onChange(of: video.failed) { _, failed in if failed { onFileFailed() } }
                 if playing, !video.isReady, !paused { ProgressView().tint(.white).allowsHitTesting(false) }
             } else if playing {
-                TeaserPlayer(videoID: teaser.trailerKey, muted: muted, playing: !paused, onError: onPlayerError)
+                TeaserPlayer(videoID: teaser.trailerKey, muted: muted, playing: !paused, fast: fast, onLoop: { embedLoops += 1 }, onError: onPlayerError)
+                    .scaleEffect(live.scale, anchor: live.anchor)
+                    .animation(live.scale == 1 ? .spring(duration: 0.3) : nil, value: live.scale)
                     .id(teaser.trailerKey)
                     .transition(.opacity)
             }
-            Color.clear.contentShape(.rect).onTapGesture(perform: onTap)
+            touchLayer
             if paused && playing {
                 Image(systemName: "play.fill").font(.system(size: 56)).foregroundStyle(.white.opacity(0.85)).allowsHitTesting(false)
             }
-            LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .center, endPoint: .bottom).allowsHitTesting(false)
-            overlay
-            if let video, video.isReady { progressLine(video) }
+            if !hidden {
+                LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .center, endPoint: .bottom).allowsHitTesting(false)
+                overlay
+            }
+            if let video, video.isReady, !hidden { scrubBar(video) }
+            if fast { speedBadge }
+            if uiHidden && !zoomed { showUIButton }
         }
         .clipped()
+        .simultaneousGesture(
+            MagnifyGesture()
+                .updating($live) { value, state, _ in
+                    guard isCurrent else { return }
+                    state = Pinch(scale: min(max(value.magnification, 1), 4), anchor: value.startAnchor)
+                }
+        )
+        // A gesture state resets by itself when the fingers lift or the system cancels the gesture.
+        .onChange(of: zoomed) { _, now in onZoom(now) }
+        .onChange(of: isCurrent) { _, current in if !current { fast = false; scrubbing = false } }
     }
 
-    /// A thin line along the bottom edge: how far the trailer is.
-    private func progressLine(_ video: TeaserVideo) -> some View {
+    /// Tap anywhere pauses; holding on a side (like TikTok) plays at 2x until the finger lifts.
+    private var touchLayer: some View {
+        GeometryReader { geo in
+            HStack(spacing: 0) {
+                edge.frame(width: geo.size.width * 0.28)
+                Color.clear.contentShape(.rect).onTapGesture(perform: onTap)
+                edge.frame(width: geo.size.width * 0.28)
+            }
+        }
+    }
+
+    private var edge: some View {
+        Color.clear.contentShape(.rect)
+            .onTapGesture(perform: onTap)
+            .onLongPressGesture(minimumDuration: 0.25, maximumDistance: 60, perform: { fast = true }, onPressingChanged: { pressing in
+                if !pressing { fast = false }
+            })
+    }
+
+    /// Brings the interface back after a zoom hid it.
+    private var showUIButton: some View {
+        VStack {
+            HStack {
+                Spacer()
+                Button(action: onShowUI) {
+                    Image(systemName: "eye")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .background(.black.opacity(0.45), in: .circle)
+                        .contentShape(.circle)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("m.teasers.show_interface"))
+            }
+            .padding(.top, topInset + Tokens.Spacing.md)
+            .padding(.trailing, Tokens.Spacing.lg)
+            Spacer()
+        }
+    }
+
+    private var speedBadge: some View {
+        VStack {
+            Label { Text(verbatim: "2×") } icon: { Image(systemName: "forward.fill") }
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, Tokens.Spacing.md).padding(.vertical, Tokens.Spacing.sm)
+                .background(.black.opacity(0.5), in: .capsule)
+                .padding(.top, topInset + Tokens.Spacing.lg)
+            Spacer()
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// The progress line along the bottom edge: drag it to go forward or back.
+    private func scrubBar(_ video: TeaserVideo) -> some View {
         VStack {
             Spacer()
             GeometryReader { geo in
-                Rectangle().fill(.white.opacity(0.85)).frame(width: geo.size.width * video.progress)
+                ZStack(alignment: .bottomLeading) {
+                    Color.clear
+                    Rectangle().fill(.white.opacity(0.25)).frame(height: scrubbing ? 8 : 3)
+                    Rectangle().fill(.white.opacity(0.9)).frame(width: geo.size.width * video.progress, height: scrubbing ? 8 : 3)
+                }
+                .contentShape(.rect)
+                .animation(.easeOut(duration: 0.12), value: scrubbing)
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { drag in
+                            if !scrubbing { scrubbing = true; video.beginScrub() }
+                            video.scrub(to: drag.location.x / max(geo.size.width, 1))
+                        }
+                        .onEnded { _ in
+                            scrubbing = false
+                            video.endScrub()
+                        }
+                )
             }
-            .frame(height: 2)
-            .background(.white.opacity(0.25))
+            .frame(height: 28)
             .padding(.bottom, bottomInset)
         }
-        .allowsHitTesting(false)
+    }
+
+    private static func clock(_ seconds: Double) -> String {
+        let total = max(Int(seconds.rounded(.down)), 0)
+        return String(format: "%d:%02d", total / 60, total % 60)
     }
 
     private var overlay: some View {
@@ -277,30 +418,40 @@ private struct TeaserPage: View {
                 info
                 actions
             }
-            .padding(.horizontal, Tokens.Spacing.lg)
-            .padding(.bottom, max(bottomInset, Tokens.Spacing.lg) + Tokens.Spacing.md)
+            .padding(.leading, Tokens.Spacing.lg + leadingInset)
+            .padding(.trailing, Tokens.Spacing.lg)
+            .padding(.bottom, max(bottomInset, Tokens.Spacing.lg) + Tokens.Spacing.md + 24)
         }
         .environment(\.colorScheme, .dark)
     }
 
     private var info: some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
-            Text(verbatim: teaser.item.title)
-                .font(.title2.weight(.bold))
-                .lineLimit(2)
+            Button(action: onDetails) {
+                Text(verbatim: teaser.item.title)
+                    .font(.title2.weight(.bold))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
             HStack(spacing: Tokens.Spacing.sm) {
                 Text(teaser.item.type == .tv ? "m.poster.tv" : "m.poster.movie")
                 if let year = teaser.item.releaseYear { Text(verbatim: "· \(year)") }
                 if teaser.item.voteAverage > 0 {
-                    Text(verbatim: "· ★ \(teaser.item.voteAverage.formatted(.number.precision(.fractionLength(1))))")
+                    Text(verbatim: "·")
+                    RatingLabel(input: RatingInput(type: teaser.item.type, tmdbId: teaser.item.tmdbId, tmdb: teaser.item.voteAverage), textColor: .white.opacity(0.85))
                 }
             }
             .font(.subheadline.weight(.medium))
             .foregroundStyle(.white.opacity(0.85))
-            if let overview = teaser.item.overview {
-                Text(verbatim: overview).font(.subheadline).lineLimit(2).foregroundStyle(.white.opacity(0.85))
+            if scrubbing, let video {
+                Text(verbatim: "\(Self.clock(video.currentTime)) / \(Self.clock(video.duration))")
+                    .font(.title3.weight(.semibold).monospacedDigit())
+            } else if let overview = teaser.item.overview {
+                overviewText(overview)
             }
-            if showsHint {
+            if showsHint, loopCount >= 2 {
                 Label { Text("m.teasers.swipe_hint") } icon: { Image(systemName: "chevron.up") }
                     .font(.footnote).foregroundStyle(.white.opacity(0.7)).padding(.top, Tokens.Spacing.xs)
             }
@@ -308,6 +459,22 @@ private struct TeaserPage: View {
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity, alignment: .leading)
         .shadow(color: .black.opacity(0.5), radius: 4)
+    }
+
+    /// Two lines; a tap shows all of it (scrollable when long) and a second tap folds it back.
+    @ViewBuilder private func overviewText(_ overview: String) -> some View {
+        let text = Text(verbatim: overview).font(.subheadline).foregroundStyle(.white.opacity(0.85)).multilineTextAlignment(.leading)
+        Group {
+            if overviewOpen {
+                ScrollView { text.frame(maxWidth: .infinity, alignment: .leading) }
+                    .frame(maxHeight: 180)
+                    .scrollIndicators(.hidden)
+            } else {
+                text.lineLimit(2)
+            }
+        }
+        .contentShape(.rect)
+        .onTapGesture { withAnimation(.easeInOut(duration: 0.2)) { overviewOpen.toggle() } }
     }
 
     private var actions: some View {

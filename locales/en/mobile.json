@@ -218,6 +218,7 @@
   "m.tab.teasers": "Teasers",
   "m.teasers.done": "You have seen everything for now. Come back later for new trailers.",
   "m.teasers.error": "Could not load trailers.",
+  "m.teasers.show_interface": "Show controls",
   "m.teasers.mute": "Mute",
   "m.teasers.unmute": "Unmute",
   "m.teasers.swipe_hint": "Swipe up for the next trailer",

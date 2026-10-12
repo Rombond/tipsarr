@@ -103,6 +103,8 @@ extension EnvironmentValues {
 /// Provider logo and score, e.g. the IMDb logo and "7.8". Empty while there is no score.
 struct RatingLabel: View {
     let input: RatingInput
+    /// The score's colour; cards over a picture pass a light one.
+    var textColor: Color = Tokens.palette.mutedFg
     @Environment(\.ratingProvider) private var provider
 
     private var reading: RatingProvider.Reading? {
@@ -120,7 +122,7 @@ struct RatingLabel: View {
                         ProviderMark(source: reading.source, value: reading.value, height: 12)
                         Text(verbatim: reading.text)
                             .font(.footnote.weight(.medium))
-                            .foregroundStyle(Tokens.palette.mutedFg)
+                            .foregroundStyle(textColor)
                     }
                 }
                 .accessibilityElement(children: .ignore)

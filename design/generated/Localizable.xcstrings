@@ -7192,6 +7192,22 @@
         }
       }
     },
+    "m.teasers.show_interface": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show controls"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher les commandes"
+          }
+        }
+      }
+    },
     "m.teasers.swipe_hint": {
       "localizations": {
         "en": {
@@ -12677,6 +12693,540 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ min | %1$@ min"
+          }
+        }
+      }
+    },
+    "trailers.breaker_closed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En marche"
+          }
+        }
+      }
+    },
+    "trailers.breaker_open": {
+      "comment": "placeholders: time",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused until %@: YouTube may be blocking this address."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En pause jusqu’à %@ : YouTube bloque peut-être cette adresse."
+          }
+        }
+      }
+    },
+    "trailers.cache": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cache"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cache"
+          }
+        }
+      }
+    },
+    "trailers.cache_value": {
+      "comment": "placeholders: used, limit",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ of %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ sur %2$@"
+          }
+        }
+      }
+    },
+    "trailers.clear": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear cache"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vider le cache"
+          }
+        }
+      }
+    },
+    "trailers.clear_confirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete every downloaded trailer? They are fetched again when needed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer toutes les bandes-annonces téléchargées ? Elles seront récupérées à nouveau au besoin."
+          }
+        }
+      }
+    },
+    "trailers.cleared": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cache cleared"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cache vidé"
+          }
+        }
+      }
+    },
+    "trailers.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lets the Teasers tab of the apps play trailers as video files instead of the YouTube player. It needs the separate trailer-resolver container, which you build yourself (see trailer-resolver/README.md). Without it the Teasers tab stays hidden in the apps."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permet à l’onglet Teasers des applications de lire les bandes-annonces comme des fichiers vidéo au lieu du lecteur YouTube. Demande le conteneur séparé trailer-resolver, que vous construisez vous-même (voir trailer-resolver/README.md). Sans lui, l’onglet Teasers reste caché dans les applications."
+          }
+        }
+      }
+    },
+    "trailers.downloads": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloads"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargements"
+          }
+        }
+      }
+    },
+    "trailers.files": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fichiers"
+          }
+        }
+      }
+    },
+    "trailers.files_value": {
+      "comment": "placeholders: ready, queued, running, failed",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ready, %2$@ queued, %3$@ running, %4$@ failed"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ prêts, %2$@ en attente, %3$@ en cours, %4$@ en échec"
+          }
+        }
+      }
+    },
+    "trailers.height": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maximum video height"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hauteur maximale de la vidéo"
+          }
+        }
+      }
+    },
+    "trailers.key_placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resolver API key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé d’API du résolveur"
+          }
+        }
+      }
+    },
+    "trailers.key_saved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A key is saved (type a new one to replace it)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une clé est enregistrée (saisissez-en une nouvelle pour la remplacer)"
+          }
+        }
+      }
+    },
+    "trailers.last_error": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last error"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernière erreur"
+          }
+        }
+      }
+    },
+    "trailers.need_config": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save the address and the key first."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrez d’abord l’adresse et la clé."
+          }
+        }
+      }
+    },
+    "trailers.not_configured": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No address or key saved yet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune adresse ni clé enregistrée."
+          }
+        }
+      }
+    },
+    "trailers.off_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trailer files are off. The status below is read from the saved address."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les fichiers de bandes-annonces sont désactivés. L’état ci-dessous vient de l’adresse enregistrée."
+          }
+        }
+      }
+    },
+    "trailers.reachable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resolver"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Résolveur"
+          }
+        }
+      }
+    },
+    "trailers.reachable_no": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not reachable"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Injoignable"
+          }
+        }
+      }
+    },
+    "trailers.reachable_yes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reachable"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Joignable"
+          }
+        }
+      }
+    },
+    "trailers.refresh": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualiser"
+          }
+        }
+      }
+    },
+    "trailers.status": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "État"
+          }
+        }
+      }
+    },
+    "trailers.test": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test with one trailer"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tester avec une bande-annonce"
+          }
+        }
+      }
+    },
+    "trailers.test_failed": {
+      "comment": "placeholders: error",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The test failed: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le test a échoué : %@"
+          }
+        }
+      }
+    },
+    "trailers.test_ok": {
+      "comment": "placeholders: height, size, seconds",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It works: %1$@p, %2$@, %3$@ s."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ça marche : %1$@p, %2$@, %3$@ s."
+          }
+        }
+      }
+    },
+    "trailers.test_pending": {
+      "comment": "placeholders: status",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not ready yet (%@). Try again in a moment."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore prête (%@). Réessayez dans un instant."
+          }
+        }
+      }
+    },
+    "trailers.testing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testing, this can take up to 90 seconds…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test en cours, cela peut prendre jusqu’à 90 secondes…"
+          }
+        }
+      }
+    },
+    "trailers.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trailer files (advanced)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fichiers de bandes-annonces (avancé)"
+          }
+        }
+      }
+    },
+    "trailers.toggle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use trailer files"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utiliser les fichiers de bandes-annonces"
+          }
+        }
+      }
+    },
+    "trailers.url_placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resolver address, e.g. http://trailer-resolver:8090"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse du résolveur, par ex. http://trailer-resolver:8090"
+          }
+        }
+      }
+    },
+    "trailers.versions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versions"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versions"
+          }
+        }
+      }
+    },
+    "trailers.warning": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube’s terms forbid downloading its content and automated access. Turning this on is your decision and your risk: your address can be rate-limited or blocked. The files are only served to signed-in users."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les conditions de YouTube interdisent de télécharger son contenu et l’accès automatisé. L’activer est votre décision et votre risque : votre adresse peut être limitée ou bloquée. Les fichiers ne sont servis qu’aux personnes connectées."
           }
         }
       }

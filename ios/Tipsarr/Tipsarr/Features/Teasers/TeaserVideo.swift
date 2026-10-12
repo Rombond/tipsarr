@@ -14,6 +14,15 @@ final class TeaserVideo {
     private(set) var failed = false
     /// Landscape trailers are shown whole on the blurred backdrop; a portrait one fills the page.
     private(set) var fillsPage = false
+    /// Length of the trailer in seconds (0 until known).
+    private(set) var duration: Double = 0
+    /// Where the playhead is, in seconds.
+    private(set) var currentTime: Double = 0
+    /// How many times the trailer played to its end (it loops).
+    private(set) var loops = 0
+    /// A finger is on the progress bar: the time observer leaves the playhead alone.
+    private(set) var scrubbing = false
+    private var fast = false
 
     private var wantPlaying = false
     private var observers: [NSKeyValueObservation] = []
@@ -37,6 +46,7 @@ final class TeaserVideo {
                 case .readyToPlay:
                     let size = item.presentationSize
                     self.fillsPage = size.height > 0 && size.width > 0 && size.height >= size.width * 0.9
+                    if item.duration.seconds.isFinite { self.duration = item.duration.seconds }
                 default: break
                 }
             }
@@ -48,13 +58,16 @@ final class TeaserVideo {
         })
         timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] time in
             Task { @MainActor in
-                guard let self, let duration = self.player.currentItem?.duration.seconds, duration.isFinite, duration > 0 else { return }
+                guard let self, !self.scrubbing, let duration = self.player.currentItem?.duration.seconds, duration.isFinite, duration > 0 else { return }
+                self.duration = duration
+                self.currentTime = min(max(time.seconds, 0), duration)
                 self.progress = min(max(time.seconds / duration, 0), 1)
             }
         }
         endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
+                self.loops += 1
                 await self.player.seek(to: .zero)
                 if self.wantPlaying { self.player.play() }
             }
@@ -66,6 +79,34 @@ final class TeaserVideo {
         wantPlaying = playing
         player.isMuted = muted
         if playing { player.play() } else { player.pause() }
+    }
+
+    /// Hold-to-speed-up: 2x while a finger rests on the edge of the page.
+    func setFast(_ on: Bool) {
+        fast = on
+        player.defaultRate = on ? 2 : 1
+        if wantPlaying && !scrubbing { player.rate = on ? 2 : 1 }
+    }
+
+    /// A finger lands on the progress bar: the video pauses and follows it.
+    func beginScrub() {
+        scrubbing = true
+        player.pause()
+    }
+
+    /// Moves the playhead to this fraction (0...1) of the trailer.
+    func scrub(to fraction: Double) {
+        guard duration > 0 else { return }
+        let f = min(max(fraction, 0), 1)
+        progress = f
+        currentTime = f * duration
+        player.seek(to: CMTime(seconds: currentTime, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+    }
+
+    /// The finger leaves the bar: playback goes on from there.
+    func endScrub() {
+        scrubbing = false
+        if wantPlaying { player.play() }
     }
 
     /// Stops everything (the card left the pool).
@@ -111,17 +152,22 @@ final class TeaserVideoPool {
 /// The picture of a `TeaserVideo`.
 struct TeaserVideoView: UIViewRepresentable {
     let video: TeaserVideo
+    /// Zoomed in: the picture fills the page even when the trailer is landscape.
+    var zoomed = false
 
     func makeUIView(context: Context) -> PlayerLayerView {
         let view = PlayerLayerView()
-        view.playerLayer.player = video.player
-        view.playerLayer.videoGravity = video.fillsPage ? .resizeAspectFill : .resizeAspect
         view.isUserInteractionEnabled = false
+        configure(view)
         return view
     }
 
-    func updateUIView(_ view: PlayerLayerView, context: Context) {
-        view.playerLayer.videoGravity = video.fillsPage ? .resizeAspectFill : .resizeAspect
+    func updateUIView(_ view: PlayerLayerView, context: Context) { configure(view) }
+
+    /// The layer follows the current player and mode (a view that came back from another tab may hold an old player).
+    private func configure(_ view: PlayerLayerView) {
+        if view.playerLayer.player !== video.player { view.playerLayer.player = video.player }
+        view.playerLayer.videoGravity = (video.fillsPage || zoomed) ? .resizeAspectFill : .resizeAspect
     }
 
     final class PlayerLayerView: UIView {

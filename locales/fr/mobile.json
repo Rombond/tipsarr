@@ -218,6 +218,7 @@
   "m.tab.teasers": "Teasers",
   "m.teasers.done": "Vous avez tout vu pour le moment. Revenez plus tard pour de nouvelles bandes-annonces.",
   "m.teasers.error": "Impossible de charger les bandes-annonces.",
+  "m.teasers.show_interface": "Afficher les commandes",
   "m.teasers.mute": "Couper le son",
   "m.teasers.unmute": "Activer le son",
   "m.teasers.swipe_hint": "Glissez vers le haut pour la bande-annonce suivante",
