@@ -2,6 +2,10 @@ import SwiftUI
 
 /// What the person swiped past in Teasers. Those titles stay out of the feed until they are forgotten here.
 struct TeaserHistoryScreen: View {
+    /// Another person whose history an administrator looks at; nil is the signed-in person's own.
+    struct Owner: Hashable { var id: String; var name: String }
+    var owner: Owner?
+
     @Environment(\.appContext) private var context
     @Environment(ToastCenter.self) private var toast
     @State private var entries: [TeaserHistoryEntry] = []
@@ -25,7 +29,7 @@ struct TeaserHistoryScreen: View {
             }
         }
         .background(Tokens.palette.bg)
-        .navigationTitle("m.teasers.history.title")
+        .navigationTitle(Text(verbatim: owner.map { L10n.string("m.users.teasers_history_title", $0.name) } ?? L10n.string("m.teasers.history.title")))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if !entries.isEmpty {
@@ -34,7 +38,7 @@ struct TeaserHistoryScreen: View {
                 }
             }
         }
-        .confirmationDialog("m.teasers.history.confirm_all", isPresented: $confirmWipe, titleVisibility: .visible) {
+        .confirmationDialog(Text(verbatim: owner.map { L10n.string("m.users.teasers_history_confirm_all", $0.name) } ?? L10n.string("m.teasers.history.confirm_all")), isPresented: $confirmWipe, titleVisibility: .visible) {
             Button("m.teasers.history.forget_all", role: .destructive) { Task { await wipe() } }
         }
         .task { await load() }
@@ -82,7 +86,7 @@ struct TeaserHistoryScreen: View {
     private func load() async {
         guard let context else { return }
         do {
-            let page = try await context.api.teaserHistory(offset: 0)
+            let page = try await context.api.teaserHistory(offset: 0, owner: owner?.id)
             entries = page.entries
             total = page.total
             phase = .loaded
@@ -96,7 +100,7 @@ struct TeaserHistoryScreen: View {
         guard let context, !loadingMore, entries.count < total else { return }
         loadingMore = true
         defer { loadingMore = false }
-        guard let page = try? await context.api.teaserHistory(offset: entries.count) else { return }
+        guard let page = try? await context.api.teaserHistory(offset: entries.count, owner: owner?.id) else { return }
         let known = Set(entries.map(\.id))
         entries += page.entries.filter { !known.contains($0.id) }
         total = page.total
@@ -106,7 +110,7 @@ struct TeaserHistoryScreen: View {
     private func forget(_ entry: TeaserHistoryEntry) async {
         guard let context else { return }
         do {
-            try await context.api.forgetTeaser(entry.item.type, id: entry.item.tmdbId)
+            try await context.api.forgetTeaser(entry.item.type, id: entry.item.tmdbId, owner: owner?.id)
             entries.removeAll { $0.id == entry.id }
             total = max(total - 1, 0)
             toast.show(L10n.string("m.teasers.history.forgot", entry.item.title))
@@ -118,10 +122,10 @@ struct TeaserHistoryScreen: View {
     private func wipe() async {
         guard let context else { return }
         do {
-            try await context.api.forgetAllTeasers()
+            try await context.api.forgetAllTeasers(owner: owner?.id)
             entries = []
             total = 0
-            toast.show(L10n.string("m.teasers.history.wiped"))
+            toast.show(owner.map { L10n.string("m.users.teasers_history_wiped", $0.name) } ?? L10n.string("m.teasers.history.wiped"))
         } catch {
             toast.show(APIError.from(error).localizedMessage, kind: .error)
         }

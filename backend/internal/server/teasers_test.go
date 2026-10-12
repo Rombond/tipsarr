@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"encoding/json"
+	"github.com/Rombond/tipsarr/backend/internal/media"
 	"net/http"
 	"testing"
 )
@@ -49,11 +50,11 @@ func TestTeasersFeed(t *testing.T) {
 		t.Fatalf("cold feed = %+v", feed)
 	}
 	waitFor(t, "pool", func() bool {
-		rows, _ := e.st.TeaserPool(t.Context(), "|")
+		rows, _ := e.st.TeaserPool(t.Context(), media.LanguageCode(""))
 		return len(rows) > 0
 	})
 	// the pool holds upcoming movie 7 (a trailer); movie 1 is in the library and show 2 has no trailer, so both are left out
-	rows, _ := e.st.TeaserPool(t.Context(), "|")
+	rows, _ := e.st.TeaserPool(t.Context(), media.LanguageCode(""))
 	if len(rows) != 1 || rows[0].MediaType != "movie" || rows[0].TMDBID != 7 || rows[0].YoutubeKey != "UPCOMING007" {
 		t.Fatalf("pool = %+v", rows)
 	}
@@ -143,7 +144,7 @@ func TestTeaserPoolJob(t *testing.T) {
 		t.Fatal(err)
 	}
 	// movie 1 (trending) and movie 7 (upcoming); show 2 has no trailer
-	if rows, _ := e.st.TeaserPool(t.Context(), "|"); len(rows) != 2 {
+	if rows, _ := e.st.TeaserPool(t.Context(), media.LanguageCode("")); len(rows) != 2 {
 		t.Fatalf("pool = %+v", rows)
 	}
 	if got := f.touchedKeys(); len(got) == 0 {
@@ -232,5 +233,54 @@ func TestTeaserHistory(t *testing.T) {
 	}
 	if resp, _ := call(t, e.app, "DELETE", "/api/v1/teasers/seen", ""); resp.StatusCode != 401 {
 		t.Fatalf("anonymous wipe = %d", resp.StatusCode)
+	}
+}
+
+// Whoever manages users can look at a person's Teasers history, forget a title or wipe it.
+func TestAdminTeaserHistory(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	const bobID = "bbbbbbbbbbbbccccddddeeeeeeeeeeee"
+	for _, id := range []string{"7", "1"} {
+		if resp, body := call(t, e.app, "POST", "/api/v1/teasers/seen", `{"type":"movie","tmdbId":`+id+`}`, bob); resp.StatusCode != 204 {
+			t.Fatalf("seen = %d %s", resp.StatusCode, body)
+		}
+	}
+	total := func() int {
+		t.Helper()
+		resp, body := call(t, e.app, "GET", "/api/v1/admin/users/"+bobID+"/teasers/history", "", admin)
+		if resp.StatusCode != 200 {
+			t.Fatalf("admin history = %d %s", resp.StatusCode, body)
+		}
+		var h struct {
+			Total int `json:"total"`
+		}
+		_ = json.Unmarshal([]byte(body), &h)
+		return h.Total
+	}
+	if n := total(); n != 2 {
+		t.Fatalf("admin sees %d titles", n)
+	}
+	// a person without the right cannot look at, or wipe, anybody's history
+	if resp, _ := call(t, e.app, "GET", "/api/v1/admin/users/"+bobID+"/teasers/history", "", bob); resp.StatusCode != 403 {
+		t.Fatalf("bob reading = %d", resp.StatusCode)
+	}
+	if resp, _ := call(t, e.app, "DELETE", "/api/v1/admin/users/"+bobID+"/teasers/seen", "", bob); resp.StatusCode != 403 {
+		t.Fatalf("bob wiping = %d", resp.StatusCode)
+	}
+	if resp, _ := call(t, e.app, "GET", "/api/v1/admin/users/nobody/teasers/history", "", admin); resp.StatusCode != 404 {
+		t.Fatalf("unknown user = %d", resp.StatusCode)
+	}
+	if resp, _ := call(t, e.app, "DELETE", "/api/v1/admin/users/"+bobID+"/teasers/seen/movie/7", "", admin); resp.StatusCode != 204 {
+		t.Fatalf("forget one = %d", resp.StatusCode)
+	}
+	if n := total(); n != 1 {
+		t.Fatalf("after forgetting one: %d", n)
+	}
+	if resp, _ := call(t, e.app, "DELETE", "/api/v1/admin/users/"+bobID+"/teasers/seen", "", admin); resp.StatusCode != 204 {
+		t.Fatalf("wipe = %d", resp.StatusCode)
+	}
+	if n := total(); n != 0 {
+		t.Fatalf("after wiping: %d", n)
 	}
 }

@@ -34,7 +34,7 @@ func loadConfig() (Config, error) {
 		Addr:         env("RESOLVER_ADDR", ":8090"),
 		APIKey:       os.Getenv("RESOLVER_API_KEY"),
 		CacheDir:     env("RESOLVER_CACHE_DIR", "/cache"),
-		CacheLimit:   int64(envFloat("RESOLVER_CACHE_GB", 5) * (1 << 30)),
+		CacheLimit:   int64(envFloat("RESOLVER_CACHE_GB", 20) * (1 << 30)),
 		MaxHeight:    envInt("RESOLVER_MAX_HEIGHT", 720),
 		HourlyCap:    envInt("RESOLVER_HOURLY_CAP", 60),
 		PauseMin:     time.Duration(envInt("RESOLVER_PAUSE_MIN_SECONDS", 5)) * time.Second,

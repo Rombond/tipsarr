@@ -11,6 +11,7 @@
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 	import UserAvatar from '$lib/components/users/user-avatar.svelte';
 	import UserAccessDialog from '$lib/components/users/user-access-dialog.svelte';
+	import TeaserHistoryDialog from '$lib/components/users/teaser-history-dialog.svelte';
 	import PermissionDefaults from '$lib/components/users/permission-defaults.svelte';
 	import type { Flag } from '$lib/permissions';
 
@@ -22,6 +23,8 @@
 	let defaults = $state<Schemas['PermissionDefaults'] | null>(null);
 	let editing = $state<Schemas['User'] | null>(null);
 	let editOpen = $state(false);
+	let historyUser = $state<Schemas['User'] | null>(null);
+	let historyOpen = $state(false);
 
 	async function load() {
 		try {
@@ -118,6 +121,7 @@
 					class="h-8 min-w-32"
 				/>
 				<Button variant="outline" size="sm" disabled={!flags.length} onclick={() => { editing = u; editOpen = true; }}>{t('users.permissions')}</Button>
+				<Button variant="outline" size="sm" onclick={() => { historyUser = u; historyOpen = true; }}>{t('users.teasers_history')}</Button>
 			</div>
 		{/each}
 	</div>
@@ -135,4 +139,8 @@
 		{defaults}
 		onsaved={(updated) => (users = users.map((x) => (x.id === updated.id ? updated : x)))}
 	/>
+{/if}
+
+{#if historyUser}
+	<TeaserHistoryDialog bind:open={historyOpen} user={historyUser} />
 {/if}

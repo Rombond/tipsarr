@@ -81,10 +81,11 @@ type HistoryItem struct {
 	SeenAt int64 `json:"seenAt" doc:"Unix time of the swipe"`
 }
 
-// History lists what a person swiped past, newest first, with the titles as the lists show them.
+// History lists what a person (ownerID) swiped past, newest first, with the titles in the viewer's language.
 // A title TMDB no longer answers for is left out of the page (the total still counts it).
-func (s *Service) History(ctx context.Context, u *store.User, limit, offset int) ([]HistoryItem, int, error) {
-	rows, total, err := s.store.TeaserSeenPage(ctx, u.ID, limit, offset)
+func (s *Service) History(ctx context.Context, viewer *store.User, ownerID string, limit, offset int) ([]HistoryItem, int, error) {
+	u := viewer
+	rows, total, err := s.store.TeaserSeenPage(ctx, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -127,7 +128,9 @@ func (s *Service) ForgetAll(ctx context.Context, userID string) error {
 	return err
 }
 
-func scopeOf(language, region string) string { return language + "|" + region }
+// scopeOf is the pool a person reads from: one per language (fr, en...). Trailers depend on the language, not on the
+// region, so people of one language share the same 100 files.
+func scopeOf(language string) string { return media.LanguageCode(language) }
 
 // cand is a title with the YouTube key of its trailer.
 type cand struct {
@@ -144,7 +147,7 @@ func (s *Service) Next(ctx context.Context, u *store.User, limit int, exclude ma
 	}
 	limit = min(limit, MaxLimit)
 	o := media.Opts{Language: u.Language, Region: u.Region}
-	scope := scopeOf(u.Language, u.Region)
+	scope := scopeOf(u.Language)
 
 	seen, err := s.store.TeaserSeenSet(ctx, u.ID, time.Now().Add(-seenFor).Unix())
 	if err != nil {
@@ -176,7 +179,7 @@ func (s *Service) Next(ctx context.Context, u *store.User, limit int, exclude ma
 		return nil, err
 	}
 	if len(rows) == 0 {
-		s.buildAsync(u.Language, u.Region)
+		s.buildAsync(u.Language)
 	}
 	var poolItems []media.Item
 	var poolKeys []string
@@ -348,26 +351,32 @@ func (s *Service) RefreshPool(ctx context.Context) (i18n.Msg, error) {
 		return i18n.Msg{}, err
 	}
 	seen := map[string]bool{}
+	var scopes []string
 	titles := 0
 	var firstErr error
 	for _, u := range users {
-		scope := scopeOf(u.Language, u.Region)
+		scope := scopeOf(u.Language)
 		if seen[scope] {
 			continue
 		}
 		seen[scope] = true
-		n, err := s.refreshScope(ctx, u.Language, u.Region)
+		scopes = append(scopes, scope)
+		n, err := s.refreshScope(ctx, u.Language)
 		titles += n
 		if err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}
-	return i18n.M("srv.job.teaserpool.done", "scopes", len(seen), "titles", titles), firstErr
+	// pools nobody reads any more stop being refreshed and kept warm; their files age out of the cache
+	if err := s.store.DeleteTeaserPoolExcept(ctx, scopes); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	return i18n.M("srv.job.teaserpool.done", "scopes", len(scopes), "titles", titles), firstErr
 }
 
 // buildAsync builds the pool of a scope in the background (a person opened Teasers before the job ran).
-func (s *Service) buildAsync(language, region string) {
-	scope := scopeOf(language, region)
+func (s *Service) buildAsync(language string) {
+	scope := scopeOf(language)
 	s.buildMu.Lock()
 	if s.building[scope] {
 		s.buildMu.Unlock()
@@ -383,15 +392,15 @@ func (s *Service) buildAsync(language, region string) {
 		}()
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
-		if _, err := s.refreshScope(ctx, language, region); err != nil {
+		if _, err := s.refreshScope(ctx, language); err != nil {
 			slog.Warn("teaser pool: build failed", "scope", scope, "err", err)
 		}
 	}()
 }
 
-func (s *Service) refreshScope(ctx context.Context, language, region string) (int, error) {
-	o := media.Opts{Language: language, Region: region}
-	scope := scopeOf(language, region)
+func (s *Service) refreshScope(ctx context.Context, language string) (int, error) {
+	o := media.Opts{Language: language}
+	scope := scopeOf(language)
 	movies, shows := s.poolCandidates(ctx, o)
 	pickedMovies := s.withTrailers(ctx, o, movies, PoolMovies, poolLookups)
 	pickedShows := s.withTrailers(ctx, o, shows, PoolShows, poolLookups)

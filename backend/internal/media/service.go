@@ -705,6 +705,14 @@ func videoLanguages(lang string) string {
 	return code + ",en,null"
 }
 
+// LanguageCode is the two-letter language (fr, en...) a person's language setting means; empty is the app default.
+func LanguageCode(lang string) string {
+	if lang == "" {
+		lang = defaultLang
+	}
+	return langCode(lang)
+}
+
 // langCode is the two-letter part of a TMDB language such as fr-FR.
 func langCode(lang string) string {
 	code, _, _ := strings.Cut(lang, "-")

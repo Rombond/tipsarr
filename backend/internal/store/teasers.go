@@ -104,3 +104,15 @@ func (s *Store) TeaserPool(ctx context.Context, scope string) ([]TeaserPoolRow, 
 	var rows []TeaserPoolRow
 	return rows, s.DB.NewSelect().Model(&rows).Where("scope = ?", scope).Order("sort_order", "tmdb_id").Scan(ctx)
 }
+
+// DeleteTeaserPoolExcept drops the pools of scopes that no person uses any more.
+func (s *Store) DeleteTeaserPoolExcept(ctx context.Context, keep []string) error {
+	q := s.DB.NewDelete().Model((*TeaserPoolRow)(nil))
+	if len(keep) == 0 {
+		q = q.Where("1 = 1")
+	} else {
+		q = q.Where("scope NOT IN (?)", bun.In(keep))
+	}
+	_, err := q.Exec(ctx)
+	return err
+}

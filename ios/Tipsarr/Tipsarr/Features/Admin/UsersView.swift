@@ -141,6 +141,19 @@ struct UserDetailView: View {
                     .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
                 }
                 .buttonStyle(.plain)
+                ProfileLink(route: .userTeaserHistory(user.id, user.name)) {
+                    HStack {
+                        Label { Text("m.users.teasers_history") } icon: { Image(systemName: "clock.arrow.circlepath") }
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg)
+                    }
+                    .font(.body.weight(.medium))
+                    .padding(.horizontal, Tokens.Spacing.lg)
+                    .frame(minHeight: Tokens.Size.touchTarget + Tokens.Spacing.sm)
+                    .background(Tokens.palette.card, in: .rect(cornerRadius: Tokens.Radius.md))
+                    .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
+                }
+                .buttonStyle(.plain)
                 stats(detail.stats)
             }
             .padding(Tokens.Spacing.lg)

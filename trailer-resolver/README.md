@@ -29,7 +29,7 @@ services:
     environment:
       RESOLVER_API_KEY: ${TRAILER_RESOLVER_KEY}   # a long random string, the same in Tipsarr's settings
       RESOLVER_MAX_HEIGHT: "720"
-      RESOLVER_CACHE_GB: "5"
+      RESOLVER_CACHE_GB: "20"
     volumes:
       - ${ROOT_STORAGE}/servarr/tipsarr/trailers:/cache   # videos and their small .json files
   tipsarr:
@@ -52,7 +52,7 @@ Do **not** publish port 8090 outside the Docker network.
 | `RESOLVER_API_KEY` | required | Bearer key Tipsarr sends |
 | `RESOLVER_ADDR` | `:8090` | Listen address |
 | `RESOLVER_CACHE_DIR` | `/cache` | Where videos and `<key>.json` go |
-| `RESOLVER_CACHE_GB` | `5` | Size cap; the least recently played videos go first |
+| `RESOLVER_CACHE_GB` | `20` | Size cap; the least recently played videos go first |
 | `RESOLVER_UNUSED_DAYS` | `30` | Videos nobody played for this long are deleted |
 | `RESOLVER_MAX_HEIGHT` | `720` | Default maximum video height |
 | `RESOLVER_HOURLY_CAP` | `60` | Downloads started per hour at most |

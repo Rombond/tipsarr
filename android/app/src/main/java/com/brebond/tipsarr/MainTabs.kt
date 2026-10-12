@@ -76,6 +76,7 @@ import com.brebond.tipsarr.features.requests.RequestDetailScreen
 import com.brebond.tipsarr.features.requests.RequestsScreen
 import com.brebond.tipsarr.features.search.GenreScreen
 import com.brebond.tipsarr.features.search.SearchScreen
+import com.brebond.tipsarr.features.teasers.TeasersHistoryOwner
 import com.brebond.tipsarr.features.teasers.TeasersHistoryScreen
 import com.brebond.tipsarr.features.teasers.TeasersScreen
 import com.brebond.tipsarr.features.detail.MediaRoute
@@ -273,7 +274,8 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                             Screen.Issues -> IssuesScreen(model.api, onBack = { model.back(tab) }, onOpen = { model.open(tab, Screen.Issue(it)) })
                             is Screen.Issue -> IssueDetailScreen(model.api, top.id, profile.can(Permission.MANAGE_ISSUES), profile.id, onBack = { model.back(tab) }, onOpenTitle = { model.openTitle(tab, it) })
                             Screen.Users -> UsersScreen(model.api, profile, onBack = { model.back(tab) }, onOpen = { model.open(tab, Screen.User(it)) })
-                            is Screen.User -> UserDetailScreen(model.api, top.id, profile, onBack = { model.back(tab) })
+                            is Screen.User -> UserDetailScreen(model.api, top.id, profile, onBack = { model.back(tab) }, onOpenTeasersHistory = { name -> model.open(tab, Screen.UserTeasersHistory(top.id, name)) })
+                            is Screen.UserTeasersHistory -> TeasersHistoryScreen(model.api, onBack = { model.back(tab) }, onOpen = openTitle, owner = TeasersHistoryOwner(top.id, top.name))
                             Screen.Sync -> SyncScreen(model.api, onBack = { model.back(tab) })
                             Screen.Stats -> StatsScreen(model.api, profile.can(Permission.MANAGE_USERS), profile.can(Permission.MANAGE_SETTINGS), profile, onBack = { model.back(tab) }, onOpenTitle = { model.openTitle(tab, it) }, onSeeAll = { model.open(tab, Screen.PosterList(it)) })
                             is Screen.BoxOffice -> com.brebond.tipsarr.features.discover.BoxOfficeScreen(model.api, top.chart, onBack = { model.back(tab) }, onOpenItem = openTitle)

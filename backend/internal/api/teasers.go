@@ -74,7 +74,7 @@ func registerTeasers(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
-		items, total, err := d.Teasers.History(ctx, u, in.Limit, in.Offset)
+		items, total, err := d.Teasers.History(ctx, u, u.ID, in.Limit, in.Offset)
 		if err != nil {
 			return nil, mediaErr(err)
 		}

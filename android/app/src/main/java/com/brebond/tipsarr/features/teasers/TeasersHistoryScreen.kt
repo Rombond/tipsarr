@@ -42,6 +42,9 @@ import com.brebond.tipsarr.core.api.ApiError
 import com.brebond.tipsarr.core.api.MediaItem
 import com.brebond.tipsarr.core.api.TeaserHistoryEntry
 import com.brebond.tipsarr.core.api.TipsarrApi
+import com.brebond.tipsarr.core.api.adminForgetAllTeasers
+import com.brebond.tipsarr.core.api.adminForgetTeaser
+import com.brebond.tipsarr.core.api.adminTeaserHistory
 import com.brebond.tipsarr.core.api.forgetAllTeasers
 import com.brebond.tipsarr.core.api.forgetTeaser
 import com.brebond.tipsarr.core.api.teaserHistory
@@ -61,10 +64,16 @@ import java.util.Date
 
 private const val PAGE = 40
 
-/** Titles swiped past in Teasers, newest first. Long press forgets one; the top bar wipes all. */
+/** The person whose history an admin manages (`/admin/users/{id}/teasers/...`). */
+data class TeasersHistoryOwner(val id: String, val name: String)
+
+/**
+ * Titles swiped past in Teasers, newest first. Long press forgets one; the top bar wipes all.
+ * With [owner] set, it is that person's history, managed by an admin.
+ */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun TeasersHistoryScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (MediaItem) -> Unit) {
+fun TeasersHistoryScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (MediaItem) -> Unit, owner: TeasersHistoryOwner? = null) {
     val context = LocalContext.current
     val toast = LocalToast.current
     val scope = rememberCoroutineScope()
@@ -81,7 +90,7 @@ fun TeasersHistoryScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (MediaItem
 
     suspend fun reload() {
         try {
-            val page = api.teaserHistory(PAGE, 0)
+            val page = if (owner == null) api.teaserHistory(PAGE, 0) else api.adminTeaserHistory(owner.id, PAGE, 0)
             items = page.items
             total = page.total
             error = null
@@ -92,7 +101,7 @@ fun TeasersHistoryScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (MediaItem
         if (!loaded || loadingMore || items.isEmpty() || items.size >= total) return
         loadingMore = true
         try {
-            val page = api.teaserHistory(PAGE, items.size)
+            val page = if (owner == null) api.teaserHistory(PAGE, items.size) else api.adminTeaserHistory(owner.id, PAGE, items.size)
             val known = items.map { it.id }.toSet()
             items = items + page.items.filter { it.id !in known }
             total = page.total
@@ -111,7 +120,7 @@ fun TeasersHistoryScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (MediaItem
     }
 
     TopBarScaffold(
-        stringResource(R.string.m_teasers_history_title), onBack,
+        if (owner == null) stringResource(R.string.m_teasers_history_title) else stringResource(R.string.m_users_teasers_history_title, owner.name), onBack,
         actions = {
             if (items.isNotEmpty()) IconButton({ confirmAll = true }) {
                 Icon(Icons.Outlined.DeleteSweep, stringResource(R.string.m_teasers_history_forget_all), tint = Tokens.palette.fg)
@@ -146,7 +155,7 @@ fun TeasersHistoryScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (MediaItem
                                     menuFor = null
                                     scope.launch {
                                         try {
-                                            api.forgetTeaser(entry.type, entry.tmdbId)
+                                            if (owner == null) api.forgetTeaser(entry.type, entry.tmdbId) else api.adminForgetTeaser(owner.id, entry.type, entry.tmdbId)
                                             items = items.filter { it.id != entry.id }
                                             total = (total - 1).coerceAtLeast(0)
                                             toast?.show(forgot)
@@ -162,16 +171,16 @@ fun TeasersHistoryScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (MediaItem
     }
 
     if (confirmAll) {
-        val wiped = stringResource(R.string.m_teasers_history_wiped)
+        val wiped = if (owner == null) stringResource(R.string.m_teasers_history_wiped) else stringResource(R.string.m_users_teasers_history_wiped, owner.name)
         AlertDialog(
             onDismissRequest = { confirmAll = false },
-            title = { Text(stringResource(R.string.m_teasers_history_confirm_all)) },
+            title = { Text(if (owner == null) stringResource(R.string.m_teasers_history_confirm_all) else stringResource(R.string.m_users_teasers_history_confirm_all, owner.name)) },
             confirmButton = {
                 TextButton({
                     confirmAll = false
                     scope.launch {
                         try {
-                            api.forgetAllTeasers()
+                            if (owner == null) api.forgetAllTeasers() else api.adminForgetAllTeasers(owner.id)
                             items = emptyList()
                             total = 0
                             toast?.show(wiped)

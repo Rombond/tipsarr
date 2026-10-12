@@ -311,7 +311,7 @@
     <string name="m_job_servarr_import">Import Radarr / Sonarr</string>
     <string name="m_job_servarr_import_desc">Ajoute à la liste des demandes les films et séries déjà dans Radarr ou Sonarr.</string>
     <string name="m_job_teaser_pool">Réserve Teasers</string>
-    <string name="m_job_teaser_pool_desc">Reconstruit la liste d\'environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue et région), demande les fichiers manquants au resolver et les protège du nettoyage. Ne s\'exécute que lorsque les fichiers de bandes-annonces sont activés.</string>
+    <string name="m_job_teaser_pool_desc">Reconstruit la liste d\'environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue), demande les fichiers manquants au resolver et les protège du nettoyage. Ne s\'exécute que lorsque les fichiers de bandes-annonces sont activés.</string>
     <string name="m_job_ytdlp_update">Mise à jour de yt-dlp</string>
     <string name="m_job_ytdlp_update_desc">Cherche une nouvelle version de yt-dlp et remplace aussitôt le binaire du résolveur de bandes-annonces. Ne tourne que lorsque les fichiers de bandes-annonces sont activés.</string>
     <string name="m_library_apply">Appliquer</string>
@@ -479,6 +479,10 @@
     <string name="m_users_saved">Rôle enregistré.</string>
     <string name="m_users_shows">Séries demandées</string>
     <string name="m_users_stats">Activité</string>
+    <string name="m_users_teasers_history">Historique Teasers</string>
+    <string name="m_users_teasers_history_confirm_all">Effacer tout l\'historique Teasers de %s ? Chaque titre pourra revenir dans son fil.</string>
+    <string name="m_users_teasers_history_title">Historique Teasers de %s</string>
+    <string name="m_users_teasers_history_wiped">Historique Teasers de %s effacé</string>
     <string name="m_users_watched">Vus</string>
     <string name="m_users_watchlist">Liste de suivi</string>
     <string name="media_approved">Approuvé</string>
@@ -718,7 +722,7 @@
     <string name="srv_job_skip_no_jellyfin_key">aucune clé d’API Jellyfin enregistrée</string>
     <string name="srv_job_skip_playback_missing">Playback Reporting n’est pas installé dans Jellyfin</string>
     <string name="srv_job_skip_teasers_off">les fichiers de bandes-annonces sont désactivés</string>
-    <string name="srv_job_teaserpool_done">%1$s bandes-annonces gardées prêtes pour %2$s combinaisons langue et région</string>
+    <string name="srv_job_teaserpool_done">%1$s bandes-annonces gardées prêtes pour %2$s langues</string>
     <string name="srv_job_trailers_synced">%1$s fichiers prêts, %2$s en attente, %3$s en échec</string>
     <string name="srv_job_ytdlp_current">yt-dlp est à jour (%1$s)</string>
     <string name="srv_job_ytdlp_updated">yt-dlp mis à jour de %1$s vers %2$s</string>
@@ -864,6 +868,17 @@
     <string name="users_role">Rôle</string>
     <string name="users_role_admin">administrateur</string>
     <string name="users_role_user">utilisateur</string>
+    <string name="users_teasers_history">Historique Teasers</string>
+    <string name="users_teasers_history_confirm_all">Effacer tout l\'historique Teasers de %1$s ? Chaque titre pourra revenir dans son fil.</string>
+    <string name="users_teasers_history_empty">Rien pour l\'instant.</string>
+    <string name="users_teasers_history_forget">Oublier</string>
+    <string name="users_teasers_history_forget_all">Tout effacer</string>
+    <string name="users_teasers_history_forgot">%1$s pourra revenir</string>
+    <string name="users_teasers_history_hint">Les titres que %1$s a passés dans Teasers. Ils restent hors du fil tant qu\'ils ne sont pas oubliés.</string>
+    <string name="users_teasers_history_more">Voir plus</string>
+    <string name="users_teasers_history_seen">Vu %1$s</string>
+    <string name="users_teasers_history_title">Historique Teasers de %1$s</string>
+    <string name="users_teasers_history_wiped">Historique Teasers effacé</string>
     <string name="users_title">Utilisateurs</string>
     <string name="watchlist_empty">Rien ici pour l’instant. Ouvrez un film ou une série et appuyez sur « À voir ».</string>
     <string name="watchlist_hint">Survolez une affiche et appuyez sur ✕ pour la retirer de la liste.</string>

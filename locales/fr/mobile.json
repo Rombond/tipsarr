@@ -229,11 +229,15 @@
   "m.teasers.history.wiped": "Historique Teasers effacé",
   "m.teasers.history.forgot": "%@ pourra revenir",
   "m.teasers.history.seen_on": "Vu %@",
+  "m.users.teasers_history": "Historique Teasers",
+  "m.users.teasers_history_title": "Historique Teasers de %@",
+  "m.users.teasers_history_confirm_all": "Effacer tout l'historique Teasers de %@ ? Chaque titre pourra revenir dans son fil.",
+  "m.users.teasers_history_wiped": "Historique Teasers de %@ effacé",
   "m.teasers.mute": "Couper le son",
   "m.teasers.unmute": "Activer le son",
   "m.teasers.swipe_hint": "Glissez vers le haut pour la bande-annonce suivante",
   "m.job.ytdlp-update": "Mise à jour de yt-dlp",
   "m.job.ytdlp-update.desc": "Cherche une nouvelle version de yt-dlp et remplace aussitôt le binaire du résolveur de bandes-annonces. Ne tourne que lorsque les fichiers de bandes-annonces sont activés.",
   "m.job.teaser-pool": "Réserve Teasers",
-  "m.job.teaser-pool.desc": "Reconstruit la liste d'environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue et région), demande les fichiers manquants au resolver et les protège du nettoyage. Ne s'exécute que lorsque les fichiers de bandes-annonces sont activés."
+  "m.job.teaser-pool.desc": "Reconstruit la liste d'environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue), demande les fichiers manquants au resolver et les protège du nettoyage. Ne s'exécute que lorsque les fichiers de bandes-annonces sont activés."
 }

@@ -25,7 +25,7 @@
   "srv.job.housekeeping.purged": "nettoyé",
   "srv.job.skip.teasers_off": "les fichiers de bandes-annonces sont désactivés",
   "srv.job.trailers.synced": "{ready} fichiers prêts, {pending} en attente, {failed} en échec",
-  "srv.job.teaserpool.done": "{titles} bandes-annonces gardées prêtes pour {scopes} combinaisons langue et région",
+  "srv.job.teaserpool.done": "{titles} bandes-annonces gardées prêtes pour {scopes} langues",
   "srv.job.ytdlp.updated": "yt-dlp mis à jour de {from} vers {to}",
   "srv.job.ytdlp.current": "yt-dlp est à jour ({version})"
 }

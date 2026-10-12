@@ -311,7 +311,7 @@
     <string name="m_job_servarr_import">Radarr / Sonarr import</string>
     <string name="m_job_servarr_import_desc">Adds movies and TV shows already in Radarr or Sonarr to the requests list.</string>
     <string name="m_job_teaser_pool">Teasers pool</string>
-    <string name="m_job_teaser_pool_desc">Rebuilds the list of about 75 movies and 25 shows whose trailers are always kept ready for the Teasers feed (per language and region), asks the resolver for the missing files and keeps them from being cleaned up. Only runs while trailer files are on.</string>
+    <string name="m_job_teaser_pool_desc">Rebuilds the list of about 75 movies and 25 shows whose trailers are always kept ready for the Teasers feed (per language), asks the resolver for the missing files and keeps them from being cleaned up. Only runs while trailer files are on.</string>
     <string name="m_job_ytdlp_update">yt-dlp update</string>
     <string name="m_job_ytdlp_update_desc">Checks for a new yt-dlp release and replaces the binary of the trailer resolver right away. Only runs while trailer files are on.</string>
     <string name="m_library_apply">Apply</string>
@@ -479,6 +479,10 @@
     <string name="m_users_saved">Role saved.</string>
     <string name="m_users_shows">TV shows requested</string>
     <string name="m_users_stats">Activity</string>
+    <string name="m_users_teasers_history">Teasers history</string>
+    <string name="m_users_teasers_history_confirm_all">Wipe the whole Teasers history of %s? Every title can show up in their feed again.</string>
+    <string name="m_users_teasers_history_title">Teasers history of %s</string>
+    <string name="m_users_teasers_history_wiped">Teasers history of %s wiped</string>
     <string name="m_users_watched">Watched</string>
     <string name="m_users_watchlist">Watchlist</string>
     <string name="media_approved">Approved</string>
@@ -718,7 +722,7 @@
     <string name="srv_job_skip_no_jellyfin_key">no Jellyfin API key saved</string>
     <string name="srv_job_skip_playback_missing">Playback Reporting is not installed in Jellyfin</string>
     <string name="srv_job_skip_teasers_off">trailer files are off</string>
-    <string name="srv_job_teaserpool_done">%1$s trailers kept ready for %2$s language and region sets</string>
+    <string name="srv_job_teaserpool_done">%1$s trailers kept ready for %2$s languages</string>
     <string name="srv_job_trailers_synced">%1$s trailer files ready, %2$s waiting, %3$s failed</string>
     <string name="srv_job_ytdlp_current">yt-dlp is up to date (%1$s)</string>
     <string name="srv_job_ytdlp_updated">yt-dlp updated from %1$s to %2$s</string>
@@ -864,6 +868,17 @@
     <string name="users_role">Role</string>
     <string name="users_role_admin">admin</string>
     <string name="users_role_user">user</string>
+    <string name="users_teasers_history">Teasers history</string>
+    <string name="users_teasers_history_confirm_all">Wipe the whole Teasers history of %1$s? Every title can show up in their feed again.</string>
+    <string name="users_teasers_history_empty">Nothing here yet.</string>
+    <string name="users_teasers_history_forget">Forget</string>
+    <string name="users_teasers_history_forget_all">Wipe all</string>
+    <string name="users_teasers_history_forgot">%1$s can show up again</string>
+    <string name="users_teasers_history_hint">Titles %1$s swiped past in Teasers. They stay out of the feed until forgotten.</string>
+    <string name="users_teasers_history_more">Load more</string>
+    <string name="users_teasers_history_seen">Seen %1$s</string>
+    <string name="users_teasers_history_title">Teasers history of %1$s</string>
+    <string name="users_teasers_history_wiped">Teasers history wiped</string>
     <string name="users_title">Users</string>
     <string name="watchlist_empty">Nothing here yet. Open a movie or show and press “Watchlist”.</string>
     <string name="watchlist_hint">Hover a poster and press ✕ to remove it from the list.</string>

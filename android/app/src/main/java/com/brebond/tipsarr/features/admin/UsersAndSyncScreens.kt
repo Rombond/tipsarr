@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import com.brebond.tipsarr.R
 import com.brebond.tipsarr.core.api.ApiError
 import com.brebond.tipsarr.core.api.JobStatus
+import com.brebond.tipsarr.core.api.Permission
 import com.brebond.tipsarr.core.api.PermissionCatalog
 import com.brebond.tipsarr.core.api.permissionCatalog
 import com.brebond.tipsarr.core.api.Profile
@@ -143,7 +144,7 @@ fun UsersScreen(api: TipsarrApi, me: Profile, onBack: () -> Unit, onOpen: (Strin
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun UserDetailScreen(api: TipsarrApi, id: String, me: Profile, onBack: () -> Unit) {
+fun UserDetailScreen(api: TipsarrApi, id: String, me: Profile, onBack: () -> Unit, onOpenTeasersHistory: (String) -> Unit = {}) {
     val context = LocalContext.current
     val toast = LocalToast.current
     val scope = rememberCoroutineScope()
@@ -202,6 +203,7 @@ fun UserDetailScreen(api: TipsarrApi, id: String, me: Profile, onBack: () -> Uni
                             onSaved = { updated -> access = updated; editing = false },
                         )
                     }
+                    if (me.can(Permission.MANAGE_USERS)) TipsarrButton(stringResource(R.string.m_users_teasers_history), { onOpenTeasersHistory(current.name) }, kind = ButtonKind.Secondary, fullWidth = true)
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
                         Text(stringResource(R.string.m_users_stats), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.Bold, color = Tokens.palette.fg, modifier = Modifier.semantics { heading() })
                         val s = current.stats

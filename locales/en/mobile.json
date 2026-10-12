@@ -229,11 +229,15 @@
   "m.teasers.history.wiped": "Teasers history wiped",
   "m.teasers.history.forgot": "%@ can show up again",
   "m.teasers.history.seen_on": "Seen %@",
+  "m.users.teasers_history": "Teasers history",
+  "m.users.teasers_history_title": "Teasers history of %@",
+  "m.users.teasers_history_confirm_all": "Wipe the whole Teasers history of %@? Every title can show up in their feed again.",
+  "m.users.teasers_history_wiped": "Teasers history of %@ wiped",
   "m.teasers.mute": "Mute",
   "m.teasers.unmute": "Unmute",
   "m.teasers.swipe_hint": "Swipe up for the next trailer",
   "m.job.ytdlp-update": "yt-dlp update",
   "m.job.ytdlp-update.desc": "Checks for a new yt-dlp release and replaces the binary of the trailer resolver right away. Only runs while trailer files are on.",
   "m.job.teaser-pool": "Teasers pool",
-  "m.job.teaser-pool.desc": "Rebuilds the list of about 75 movies and 25 shows whose trailers are always kept ready for the Teasers feed (per language and region), asks the resolver for the missing files and keeps them from being cleaned up. Only runs while trailer files are on."
+  "m.job.teaser-pool.desc": "Rebuilds the list of about 75 movies and 25 shows whose trailers are always kept ready for the Teasers feed (per language), asks the resolver for the missing files and keeps them from being cleaned up. Only runs while trailer files are on."
 }

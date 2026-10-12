@@ -50,6 +50,7 @@ sealed interface Screen {
     class Issue(val id: String) : Screen
     data object Users : Screen
     class User(val id: String) : Screen
+    class UserTeasersHistory(val id: String, val name: String) : Screen
     data object Sync : Screen
     data object Stats : Screen
     class BoxOffice(val chart: com.brebond.tipsarr.core.api.BoxOfficeChart) : Screen

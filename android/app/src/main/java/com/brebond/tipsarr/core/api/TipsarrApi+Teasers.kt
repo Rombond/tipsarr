@@ -79,3 +79,14 @@ suspend fun TipsarrApi.forgetTeaser(type: MediaType, tmdbId: Int) =
 
 /** Wipes the whole history of the signed-in person. */
 suspend fun TipsarrApi.forgetAllTeasers() = delete("/teasers/seen")
+
+/** Admin: the titles [userId] swiped past, newest first (limit 1..100). */
+suspend fun TipsarrApi.adminTeaserHistory(userId: String, limit: Int, offset: Int): TeaserHistoryPage =
+    get("/admin/users/$userId/teasers/history?limit=$limit&offset=$offset", TeaserHistoryPage.serializer())
+
+/** Admin: forgets one title of [userId]. */
+suspend fun TipsarrApi.adminForgetTeaser(userId: String, type: MediaType, tmdbId: Int) =
+    delete("/admin/users/$userId/teasers/seen/${if (type == MediaType.Movie) "movie" else "tv"}/$tmdbId")
+
+/** Admin: wipes the whole history of [userId]. */
+suspend fun TipsarrApi.adminForgetAllTeasers(userId: String) = delete("/admin/users/$userId/teasers/seen")

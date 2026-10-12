@@ -76,8 +76,14 @@ struct TeaserHistoryEntry: Sendable, Identifiable, Equatable {
 
 extension TipsarrAPI {
     /// The history, newest first, with how many titles it holds in all.
-    func teaserHistory(offset: Int, limit: Int = 40) async throws -> (entries: [TeaserHistoryEntry], total: Int) {
+    /// `owner`: another person's history (needs the manage-users right); nil is the signed-in person's own.
+    func teaserHistory(offset: Int, limit: Int = 40, owner: String? = nil) async throws -> (entries: [TeaserHistoryEntry], total: Int) {
         try await load { client in
+            if let owner {
+                guard case .ok(let ok) = try await client.adminTeaserHistory(path: .init(id: owner), query: .init(limit: Int64(limit), offset: Int64(offset))) else { throw APIError.unexpected }
+                let body = try ok.body.json
+                return (body.items.map(TeaserHistoryEntry.init), Int(body.total))
+            }
             guard case .ok(let ok) = try await client.teaserHistory(query: .init(limit: Int64(limit), offset: Int64(offset))) else { throw APIError.unexpected }
             let body = try ok.body.json
             return (body.items.map(TeaserHistoryEntry.init), Int(body.total))
@@ -85,15 +91,21 @@ extension TipsarrAPI {
     }
 
     /// The title can show up in the feed again.
-    func forgetTeaser(_ type: MediaType, id: Int) async throws {
+    func forgetTeaser(_ type: MediaType, id: Int, owner: String? = nil) async throws {
         try await load { client in
-            _ = try await client.teaserForget(path: .init(_type: .init(rawValue: type.rawValue)!, id: Int64(id)))
+            if let owner {
+                _ = try await client.adminTeaserForget(path: .init(id: owner, _type: .init(rawValue: type.rawValue)!, tmdbId: Int64(id)))
+            } else {
+                _ = try await client.teaserForget(path: .init(_type: .init(rawValue: type.rawValue)!, id: Int64(id)))
+            }
         }
     }
 
     /// Wipes the whole history of the signed-in person.
-    func forgetAllTeasers() async throws {
-        try await load { client in _ = try await client.teaserForgetAll() }
+    func forgetAllTeasers(owner: String? = nil) async throws {
+        try await load { client in
+            if let owner { _ = try await client.adminTeaserForgetAll(path: .init(id: owner)) } else { _ = try await client.teaserForgetAll() }
+        }
     }
 }
 

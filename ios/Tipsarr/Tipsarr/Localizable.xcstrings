@@ -4984,13 +4984,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rebuilds the list of about 75 movies and 25 shows whose trailers are always kept ready for the Teasers feed (per language and region), asks the resolver for the missing files and keeps them from being cleaned up. Only runs while trailer files are on."
+            "value": "Rebuilds the list of about 75 movies and 25 shows whose trailers are always kept ready for the Teasers feed (per language), asks the resolver for the missing files and keeps them from being cleaned up. Only runs while trailer files are on."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reconstruit la liste d'environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue et région), demande les fichiers manquants au resolver et les protège du nettoyage. Ne s'exécute que lorsque les fichiers de bandes-annonces sont activés."
+            "value": "Reconstruit la liste d'environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue), demande les fichiers manquants au resolver et les protège du nettoyage. Ne s'exécute que lorsque les fichiers de bandes-annonces sont activés."
           }
         }
       }
@@ -7668,6 +7668,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "Activité"
+          }
+        }
+      }
+    },
+    "m.users.teasers_history": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teasers history"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique Teasers"
+          }
+        }
+      }
+    },
+    "m.users.teasers_history_confirm_all": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wipe the whole Teasers history of %@? Every title can show up in their feed again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacer tout l'historique Teasers de %@ ? Chaque titre pourra revenir dans son fil."
+          }
+        }
+      }
+    },
+    "m.users.teasers_history_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teasers history of %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique Teasers de %@"
+          }
+        }
+      }
+    },
+    "m.users.teasers_history_wiped": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teasers history of %@ wiped"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique Teasers de %@ effacé"
           }
         }
       }
@@ -11551,13 +11615,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ trailers kept ready for %2$@ language and region sets"
+            "value": "%1$@ trailers kept ready for %2$@ languages"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ bandes-annonces gardées prêtes pour %2$@ combinaisons langue et région"
+            "value": "%1$@ bandes-annonces gardées prêtes pour %2$@ langues"
           }
         }
       }
@@ -13903,6 +13967,187 @@
           "stringUnit": {
             "state": "translated",
             "value": "utilisateur"
+          }
+        }
+      }
+    },
+    "users.teasers_history": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teasers history"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique Teasers"
+          }
+        }
+      }
+    },
+    "users.teasers_history_confirm_all": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wipe the whole Teasers history of %@? Every title can show up in their feed again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacer tout l'historique Teasers de %@ ? Chaque titre pourra revenir dans son fil."
+          }
+        }
+      }
+    },
+    "users.teasers_history_empty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing here yet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien pour l'instant."
+          }
+        }
+      }
+    },
+    "users.teasers_history_forget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forget"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oublier"
+          }
+        }
+      }
+    },
+    "users.teasers_history_forget_all": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wipe all"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout effacer"
+          }
+        }
+      }
+    },
+    "users.teasers_history_forgot": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ can show up again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pourra revenir"
+          }
+        }
+      }
+    },
+    "users.teasers_history_hint": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titles %@ swiped past in Teasers. They stay out of the feed until forgotten."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les titres que %@ a passés dans Teasers. Ils restent hors du fil tant qu'ils ne sont pas oubliés."
+          }
+        }
+      }
+    },
+    "users.teasers_history_more": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Load more"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir plus"
+          }
+        }
+      }
+    },
+    "users.teasers_history_seen": {
+      "comment": "placeholders: date",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seen %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vu %@"
+          }
+        }
+      }
+    },
+    "users.teasers_history_title": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teasers history of %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique Teasers de %@"
+          }
+        }
+      }
+    },
+    "users.teasers_history_wiped": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teasers history wiped"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique Teasers effacé"
           }
         }
       }

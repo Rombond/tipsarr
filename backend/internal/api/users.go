@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/Rombond/tipsarr/backend/internal/teasers"
 	"net/http"
 	"regexp"
 
@@ -109,6 +110,75 @@ func registerUsers(api huma.API, d Deps) {
 			rows = []store.User{}
 		}
 		return &struct{ Body []store.User }{rows}, err
+	})
+
+	// A person's Teasers history, for whoever manages users: look at it, forget one title or wipe it all.
+	teaserOwner := func(ctx context.Context, id string) (*store.User, error) {
+		me, err := requireCan(ctx, perms.ManageUsers)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := d.Store.GetUser(ctx, id); err != nil {
+			return nil, fail(404, "not_found", "not found")
+		}
+		return me, nil
+	}
+	huma.Register(api, huma.Operation{
+		OperationID: "adminTeaserHistory", Method: http.MethodGet, Path: "/admin/users/{id}/teasers/history",
+		Summary: "A person's Teasers history, newest first (needs the manage-users right)", Tags: []string{"admin"}, Security: sec,
+		Errors: append(adminErrs, http.StatusNotFound),
+	}, func(ctx context.Context, in *struct {
+		ID     string `path:"id" maxLength:"64"`
+		Limit  int    `query:"limit" minimum:"1" maximum:"100" default:"40"`
+		Offset int    `query:"offset" minimum:"0" default:"0"`
+	}) (*struct {
+		Body struct {
+			Items []teasers.HistoryItem `json:"items"`
+			Total int                   `json:"total"`
+		}
+	}, error) {
+		me, err := teaserOwner(ctx, in.ID)
+		if err != nil {
+			return nil, err
+		}
+		items, total, err := d.Teasers.History(ctx, me, in.ID, in.Limit, in.Offset)
+		if err != nil {
+			return nil, mediaErr(err)
+		}
+		out := &struct {
+			Body struct {
+				Items []teasers.HistoryItem `json:"items"`
+				Total int                   `json:"total"`
+			}
+		}{}
+		out.Body.Items, out.Body.Total = items, total
+		return out, nil
+	})
+	huma.Register(api, huma.Operation{
+		OperationID: "adminTeaserForgetAll", Method: http.MethodDelete, Path: "/admin/users/{id}/teasers/seen",
+		Summary: "Wipe a person's whole Teasers history (needs the manage-users right)", Tags: []string{"admin"}, Security: sec,
+		DefaultStatus: http.StatusNoContent, Errors: append(adminErrs, http.StatusNotFound),
+	}, func(ctx context.Context, in *struct {
+		ID string `path:"id" maxLength:"64"`
+	}) (*struct{}, error) {
+		if _, err := teaserOwner(ctx, in.ID); err != nil {
+			return nil, err
+		}
+		return &struct{}{}, d.Teasers.ForgetAll(ctx, in.ID)
+	})
+	huma.Register(api, huma.Operation{
+		OperationID: "adminTeaserForget", Method: http.MethodDelete, Path: "/admin/users/{id}/teasers/seen/{type}/{tmdbId}",
+		Summary: "Forget one title of a person's Teasers history (needs the manage-users right)", Tags: []string{"admin"}, Security: sec,
+		DefaultStatus: http.StatusNoContent, Errors: append(adminErrs, http.StatusNotFound),
+	}, func(ctx context.Context, in *struct {
+		ID     string `path:"id" maxLength:"64"`
+		Type   string `path:"type" enum:"movie,tv"`
+		TMDBID int    `path:"tmdbId" minimum:"1"`
+	}) (*struct{}, error) {
+		if _, err := teaserOwner(ctx, in.ID); err != nil {
+			return nil, err
+		}
+		return &struct{}{}, d.Teasers.Forget(ctx, in.ID, in.Type, in.TMDBID)
 	})
 
 	huma.Register(api, huma.Operation{

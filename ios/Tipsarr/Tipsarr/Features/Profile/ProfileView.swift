@@ -152,7 +152,7 @@ struct ProfileView: View {
     }
 }
 
-enum ProfileRoute: Hashable { case watchlist, hidden, teaserHistory, settings, devices, accounts, appIcon, issues, issue(String), users, user(String), sync, stats, posterList(PosterListRoute) }
+enum ProfileRoute: Hashable { case watchlist, hidden, teaserHistory, userTeaserHistory(String, String), settings, devices, accounts, appIcon, issues, issue(String), users, user(String), sync, stats, posterList(PosterListRoute) }
 
 /// Number with an icon and a label.
 struct StatTile: View {
@@ -297,6 +297,7 @@ struct ProfileDestination: View {
         case .watchlist: WatchlistScreen()
         case .hidden: HiddenScreen()
         case .teaserHistory: TeaserHistoryScreen()
+        case .userTeaserHistory(let id, let name): TeaserHistoryScreen(owner: .init(id: id, name: name))
         case .settings: SettingsView(account: account, profile: profile)
         case .devices: DevicesView()
         case .accounts: AccountsView()
