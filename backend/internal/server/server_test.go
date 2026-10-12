@@ -282,6 +282,13 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 			_, _ = w.Write([]byte(`{"id":` + id + `,"title":"R` + id + `","poster_path":"/r` + id + `.jpg","genres":[],"videos":` + videos + `,"credits":{"cast":[],"crew":[]},"recommendations":{"results":[]},"similar":{"results":[]}}`))
 		}))
 	}
+	// the one title the Teasers pool can hold: upcoming, not in the library, with a trailer
+	mux.HandleFunc("/movie/upcoming", hit(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"page":1,"total_pages":1,"results":[{"id":7,"title":"Coming Soon","release_date":"2099-01-01","poster_path":"/cs.jpg","vote_average":6.5}]}`))
+	}))
+	mux.HandleFunc("/movie/7", hit(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"id":7,"title":"Coming Soon","release_date":"2099-01-01","poster_path":"/cs.jpg","genres":[],"videos":{"results":[{"key":"UPCOMING007","site":"YouTube","type":"Trailer","official":true}]},"credits":{"cast":[],"crew":[]},"recommendations":{"results":[]},"similar":{"results":[]}}`))
+	}))
 	mux.HandleFunc("/movie/904", hit(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"id":904,"title":"Digger (2026)","release_date":"2026-10-02","poster_path":"/dg.jpg","vote_average":6.4,"overview":"Pinned by hand.",
 			"genres":[],"credits":{"cast":[],"crew":[]},"recommendations":{"results":[]},"similar":{"results":[]}}`))
@@ -346,6 +353,7 @@ type env struct {
 	reqs     *requests.Service
 	sugg     *suggestions.Service
 	files    *trailers.Service
+	teasers  *teasers.Service
 	box      *boxoffice.Service
 	hub      *events.Hub
 	notifier *notify.Service
@@ -399,6 +407,7 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	jm.Register(jobs.Job{Name: "boxoffice-refresh", Every: time.Hour, InitialDelay: time.Hour, Run: box.Refresh})
 	sugg := suggestions.New(st, mediaSvc, hub)
 	trailerFiles := trailers.New(st, filepath.Join(t.TempDir(), "trailers"))
+	teaserSvc := teasers.New(st, mediaSvc, sugg, trailerFiles)
 	sugg.SetQueueDelay(20 * time.Millisecond)
 	lib.OnHistoryChanged = sugg.QueueRefresh
 	ratingsSvc := ratings.New(st)
@@ -413,12 +422,12 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	}})
 	authSvc.SetRecheckEvery(0) // tests: ask the fake Jellyfin about the account on every request
 	h, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teasers.New(st, mediaSvc, sugg, trailerFiles), Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier, Push: pusher,
+		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier, Push: pusher,
 		DryRun: dryRun, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)
 	t.Cleanup(app.Close)
-	return &env{app: app, st: st, lib: lib, reqs: reqs, sugg: sugg, files: trailerFiles, box: box, hub: hub, notifier: notifier, ratings: ratingsSvc}
+	return &env{app: app, st: st, lib: lib, reqs: reqs, sugg: sugg, files: trailerFiles, teasers: teaserSvc, box: box, hub: hub, notifier: notifier, ratings: ratingsSvc}
 }
 
 func call(t *testing.T, app *httptest.Server, method, path, body string, cookies ...*http.Cookie) (*http.Response, string) {

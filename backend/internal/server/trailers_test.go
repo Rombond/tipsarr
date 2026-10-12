@@ -521,3 +521,9 @@ func TestYtdlpUpdateJob(t *testing.T) {
 		t.Fatalf("params = %v", msg.Params)
 	}
 }
+
+func (f *fakeResolver) touchedKeys() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]string(nil), f.touched...)
+}

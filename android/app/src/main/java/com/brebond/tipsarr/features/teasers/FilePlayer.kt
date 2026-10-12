@@ -1,99 +1,153 @@
 package com.brebond.tipsarr.features.teasers
 
+import android.content.Context
 import android.view.LayoutInflater
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.PlayCircle
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import com.brebond.tipsarr.R
-import kotlinx.coroutines.delay
 
 /**
- * One trailer file played natively (ExoPlayer). The file is fetched from the Tipsarr server with the bearer token.
- * It is prepared as soon as the composable exists (the card before it is on screen), so the next swipe starts at once,
- * and plays only while [active]. Tap pauses or resumes; loops; volume follows [muted]. [onFailed] fires on any playback error.
+ * One trailer file played natively (ExoPlayer), fetched from the Tipsarr server with the bearer token.
+ * Prepared as soon as it is created (the card before it is on screen), so the next swipe starts at once.
+ * Sound follows the media volume (USAGE_MEDIA, movie content, audio focus). Loops; [loops] counts the completed ones.
  */
 @OptIn(UnstableApi::class)
-@Composable
-fun FilePlayer(url: String, token: String?, active: Boolean, muted: Boolean, modifier: Modifier, onFailed: () -> Unit) {
-    val context = LocalContext.current
-    var userPaused by remember(url) { mutableStateOf(false) }
-    var progress by remember(url) { mutableFloatStateOf(0f) }
-    val player = remember(url) {
+class TeaserVideo(context: Context, url: String, token: String?, private val onFailed: () -> Unit) {
+    val player: ExoPlayer
+
+    /** 0..1 through the trailer. */
+    var progress by mutableFloatStateOf(0f)
+        private set
+    var positionMs by mutableLongStateOf(0L)
+        private set
+    var durationMs by mutableLongStateOf(0L)
+        private set
+
+    /** The first frame is on screen. */
+    var ready by mutableStateOf(false)
+        private set
+
+    /** How many times the trailer played to its end. */
+    var loops by mutableIntStateOf(0)
+        private set
+
+    /** A finger is on the progress bar: the clock leaves the playhead alone and playback is held. */
+    var scrubbing by mutableStateOf(false)
+        private set
+
+    private var wantPlaying = false
+
+    init {
         val http = DefaultHttpDataSource.Factory().apply {
             if (token != null) setDefaultRequestProperties(mapOf("Authorization" to "Bearer $token"))
         }
-        ExoPlayer.Builder(context).setMediaSourceFactory(DefaultMediaSourceFactory(context).setDataSourceFactory(http)).build().apply {
-            repeatMode = Player.REPEAT_MODE_ONE
-            setMediaItem(MediaItem.fromUri(url))
-            prepare()
-        }
-    }
-    DisposableEffect(player) {
-        val listener = object : Player.Listener {
+        val media = AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build()
+        player = ExoPlayer.Builder(context)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(context).setDataSourceFactory(http))
+            .setAudioAttributes(media, true)
+            .setHandleAudioBecomingNoisy(true)
+            .build()
+            .apply {
+                repeatMode = Player.REPEAT_MODE_ONE
+                setMediaItem(MediaItem.fromUri(url))
+                prepare()
+            }
+        player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) = onFailed()
-        }
-        player.addListener(listener)
-        onDispose { player.removeListener(listener); player.release() }
-    }
-    LaunchedEffect(player, muted) { player.volume = if (muted) 0f else 1f }
-    LaunchedEffect(player, active, userPaused) { player.playWhenReady = active && !userPaused }
-    LaunchedEffect(active) { if (!active) userPaused = false } // a card starts playing again when it comes back
-    LaunchedEffect(player, active) {
-        while (active) {
-            val duration = player.duration
-            progress = if (duration > 0) (player.currentPosition.toFloat() / duration).coerceIn(0f, 1f) else 0f
-            delay(250)
-        }
+            override fun onRenderedFirstFrame() { ready = true }
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) loops++
+            }
+        })
     }
 
-    Box(modifier.background(Color.Black)) {
-        AndroidView(
-            factory = { ctx -> (LayoutInflater.from(ctx).inflate(R.layout.teaser_player_view, null) as PlayerView).also { it.player = player } },
-            update = { it.player = player },
-            modifier = Modifier.fillMaxSize(),
-        )
-        // Tap to pause or resume; vertical swipes still reach the pager.
-        Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures(onTap = { userPaused = !userPaused }) })
-        if (userPaused) {
-            Icon(Icons.Outlined.PlayCircle, contentDescription = null, tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.align(Alignment.Center).size(56.dp))
-        }
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(2.dp),
-            color = Color.White,
-            trackColor = Color.White.copy(alpha = 0.25f),
-            drawStopIndicator = {},
-        )
+    private fun apply() { player.playWhenReady = wantPlaying && !scrubbing }
+
+    /** Plays or pauses (a paused video keeps buffering). */
+    fun setPlaying(playing: Boolean) { wantPlaying = playing; apply() }
+
+    fun setMuted(muted: Boolean) { player.volume = if (muted) 0f else 1f }
+
+    /** Hold-to-speed-up. */
+    fun setFast(on: Boolean) = player.setPlaybackSpeed(if (on) 2f else 1f)
+
+    /** Refreshes [progress] from the player (called a few times a second). */
+    fun tick() {
+        if (scrubbing) return
+        val d = player.duration
+        if (d <= 0) return
+        durationMs = d
+        positionMs = player.currentPosition.coerceIn(0L, d)
+        progress = positionMs.toFloat() / d
     }
+
+    fun beginScrub() {
+        scrubbing = true
+        player.setSeekParameters(SeekParameters.EXACT)
+        apply()
+    }
+
+    /** Moves the playhead to this fraction (0..1) of the trailer. */
+    fun scrub(fraction: Float) {
+        val d = player.duration
+        if (d <= 0) return
+        val f = fraction.coerceIn(0f, 1f)
+        durationMs = d
+        progress = f
+        positionMs = (f * d).toLong()
+        player.seekTo(positionMs)
+    }
+
+    fun endScrub() {
+        scrubbing = false
+        apply()
+        player.setSeekParameters(SeekParameters.DEFAULT)
+    }
+
+    fun release() = player.release()
+}
+
+/** A [TeaserVideo] for this file: created with the composable, released when it leaves the composition. */
+@Composable
+fun rememberTeaserVideo(url: String, token: String?, onFailed: () -> Unit): TeaserVideo {
+    val context = LocalContext.current
+    val failed by rememberUpdatedState(onFailed)
+    val video = remember(url, token) { TeaserVideo(context.applicationContext, url, token) { failed() } }
+    DisposableEffect(video) { onDispose { video.release() } }
+    return video
+}
+
+/** The picture of a [TeaserVideo]: a TextureView (follows the pager's scrolling), the whole picture visible, no controls. */
+@OptIn(UnstableApi::class)
+@Composable
+fun TeaserSurface(video: TeaserVideo, modifier: Modifier = Modifier) {
+    AndroidView(
+        factory = { ctx -> (LayoutInflater.from(ctx).inflate(R.layout.teaser_player_view, null) as PlayerView).also { it.player = video.player } },
+        // The view follows the current player (a view that came back may hold an old one).
+        update = { if (it.player !== video.player) it.player = video.player },
+        onRelease = { it.player = null },
+        modifier = modifier,
+    )
 }

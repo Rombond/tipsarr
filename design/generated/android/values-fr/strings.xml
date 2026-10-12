@@ -310,6 +310,8 @@
     <string name="m_job_playback_sync_desc">Copie les lectures enregistrées par le plugin Playback Reporting de Jellyfin (facultatif) pour la page Statistiques.</string>
     <string name="m_job_servarr_import">Import Radarr / Sonarr</string>
     <string name="m_job_servarr_import_desc">Ajoute à la liste des demandes les films et séries déjà dans Radarr ou Sonarr.</string>
+    <string name="m_job_teaser_pool">Réserve Teasers</string>
+    <string name="m_job_teaser_pool_desc">Reconstruit la liste d\'environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue et région), demande les fichiers manquants au resolver et les protège du nettoyage. Ne s\'exécute que lorsque les fichiers de bandes-annonces sont activés.</string>
     <string name="m_job_ytdlp_update">Mise à jour de yt-dlp</string>
     <string name="m_job_ytdlp_update_desc">Cherche une nouvelle version de yt-dlp et remplace aussitôt le binaire du résolveur de bandes-annonces. Ne tourne que lorsque les fichiers de bandes-annonces sont activés.</string>
     <string name="m_library_apply">Appliquer</string>
@@ -449,6 +451,7 @@
     <string name="m_teasers_done">Vous avez tout vu pour le moment. Revenez plus tard pour de nouvelles bandes-annonces.</string>
     <string name="m_teasers_error">Impossible de charger les bandes-annonces.</string>
     <string name="m_teasers_mute">Couper le son</string>
+    <string name="m_teasers_preparing">Préparation de vos bandes-annonces. Cela peut prendre une minute la première fois.</string>
     <string name="m_teasers_show_interface">Afficher les commandes</string>
     <string name="m_teasers_swipe_hint">Glissez vers le haut pour la bande-annonce suivante</string>
     <string name="m_teasers_unmute">Activer le son</string>
@@ -706,6 +709,7 @@
     <string name="srv_job_skip_no_jellyfin_key">aucune clé d’API Jellyfin enregistrée</string>
     <string name="srv_job_skip_playback_missing">Playback Reporting n’est pas installé dans Jellyfin</string>
     <string name="srv_job_skip_teasers_off">les fichiers de bandes-annonces sont désactivés</string>
+    <string name="srv_job_teaserpool_done">%1$s bandes-annonces gardées prêtes pour %2$s combinaisons langue et région</string>
     <string name="srv_job_trailers_synced">%1$s fichiers prêts, %2$s en attente, %3$s en échec</string>
     <string name="srv_job_ytdlp_current">yt-dlp est à jour (%1$s)</string>
     <string name="srv_job_ytdlp_updated">yt-dlp mis à jour de %1$s vers %2$s</string>

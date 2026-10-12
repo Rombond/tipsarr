@@ -29,7 +29,7 @@ final class TeasersModel {
         do {
             let feed = try await api.teasers(exclude: [])
             items = feed.items
-            done = feed.done || feed.items.isEmpty
+            done = feed.done
             phase = .loaded
         } catch {
             phase = .failed(APIError.from(error))
@@ -46,14 +46,18 @@ final class TeasersModel {
     /// The end card is on screen: every card was swiped past.
     func reachedEnd() { for teaser in items { report(teaser) } }
 
-    private func loadMore() async {
-        guard !done, !loadingMore else { return }
+    /// Fetches the next batch. Returns the id of the first new card, nil when nothing came (trailers can still be downloading).
+    @discardableResult
+    func loadMore() async -> String? {
+        guard !done, !loadingMore else { return nil }
         loadingMore = true
         defer { loadingMore = false }
-        guard let feed = try? await api.teasers(exclude: items.map { "\($0.item.type.rawValue):\($0.item.tmdbId)" }) else { return }
+        guard let feed = try? await api.teasers(exclude: items.map { "\($0.item.type.rawValue):\($0.item.tmdbId)" }) else { return nil }
         let known = Set(items.map(\.id))
-        items += feed.items.filter { !known.contains($0.id) }
-        if feed.done || feed.items.isEmpty { done = true }
+        let fresh = feed.items.filter { !known.contains($0.id) }
+        items += fresh
+        if feed.done { done = true }
+        return fresh.first?.id
     }
 
     private func report(_ teaser: Teaser) {
@@ -62,7 +66,7 @@ final class TeasersModel {
         Task { try? await api.markTeaserSeen(teaser.item.type, id: teaser.item.tmdbId) }
     }
 
-    /// Drops a card (not interested, or a trailer that cannot be embedded) and reports it as seen.
+    /// Drops a card (not interested, or a trailer file that cannot be played) and reports it as seen.
     func remove(_ id: String) {
         guard let teaser = items.first(where: { $0.id == id }) else { return }
         report(teaser)

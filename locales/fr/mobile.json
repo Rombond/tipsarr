@@ -219,9 +219,12 @@
   "m.teasers.done": "Vous avez tout vu pour le moment. Revenez plus tard pour de nouvelles bandes-annonces.",
   "m.teasers.error": "Impossible de charger les bandes-annonces.",
   "m.teasers.show_interface": "Afficher les commandes",
+  "m.teasers.preparing": "Préparation de vos bandes-annonces. Cela peut prendre une minute la première fois.",
   "m.teasers.mute": "Couper le son",
   "m.teasers.unmute": "Activer le son",
   "m.teasers.swipe_hint": "Glissez vers le haut pour la bande-annonce suivante",
   "m.job.ytdlp-update": "Mise à jour de yt-dlp",
-  "m.job.ytdlp-update.desc": "Cherche une nouvelle version de yt-dlp et remplace aussitôt le binaire du résolveur de bandes-annonces. Ne tourne que lorsque les fichiers de bandes-annonces sont activés."
+  "m.job.ytdlp-update.desc": "Cherche une nouvelle version de yt-dlp et remplace aussitôt le binaire du résolveur de bandes-annonces. Ne tourne que lorsque les fichiers de bandes-annonces sont activés.",
+  "m.job.teaser-pool": "Réserve Teasers",
+  "m.job.teaser-pool.desc": "Reconstruit la liste d'environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue et région), demande les fichiers manquants au resolver et les protège du nettoyage. Ne s'exécute que lorsque les fichiers de bandes-annonces sont activés."
 }

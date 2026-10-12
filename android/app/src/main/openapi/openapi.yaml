@@ -593,7 +593,7 @@ components:
       additionalProperties: false
       properties:
         done:
-          description: True when there is nothing new left to show
+          description: "True when there is nothing new left to show. No items and not done: trailers are still being prepared, ask again in a few seconds"
           type: boolean
         items:
           items:
@@ -2421,11 +2421,6 @@ components:
           type: array
         overview:
           type: string
-        player:
-          enum:
-            - file
-            - youtube
-          type: string
         posterPath:
           description: TMDB path, load via /images/tmdb/{size}/{file}
           type: string
@@ -2455,7 +2450,7 @@ components:
           format: int64
           type: integer
         videoUrl:
-          description: Trailer file served by this server (needs the same login as the API); set when player is file
+          description: Trailer file served by this server (needs the same login as the API)
           type: string
         voteAverage:
           format: double
@@ -2465,7 +2460,7 @@ components:
       required:
         - trailerKey
         - watchlisted
-        - player
+        - videoUrl
         - type
         - tmdbId
         - title

@@ -1,13 +1,13 @@
 import Foundation
 import OpenAPIRuntime
 
-/// One card of the Teasers feed: a title and the YouTube key of its trailer.
+/// One card of the Teasers feed: a title and its trailer file.
 struct Teaser: Sendable, Identifiable, Equatable {
     var item: MediaItem
     var trailerKey: String
     var watchlisted: Bool
-    /// A trailer file on this server plays natively; otherwise the YouTube embed plays `trailerKey`.
-    var videoURL: URL?
+    /// The trailer file on this server, played natively.
+    var videoURL: URL
 
     var id: String { item.id }
 }
@@ -18,13 +18,13 @@ struct TeaserFeed: Sendable {
 }
 
 extension TipsarrAPI {
-    /// The next unseen trailers. `exclude` holds the `type:id` keys the app already has but has not swiped past.
+    /// The next unseen trailers whose file is ready. No items and `done` false: trailers are still being prepared. `exclude` holds the `type:id` keys the app already has but has not swiped past.
     func teasers(limit: Int = 8, exclude: [String]) async throws -> TeaserFeed {
         try await load { client in
             let keys = exclude.isEmpty ? nil : exclude.joined(separator: ",")
             guard case .ok(let ok) = try await client.teasers(query: .init(limit: Int64(limit), exclude: keys)) else { throw APIError.unexpected }
             let body = try ok.body.json
-            return TeaserFeed(items: body.items.map { Teaser($0, server: serverURL) }, done: body.done)
+            return TeaserFeed(items: body.items.compactMap { Teaser($0, server: serverURL) }, done: body.done)
         }
     }
 
@@ -37,7 +37,9 @@ extension TipsarrAPI {
 }
 
 extension Teaser {
-    init(_ t: Components.Schemas.Teaser, server: URL) {
+    /// Nil when the server's video address cannot be read (the card is left out).
+    init?(_ t: Components.Schemas.Teaser, server: URL) {
+        guard let video = URL(string: t.videoUrl, relativeTo: server)?.absoluteURL else { return nil }
         let state: RequestState? = switch (t.availability, t.requestStatus) {
         case (.available, _): .available
         case (.partial, _): .partial
@@ -60,7 +62,7 @@ extension Teaser {
             ),
             trailerKey: t.trailerKey,
             watchlisted: t.watchlisted,
-            videoURL: t.player == .file ? t.videoUrl.flatMap { URL(string: $0, relativeTo: server)?.absoluteURL } : nil
+            videoURL: video
         )
     }
 }

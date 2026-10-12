@@ -10,7 +10,7 @@ final class TeaserVideo {
     private(set) var progress: Double = 0
     /// The picture is on screen (the first frame is decoded).
     private(set) var isReady = false
-    /// The file could not be loaded or played: the page falls back to the YouTube embed.
+    /// The file could not be loaded or played: the card is dropped from the feed.
     private(set) var failed = false
     /// Landscape trailers are shown whole on the blurred backdrop; a portrait one fills the page.
     private(set) var fillsPage = false
@@ -130,10 +130,9 @@ final class TeaserVideoPool {
 
     init(token: String?) { self.token = token }
 
-    func video(for teaser: Teaser) -> TeaserVideo? {
-        guard let url = teaser.videoURL else { return nil }
+    func video(for teaser: Teaser) -> TeaserVideo {
         if let known = videos[teaser.id] { return known }
-        let video = TeaserVideo(url: url, token: token)
+        let video = TeaserVideo(url: teaser.videoURL, token: token)
         videos[teaser.id] = video
         return video
     }

@@ -4963,6 +4963,38 @@
         }
       }
     },
+    "m.job.teaser-pool": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teasers pool"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réserve Teasers"
+          }
+        }
+      }
+    },
+    "m.job.teaser-pool.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rebuilds the list of about 75 movies and 25 shows whose trailers are always kept ready for the Teasers feed (per language and region), asks the resolver for the missing files and keeps them from being cleaned up. Only runs while trailer files are on."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconstruit la liste d'environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue et région), demande les fichiers manquants au resolver et les protège du nettoyage. Ne s'exécute que lorsque les fichiers de bandes-annonces sont activés."
+          }
+        }
+      }
+    },
     "m.job.ytdlp-update": {
       "localizations": {
         "en": {
@@ -7188,6 +7220,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couper le son"
+          }
+        }
+      }
+    },
+    "m.teasers.preparing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing your trailers. This can take a minute the first time."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Préparation de vos bandes-annonces. Cela peut prendre une minute la première fois."
           }
         }
       }
@@ -11349,6 +11397,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "les fichiers de bandes-annonces sont désactivés"
+          }
+        }
+      }
+    },
+    "srv.job.teaserpool.done": {
+      "comment": "placeholders: titles, scopes",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ trailers kept ready for %2$@ language and region sets"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ bandes-annonces gardées prêtes pour %2$@ combinaisons langue et région"
           }
         }
       }

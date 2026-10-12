@@ -1648,7 +1648,7 @@ export interface components {
             type: string;
         };
         Feed: {
-            /** @description True when there is nothing new left to show */
+            /** @description True when there is nothing new left to show. No items and not done: trailers are still being prepared, ask again in a few seconds */
             done: boolean;
             items: components["schemas"]["Teaser"][];
         };
@@ -2498,8 +2498,6 @@ export interface components {
             backdropPath?: string;
             genreIds?: number[];
             overview?: string;
-            /** @enum {string} */
-            player: "file" | "youtube";
             /** @description TMDB path, load via /images/tmdb/{size}/{file} */
             posterPath?: string;
             releaseDate?: string;
@@ -2520,8 +2518,8 @@ export interface components {
             type: "movie" | "tv";
             /** Format: int64 */
             videoHeight?: number;
-            /** @description Trailer file served by this server (needs the same login as the API); set when player is file */
-            videoUrl?: string;
+            /** @description Trailer file served by this server (needs the same login as the API) */
+            videoUrl: string;
             /** Format: double */
             voteAverage: number;
             watchlisted: boolean;

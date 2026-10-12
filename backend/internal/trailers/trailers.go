@@ -199,6 +199,31 @@ func (s *Service) Ready(ctx context.Context, key string) (*store.TrailerFile, bo
 	return row, true
 }
 
+// Pending reports whether a key can still become a file: false only for a video that failed for good.
+func (s *Service) Pending(ctx context.Context, key string) bool {
+	row, err := s.store.TrailerFileByKey(ctx, key)
+	if err != nil {
+		return false
+	}
+	return row == nil || !(row.Status == store.TrailerFailed && row.Permanent == 1)
+}
+
+// KeepWarm tells the resolver these files were just used, so its cache clean-up deletes other files first.
+func (s *Service) KeepWarm(ctx context.Context, keys []string) error {
+	c, _, err := s.client(ctx)
+	if err != nil {
+		return err
+	}
+	for len(keys) > 0 {
+		n := min(len(keys), 200)
+		if err := c.Touch(ctx, keys[:n]); err != nil {
+			return err
+		}
+		keys = keys[n:]
+	}
+	return nil
+}
+
 // Touch records that a person played the file (at most once every few minutes per key).
 func (s *Service) Touch(ctx context.Context, row *store.TrailerFile) {
 	now := s.now().Unix()

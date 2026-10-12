@@ -116,6 +116,8 @@ func run(cfg config.Config) error {
 	}
 	trailerFiles := trailers.New(st, trailerDir)
 	jm.Register(jobs.Job{Name: "ytdlp-update", Every: 12 * time.Hour, InitialDelay: 10 * time.Minute, Run: trailerFiles.UpdateTools})
+	teaserSvc := teasers.New(st, mediaSvc, sugg, trailerFiles)
+	jm.Register(jobs.Job{Name: "teaser-pool", Every: 2 * time.Hour, InitialDelay: 2 * time.Minute, Run: teaserSvc.RefreshPool})
 	jm.Register(jobs.Job{Name: "trailer-files-sync", Every: time.Minute, InitialDelay: 45 * time.Second, Quiet: true, Run: trailerFiles.Sync})
 	lib.OnHistoryChanged = sugg.QueueRefresh
 	box := boxoffice.New(st, mediaSvc, os.Getenv("TIPSARR_BOXOFFICE_URL"))
@@ -161,7 +163,7 @@ func run(cfg config.Config) error {
 	}
 
 	handler, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, Teasers: teasers.New(st, mediaSvc, sugg, trailerFiles), Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier, Push: pusher,
+		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier, Push: pusher,
 		DryRun: cfg.DryRun, ConfigDir: cfg.ConfigDir, ImageBaseURL: os.Getenv("TIPSARR_TMDB_IMAGE_URL"),
 	})
 	if cfg.DryRun {

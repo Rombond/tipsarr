@@ -21,8 +21,6 @@ struct TeasersView: View {
     @State private var landscape = false
     @State private var draft: RequestDraft?
     @State private var pool: TeaserVideoPool
-    /// Cards whose file could not be played: they use the YouTube embed instead.
-    @State private var failedFiles: Set<String> = []
     /// Sound stays off for later trailers and launches once the person muted a trailer.
     @AppStorage("teasersMuted") private var muted = false
     @Environment(\.scenePhase) private var scenePhase
@@ -31,6 +29,7 @@ struct TeasersView: View {
     @Environment(ToastCenter.self) private var toast
 
     private static let endID = "teasers-end"
+    private static let waitID = "teasers-wait"
 
     init(api: TipsarrAPI, isSelected: Bool, path: Binding<NavigationPath>, bottomInset: CGFloat = 0, onUnavailable: @escaping () -> Void = {}) {
         _model = State(initialValue: TeasersModel(api: api))
@@ -39,6 +38,12 @@ struct TeasersView: View {
         self.isSelected = isSelected
         _path = path
         self.bottomInset = bottomInset
+    }
+
+    /// The waiting page is on screen (or is the only page): trailers are being prepared.
+    private var waiting: Bool {
+        guard isSelected, !model.done else { return false }
+        return model.items.isEmpty || current == Self.waitID
     }
 
     /// Only the visible page plays, and only while the tab is shown, the app is in front and nothing covers the feed.
@@ -111,7 +116,7 @@ struct TeasersView: View {
             LazyVStack(spacing: 0) {
                 ForEach(model.items) { teaser in
                     TeaserPage(
-                        teaser: teaser, video: failedFiles.contains(teaser.id) ? nil : pool.video(for: teaser), isCurrent: current == teaser.id || (current == nil && teaser.id == model.items.first?.id),
+                        teaser: teaser, video: pool.video(for: teaser), isCurrent: current == teaser.id || (current == nil && teaser.id == model.items.first?.id),
                         feedActive: feedActive, paused: tapPaused, muted: muted, uiHidden: uiHidden, bottomInset: max(insets.bottom, bottomInset), topInset: insets.top,
                         leadingInset: insets.leading, trailingInset: insets.trailing, showsHint: model.items.first?.id == teaser.id,
                         onTap: { tapPaused.toggle() },
@@ -122,8 +127,7 @@ struct TeasersView: View {
                         onDetails: { open(teaser) },
                         onWatchlist: { Task { await run { try await model.toggleWatchlist(teaser.id) } } },
                         onHide: { Task { await hide(teaser) } },
-                        onPlayerError: { code in if [100, 101, 150, 152].contains(code) { skip(teaser.id) } },
-                        onFileFailed: { failedFiles.insert(teaser.id) }
+                        onFileFailed: { skip(teaser.id) }
                     )
                     .containerRelativeFrame([.horizontal, .vertical])
                     .id(teaser.id)
@@ -134,6 +138,15 @@ struct TeasersView: View {
                         .background(Tokens.palette.bg)
                         .containerRelativeFrame([.horizontal, .vertical])
                         .id(Self.endID)
+                } else {
+                    // The next trailers are still downloading on the server: this page waits for them.
+                    VStack(spacing: Tokens.Spacing.lg) {
+                        ProgressView().tint(.white)
+                        Text("m.teasers.preparing").font(.subheadline).foregroundStyle(.white.opacity(0.8)).multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, Tokens.Spacing.xl)
+                    .containerRelativeFrame([.horizontal, .vertical])
+                    .id(Self.waitID)
                 }
             }
             .scrollTargetLayout()
@@ -145,10 +158,17 @@ struct TeasersView: View {
         // A phone-shaped column on wide windows (tablets), never on a phone turned sideways.
         .frame(maxWidth: width > 700 && UIDevice.current.userInterfaceIdiom != .phone ? 520 : .infinity)
         .frame(maxWidth: .infinity)
+        .task(id: waiting) {
+            // Ask again every few seconds while the person looks at the waiting page.
+            while waiting, !Task.isCancelled {
+                if let first = await model.loadMore() { current = first; break }
+                try? await Task.sleep(for: .seconds(8))
+            }
+        }
         .onChange(of: current) { _, id in
             tapPaused = false
             uiHidden = false
-            if id == Self.endID { model.reachedEnd() } else { Task { await model.visible(id) } }
+            if id == Self.endID { model.reachedEnd() } else if id != Self.waitID { Task { await model.visible(id) } }
         }
     }
 
@@ -159,7 +179,7 @@ struct TeasersView: View {
         guard isSelected else { return }
         let items = model.items
         guard let index = items.firstIndex(where: { $0.id == current }) ?? (current == nil ? 0 : nil), !items.isEmpty else { return }
-        let wanted = items[index...].prefix(2).filter { !failedFiles.contains($0.id) && $0.videoURL != nil }
+        let wanted = items[index...].prefix(2)
         pool.keep(Set(wanted.map(\.id)))
         for teaser in wanted { _ = pool.video(for: teaser) }
     }
@@ -224,8 +244,8 @@ private struct RequestDraft: Identifiable {
 
 private struct TeaserPage: View {
     let teaser: Teaser
-    /// The native player of this card, when its trailer file is ready and has not failed.
-    let video: TeaserVideo?
+    /// The native player of this card.
+    let video: TeaserVideo
     let isCurrent: Bool
     let feedActive: Bool
     let paused: Bool
@@ -245,7 +265,6 @@ private struct TeaserPage: View {
     var onDetails: () -> Void
     var onWatchlist: () -> Void
     var onHide: () -> Void
-    var onPlayerError: (Int) -> Void
     var onFileFailed: () -> Void
 
     @Environment(\.appContext) private var context
@@ -254,8 +273,6 @@ private struct TeaserPage: View {
     /// A finger is on the progress bar.
     @State private var scrubbing = false
     @State private var overviewOpen = false
-    /// Times the YouTube fallback played to its end (the file player counts its own).
-    @State private var embedLoops = 0
     /// Pinch scale while the fingers are down; it springs back to 1 on release.
     @GestureState private var live = Pinch()
 
@@ -270,7 +287,7 @@ private struct TeaserPage: View {
 
     private var playing: Bool { isCurrent && feedActive }
     private var wantsPlay: Bool { playing && !paused }
-    private var loopCount: Int { max(video?.loops ?? 0, embedLoops) }
+    private var loopCount: Int { video.loops }
 
     var body: some View {
         ZStack {
@@ -278,26 +295,18 @@ private struct TeaserPage: View {
             RemoteImage(path: teaser.item.backdropPath ?? teaser.item.posterPath, size: .w780) { Color.black }
                 .opacity(0.55)
                 .blur(radius: 24)
-            if let video {
-                TeaserVideoView(video: video)
-                    .id(ObjectIdentifier(video))
-                    .scaleEffect(live.scale, anchor: live.anchor)
-                    .animation(live.scale == 1 ? .spring(duration: 0.3) : nil, value: live.scale)
-                    .ignoresSafeArea()
-                    .opacity(video.isReady ? 1 : 0)
-                    .animation(.easeIn(duration: 0.2), value: video.isReady)
-                    .onChange(of: wantsPlay, initial: true) { _, play in video.set(playing: play, muted: muted) }
-                    .onChange(of: muted) { _, now in video.set(playing: wantsPlay, muted: now) }
-                    .onChange(of: fast) { _, now in video.setFast(now) }
-                    .onChange(of: video.failed) { _, failed in if failed { onFileFailed() } }
-                if playing, !video.isReady, !paused { ProgressView().tint(.white).allowsHitTesting(false) }
-            } else if playing {
-                TeaserPlayer(videoID: teaser.trailerKey, muted: muted, playing: !paused, fast: fast, onLoop: { embedLoops += 1 }, onError: onPlayerError)
-                    .scaleEffect(live.scale, anchor: live.anchor)
-                    .animation(live.scale == 1 ? .spring(duration: 0.3) : nil, value: live.scale)
-                    .id(teaser.trailerKey)
-                    .transition(.opacity)
-            }
+            TeaserVideoView(video: video)
+                .id(ObjectIdentifier(video))
+                .scaleEffect(live.scale, anchor: live.anchor)
+                .animation(live.scale == 1 ? .spring(duration: 0.3) : nil, value: live.scale)
+                .ignoresSafeArea()
+                .opacity(video.isReady ? 1 : 0)
+                .animation(.easeIn(duration: 0.2), value: video.isReady)
+                .onChange(of: wantsPlay, initial: true) { _, play in video.set(playing: play, muted: muted) }
+                .onChange(of: muted) { _, now in video.set(playing: wantsPlay, muted: now) }
+                .onChange(of: fast) { _, now in video.setFast(now) }
+                .onChange(of: video.failed) { _, failed in if failed { onFileFailed() } }
+            if playing, !video.isReady, !paused { ProgressView().tint(.white).allowsHitTesting(false) }
             touchLayer
             if paused && playing {
                 Image(systemName: "play.fill").font(.system(size: 56)).foregroundStyle(.white.opacity(0.85)).allowsHitTesting(false)
@@ -306,7 +315,7 @@ private struct TeaserPage: View {
                 LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .center, endPoint: .bottom).allowsHitTesting(false)
                 overlay
             }
-            if let video, video.isReady, !hidden { scrubBar(video) }
+            if video.isReady, !hidden { scrubBar(video) }
             if fast { speedBadge }
             if uiHidden && !zoomed { showUIButton }
         }
@@ -445,7 +454,7 @@ private struct TeaserPage: View {
             }
             .font(.subheadline.weight(.medium))
             .foregroundStyle(.white.opacity(0.85))
-            if scrubbing, let video {
+            if scrubbing {
                 Text(verbatim: "\(Self.clock(video.currentTime)) / \(Self.clock(video.duration))")
                     .font(.title3.weight(.semibold).monospacedDigit())
             } else if let overview = teaser.item.overview {

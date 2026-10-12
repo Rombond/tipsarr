@@ -43,3 +43,36 @@ func (s *Store) TeaserSeenSet(ctx context.Context, userID string, since int64) (
 	}
 	return out, nil
 }
+
+// TeaserPoolRow is one title of the always-ready pool of a language and region.
+type TeaserPoolRow struct {
+	bun.BaseModel `bun:"table:teaser_pool"`
+
+	Scope      string `bun:"scope,pk"`
+	MediaType  string `bun:"media_type,pk"`
+	TMDBID     int64  `bun:"tmdb_id,pk"`
+	YoutubeKey string `bun:"youtube_key"`
+	SortOrder  int    `bun:"sort_order"`
+	Item       string `bun:"item"`
+	UpdatedAt  int64  `bun:"updated_at"`
+}
+
+// ReplaceTeaserPool swaps the whole pool of one scope for these rows.
+func (s *Store) ReplaceTeaserPool(ctx context.Context, scope string, rows []TeaserPoolRow) error {
+	return s.DB.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		if _, err := tx.NewDelete().Model((*TeaserPoolRow)(nil)).Where("scope = ?", scope).Exec(ctx); err != nil {
+			return err
+		}
+		if len(rows) == 0 {
+			return nil
+		}
+		_, err := tx.NewInsert().Model(&rows).Exec(ctx)
+		return err
+	})
+}
+
+// TeaserPool returns the pool of a scope in feed order.
+func (s *Store) TeaserPool(ctx context.Context, scope string) ([]TeaserPoolRow, error) {
+	var rows []TeaserPoolRow
+	return rows, s.DB.NewSelect().Model(&rows).Where("scope = ?", scope).Order("sort_order", "tmdb_id").Scan(ctx)
+}

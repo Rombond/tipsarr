@@ -775,6 +775,8 @@
   "search.no_match": "Aucun résultat ne correspond à ces filtres.",
   "settings.job.ytdlp-update": "Mise à jour de yt-dlp",
   "settings.job.ytdlp-update.desc": "Cherche une nouvelle version de yt-dlp et remplace aussitôt le binaire du résolveur de bandes-annonces. Ne tourne que lorsque les fichiers de bandes-annonces sont activés.",
+  "settings.job.teaser-pool": "Réserve Teasers",
+  "settings.job.teaser-pool.desc": "Reconstruit la liste d'environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue et région), demande les fichiers manquants au resolver et les protège du nettoyage. Ne s'exécute que lorsque les fichiers de bandes-annonces sont activés.",
   "trailers.title": "Fichiers de bandes-annonces (avancé)",
   "trailers.desc": "Permet à l’onglet Teasers des applications de lire les bandes-annonces comme des fichiers vidéo au lieu du lecteur YouTube. Demande le conteneur séparé trailer-resolver, que vous construisez vous-même (voir trailer-resolver/README.md). Sans lui, l’onglet Teasers reste caché dans les applications.",
   "trailers.warning": "Les conditions de YouTube interdisent de télécharger son contenu et l’accès automatisé. L’activer est votre décision et votre risque : votre adresse peut être limitée ou bloquée. Les fichiers ne sont servis qu’aux personnes connectées.",

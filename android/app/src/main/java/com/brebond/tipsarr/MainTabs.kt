@@ -81,6 +81,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -296,8 +297,12 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
             else -> StateView(Icons.Outlined.ViewSidebar, stringResource(R.string.m_pane_select))
         }
     }
+    // Teasers: the bottom bar gives way in landscape and while a pinch left the interface hidden (as on iOS).
+    val onTeasers = tab == AppTab.Teasers && model.teasersOn && model.top(tab) == null
+    val teasersLandscape = onTeasers && LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val hideBar = onTeasers && (teasersLandscape || (model.teasers.uiHidden && !model.teasers.pinching))
     val navigationBar: @Composable () -> Unit = {
-        NavigationBar(containerColor = Tokens.palette.card) {
+        if (!hideBar) NavigationBar(containerColor = Tokens.palette.card) {
             tabs.forEach { item ->
                 NavigationBarItem(
                     selected = tab == item,
@@ -316,7 +321,7 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
     CompositionLocalProvider(LocalImageSource provides source, LocalAppImageLoader provides loader, LocalToast provides toasts, LocalRatings provides model.ratings, LocalLive provides model.live, LocalTitleMenu provides remember(model.api) { TitleMenu(model.api) { model.me } }) {
         Box(Modifier.fillMaxSize().background(Tokens.palette.bg)) {
             BoxWithConstraints(Modifier.fillMaxSize()) {
-                val rail = hinge == null && maxWidth >= 840.dp
+                val rail = hinge == null && maxWidth >= 840.dp && !teasersLandscape
                 val top = model.top(tab)
                 // Requests and Search split into list and detail on a wide window; every tab does next to a hinge.
                 val split = hinge != null || (maxWidth >= 700.dp && (tab == AppTab.Requests || tab == AppTab.Search))
@@ -373,7 +378,8 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                     else -> Scaffold(
                         containerColor = Tokens.palette.bg,
                         // Top insets belong to each screen: tab roots pad for the status bar, pushed screens draw under it.
-                        contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal),
+                        // Teasers in landscape fills the whole screen and handles the cutout itself.
+                        contentWindowInsets = if (teasersLandscape) WindowInsets(0.dp, 0.dp, 0.dp, 0.dp) else WindowInsets.systemBars.only(WindowInsetsSides.Horizontal),
                         bottomBar = navigationBar,
                     ) { padding -> Box(Modifier.fillMaxSize().padding(padding)) { body() } }
                 }

@@ -14,6 +14,7 @@ import com.brebond.tipsarr.core.api.setBlocklisted
 import com.brebond.tipsarr.core.api.setWatchlisted
 import com.brebond.tipsarr.core.api.teasers
 import com.brebond.tipsarr.features.discover.Phase
+import kotlinx.coroutines.delay
 
 /**
  * The Teasers feed. Lives in the main view model, so the card the person was on is still there after
@@ -33,8 +34,15 @@ class TeasersModel(private val api: TipsarrApi) {
         private set
     /** The card on screen. */
     var page by mutableIntStateOf(0)
+    /** A pinch hid the interface: it stays hidden until the next trailer or the eye button (the bottom bar follows). */
+    var uiHidden by mutableStateOf(false)
+    /** Two fingers are on the picture. */
+    var pinching by mutableStateOf(false)
 
     private val seen = HashSet<String>()
+
+    /** The server is still preparing trailer files: nothing to show yet, ask again shortly. */
+    val preparing: Boolean get() = phase == Phase.Loaded && items.isEmpty() && !done
 
     suspend fun loadIfNeeded() {
         if (phase == Phase.Idle) refresh()
@@ -64,11 +72,25 @@ class TeasersModel(private val api: TipsarrApi) {
             val feed = api.teasers(BATCH, items.map { it.key })
             val known = items.map { it.id }.toSet()
             items.addAll(feed.items.filter { it.id !in known })
-            if (feed.done || feed.items.isEmpty()) done = true
+            if (feed.done) done = true // an empty answer with done == false: trailers are being prepared, retry on the next swipe
         } catch (e: ApiError) {
             if (e.isTeasersDisabled) disabled = true // otherwise: try again on the next swipe
         } finally {
             loadingMore = false
+        }
+    }
+
+    /** While [preparing], asks the server again every [POLL_MS] ms until cards arrive or the feed is done. Cancel to stop. */
+    suspend fun pollWhilePreparing() {
+        while (preparing) {
+            delay(POLL_MS)
+            try {
+                val feed = api.teasers(BATCH, emptyList())
+                items.addAll(feed.items)
+                if (feed.done) done = true
+            } catch (e: ApiError) {
+                if (e.isTeasersDisabled) { disabled = true; return }
+            }
         }
     }
 
@@ -85,7 +107,7 @@ class TeasersModel(private val api: TipsarrApi) {
         if (page >= items.size) page = (items.size - 1).coerceAtLeast(0)
     }
 
-    /** The trailer cannot be embedded: skip it for good without any message. */
+    /** The trailer file cannot be played: skip it for good without any message. */
     suspend fun skip(teaser: Teaser) {
         markSeen(teaser)
         items.remove(teaser)
@@ -111,5 +133,6 @@ class TeasersModel(private val api: TipsarrApi) {
 
     private companion object {
         const val BATCH = 8
+        const val POLL_MS = 8_000L
     }
 }

@@ -2,13 +2,13 @@ package com.brebond.tipsarr.core.api
 
 import kotlinx.serialization.Serializable
 
-/** One card of the Teasers feed: a title with the YouTube key of its trailer. */
+/** One card of the Teasers feed: a title with the trailer file the server plays ([videoUrl], relative to the server). */
 @Serializable
 data class Teaser(
     val type: MediaType,
     val tmdbId: Int,
     val title: String,
-    val trailerKey: String,
+    val trailerKey: String, // identifier only
     val voteAverage: Double = 0.0,
     val availability: Availability = Availability.None,
     val posterPath: String? = null,
@@ -18,13 +18,9 @@ data class Teaser(
     val requestStatus: RequestStatus? = null,
     val genreIds: List<Int> = emptyList(),
     val watchlisted: Boolean = false,
-    /** "file": a downloaded copy the server serves ([videoUrl]); "youtube": the embedded player ([trailerKey]). */
-    val player: String = "youtube",
-    val videoUrl: String? = null,
+    val videoUrl: String,
     val videoHeight: Int = 0,
 ) {
-    val hasFile: Boolean get() = player == "file" && !videoUrl.isNullOrEmpty()
-
     val id: String get() = "${type.name}-$tmdbId"
 
     /** The key the server uses to exclude titles the app already holds (`movie:603`). */

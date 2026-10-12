@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -90,25 +91,25 @@ private fun PosterMenuItem(icon: ImageVector, text: Int, onClick: () -> Unit) {
 
 /** Provider logo and score, e.g. the TMDB logo and "7.8". */
 @Composable
-fun ScoreLabel(score: Double, modifier: Modifier = Modifier) {
+fun ScoreLabel(score: Double, modifier: Modifier = Modifier, textColor: Color = Tokens.palette.mutedFg) {
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
         ProviderMark(RatingSource.Tmdb, height = 12.dp)
-        Text(String.format(Locale.getDefault(), "%.1f", score), fontSize = Tokens.FontSize.footnote, lineHeight = Tokens.FontSize.footnote * 1.25f, fontWeight = FontWeight.Medium, color = Tokens.palette.mutedFg)
+        Text(String.format(Locale.getDefault(), "%.1f", score), fontSize = Tokens.FontSize.footnote, lineHeight = Tokens.FontSize.footnote * 1.25f, fontWeight = FontWeight.Medium, color = textColor)
     }
 }
 
 /** Score for a poster following the "Score on posters" preference: the provider's logo and value (TMDB for shows). */
 @Composable
-fun ScoreLabel(type: com.brebond.tipsarr.core.api.MediaType, tmdbId: Int, tmdb: Double?, modifier: Modifier = Modifier) {
+fun ScoreLabel(type: com.brebond.tipsarr.core.api.MediaType, tmdbId: Int, tmdb: Double?, modifier: Modifier = Modifier, textColor: Color = Tokens.palette.mutedFg) {
     val provider = LocalRatings.current
     androidx.compose.runtime.LaunchedEffect(type, tmdbId, provider?.source) { provider?.request(type, tmdbId) }
     val reading = provider?.reading(type, tmdbId, tmdb)
     when {
-        reading == null -> tmdb?.takeIf { it > 0 }?.let { ScoreLabel(it, modifier) }
+        reading == null -> tmdb?.takeIf { it > 0 }?.let { ScoreLabel(it, modifier, textColor) }
         reading.source == RatingSource.Metacritic -> MetacriticSquare(reading.text.toDoubleOrNull(), modifier, height = 12.dp)
         else -> Row(modifier, horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
             ProviderMark(reading.source, value = reading.text.removeSuffix("%").replace(',', '.').toDoubleOrNull(), height = 12.dp)
-            Text(reading.text, fontSize = Tokens.FontSize.footnote, lineHeight = Tokens.FontSize.footnote * 1.25f, fontWeight = FontWeight.Medium, color = Tokens.palette.mutedFg)
+            Text(reading.text, fontSize = Tokens.FontSize.footnote, lineHeight = Tokens.FontSize.footnote * 1.25f, fontWeight = FontWeight.Medium, color = textColor)
         }
     }
 }

@@ -219,9 +219,12 @@
   "m.teasers.done": "You have seen everything for now. Come back later for new trailers.",
   "m.teasers.error": "Could not load trailers.",
   "m.teasers.show_interface": "Show controls",
+  "m.teasers.preparing": "Preparing your trailers. This can take a minute the first time.",
   "m.teasers.mute": "Mute",
   "m.teasers.unmute": "Unmute",
   "m.teasers.swipe_hint": "Swipe up for the next trailer",
   "m.job.ytdlp-update": "yt-dlp update",
-  "m.job.ytdlp-update.desc": "Checks for a new yt-dlp release and replaces the binary of the trailer resolver right away. Only runs while trailer files are on."
+  "m.job.ytdlp-update.desc": "Checks for a new yt-dlp release and replaces the binary of the trailer resolver right away. Only runs while trailer files are on.",
+  "m.job.teaser-pool": "Teasers pool",
+  "m.job.teaser-pool.desc": "Rebuilds the list of about 75 movies and 25 shows whose trailers are always kept ready for the Teasers feed (per language and region), asks the resolver for the missing files and keeps them from being cleaned up. Only runs while trailer files are on."
 }
