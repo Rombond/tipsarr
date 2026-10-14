@@ -62,18 +62,22 @@ func (r execRunner) Download(ctx context.Context, key string, maxHeight int, dst
 	args = append(args,
 		"-f", format, "--merge-output-format", "mp4",
 		"-o", filepath.Join(work, "in.%(ext)s"),
-		"https://www.youtube.com/watch?v="+key,
 	)
-	var stderr bytes.Buffer
-	cmd := exec.CommandContext(ctx, r.cfg.YtDlp, args...)
-	cmd.Stderr = &stderr
-	cmd.Stdout = nil
-	cmd.Env = append(os.Environ(), "TMPDIR="+work)
-	if err := cmd.Run(); err != nil {
+	stderr, err := r.ytdlp(ctx, args, work, key)
+	if err != nil && loginWall(stderr) && ctx.Err() == nil {
+		// Some videos only show a login wall to the default clients; the embed client plays them like the embedded player does.
+		slog.Info("login wall, retrying with the embed client", "key", key)
+		stderr, err = r.ytdlp(ctx, append(args, "--extractor-args", "youtube:player_client=web_embedded"), work, key)
+		if err != nil && loginWall(stderr) {
+			// embedding disabled or really gated: nothing else will work without an account
+			return Result{}, &DownloadError{Msg: trim(oneLine(stderr), 240), Permanent: true}
+		}
+	}
+	if err != nil {
 		if ctx.Err() != nil {
 			return Result{}, &DownloadError{Msg: "timeout", Permanent: false}
 		}
-		return Result{}, classify(stderr.String(), err)
+		return Result{}, classify(stderr, err)
 	}
 	in := filepath.Join(work, "in.mp4")
 	if st, err := os.Stat(in); err != nil || st.Size() == 0 {
@@ -88,6 +92,23 @@ func (r execRunner) Download(ctx context.Context, key string, maxHeight int, dst
 		return Result{}, err
 	}
 	return res, nil
+}
+
+// ytdlp runs yt-dlp once and returns what it wrote on stderr.
+func (r execRunner) ytdlp(ctx context.Context, args []string, work, key string) (string, error) {
+	var stderr bytes.Buffer
+	cmd := exec.CommandContext(ctx, r.cfg.YtDlp, append(args, "https://www.youtube.com/watch?v="+key)...)
+	cmd.Stderr = &stderr
+	cmd.Stdout = nil
+	cmd.Env = append(os.Environ(), "TMPDIR="+work)
+	err := cmd.Run()
+	return stderr.String(), err
+}
+
+// loginWall reports yt-dlp's "Please sign in" error (not the "confirm you're not a bot" one, which is about the server's address).
+func loginWall(stderr string) bool {
+	low := strings.ToLower(stderr)
+	return strings.Contains(low, "please sign in") || strings.Contains(low, "login required")
 }
 
 func (r execRunner) probe(ctx context.Context, file string) Result {
@@ -118,7 +139,7 @@ func (r execRunner) probe(ctx context.Context, file string) Result {
 
 // permanentHints are yt-dlp messages that no retry will fix.
 var permanentHints = []string{
-	"video unavailable", "this video is not available", "private video", "has been removed", "who has blocked it",
+	"video unavailable", "video is unavailable", "this video is not available", "private video", "has been removed", "who has blocked it",
 	"copyright", "terminated", "members-only", "join this channel", "this video is no longer available",
 	"not available in your country", "age-restricted", "confirm your age", "premieres in", "live event will begin",
 	"requested format is not available", "is not a valid url", "unsupported url",

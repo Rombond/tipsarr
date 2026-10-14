@@ -259,6 +259,7 @@ func TestHealthAndClear(t *testing.T) {
 func TestClassify(t *testing.T) {
 	cases := map[string]bool{
 		"ERROR: [youtube] abc: Video unavailable":                                    true,
+		"ERROR: [youtube] abc: This video is unavailable":                            true,
 		"ERROR: [youtube] abc: Private video. Sign in if you've been granted access": true,
 		"ERROR: unable to download video data: HTTP Error 403: Forbidden":            false,
 		"ERROR: [youtube] abc: Sign in to confirm you're not a bot":                  false,
@@ -268,6 +269,19 @@ func TestClassify(t *testing.T) {
 		var de *DownloadError
 		if !errors.As(err, &de) || de.Permanent != want {
 			t.Errorf("%q permanent = %v, want %v", msg, de != nil && de.Permanent, want)
+		}
+	}
+}
+
+func TestLoginWall(t *testing.T) {
+	cases := map[string]bool{
+		"ERROR: [youtube] abc: Please sign in. Use --cookies-from-browser or --cookies for the authentication.": true,
+		"ERROR: [youtube] abc: Sign in to confirm you're not a bot":                                             false,
+		"ERROR: [youtube] abc: This video is unavailable":                                                       false,
+	}
+	for msg, want := range cases {
+		if got := loginWall(msg); got != want {
+			t.Errorf("loginWall(%q) = %v, want %v", msg, got, want)
 		}
 	}
 }
