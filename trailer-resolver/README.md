@@ -2,7 +2,7 @@
 
 Optional companion of Tipsarr. It downloads YouTube trailers with [yt-dlp](https://github.com/yt-dlp/yt-dlp) into a folder, so the Teasers tab of the iOS and Android apps can play them in a native player. Without it Tipsarr works as before and the Teasers tab is hidden in the apps.
 
-> **YouTube's terms.** YouTube forbids downloading its content except as the Service allows, and automated access. Running this container is **your decision and your risk**: your address can be rate-limited or blocked. It is off by default, never reachable from outside your network, and the files are only served to signed-in Tipsarr users. The Tipsarr project does not publish this image; you build it yourself.
+> **YouTube's terms.** YouTube forbids downloading its content except as the Service allows, and automated access. Running this container is **your decision and your risk**: your address can be rate-limited or blocked. It is off by default, never reachable from outside your network, and the files are only served to signed-in Tipsarr users. The image is published to `ghcr.io/rombond/trailer-resolver` on each `resolver-v*` tag (separate from the Tipsarr release). You can also build it yourself with `docker build -t trailer-resolver:local .`.
 
 ## What is inside
 

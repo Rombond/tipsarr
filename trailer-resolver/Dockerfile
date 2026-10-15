@@ -1,5 +1,5 @@
 # trailer-resolver: yt-dlp + ffmpeg + Deno behind a tiny HTTP API. Optional companion of Tipsarr.
-# Built locally by the owner; it is not published by the Tipsarr release workflow (see README.md for why).
+# Published as ghcr.io/<owner>/trailer-resolver by .github/workflows/release-trailer-resolver.yml on a resolver-v* tag (see README.md).
 
 # 1) the Go service (pure Go, built natively for the target architecture)
 FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS service
