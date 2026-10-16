@@ -23,7 +23,7 @@ public enum Tokens {
         fg: Color.dynamic(light: 0x0A0A0AFF, dark: 0xFAFAFAFF),
         card: Color.dynamic(light: 0xFFFFFFFF, dark: 0x171717FF),
         muted: Color.dynamic(light: 0xF5F5F5FF, dark: 0x262626FF),
-        mutedFg: Color.tertiary,
+        mutedFg: Color(uiColor: UIColor.tertiaryLabel),
         border: Color.dynamic(light: 0xE5E5E5FF, dark: 0xFFFFFF1A),
         primary: Color.dynamic(light: 0x171717FF, dark: 0xE5E5E5FF),
         primaryFg: Color.dynamic(light: 0xFAFAFAFF, dark: 0x171717FF),
