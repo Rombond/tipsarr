@@ -68,8 +68,8 @@ struct LibraryView: View {
                         model.filters.kind = .all
                         model.filters.watched = .any
                     }
-                    Chip(title: "type.movies", isSelected: model.filters.kind == .movie) { model.filters.kind = .movie }
-                    Chip(title: "type.shows", isSelected: model.filters.kind == .tv) { model.filters.kind = .tv }
+                    Chip(title: "type.movies", isSelected: model.filters.kind == .movie) { model.filters.kind = model.filters.kind == .movie ? .all : .movie }
+                    Chip(title: "type.shows", isSelected: model.filters.kind == .tv) { model.filters.kind = model.filters.kind == .tv ? .all : .tv }
                     Chip(title: "m.library.unwatched", isSelected: model.filters.watched == .no) {
                         model.filters.watched = model.filters.watched == .no ? .any : .no
                     }
