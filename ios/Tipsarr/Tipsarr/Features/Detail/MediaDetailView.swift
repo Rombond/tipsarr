@@ -22,6 +22,8 @@ struct MediaDetailView: View {
     @Environment(\.liveUpdates) private var live
     @Environment(\.appContext) private var context
 
+    private var scrollOffset: CGFloat = 0.0
+
     enum Sheet: Identifiable {
         case request, report
         var id: Self { self }
@@ -46,7 +48,13 @@ struct MediaDetailView: View {
         }
         .background(Tokens.palette.bg)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
+        .onScrollGeometryChange(for: CGFloat.self) {
+            return geometry.contentOffset.y > 0 ? geometry.contentOffset.y : 0
+        } action: { _, newValue in
+            self.scrollOffset = newValue
+        }
+        .scrollEdgeEffectStyle(.soft, for: .all)
+        .scrollEdgeEffectHidden(self.scrollOffset < 60.0, for: .top)
         .toolbar {
             if let link = DeepLink.mediaURL(server: serverURL, type: model.route.type, tmdbId: model.route.tmdbId) {
                 ToolbarItem(placement: .topBarTrailing) {
