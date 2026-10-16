@@ -69,7 +69,7 @@ struct SearchFiltersSheet: View {
                 Text(title)
             }
             .labelsHidden()
-            .pickerStyle(.menu)
+            .pickerStyle(.wheel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Tokens.Spacing.sm)
             .frame(minHeight: Tokens.Size.touchTarget)
