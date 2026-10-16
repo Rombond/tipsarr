@@ -55,15 +55,15 @@ struct GenrePickerList: View {
 
     var body: some View {
         List {
-            if selection.count > 1 {
-                Section {
-                    Picker("library.genres", selection: $anyGenre) {
-                        Text("m.library.genre_all").tag(false)
-                        Text("m.library.genre_any").tag(true)
-                    }
-                    .pickerStyle(.segmented)
+            Section {
+                Picker("library.genres", selection: $anyGenre) {
+                    Text("m.library.genre_all").tag(false)
+                    Text("m.library.genre_any").tag(true)
                 }
+                .pickerStyle(.segmented)
+                .disabled(selection.count < 2)
             }
+
             Section {
                 ForEach(shown, id: \.self) { name in
                     let selected = selection.contains(name)
@@ -75,7 +75,7 @@ struct GenrePickerList: View {
                             Spacer(minLength: 0)
                             if selected { Image(systemName: "checkmark").foregroundStyle(Tokens.palette.primary) }
                         }
-                        .frame(minHeight: Tokens.Size.touchTarget)
+                        // .frame(minHeight: Tokens.Size.touchTarget)
                         .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
@@ -87,10 +87,9 @@ struct GenrePickerList: View {
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, prompt: Text("m.library.genres_search"))
         .toolbar {
-            if !selection.isEmpty {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("library.reset") { selection = [] }
-                }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("library.reset") { selection = [] }
+                .disabled(selection.isEmpty)
             }
         }
     }
