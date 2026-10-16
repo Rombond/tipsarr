@@ -27,6 +27,7 @@ struct LibraryView: View {
             .paneInset()
             .background(Tokens.palette.bg)
             .navigationTitle("library.title")
+            .toolbarTitleDisplayMode(.inlineLarge)
             // Field under the title, full width: the default top-right spot is out of the way on iPad.
             .searchable(text: $model.filters.query, placement: roomy ? .navigationBarDrawer(displayMode: .always) : .automatic, prompt: Text("library.search"))
             .toolbar {

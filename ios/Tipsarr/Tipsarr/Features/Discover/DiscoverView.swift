@@ -69,6 +69,7 @@ struct DiscoverView: View {
             .onChange(of: live?.requestsTick) { Task { await refreshCurrent() } }
             .background(Tokens.palette.bg)
             .navigationTitle("m.tab.discover")
+            .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button(action: openSettings) { Image(systemName: "gearshape") }
