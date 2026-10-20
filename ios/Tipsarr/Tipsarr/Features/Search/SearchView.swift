@@ -92,9 +92,22 @@ struct SearchView: View {
         }
         .background(Tokens.palette.bg)
         .navigationTitle("m.tab.search")
-        .toolbar {
-            if showsFilters { ToolbarItem(placement: .topBarTrailing) { filtersButton } }
+        // The scopes are our own segmented control so the filter button can sit next to it.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if !trimmed.isEmpty { scopeBar }
         }
+    }
+
+    private var scopeBar: some View {
+        HStack(spacing: Tokens.Spacing.md) {
+            Picker("m.tab.search", selection: $scope) {
+                ForEach(SearchScope.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            if showsFilters { filtersButton }
+        }
+        .padding(.horizontal, Tokens.Spacing.lg)
+        .padding(.vertical, Tokens.Spacing.xs)
     }
 
     private var showsFilters: Bool { !trimmed.isEmpty && scope != .people }
@@ -102,6 +115,9 @@ struct SearchView: View {
     private var filtersButton: some View {
         Button { showFilters = true } label: {
             Image(systemName: filters.activeCount == 0 ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                .font(.title3)
+                .frame(minWidth: Tokens.Size.touchTarget, minHeight: Tokens.Size.touchTarget)
+                .contentShape(.rect)
         }
         .accessibilityLabel(Text("m.search.filters"))
         .accessibilityValue(Text(verbatim: filters.activeCount == 0 ? "" : String(filters.activeCount)))
@@ -117,9 +133,6 @@ struct SearchView: View {
     private func searchable<V: View>(_ view: V, placement: SearchFieldPlacement) -> some View {
         view
             .searchable(text: $query, placement: placement, prompt: Text("m.search.prompt"))
-            .searchScopes($scope, activation: .onSearchPresentation) {
-                ForEach(SearchScope.allCases, id: \.self) { Text($0.title).tag($0) }
-            }
             .onSubmit(of: .search) { model.remember(query) }
     }
 
