@@ -144,48 +144,58 @@ struct SearchView: View {
 
     // MARK: Landing (no query)
 
-    /// A List so the recent searches can be swiped away one by one; the insets and spacing keep the look of the old scroll view.
+    /// Only the recent searches are a List (swipe to delete); the genre chips stay outside it, because inside a List row one tap fires every chip link.
     private var landing: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                if !model.recents.isEmpty { recentsList }
+                genres
+                    .padding(.horizontal, Tokens.Spacing.lg)
+                    .padding(.top, Tokens.Spacing._2xl)
+            }
+            // Without the recents nothing fills the width, and the chips would sit centred instead of at the edge.
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .task { await model.loadGenres() }
+    }
+
+    private var recentsList: some View {
         let insets = EdgeInsets(top: 0, leading: Tokens.Spacing.lg, bottom: 0, trailing: Tokens.Spacing.lg)
         return List {
-            if !model.recents.isEmpty {
-                HStack {
-                    Text("m.search.recents").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
-                    Spacer()
-                    Button("m.search.clear") { model.clearRecents() }.font(.subheadline)
-                }
-                .listRowInsets(insets)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-
-                ForEach(model.recents, id: \.self) { recent in
-                    Button { query = recent } label: {
-                        Label { Text(verbatim: recent) } icon: { Image(systemName: "clock.arrow.circlepath") }
-                            .frame(maxWidth: .infinity, minHeight: Tokens.Size.touchTarget, alignment: .leading)
-                            .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Tokens.palette.fg)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) { model.removeRecent(recent) } label: { Image(systemName: "trash") }
-                            .accessibilityLabel(Text("m.search.clear"))
-                    }
-                    .listRowInsets(insets)
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-                }
+            HStack {
+                Text("m.search.recents").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
+                Spacer()
+                Button("m.search.clear") { model.clearRecents() }.font(.subheadline)
             }
-            genres
-                .padding(.top, Tokens.Spacing._2xl)
+            .frame(minHeight: Tokens.Size.touchTarget)
+            .listRowInsets(insets)
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+
+            ForEach(model.recents, id: \.self) { recent in
+                Button { query = recent } label: {
+                    Label { Text(verbatim: recent).lineLimit(1) } icon: { Image(systemName: "clock.arrow.circlepath") }
+                        .frame(maxWidth: .infinity, minHeight: Tokens.Size.touchTarget, maxHeight: Tokens.Size.touchTarget, alignment: .leading)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Tokens.palette.fg)
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) { model.removeRecent(recent) } label: { Image(systemName: "trash") }
+                        .accessibilityLabel(Text("m.search.clear"))
+                }
                 .listRowInsets(insets)
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
+            }
         }
         .listStyle(.plain)
         .listRowSpacing(0)
         .environment(\.defaultMinListRowHeight, 0)
         .scrollContentBackground(.hidden)
-        .task { await model.loadGenres() }
+        .scrollDisabled(true)
+        // The list sits in the page's scroll view, so it takes the height of its rows: the header and each row are one touch target tall.
+        .frame(height: CGFloat(model.recents.count + 1) * Tokens.Size.touchTarget)
     }
 
     @ViewBuilder private var genres: some View {
