@@ -162,13 +162,15 @@ func (s *Service) CachedHealth(ctx context.Context) (*Health, string) {
 	return h, msg
 }
 
-// Available is Enabled and the resolver answered its health check as fine in the last 30 seconds (/status features.teasers).
+// Available is Enabled and the resolver answered its health check in the last 30 seconds (/status features.teasers).
+// Its own verdict (h.OK) is not needed: with the circuit breaker open or yt-dlp broken it cannot download, but the
+// files it already holds still play, so the Teasers tab stays.
 func (s *Service) Available(ctx context.Context) bool {
 	if !s.Enabled(ctx) {
 		return false
 	}
 	h, msg := s.CachedHealth(ctx)
-	return h != nil && msg == "" && h.OK
+	return h != nil && msg == ""
 }
 
 // ResetHealth forgets the cached health (settings changed, tests).
