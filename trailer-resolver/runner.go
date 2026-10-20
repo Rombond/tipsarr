@@ -27,6 +27,9 @@ type Runner interface {
 type DownloadError struct {
 	Msg       string
 	Permanent bool
+	// Video marks a problem with this video only (a retry may help): it does not count toward the circuit breaker,
+	// which is about the server's address being blocked.
+	Video bool
 }
 
 func (e *DownloadError) Error() string { return e.Msg }
@@ -54,6 +57,8 @@ func (r execRunner) Download(ctx context.Context, key string, maxHeight int, dst
 		"--no-playlist", "--no-warnings", "--no-progress", "--no-colors", "--no-mtime", "--ignore-config",
 		"--socket-timeout", "20", "--retries", "2", "--fragment-retries", "2",
 		"--max-filesize", "80M",
+		// A trailer is short; a long film is not one. Videos with an unknown length pass.
+		"--match-filters", "duration<=?" + strconv.Itoa(int(r.cfg.MaxDuration.Seconds())),
 		"--js-runtimes", "deno:" + r.cfg.Deno,
 	}
 	if strings.Contains(r.cfg.FFmpeg, "/") { // a full path; otherwise yt-dlp finds ffmpeg on PATH
@@ -81,8 +86,11 @@ func (r execRunner) Download(ctx context.Context, key string, maxHeight int, dst
 	}
 	in := filepath.Join(work, "in.mp4")
 	if st, err := os.Stat(in); err != nil || st.Size() == 0 {
-		// yt-dlp exits 0 without a file when the video is over --max-filesize (a long film, not a trailer): trying again cannot help.
-		return Result{}, &DownloadError{Msg: "yt-dlp produced no mp4 file (probably over the size limit)", Permanent: true}
+		// yt-dlp exits 0 without a file when it skips a video: over the length limit (never a trailer, final) or over --max-filesize.
+		if strings.Contains(stderr, "does not pass filter") {
+			return Result{}, &DownloadError{Msg: "longer than " + r.cfg.MaxDuration.String() + ", not a trailer", Permanent: true}
+		}
+		return Result{}, &DownloadError{Msg: "yt-dlp produced no mp4 file (probably over the size limit)", Video: true}
 	}
 	out := filepath.Join(work, "out.mp4")
 	if b, err := exec.CommandContext(ctx, r.cfg.FFmpeg, "-y", "-v", "error", "-i", in, "-c", "copy", "-movflags", "+faststart", out).CombinedOutput(); err != nil {
@@ -95,12 +103,12 @@ func (r execRunner) Download(ctx context.Context, key string, maxHeight int, dst
 	return res, nil
 }
 
-// ytdlp runs yt-dlp once and returns what it wrote on stderr.
+// ytdlp runs yt-dlp once and returns what it wrote (stderr and stdout together).
 func (r execRunner) ytdlp(ctx context.Context, args []string, work, key string) (string, error) {
 	var stderr bytes.Buffer
 	cmd := exec.CommandContext(ctx, r.cfg.YtDlp, append(args, "https://www.youtube.com/watch?v="+key)...)
 	cmd.Stderr = &stderr
-	cmd.Stdout = nil
+	cmd.Stdout = &stderr // the "does not pass filter" notice is printed on stdout
 	cmd.Env = append(os.Environ(), "TMPDIR="+work)
 	err := cmd.Run()
 	return stderr.String(), err

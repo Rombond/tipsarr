@@ -59,6 +59,7 @@ Do **not** publish port 8090 outside the Docker network.
 | `RESOLVER_PAUSE_MIN_SECONDS` / `_MAX_` | `5` / `15` | Random pause between downloads |
 | `RESOLVER_TIMEOUT_SECONDS` | `120` | Per download |
 | `RESOLVER_WORKERS` | `1` | Downloads at the same time |
+| `RESOLVER_MAX_SECONDS` | `300` | Videos longer than this are refused for good (a trailer is short) |
 | `RESOLVER_BREAKER_AFTER` / `_HOURS` | `5` / `6` | After that many temporary failures in a row, pause downloads for that long |
 | `RESOLVER_AUTO_UPDATE` | `false` | Run `yt-dlp -U` once a day on its own. Normally off: Tipsarr's job `ytdlp-update` (every 12 hours, only while trailer files are on) asks for the update instead |
 

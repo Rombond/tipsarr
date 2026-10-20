@@ -309,18 +309,45 @@ func TestSweepWorkRemovesOnlyOldWorkFolders(t *testing.T) {
 	}
 }
 
-// yt-dlp exits 0 without writing a file when the video is over --max-filesize: that is a permanent failure,
-// otherwise the retries feed the breaker and pause every download.
-func TestNoFileIsPermanent(t *testing.T) {
-	dir := t.TempDir()
-	fake := filepath.Join(dir, "yt-dlp")
-	if err := os.WriteFile(fake, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
-		t.Fatal(err)
+// yt-dlp exits 0 without writing a file when it skips a video. Over the length limit it says so on stdout: final.
+// Otherwise (over --max-filesize) it is retried like any temporary failure, but does not feed the breaker.
+func TestNoFile(t *testing.T) {
+	cases := map[string]struct {
+		script           string
+		permanent, video bool
+	}{
+		"filter": {"#!/bin/sh\necho '[download] X does not pass filter (duration<=?300), skipping ..'\nexit 0\n", true, false},
+		"size":   {"#!/bin/sh\nexit 0\n", false, true},
 	}
-	r := execRunner{cfg: Config{YtDlp: fake, FFmpeg: "ffmpeg", Deno: "deno"}}
-	_, err := r.Download(context.Background(), "AAAAAAAAAAA", 720, filepath.Join(dir, "AAAAAAAAAAA.mp4"))
-	var de *DownloadError
-	if !errors.As(err, &de) || !de.Permanent {
-		t.Fatalf("err = %v, want a permanent DownloadError", err)
+	for name, c := range cases {
+		dir := t.TempDir()
+		fake := filepath.Join(dir, "yt-dlp")
+		if err := os.WriteFile(fake, []byte(c.script), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		r := execRunner{cfg: Config{YtDlp: fake, FFmpeg: "ffmpeg", Deno: "deno", MaxDuration: 5 * time.Minute}}
+		_, err := r.Download(context.Background(), "AAAAAAAAAAA", 720, filepath.Join(dir, "AAAAAAAAAAA.mp4"))
+		var de *DownloadError
+		if !errors.As(err, &de) || de.Permanent != c.permanent || de.Video != c.video {
+			t.Errorf("%s: err = %v, want permanent=%v video=%v", name, err, c.permanent, c.video)
+		}
+	}
+}
+
+func TestVideoFailuresRetryButDoNotTripTheBreaker(t *testing.T) {
+	f := &fakeRunner{fail: map[string]error{keyA: &DownloadError{Msg: "no file", Video: true}}}
+	s, w, st, clk := newTest(t, f)
+	for range 10 {
+		do(t, s, "POST", "/v1/resolve", `{"key":"`+keyA+`"}`, true)
+		if e, ok := st.NextQueued(); ok {
+			w.process(context.Background(), e)
+		}
+		clk.Add(time.Hour)
+	}
+	if len(f.calls) < 2 {
+		t.Fatalf("a video failure was not retried: %v", f.calls)
+	}
+	if state, _ := w.BreakerState(); state != "closed" {
+		t.Fatal("breaker opened on a video problem")
 	}
 }

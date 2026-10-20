@@ -194,6 +194,9 @@ func (w *Worker) process(ctx context.Context, e Entry) {
 		x.Status = stQueued
 		x.RetryAt = w.now().Add(retryWaits[x.Attempts-1]).Unix()
 	})
+	if errors.As(err, &de) && de.Video {
+		return // this video only: retried by the schedule above, no sign the address is blocked
+	}
 	w.breaker.mu.Lock()
 	w.breaker.failures++
 	if w.cfg.BreakerAfter > 0 && w.breaker.failures >= w.cfg.BreakerAfter {

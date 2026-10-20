@@ -12,8 +12,9 @@ type Config struct {
 	Addr         string
 	APIKey       string
 	CacheDir     string
-	CacheLimit   int64 // bytes
-	MaxHeight    int   // default when a request does not say
+	CacheLimit   int64         // bytes
+	MaxHeight    int           // default when a request does not say
+	MaxDuration  time.Duration // longer videos are refused (not trailers)
 	HourlyCap    int
 	PauseMin     time.Duration
 	PauseMax     time.Duration
@@ -46,6 +47,7 @@ func loadConfig() (Config, error) {
 		FFprobe:      env("RESOLVER_FFPROBE", "ffprobe"),
 		Deno:         env("RESOLVER_DENO", "deno"),
 		AutoUpdate:   env("RESOLVER_AUTO_UPDATE", "false") == "true",
+		MaxDuration:  time.Duration(envInt("RESOLVER_MAX_SECONDS", 300)) * time.Second,
 		BreakerAfter: envInt("RESOLVER_BREAKER_AFTER", 5),
 		BreakerFor:   time.Duration(envInt("RESOLVER_BREAKER_HOURS", 6)) * time.Hour,
 		UnusedAfter:  time.Duration(envInt("RESOLVER_UNUSED_DAYS", 30)) * 24 * time.Hour,
