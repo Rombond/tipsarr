@@ -75,7 +75,6 @@ struct GenrePickerList: View {
                             Spacer(minLength: 0)
                             if selected { Image(systemName: "checkmark").foregroundStyle(Tokens.palette.primary) }
                         }
-                        // .frame(minHeight: Tokens.Size.touchTarget)
                         .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
@@ -88,8 +87,9 @@ struct GenrePickerList: View {
         .searchable(text: $query, prompt: Text("m.library.genres_search"))
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("library.reset") { selection = [] }
-                .disabled(selection.isEmpty)
+                Button { selection = [] } label: { Image(systemName: "arrow.counterclockwise") }
+                    .disabled(selection.isEmpty)
+                    .accessibilityLabel(Text("library.reset"))
             }
         }
     }
