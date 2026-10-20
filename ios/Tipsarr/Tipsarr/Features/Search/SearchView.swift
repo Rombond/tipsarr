@@ -112,13 +112,17 @@ struct SearchView: View {
 
     private var showsFilters: Bool { !trimmed.isEmpty && scope != .people }
 
+    /// Same glass circle as the system "Fermer" button of the search field.
     private var filtersButton: some View {
         Button { showFilters = true } label: {
-            Image(systemName: filters.activeCount == 0 ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                .font(.title3)
-                .frame(minWidth: Tokens.Size.touchTarget, minHeight: Tokens.Size.touchTarget)
-                .contentShape(.rect)
+            Image(systemName: "line.3.horizontal.decrease")
+                .font(.title3.weight(.medium))
+                .foregroundStyle(filters.activeCount == 0 ? Tokens.palette.fg : Color.white)
+                .frame(width: Tokens.Size.touchTarget, height: Tokens.Size.touchTarget)
+                .contentShape(.circle)
         }
+        .buttonStyle(.plain)
+        .glassEffect(filters.activeCount == 0 ? .regular.interactive() : .regular.tint(.accentColor).interactive(), in: .circle)
         .accessibilityLabel(Text("m.search.filters"))
         .accessibilityValue(Text(verbatim: filters.activeCount == 0 ? "" : String(filters.activeCount)))
     }
