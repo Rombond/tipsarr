@@ -44,6 +44,11 @@ final class SearchModel {
         UserDefaults.standard.set(recents, forKey: Self.recentsKey)
     }
 
+    func removeRecent(_ text: String) {
+        recents.removeAll { $0 == text }
+        UserDefaults.standard.set(recents, forKey: Self.recentsKey)
+    }
+
     func clearRecents() {
         recents = []
         UserDefaults.standard.removeObject(forKey: Self.recentsKey)

@@ -142,31 +142,41 @@ struct SearchView: View {
 
     // MARK: Landing (no query)
 
+    /// A List so the recent searches can be swiped away one by one.
     private var landing: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Tokens.Spacing._2xl) {
-                if !model.recents.isEmpty {
-                    VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
-                        HStack {
-                            Text("m.search.recents").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
-                            Spacer()
-                            Button("m.search.clear") { model.clearRecents() }.font(.subheadline)
+        List {
+            if !model.recents.isEmpty {
+                Section {
+                    ForEach(model.recents, id: \.self) { recent in
+                        Button { query = recent } label: {
+                            Label { Text(verbatim: recent) } icon: { Image(systemName: "clock.arrow.circlepath") }
+                                .frame(maxWidth: .infinity, minHeight: Tokens.Size.touchTarget, alignment: .leading)
+                                .contentShape(.rect)
                         }
-                        ForEach(model.recents, id: \.self) { recent in
-                            Button { query = recent } label: {
-                                Label { Text(verbatim: recent) } icon: { Image(systemName: "clock.arrow.circlepath") }
-                                    .frame(maxWidth: .infinity, minHeight: Tokens.Size.touchTarget, alignment: .leading)
-                                    .contentShape(.rect)
-                            }
-                            .buttonStyle(.plain)
-                            .foregroundStyle(Tokens.palette.fg)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Tokens.palette.fg)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) { model.removeRecent(recent) } label: { Image(systemName: "trash") }
+                                .accessibilityLabel(Text("m.search.clear"))
                         }
+                        .listRowSeparator(.hidden)
                     }
+                } header: {
+                    HStack {
+                        Text("m.search.recents").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
+                        Spacer()
+                        Button("m.search.clear") { model.clearRecents() }.font(.subheadline)
+                    }
+                    .foregroundStyle(Tokens.palette.fg)
+                    .textCase(nil)
                 }
-                genres
             }
-            .padding(Tokens.Spacing.lg)
+            genres
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
         .task { await model.loadGenres() }
     }
 
