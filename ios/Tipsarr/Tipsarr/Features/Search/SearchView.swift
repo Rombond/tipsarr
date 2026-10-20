@@ -142,40 +142,46 @@ struct SearchView: View {
 
     // MARK: Landing (no query)
 
-    /// A List so the recent searches can be swiped away one by one.
+    /// A List so the recent searches can be swiped away one by one; the insets and spacing keep the look of the old scroll view.
     private var landing: some View {
-        List {
+        let insets = EdgeInsets(top: 0, leading: Tokens.Spacing.lg, bottom: 0, trailing: Tokens.Spacing.lg)
+        return List {
             if !model.recents.isEmpty {
-                Section {
-                    ForEach(model.recents, id: \.self) { recent in
-                        Button { query = recent } label: {
-                            Label { Text(verbatim: recent) } icon: { Image(systemName: "clock.arrow.circlepath") }
-                                .frame(maxWidth: .infinity, minHeight: Tokens.Size.touchTarget, alignment: .leading)
-                                .contentShape(.rect)
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(Tokens.palette.fg)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) { model.removeRecent(recent) } label: { Image(systemName: "trash") }
-                                .accessibilityLabel(Text("m.search.clear"))
-                        }
-                        .listRowSeparator(.hidden)
+                HStack {
+                    Text("m.search.recents").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
+                    Spacer()
+                    Button("m.search.clear") { model.clearRecents() }.font(.subheadline)
+                }
+                .listRowInsets(insets)
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+
+                ForEach(model.recents, id: \.self) { recent in
+                    Button { query = recent } label: {
+                        Label { Text(verbatim: recent) } icon: { Image(systemName: "clock.arrow.circlepath") }
+                            .frame(maxWidth: .infinity, minHeight: Tokens.Size.touchTarget, alignment: .leading)
+                            .contentShape(.rect)
                     }
-                } header: {
-                    HStack {
-                        Text("m.search.recents").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
-                        Spacer()
-                        Button("m.search.clear") { model.clearRecents() }.font(.subheadline)
-                    }
+                    .buttonStyle(.plain)
                     .foregroundStyle(Tokens.palette.fg)
-                    .textCase(nil)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) { model.removeRecent(recent) } label: { Image(systemName: "trash") }
+                            .accessibilityLabel(Text("m.search.clear"))
+                    }
+                    .listRowInsets(insets)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 }
             }
             genres
+                .padding(.top, Tokens.Spacing._2xl)
+                .listRowInsets(insets)
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
         }
         .listStyle(.plain)
+        .listRowSpacing(0)
+        .environment(\.defaultMinListRowHeight, 0)
         .scrollContentBackground(.hidden)
         .task { await model.loadGenres() }
     }
