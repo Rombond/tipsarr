@@ -92,6 +92,8 @@ struct SearchView: View {
         }
         .background(Tokens.palette.bg)
         .navigationTitle("m.tab.search")
+        // Always inline: switching between large and inline titles left a stale large-title offset (a gap under the search field) when a search started from the recents.
+        .navigationBarTitleDisplayMode(.inline)
         // The scopes are our own segmented control so the filter button can sit next to it.
         .safeAreaInset(edge: .top, spacing: 0) {
             if !trimmed.isEmpty { scopeBar }
