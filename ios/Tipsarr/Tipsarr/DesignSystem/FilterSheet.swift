@@ -51,38 +51,61 @@ extension View {
     }
 }
 
+/// Two rows ("from", "to") in one card; tapping a row unfolds a wheel under it, like the start and end times in Calendar.
 struct FilterYearRange: View {
     @Binding var from: Int?
     @Binding var to: Int?
     let range: ClosedRange<Int>
+    @State private var open: Field?
+
+    private enum Field { case from, to }
 
     var body: some View {
         FilterSection("library.year") {
-            HStack(spacing: Tokens.Spacing.md) {
-                yearMenu("library.year_from", selection: $from)
-                yearMenu("library.year_to", selection: $to)
+            VStack(spacing: 0) {
+                row("library.year_from", field: .from, selection: $from)
+                Divider().padding(.leading, Tokens.Spacing.md)
+                row("library.year_to", field: .to, selection: $to)
             }
+            .background(Tokens.palette.muted, in: .rect(cornerRadius: Tokens.Radius.md))
+            .clipShape(.rect(cornerRadius: Tokens.Radius.md))
         }
     }
 
-    /// The caption stays visible above the menu: a menu picker only shows the chosen value.
-    private func yearMenu(_ title: LText, selection: Binding<Int?>) -> some View {
-        VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
-            Text(title).font(.footnote.weight(.medium)).foregroundStyle(Tokens.palette.mutedFg)
-            Picker(selection: selection) {
-                Text("library.any").tag(Int?.none)
-                ForEach(Array(range).reversed(), id: \.self) { year in Text(verbatim: String(year)).tag(Int?.some(year)) }
+    private func row(_ title: LText, field: Field, selection: Binding<Int?>) -> some View {
+        let isOpen = open == field
+        return VStack(spacing: 0) {
+            Button {
+                withAnimation(.snappy) { open = isOpen ? nil : field }
             } label: {
-                Text(title)
+                HStack {
+                    Text(title).foregroundStyle(Tokens.palette.fg)
+                    Spacer(minLength: Tokens.Spacing.md)
+                    Group {
+                        if let year = selection.wrappedValue { Text(verbatim: String(year)) } else { Text("library.any") }
+                    }
+                    .foregroundStyle(isOpen ? Color.accentColor : Tokens.palette.mutedFg)
+                }
+                .padding(.horizontal, Tokens.Spacing.md)
+                .frame(minHeight: Tokens.Size.touchTarget)
+                .contentShape(.rect)
             }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, Tokens.Spacing.sm)
-            .frame(minHeight: Tokens.Size.touchTarget)
-            .background(Tokens.palette.muted, in: .rect(cornerRadius: Tokens.Radius.md))
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(isOpen ? .isSelected : [])
+
+            if isOpen {
+                Picker(selection: selection) {
+                    Text("library.any").tag(Int?.none)
+                    ForEach(Array(range).reversed(), id: \.self) { year in Text(verbatim: String(year)).tag(Int?.some(year)) }
+                } label: {
+                    Text(title)
+                }
+                .labelsHidden()
+                .pickerStyle(.wheel)
+                .frame(height: 150)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
-        .frame(maxWidth: .infinity)
     }
 }
 
