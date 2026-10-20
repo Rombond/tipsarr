@@ -308,3 +308,19 @@ func TestSweepWorkRemovesOnlyOldWorkFolders(t *testing.T) {
 		t.Fatal("fresh folder was removed")
 	}
 }
+
+// yt-dlp exits 0 without writing a file when the video is over --max-filesize: that is a permanent failure,
+// otherwise the retries feed the breaker and pause every download.
+func TestNoFileIsPermanent(t *testing.T) {
+	dir := t.TempDir()
+	fake := filepath.Join(dir, "yt-dlp")
+	if err := os.WriteFile(fake, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	r := execRunner{cfg: Config{YtDlp: fake, FFmpeg: "ffmpeg", Deno: "deno"}}
+	_, err := r.Download(context.Background(), "AAAAAAAAAAA", 720, filepath.Join(dir, "AAAAAAAAAAA.mp4"))
+	var de *DownloadError
+	if !errors.As(err, &de) || !de.Permanent {
+		t.Fatalf("err = %v, want a permanent DownloadError", err)
+	}
+}

@@ -81,7 +81,8 @@ func (r execRunner) Download(ctx context.Context, key string, maxHeight int, dst
 	}
 	in := filepath.Join(work, "in.mp4")
 	if st, err := os.Stat(in); err != nil || st.Size() == 0 {
-		return Result{}, &DownloadError{Msg: "yt-dlp produced no mp4 file"}
+		// yt-dlp exits 0 without a file when the video is over --max-filesize (a long film, not a trailer): trying again cannot help.
+		return Result{}, &DownloadError{Msg: "yt-dlp produced no mp4 file (probably over the size limit)", Permanent: true}
 	}
 	out := filepath.Join(work, "out.mp4")
 	if b, err := exec.CommandContext(ctx, r.cfg.FFmpeg, "-y", "-v", "error", "-i", in, "-c", "copy", "-movflags", "+faststart", out).CombinedOutput(); err != nil {
