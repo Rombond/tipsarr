@@ -117,6 +117,7 @@ struct SearchView: View {
     private func searchable<V: View>(_ view: V, placement: SearchFieldPlacement) -> some View {
         view
             .searchable(text: $query, placement: placement, prompt: Text("m.search.prompt"))
+            .searchPresentationToolbarBehavior(.avoidHidingContent)
             .searchScopes($scope, activation: .onSearchPresentation) {
                 ForEach(SearchScope.allCases, id: \.self) { Text($0.title).tag($0) }
             }
