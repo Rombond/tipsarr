@@ -45,6 +45,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import com.brebond.tipsarr.core.api.request
 import com.brebond.tipsarr.core.api.updatePreferences
+import com.brebond.tipsarr.core.api.ApiError
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import com.brebond.tipsarr.core.live.LocalLive
 import com.brebond.tipsarr.core.live.OnTick
 import com.brebond.tipsarr.core.navigation.DeepLinkTarget
@@ -98,6 +101,9 @@ import com.brebond.tipsarr.core.support.LocalRatings
 import com.brebond.tipsarr.features.profile.PictureSheet
 import com.brebond.tipsarr.features.profile.ProfileScreen
 import com.brebond.tipsarr.features.settings.AccountsScreen
+import com.brebond.tipsarr.features.settings.AppIconScreen
+import com.brebond.tipsarr.features.settings.RatingSourceScreen
+import com.brebond.tipsarr.features.settings.RegionScreen
 import com.brebond.tipsarr.features.settings.DevicesScreen
 import com.brebond.tipsarr.features.settings.HiddenScreen
 import com.brebond.tipsarr.features.settings.SettingsScreen
@@ -210,6 +216,17 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
         }
     }
     val signOut: () -> Unit = { scope.launch { session.signOut(account) } }
+    val appContext = LocalContext.current
+    /** Region and score source pickers: save, confirm, and go back to Settings. */
+    val savePreferences: (Int, suspend () -> Profile) -> Unit = { message, work ->
+        scope.launch {
+            try {
+                session.update(work())
+                toasts.show(appContext.getString(message))
+                model.back(tab)
+            } catch (e: ApiError) { toasts.show(e.message(appContext), ToastKind.Error) }
+        }
+    }
     BackHandler(enabled = model.top(tab) != null) { model.back(tab) }
 
     val hinge = rememberVerticalHinge()
@@ -256,6 +273,9 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                                 onOpenAccounts = { model.open(tab, Screen.Accounts) },
                                 onOpenDevices = { model.open(tab, Screen.Devices) },
                                 onOpenHidden = { model.open(tab, Screen.Hidden) },
+                                onOpenRegion = { model.open(tab, Screen.Region) },
+                                onOpenRatingSource = { model.open(tab, Screen.RatingSourcePicker) },
+                                onOpenAppIcon = { model.open(tab, Screen.AppIcon) },
                                 onChangePicture = { showPicture = true },
                                 onSignOut = signOut,
                             )
@@ -266,6 +286,13 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                                 onAdd = { session.beginAddAccount() },
                                 onSignOut = { scope.launch { session.signOut(it) } },
                             )
+                            Screen.Region -> RegionScreen(profile.region.uppercase(), onBack = { model.back(tab) }, onPick = { code ->
+                                savePreferences(R.string.profile_saved) { model.api.updatePreferences(region = code) }
+                            })
+                            Screen.RatingSourcePicker -> RatingSourceScreen(RatingSource.from(profile.ratingSource), onBack = { model.back(tab) }, onPick = { source ->
+                                savePreferences(R.string.profile_saved) { model.api.updatePreferences(ratingSource = source) }
+                            })
+                            Screen.AppIcon -> AppIconScreen(onBack = { model.back(tab) })
                             Screen.Devices -> DevicesScreen(model.api, onBack = { model.back(tab) })
                             Screen.Watchlist -> WatchlistScreen(model.api, onBack = { model.back(tab) }, onOpen = openTitle)
                             Screen.Hidden -> HiddenScreen(model.api, onBack = { model.back(tab) }, onOpen = openTitle)
@@ -329,7 +356,7 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                     selected = tab == item,
                     onClick = { tab = item },
                     icon = { TabIcon(item, model.pendingCount) },
-                    label = { Text(stringResource(item.title)) },
+                    label = { Text(stringResource(item.title), maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, fontSize = 11.sp) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Tokens.palette.primaryFg, selectedTextColor = Tokens.palette.fg, indicatorColor = Tokens.palette.primary,
                         unselectedIconColor = Tokens.palette.mutedFg, unselectedTextColor = Tokens.palette.mutedFg,

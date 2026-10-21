@@ -45,6 +45,9 @@ sealed interface Screen {
     data object Devices : Screen
     data object Watchlist : Screen
     data object Hidden : Screen
+    data object Region : Screen
+    data object RatingSourcePicker : Screen
+    data object AppIcon : Screen
     data object TeasersHistory : Screen
     data object Issues : Screen
     class Issue(val id: String) : Screen

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Language
@@ -67,12 +69,13 @@ import com.brebond.tipsarr.core.support.LocalToast
 import com.brebond.tipsarr.core.support.ToastKind
 import com.brebond.tipsarr.design.Tokens
 import com.brebond.tipsarr.design.palette
+import com.brebond.tipsarr.ui.ProviderMark
 import com.brebond.tipsarr.ui.TopBarScaffold
 import kotlinx.coroutines.launch
 import java.util.Locale
 
 /** The country's flag as two regional-indicator symbols. */
-private fun flag(code: String): String = code.uppercase().map { String(Character.toChars(0x1F1E6 + (it - 'A'))) }.joinToString("")
+internal fun flag(code: String): String = code.uppercase().map { String(Character.toChars(0x1F1E6 + (it - 'A'))) }.joinToString("")
 
 /** Settings: account, language, region, score on posters, hidden titles, theme, devices, server, sign out. */
 @Composable
@@ -89,6 +92,9 @@ fun SettingsScreen(
     onOpenAccounts: () -> Unit,
     onOpenDevices: () -> Unit,
     onOpenHidden: () -> Unit,
+    onOpenRegion: () -> Unit,
+    onOpenRatingSource: () -> Unit,
+    onOpenAppIcon: () -> Unit,
     onChangePicture: () -> Unit,
     onSignOut: () -> Unit,
 ) {
@@ -99,19 +105,7 @@ fun SettingsScreen(
     var deviceCount by remember { mutableStateOf<Int?>(null) }
     LaunchedEffect(Unit) { deviceCount = runCatching { api.sessions().size }.getOrNull() }
 
-    fun save(message: Int, work: suspend () -> Profile) {
-        scope.launch {
-            try {
-                onProfileChanged(work())
-                toast?.show(context.getString(message))
-            } catch (e: ApiError) { toast?.show(e.message(context), ToastKind.Error) }
-        }
-    }
-
-    val regions = remember(settings.language) {
-        val locale = Locale.getDefault()
-        Locale.getISOCountries().map { it to flag(it) + " " + Locale("", it).getDisplayCountry(locale) }.filter { it.second.isNotEmpty() }.sortedBy { it.second.lowercase() }
-    }
+    val regionName = remember(settings.language) { regionChoices().firstOrNull { it.first == profile.region.uppercase() }?.second ?: "" }
 
     TopBarScaffold(stringResource(R.string.m_settings_title), onBack) {
         Box(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding(), contentAlignment = Alignment.TopCenter) {
@@ -130,21 +124,15 @@ fun SettingsScreen(
                             onLanguageChanged()
                         }
                     }
-                    MenuRow(
-                        Icons.Outlined.Public, stringResource(R.string.m_settings_region),
-                        value = regions.firstOrNull { it.first == profile.region.uppercase() }?.second ?: "",
-                        choices = regions.map { it.second to it.first },
-                    ) { code -> if (code != null) save(R.string.profile_saved) { api.updatePreferences(region = code) } }
-                    val sources = listOf(
-                        RatingSource.Tmdb to R.string.m_settings_rating_tmdb, RatingSource.Imdb to R.string.m_settings_rating_imdb,
-                        RatingSource.Metacritic to R.string.m_settings_rating_metacritic, RatingSource.RottenTomatoes to R.string.m_settings_rating_rt,
+                    NavRow(Icons.Outlined.Public, stringResource(R.string.m_settings_region), value = regionName, onClick = onOpenRegion)
+                    NavRow(
+                        Icons.Outlined.Star, stringResource(R.string.profile_rating_source), onClick = onOpenRatingSource,
+                        trailing = {
+                            val source = RatingSource.from(profile.ratingSource)
+                            ProviderMark(source, value = 80.0, height = 14.dp)
+                            Text(ratingSourceTitle(source), fontSize = Tokens.FontSize.body, color = Tokens.palette.mutedFg, maxLines = 1)
+                        },
                     )
-                    val current = RatingSource.from(profile.ratingSource)
-                    MenuRow(
-                        Icons.Outlined.Star, stringResource(R.string.profile_rating_source),
-                        value = stringResource(sources.first { it.first == current }.second),
-                        choices = sources.map { stringResource(it.second) to it.first.wire },
-                    ) { wire -> if (wire != null) save(R.string.profile_saved) { api.updatePreferences(ratingSource = RatingSource.from(wire)) } }
                     NavRow(Icons.Outlined.VisibilityOff, stringResource(R.string.m_settings_hidden), onClick = onOpenHidden)
                 }
                 Group(stringResource(R.string.m_settings_appearance)) {
@@ -154,6 +142,7 @@ fun SettingsScreen(
                         value = stringResource(themes.first { it.first == settings.theme }.second),
                         choices = themes.map { stringResource(it.second) to it.first.name },
                     ) { name -> AppTheme.entries.firstOrNull { it.name == name }?.let(settings::updateTheme) }
+                    NavRow(Icons.Outlined.Apps, stringResource(R.string.m_settings_app_icon), onClick = onOpenAppIcon)
                 }
                 Group(stringResource(R.string.m_settings_security)) {
                     NavRow(Icons.Outlined.Devices, stringResource(R.string.profile_devices_title), value = deviceCount?.toString(), onClick = onOpenDevices)
@@ -202,7 +191,7 @@ internal fun Group(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-internal fun NavRow(icon: ImageVector, title: String, value: String? = null, onClick: () -> Unit) {
+internal fun NavRow(icon: ImageVector, title: String, value: String? = null, onClick: () -> Unit, trailing: (@Composable RowScope.() -> Unit)? = null) {
     Row(
         Modifier.fillMaxWidth().defaultMinSize(minHeight = Tokens.Size.touchTarget + Tokens.Spacing.md).clickable(onClick = onClick).padding(horizontal = Tokens.Spacing.md),
         horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically,
@@ -210,6 +199,7 @@ internal fun NavRow(icon: ImageVector, title: String, value: String? = null, onC
         Icon(icon, null, tint = Tokens.palette.fg)
         Text(title, fontSize = Tokens.FontSize.body, color = Tokens.palette.fg, modifier = Modifier.weight(1f))
         if (value != null) Text(value, fontSize = Tokens.FontSize.body, color = Tokens.palette.mutedFg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 180.dp))
+        trailing?.invoke(this)
         Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = Tokens.palette.mutedFg)
     }
 }
