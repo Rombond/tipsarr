@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.brebond.tipsarr.R
@@ -208,7 +209,7 @@ internal fun NavRow(icon: ImageVector, title: String, value: String? = null, onC
     ) {
         Icon(icon, null, tint = Tokens.palette.fg)
         Text(title, fontSize = Tokens.FontSize.body, color = Tokens.palette.fg, modifier = Modifier.weight(1f))
-        if (value != null) Text(value, fontSize = Tokens.FontSize.body, color = Tokens.palette.mutedFg)
+        if (value != null) Text(value, fontSize = Tokens.FontSize.body, color = Tokens.palette.mutedFg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 180.dp))
         Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = Tokens.palette.mutedFg)
     }
 }
@@ -224,7 +225,7 @@ internal fun MenuRow(icon: ImageVector, title: String, value: String, choices: L
         ) {
             Icon(icon, null, tint = Tokens.palette.fg)
             Text(title, fontSize = Tokens.FontSize.body, color = Tokens.palette.fg, modifier = Modifier.weight(1f))
-            Text(value, fontSize = Tokens.FontSize.body, color = Tokens.palette.mutedFg, maxLines = 1)
+            Text(value, fontSize = Tokens.FontSize.body, color = Tokens.palette.mutedFg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 180.dp))
         }
         DropdownMenu(open, { open = false }, containerColor = Tokens.palette.card, modifier = Modifier.heightIn(max = 420.dp)) {
             choices.forEach { (label, key) -> DropdownMenuItem(text = { Text(label, color = Tokens.palette.fg) }, onClick = { open = false; onPick(key) }) }
