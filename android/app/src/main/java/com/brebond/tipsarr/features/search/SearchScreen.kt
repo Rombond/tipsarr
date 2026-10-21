@@ -15,7 +15,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import kotlin.math.roundToInt
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -37,9 +42,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
@@ -200,22 +202,15 @@ private fun Landing(model: SearchModel, onOpenGenre: (MergedGenre) -> Unit) {
                     TextButton(model::clearRecents) { Text(stringResource(R.string.m_search_clear)) }
                 }
             }
-            // Swipe a recent search to the left to delete it.
+            // Swipe a recent search to the left to show the bin; the bin button deletes it.
             items(model.recents, key = { "recent-$it" }) { recent ->
-                val swipe = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
-                    if (value == SwipeToDismissBoxValue.EndToStart) { model.removeRecent(recent); true } else false
-                })
-                SwipeToDismissBox(
-                    swipe, enableDismissFromStartToEnd = false,
-                    backgroundContent = {
-                        Box(Modifier.fillMaxSize().background(Tokens.palette.destructive).padding(horizontal = GUTTER), contentAlignment = Alignment.CenterEnd) {
-                            Icon(Icons.Outlined.Delete, stringResource(R.string.m_search_clear), tint = Color.White)
-                        }
-                    },
-                ) {
+                SwipeToReveal(
+                    actionIcon = { Icon(Icons.Outlined.Delete, stringResource(R.string.m_search_clear), tint = Color.White) },
+                    onAction = { model.removeRecent(recent) },
+                ) { closeIfOpen ->
                     Row(
                         Modifier.fillMaxWidth().background(Tokens.palette.bg).defaultMinSize(minHeight = Tokens.Size.touchTarget)
-                            .clickable { model.query = recent }.padding(horizontal = GUTTER),
+                            .clickable { if (!closeIfOpen()) model.query = recent }.padding(horizontal = GUTTER),
                         horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(Icons.Outlined.History, null, tint = Tokens.palette.fg)
@@ -340,5 +335,35 @@ private fun PersonRow(person: PersonSummary, onClick: () -> Unit) {
             person.department?.takeIf { it.isNotEmpty() }?.let { Text(it, fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg) }
         }
         Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = Tokens.palette.mutedFg)
+    }
+}
+
+/** A row that slides left to show a button behind it; nothing happens until the button is tapped. `content` gets a function that closes the row and says whether it was open. */
+@Composable
+private fun SwipeToReveal(actionIcon: @Composable () -> Unit, onAction: () -> Unit, content: @Composable ((() -> Boolean)) -> Unit) {
+    val width = 72.dp
+    val widthPx = with(androidx.compose.ui.platform.LocalDensity.current) { width.toPx() }
+    val offset = remember { androidx.compose.animation.core.Animatable(0f) }
+    val scope = rememberCoroutineScope()
+    val closeIfOpen: () -> Boolean = {
+        val open = offset.value < 0f
+        if (open) scope.launch { offset.animateTo(0f) }
+        open
+    }
+    Box(Modifier.fillMaxWidth()) {
+        Box(
+            Modifier.matchParentSize().background(Tokens.palette.destructive).clickable(onClick = onAction),
+            contentAlignment = Alignment.CenterEnd,
+        ) { Box(Modifier.width(width), contentAlignment = Alignment.Center) { actionIcon() } }
+        Box(
+            Modifier.offset { androidx.compose.ui.unit.IntOffset(offset.value.roundToInt(), 0) }.draggable(
+                rememberDraggableState { delta -> scope.launch { offset.snapTo((offset.value + delta).coerceIn(-widthPx, 0f)) } },
+                Orientation.Horizontal,
+                onDragStopped = { velocity ->
+                    val open = offset.value < -widthPx / 2 || velocity < -800f
+                    offset.animateTo(if (open) -widthPx else 0f)
+                },
+            ),
+        ) { content(closeIfOpen) }
     }
 }

@@ -135,7 +135,6 @@ fun RatingSourceScreen(selection: RatingSource, onPick: (RatingSource) -> Unit, 
 
 /** App icons the person can choose from: one launcher alias of the manifest each. */
 enum class AppIconChoice(val alias: String, val preview: Int, val title: Int) {
-    Default("IconDefault", R.drawable.ic_icon_dark, R.string.m_icon_default),
     Light("IconLight", R.drawable.ic_icon_light, R.string.m_icon_light),
     Dark("IconDark", R.drawable.ic_icon_dark, R.string.m_icon_dark),
     Mono("IconMono", R.drawable.ic_icon_mono, R.string.m_icon_mono);
@@ -145,8 +144,8 @@ enum class AppIconChoice(val alias: String, val preview: Int, val title: Int) {
 
         fun current(context: Context): AppIconChoice = entries.firstOrNull {
             val state = context.packageManager.getComponentEnabledSetting(component(context, it))
-            state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED || (state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && it == Default)
-        } ?: Default
+            state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED || (state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && it == Light)
+        } ?: Light
 
         /** Enables the new alias first so the launcher never has none. */
         fun select(context: Context, choice: AppIconChoice) {
