@@ -17,6 +17,7 @@ import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.safeDrawing
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.runtime.mutableFloatStateOf
@@ -409,15 +411,11 @@ private fun TeaserCard(
                 }
             },
     ) {
-        // The picture (portrait: the whole 16:9 over a blurred, dimmed backdrop; sideways: the whole screen on black).
+        // The picture, like iOS: the whole screen, the video fitted and centred over a blurred, dimmed backdrop.
         Box(Modifier.fillMaxSize().graphicsLayer { scaleX = scale; scaleY = scale; transformOrigin = pinchOrigin }) {
-            if (!landscape) RemoteImage(teaser.backdropPath ?: teaser.posterPath, TmdbSize.W780, Modifier.fillMaxSize().alpha(0.45f).blur(36.dp))
+            RemoteImage(teaser.backdropPath ?: teaser.posterPath, TmdbSize.W780, Modifier.fillMaxSize().alpha(0.55f).blur(24.dp))
             if (video != null) {
-                TeaserSurface(
-                    video,
-                    (if (landscape) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(16f / 9f).align(Alignment.Center).offset(y = (-96).dp))
-                        .alpha(if (video.ready) 1f else 0f),
-                )
+                TeaserSurface(video, Modifier.fillMaxSize().alpha(if (video.ready) 1f else 0f))
             }
         }
         if (active && video != null && !video.ready && !paused) {
@@ -450,55 +448,59 @@ private fun TeaserCard(
         }
 
         if (!hidden) {
-            Box(Modifier.fillMaxWidth().fillMaxHeight(0.45f).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)))))
+            Box(Modifier.fillMaxWidth().fillMaxHeight(0.5f).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f)))))
 
-            // Title, type, year, rating, overview and the request button.
-            Column(
-                Modifier.align(Alignment.BottomStart).navigationBarsPadding().fillMaxWidth(if (landscape) 0.62f else 0.78f)
-                    .padding(start = Tokens.Spacing.lg + leading, bottom = bottom),
-                verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm),
+            // Like iOS: the title block on the left, the round actions on the right, both resting on the same bottom line.
+            Row(
+                Modifier.align(Alignment.BottomCenter).navigationBarsPadding().fillMaxWidth()
+                    .padding(start = Tokens.Spacing.lg + leading, end = Tokens.Spacing.lg, bottom = bottom),
+                horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg),
+                verticalAlignment = Alignment.Bottom,
             ) {
-                Text(
-                    teaser.title, color = Color.White, fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.plainClickable(onDetails),
-                )
-                val light = Color.White.copy(alpha = 0.85f)
-                Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(if (teaser.type == MediaType.Tv) R.string.m_poster_tv else R.string.m_poster_movie), color = light, fontSize = Tokens.FontSize.footnote, fontWeight = FontWeight.Medium)
-                    teaser.releaseDate?.take(4)?.takeIf { it.isNotEmpty() }?.let { Text("· $it", color = light, fontSize = Tokens.FontSize.footnote, fontWeight = FontWeight.Medium) }
-                    if (teaser.voteAverage > 0) {
-                        Text("·", color = light, fontSize = Tokens.FontSize.footnote, fontWeight = FontWeight.Medium)
-                        ScoreLabel(teaser.type, teaser.tmdbId, teaser.voteAverage, textColor = light)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
+                    Text(
+                        teaser.title, color = Color.White, fontSize = Tokens.FontSize.title2, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.plainClickable(onDetails),
+                    )
+                    val light = Color.White.copy(alpha = 0.85f)
+                    Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(if (teaser.type == MediaType.Tv) R.string.m_poster_tv else R.string.m_poster_movie), color = light, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium)
+                        teaser.releaseDate?.take(4)?.takeIf { it.isNotEmpty() }?.let { Text("· $it", color = light, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium) }
+                        if (teaser.voteAverage > 0) {
+                            Text("·", color = light, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium)
+                            ScoreLabel(teaser.type, teaser.tmdbId, teaser.voteAverage, textColor = light)
+                        }
+                    }
+                    if (video != null && video.scrubbing) {
+                        Text(
+                            "${clock(video.positionMs)} / ${clock(video.durationMs)}",
+                            color = Color.White, fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.SemiBold, style = TextStyle(fontFeatureSettings = "tnum"),
+                        )
+                    } else {
+                        teaser.overview?.takeIf { it.isNotBlank() }?.let { Overview(it, overviewOpen) { overviewOpen = !overviewOpen } }
+                    }
+                    // The hint shows once the first trailer played to its end three times in a row (two full loops after the first play).
+                    AnimatedVisibility(showHint && (video?.loops ?: 0) >= 2) {
+                        Text(stringResource(R.string.m_teasers_swipe_hint), color = Color.White.copy(alpha = 0.7f), fontSize = Tokens.FontSize.footnote, textAlign = TextAlign.Start, modifier = Modifier.padding(top = Tokens.Spacing.xs))
                     }
                 }
-                if (video != null && video.scrubbing) {
-                    Text(
-                        "${clock(video.positionMs)} / ${clock(video.durationMs)}",
-                        color = Color.White, fontSize = Tokens.FontSize.callout, fontWeight = FontWeight.SemiBold, style = TextStyle(fontFeatureSettings = "tnum"),
-                    )
-                } else {
-                    teaser.overview?.takeIf { it.isNotBlank() }?.let { Overview(it, overviewOpen) { overviewOpen = !overviewOpen } }
-                }
-                RequestButton(teaser, mayRequest, requesting, onRequest)
-                // The hint shows once the first trailer played to its end three times in a row (two full loops after the first play).
-                AnimatedVisibility(showHint && (video?.loops ?: 0) >= 2) {
-                    Text(stringResource(R.string.m_teasers_swipe_hint), color = Color.White.copy(alpha = 0.7f), fontSize = Tokens.FontSize.caption, textAlign = TextAlign.Start)
-                }
-            }
 
-            // Action column on the right (sideways it ignores the cutout: 16 dp from the screen edge).
-            Column(
-                Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = if (landscape) Tokens.Spacing.lg else Tokens.Spacing.sm, bottom = bottom),
-                verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Action(if (muted) Icons.Outlined.VolumeOff else Icons.Outlined.VolumeUp, stringResource(if (muted) R.string.m_teasers_unmute else R.string.m_teasers_mute), onToggleMute)
-                Action(
-                    if (teaser.watchlisted) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                    stringResource(if (teaser.watchlisted) R.string.actions_on_watchlist else R.string.actions_watchlist), onWatchlist,
-                )
-                Action(Icons.Outlined.Info, stringResource(R.string.media_view_details), onDetails)
-                Action(Icons.Outlined.VisibilityOff, stringResource(R.string.media_not_interested), onHide)
+                // Same order as iOS: request (or its state), details, watchlist, not interested, mute.
+                Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg), horizontalAlignment = Alignment.CenterHorizontally) {
+                    val state = teaser.item.state
+                    if (state != null) {
+                        Action(state.icon, stringResource(state.title), {}, tint = state.color, enabled = false)
+                    } else if (mayRequest) {
+                        Action(Icons.Filled.Add, stringResource(R.string.media_request), onRequest, enabled = !requesting)
+                    }
+                    Action(Icons.Outlined.Info, stringResource(R.string.media_view_details), onDetails)
+                    Action(
+                        if (teaser.watchlisted) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                        stringResource(if (teaser.watchlisted) R.string.actions_on_watchlist else R.string.actions_watchlist), onWatchlist,
+                    )
+                    Action(Icons.Outlined.VisibilityOff, stringResource(R.string.media_not_interested), onHide)
+                    Action(if (muted) Icons.Outlined.VolumeOff else Icons.Outlined.VolumeUp, stringResource(if (muted) R.string.m_teasers_unmute else R.string.m_teasers_mute), onToggleMute)
+                }
             }
         }
 
@@ -539,10 +541,10 @@ private fun Overview(text: String, open: Boolean, onToggle: () -> Unit) {
     Box(Modifier.fillMaxWidth().animateContentSize().plainClickable(onToggle)) {
         if (open) {
             Box(Modifier.heightIn(max = 180.dp).verticalScroll(rememberScrollState())) {
-                Text(text, color = Color.White.copy(alpha = 0.9f), fontSize = Tokens.FontSize.footnote)
+                Text(text, color = Color.White.copy(alpha = 0.85f), fontSize = Tokens.FontSize.subhead)
             }
         } else {
-            Text(text, color = Color.White.copy(alpha = 0.9f), fontSize = Tokens.FontSize.footnote, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(text, color = Color.White.copy(alpha = 0.85f), fontSize = Tokens.FontSize.subhead, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -583,17 +585,8 @@ private fun Modifier.plainClickable(onClick: () -> Unit): Modifier =
     clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
 
 @Composable
-private fun RequestButton(teaser: Teaser, mayRequest: Boolean, requesting: Boolean, onRequest: () -> Unit) {
-    val state = teaser.item.state
-    when {
-        state != null -> TipsarrButton(stringResource(state.title), {}, kind = ButtonKind.Secondary, compact = true, enabled = false)
-        mayRequest -> TipsarrButton(stringResource(if (requesting) R.string.media_requesting else R.string.media_request), onRequest, compact = true, enabled = !requesting)
-    }
-}
-
-@Composable
-private fun Action(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
-    IconButton(onClick, Modifier.width(Tokens.Size.touchTarget + 8.dp).background(Color.Black.copy(alpha = 0.35f), androidx.compose.foundation.shape.CircleShape)) {
-        Icon(icon, contentDescription = label, tint = Color.White)
+private fun Action(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit, tint: Color = Color.White, enabled: Boolean = true) {
+    IconButton(onClick, Modifier.size(48.dp).background(Color.Black.copy(alpha = 0.4f), CircleShape), enabled = enabled) {
+        Icon(icon, contentDescription = label, tint = tint)
     }
 }

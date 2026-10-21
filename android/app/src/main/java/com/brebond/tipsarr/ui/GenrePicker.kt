@@ -14,12 +14,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,7 +49,10 @@ import com.brebond.tipsarr.design.palette
  * multi-select list. Used by the Library and Search filters; at most `max` genres can be chosen.
  */
 @Composable
-fun GenrePicker(names: List<String>, selected: Set<String>, onChange: (Set<String>) -> Unit, modifier: Modifier = Modifier, max: Int = 6) {
+fun GenrePicker(
+    names: List<String>, selected: Set<String>, onChange: (Set<String>) -> Unit, anyGenre: Boolean, onAnyChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier, max: Int = 6,
+) {
     var open by remember { mutableStateOf(false) }
     val summary = when (selected.size) {
         0 -> stringResource(R.string.m_library_genres_any)
@@ -59,11 +67,14 @@ fun GenrePicker(names: List<String>, selected: Set<String>, onChange: (Set<Strin
         Text(summary, fontSize = Tokens.FontSize.body, color = Tokens.palette.fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         Icon(Icons.Outlined.KeyboardArrowDown, null, tint = Tokens.palette.mutedFg)
     }
-    if (open) GenreListSheet(names, selected, onChange, max) { open = false }
+    if (open) GenreListSheet(names, selected, onChange, anyGenre, onAnyChange, max) { open = false }
 }
 
 @Composable
-private fun GenreListSheet(names: List<String>, selected: Set<String>, onChange: (Set<String>) -> Unit, max: Int, onDismiss: () -> Unit) {
+private fun GenreListSheet(
+    names: List<String>, selected: Set<String>, onChange: (Set<String>) -> Unit, anyGenre: Boolean, onAnyChange: (Boolean) -> Unit,
+    max: Int, onDismiss: () -> Unit,
+) {
     var chosen by remember { mutableStateOf(selected) }
     var query by remember { mutableStateOf("") }
     val shown = remember(names, query) { names.filter { it.contains(query.trim(), ignoreCase = true) } }
@@ -74,7 +85,25 @@ private fun GenreListSheet(names: List<String>, selected: Set<String>, onChange:
     }
     TipsarrSheet(onDismiss, fullHeight = true) {
         Column(Modifier.navigationBarsPadding().padding(horizontal = Tokens.Spacing.xl).padding(bottom = Tokens.Spacing.xl), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
-            Text(stringResource(R.string.m_library_genres_pick), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg, modifier = Modifier.semantics { heading() })
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.m_library_genres_pick), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.SemiBold,
+                    color = Tokens.palette.fg, modifier = Modifier.weight(1f).semantics { heading() },
+                )
+                IconButton({ chosen = emptySet(); onChange(emptySet()) }, enabled = chosen.isNotEmpty()) {
+                    Icon(Icons.Outlined.Refresh, stringResource(R.string.library_reset), tint = if (chosen.isNotEmpty()) Tokens.palette.fg else Tokens.palette.mutedFg)
+                }
+            }
+            // Always shown; it only matters once two genres are chosen.
+            val modes = listOf(false to R.string.m_library_genre_all, true to R.string.m_library_genre_any)
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                modes.forEachIndexed { index, (any, label) ->
+                    SegmentedButton(
+                        selected = anyGenre == any, onClick = { onAnyChange(any) }, enabled = chosen.size > 1,
+                        shape = SegmentedButtonDefaults.itemShape(index, modes.size),
+                    ) { Text(stringResource(label)) }
+                }
+            }
             OutlinedTextField(
                 value = query, onValueChange = { query = it }, singleLine = true,
                 modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = Tokens.Size.touchTarget),

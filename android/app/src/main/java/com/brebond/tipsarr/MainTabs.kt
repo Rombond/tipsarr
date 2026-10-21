@@ -235,7 +235,6 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                             Screen.Profile -> Box(Modifier.fillMaxSize().statusBarsPadding()) {
                                 ProfileScreen(
                                     model.profile, profile, model.avatarVersion,
-                                    onOpenSettings = { model.open(tab, Screen.Settings) },
                                     onOpenRequests = { tab = AppTab.Requests },
                                     onOpenWatchlist = { model.open(tab, Screen.Watchlist) },
                                     onOpenTitle = { model.openTitle(tab, it) },

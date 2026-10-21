@@ -31,13 +31,22 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.WarningAmber
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -76,7 +85,6 @@ import com.brebond.tipsarr.design.Tokens
 import com.brebond.tipsarr.design.palette
 import com.brebond.tipsarr.features.discover.Phase
 import com.brebond.tipsarr.features.person.PersonRoute
-import com.brebond.tipsarr.ui.Chip
 import com.brebond.tipsarr.ui.MediaPoster
 import com.brebond.tipsarr.ui.OfflineState
 import com.brebond.tipsarr.ui.PosterSkeleton
@@ -101,27 +109,26 @@ fun SearchScreen(
     }
     Column(modifier.fillMaxSize()) {
         Column(Modifier.padding(horizontal = GUTTER).padding(top = Tokens.Spacing.sm), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
+            // Inline like the iOS navigation bar: the title never grows into a large one.
             Text(
-                stringResource(R.string.m_tab_search), fontSize = Tokens.FontSize.largeTitle, fontWeight = FontWeight.Bold,
-                color = Tokens.palette.fg, modifier = Modifier.semantics { heading() },
+                stringResource(R.string.m_tab_search), fontSize = Tokens.FontSize.headline, fontWeight = FontWeight.SemiBold,
+                color = Tokens.palette.fg, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().semantics { heading() },
             )
             SearchField(model)
             if (model.trimmed.isNotEmpty()) {
                 var filtersOpen by remember { mutableStateOf(false) }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LazyRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
-                        items(SearchScope.entries) { scope ->
-                            Chip(stringResource(scope.title()), selected = model.scope == scope, onClick = { model.scope = scope })
+                Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+                    val scopes = SearchScope.entries
+                    SingleChoiceSegmentedButtonRow(Modifier.weight(1f)) {
+                        scopes.forEachIndexed { index, scope ->
+                            SegmentedButton(
+                                selected = model.scope == scope, onClick = { model.scope = scope },
+                                shape = SegmentedButtonDefaults.itemShape(index, scopes.size),
+                                contentPadding = PaddingValues(horizontal = Tokens.Spacing.xs),
+                            ) { Text(stringResource(scope.title()), maxLines = 1, overflow = TextOverflow.Ellipsis) }
                         }
                     }
-                    if (model.scope != SearchScope.People) {
-                        val active = model.filters.activeCount
-                        IconButton({ filtersOpen = true }) {
-                            BadgedBox(badge = { if (active > 0) Badge { Text(active.toString()) } }) {
-                                Icon(Icons.Outlined.Tune, stringResource(R.string.m_search_filters), tint = Tokens.palette.fg)
-                            }
-                        }
-                    }
+                    if (model.scope != SearchScope.People) FiltersButton(model.filters.activeCount) { filtersOpen = true }
                 }
                 if (filtersOpen) SearchFiltersSheet(model) { filtersOpen = false }
             }
@@ -129,6 +136,22 @@ fun SearchScreen(
         Box(Modifier.weight(1f).fillMaxWidth()) {
             if (model.trimmed.isEmpty()) Landing(model, onOpenGenre) else Results(model, onOpenItem, onOpenPerson)
         }
+    }
+}
+
+/** Round button next to the scopes (the iOS glass circle); filled with the accent while a filter is active. */
+@Composable
+private fun FiltersButton(activeCount: Int, onClick: () -> Unit) {
+    val active = activeCount > 0
+    Box(
+        Modifier.size(Tokens.Size.touchTarget).clip(CircleShape).background(if (active) Tokens.palette.primary else Tokens.palette.muted)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            Icons.Outlined.FilterList, stringResource(R.string.m_search_filters),
+            tint = if (active) Tokens.palette.primaryFg else Tokens.palette.fg,
+        )
     }
 }
 
@@ -165,30 +188,45 @@ private fun SearchField(model: SearchModel) {
 
 // Landing (no query): recent searches, then the genres.
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Landing(model: SearchModel, onOpenGenre: (MergedGenre) -> Unit) {
     LaunchedEffect(Unit) { model.loadGenres() }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(GUTTER), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.x2xl)) {
-        if (model.recents.isNotEmpty()) item {
-            Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+    LazyColumn(Modifier.fillMaxSize()) {
+        if (model.recents.isNotEmpty()) {
+            item(key = "recents-header") {
+                Row(Modifier.fillMaxWidth().padding(horizontal = GUTTER).defaultMinSize(minHeight = Tokens.Size.touchTarget), verticalAlignment = Alignment.CenterVertically) {
                     SectionTitle(stringResource(R.string.m_search_recents), Modifier.weight(1f))
                     TextButton(model::clearRecents) { Text(stringResource(R.string.m_search_clear)) }
                 }
-                model.recents.forEach { recent ->
+            }
+            // Swipe a recent search to the left to delete it.
+            items(model.recents, key = { "recent-$it" }) { recent ->
+                val swipe = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
+                    if (value == SwipeToDismissBoxValue.EndToStart) { model.removeRecent(recent); true } else false
+                })
+                SwipeToDismissBox(
+                    swipe, enableDismissFromStartToEnd = false,
+                    backgroundContent = {
+                        Box(Modifier.fillMaxSize().background(Tokens.palette.destructive).padding(horizontal = GUTTER), contentAlignment = Alignment.CenterEnd) {
+                            Icon(Icons.Outlined.Delete, stringResource(R.string.m_search_clear), tint = Color.White)
+                        }
+                    },
+                ) {
                     Row(
-                        Modifier.fillMaxWidth().defaultMinSize(minHeight = Tokens.Size.touchTarget).clickable { model.query = recent },
+                        Modifier.fillMaxWidth().background(Tokens.palette.bg).defaultMinSize(minHeight = Tokens.Size.touchTarget)
+                            .clickable { model.query = recent }.padding(horizontal = GUTTER),
                         horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(Icons.Outlined.History, null, tint = Tokens.palette.fg)
-                        Text(recent, fontSize = Tokens.FontSize.body, color = Tokens.palette.fg)
+                        Text(recent, fontSize = Tokens.FontSize.body, color = Tokens.palette.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
         }
-        if (model.genres.isNotEmpty()) item {
-            Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg)) {
+        if (model.genres.isNotEmpty()) item(key = "genres") {
+            // The chips sit at the left edge whether or not the recents are shown.
+            Column(Modifier.fillMaxWidth().padding(horizontal = GUTTER).padding(top = Tokens.Spacing.x2xl, bottom = GUTTER), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg)) {
                 SectionTitle(stringResource(R.string.m_search_genres))
                 GenreChips(model.genres, onOpenGenre)
             }

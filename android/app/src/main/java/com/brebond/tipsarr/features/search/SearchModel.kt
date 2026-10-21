@@ -39,6 +39,7 @@ enum class SearchSort { Relevance, Rating, Year }
 /** What the Filters sheet on Search can change. They apply on the titles already loaded. */
 data class SearchFilters(
     val genres: Set<String> = emptySet(),
+    val anyGenre: Boolean = false,
     val yearFrom: Int? = null,
     val yearTo: Int? = null,
     val minRating: Double? = null,
@@ -89,11 +90,10 @@ class SearchModel(private val api: TipsarrApi, context: Context) {
     private fun applyFilters(list: List<MediaItem>): List<MediaItem> {
         val f = filters
         if (f.activeCount == 0) return list
-        val ids = HashSet<Int>()
-        genres.filter { it.name in f.genres }.forEach { g -> g.movieId?.let(ids::add); g.tvId?.let(ids::add) }
+        val wanted = genres.filter { it.name in f.genres }
         val kept = list.filter { item ->
             val year = item.releaseYear?.toIntOrNull()
-            (f.genres.isEmpty() || item.genreIds.any { it in ids }) &&
+            (f.genres.isEmpty() || wanted.map { g -> item.genreIds.any { it == g.movieId || it == g.tvId } }.let { m -> if (f.anyGenre) m.any { it } else m.size >= f.genres.size && m.all { it } }) &&
                 (f.yearFrom == null || (year != null && year >= f.yearFrom)) &&
                 (f.yearTo == null || (year != null && year <= f.yearTo)) &&
                 (f.minRating == null || item.voteAverage >= f.minRating) &&
@@ -130,6 +130,11 @@ class SearchModel(private val api: TipsarrApi, context: Context) {
         val text = trimmed
         if (text.isEmpty()) return
         recents = (listOf(text) + recents.filterNot { it.equals(text, ignoreCase = true) }).take(8)
+        prefs.edit().putString(RECENTS, recents.joinToString("\n")).apply()
+    }
+
+    fun removeRecent(text: String) {
+        recents = recents.filterNot { it == text }
         prefs.edit().putString(RECENTS, recents.joinToString("\n")).apply()
     }
 

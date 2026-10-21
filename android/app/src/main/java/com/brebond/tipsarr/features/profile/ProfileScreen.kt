@@ -30,7 +30,6 @@ import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.RemoveRedEye
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -86,7 +85,6 @@ fun ProfileScreen(
     model: ProfileModel,
     profile: Profile,
     avatarVersion: Int,
-    onOpenSettings: () -> Unit,
     onOpenRequests: () -> Unit,
     onOpenWatchlist: () -> Unit,
     onOpenTitle: (MediaRoute) -> Unit,
@@ -118,7 +116,6 @@ fun ProfileScreen(
                         stringResource(R.string.m_tab_profile), fontSize = Tokens.FontSize.largeTitle, fontWeight = FontWeight.Bold,
                         color = Tokens.palette.fg, modifier = Modifier.weight(1f).semantics { heading() },
                     )
-                    IconButton(onOpenSettings) { Icon(Icons.Outlined.Settings, stringResource(R.string.nav_settings), tint = Tokens.palette.fg) }
                 }
             }
             item { Header(profile, avatarVersion) }
