@@ -23,6 +23,7 @@
   "m.update.open_store": "Open App Store",
   "m.offline.title": "No connection",
   "m.offline.body": "Tipsarr can’t reach your server. Check your internet connection and try again.",
+  "m.failed.settings": "Settings and accounts",
   "m.offline.retry": "Try again",
   "m.accounts.title": "Accounts",
   "m.accounts.add": "Add account",

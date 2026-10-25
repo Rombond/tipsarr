@@ -28,7 +28,7 @@ fun Root(session: SessionManager, settings: AppSettings, onLanguageChanged: () -
             SessionPhase.Connect -> ConnectScreen(session)
             is SessionPhase.Login -> LoginScreen(session, current.server, current.prefillUsername)
             SessionPhase.Offline -> OfflineScreen { scope.launch { session.retry() } }
-            is SessionPhase.Failed -> FailedScreen(current.error) { scope.launch { session.retry() } }
+            is SessionPhase.Failed -> FailedScreen(session, current.error, current.detail, onRetry = { scope.launch { session.retry() } })
             is SessionPhase.UpdateRequired -> UpdateRequiredScreen(current.minVersion)
             is SessionPhase.SessionExpired -> SessionExpiredScreen(session, current.account, current.server)
             is SessionPhase.Ready -> MainTabs(current.account, current.profile, session.serverStatus?.version, session, settings, onLanguageChanged)

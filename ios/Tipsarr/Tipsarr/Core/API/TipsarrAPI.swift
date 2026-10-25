@@ -27,8 +27,7 @@ struct TipsarrAPI: Sendable {
             )
         } catch let error as DecodingError {
             // A reachable server whose /status is not ours is "not a Tipsarr server".
-            _ = error
-            throw APIError.unexpected
+            throw APIError.failure("status: \(String(String(describing: error).prefix(300)))")
         } catch {
             throw APIError.from(error)
         }

@@ -5,7 +5,11 @@ import Foundation
 enum APIError: Error, Sendable, Equatable {
     case unreachable
     case http(status: Int, code: String?, detail: String?)
-    case unexpected
+    /// A reachable server whose answer the app could not use; the text says what failed (shown in the failed screen).
+    case failure(String)
+
+    /// An answer the app could not use, without a reason.
+    static let unexpected = APIError.failure("")
 
     var status: Int? {
         if case .http(let status, _, _) = self { status } else { nil }
@@ -23,7 +27,7 @@ enum APIError: Error, Sendable, Equatable {
         switch self {
         case .unreachable:
             return Self.lookup("m.connect.unreachable") ?? ""
-        case .unexpected:
+        case .failure:
             return Self.lookup("error.status_500") ?? ""
         case .http(let status, let code, let detail):
             if let code, let text = Self.lookup("error.\(code)") { return text }
@@ -32,10 +36,22 @@ enum APIError: Error, Sendable, Equatable {
         }
     }
 
+    /// Technical line for the failed screen: what went wrong, without the translated text.
+    var diagnostic: String {
+        switch self {
+        case .unreachable: return "unreachable"
+        case .failure(let reason): return reason.isEmpty ? "unexpected" : reason
+        case .http(let status, let code, let detail):
+            return ["HTTP \(status)", code, detail].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+        }
+    }
+
     /// Wraps any error thrown by the transport or the generated client.
     static func from(_ error: Error) -> APIError {
         if let error = error as? APIError { return error }
-        return isNetwork(error) ? .unreachable : .unexpected
+        // The generated client wraps what a middleware throws (a 401 included) in a ClientError.
+        if let wrapped = (error as? ClientErrorProviding)?.underlying as? APIError { return wrapped }
+        return isNetwork(error) ? .unreachable : .failure(String(String(describing: error).prefix(300)))
     }
 
     /// Network-level failures that are worth retrying on a GET.

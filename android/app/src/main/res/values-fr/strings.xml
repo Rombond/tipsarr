@@ -294,6 +294,7 @@
     <string name="m_discover_see_all">Tout voir</string>
     <string name="m_discover_trending_week">Tendances de la semaine</string>
     <string name="m_faceid_usage">Tipsarr utilise Face ID pour déverrouiller l’app.</string>
+    <string name="m_failed_settings">Réglages et comptes</string>
     <string name="m_fold_hint">Les commandes passent dans la moitié basse quand l’appareil est partiellement plié.</string>
     <string name="m_icon_dark">Sombre</string>
     <string name="m_icon_default">Automatique</string>

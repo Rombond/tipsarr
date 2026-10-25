@@ -18,7 +18,7 @@ sealed interface SessionPhase {
     data object Connect : SessionPhase
     data class Login(val server: Server, val prefillUsername: String? = null) : SessionPhase
     data object Offline : SessionPhase
-    data class Failed(val error: ApiError) : SessionPhase
+    data class Failed(val error: ApiError, val detail: String) : SessionPhase
     data class UpdateRequired(val minVersion: String) : SessionPhase
     data class SessionExpired(val account: Account, val server: Server) : SessionPhase
     data class Ready(val account: Account, val profile: Profile) : SessionPhase
@@ -56,7 +56,7 @@ class SessionManager(val accounts: AccountStore) {
         val server = try {
             Server(account.serverUrl, TipsarrApi(account.serverUrl).status())
         } catch (e: ApiError) {
-            return fail(e)
+            return fail(e, "status", account)
         }
         if (AppVersion.isOlder(BuildConfig.APP_VERSION, server.status.minAppVersion)) {
             _phase.value = SessionPhase.UpdateRequired(server.status.minAppVersion)
@@ -68,12 +68,14 @@ class SessionManager(val accounts: AccountStore) {
             accounts.add(account)
             _phase.value = SessionPhase.Ready(account, profile)
         } catch (e: ApiError) {
-            if (e.isUnauthorized) _phase.value = SessionPhase.SessionExpired(account, server) else fail(e)
+            if (e.isUnauthorized) _phase.value = SessionPhase.SessionExpired(account, server) else fail(e, "me", account)
         }
     }
 
-    private fun fail(error: ApiError) {
-        _phase.value = if (error == ApiError.Unreachable) SessionPhase.Offline else SessionPhase.Failed(error)
+    private fun fail(error: ApiError, step: String, account: Account) {
+        val host = runCatching { java.net.URI(account.serverUrl).host }.getOrNull() ?: "?"
+        _phase.value = if (error == ApiError.Unreachable) SessionPhase.Offline
+        else SessionPhase.Failed(error, "$step · ${error.diagnostic} · $host · android/${BuildConfig.APP_VERSION}")
     }
 
     /** Connect screen: the address answers `/status` like a Tipsarr server. */

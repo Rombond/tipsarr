@@ -15,9 +15,8 @@ struct RootView: View {
                 LoginView(server: server, prefillUsername: username)
             case .offline:
                 StateView.offline { Task { await session.retry() } }
-            case .failed(let message):
-                StateView(symbol: "exclamationmark.triangle", title: LText.verbatim(message),
-                          actionTitle: "common.retry") { Task { await session.retry() } }
+            case .failed(let message, let detail):
+                FailedView(message: message, detail: detail)
             case .updateRequired(let minVersion):
                 UpdateRequiredView(minVersion: minVersion)
             case .sessionExpired(let account, let server):

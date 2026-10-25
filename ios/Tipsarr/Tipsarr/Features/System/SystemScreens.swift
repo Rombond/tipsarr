@@ -10,6 +10,35 @@ struct LaunchView: View {
     }
 }
 
+/// The launch flow failed on a reachable server. Retry, or open the accounts (switch, add, sign out) so nobody is stuck.
+struct FailedView: View {
+    @Environment(SessionManager.self) private var session
+    let message: String
+    let detail: String
+    @State private var showAccounts = false
+
+    var body: some View {
+        VStack(spacing: Tokens.Spacing.lg) {
+            StateView(symbol: "exclamationmark.triangle", title: LText.verbatim(message), message: LText.verbatim(detail))
+            VStack(spacing: Tokens.Spacing.sm) {
+                Button { Task { await session.retry() } } label: { Text("common.retry") }
+                    .buttonStyle(.tipsarr(.primary, fullWidth: true))
+                Button { showAccounts = true } label: { Text("m.failed.settings") }
+                    .buttonStyle(.tipsarr(.ghost, fullWidth: true))
+            }
+            .padding(.horizontal, Tokens.Spacing._2xl)
+            .padding(.bottom, Tokens.Spacing._3xl)
+        }
+        .background(Tokens.palette.bg)
+        .sheet(isPresented: $showAccounts) {
+            NavigationStack {
+                AccountsView()
+                    .toolbar { ToolbarItem(placement: .cancellationAction) { Button("common.dismiss") { showAccounts = false } } }
+            }
+        }
+    }
+}
+
 struct SessionExpiredView: View {
     @Environment(SessionManager.self) private var session
     let account: Account

@@ -2,6 +2,7 @@ package com.brebond.tipsarr.features.system
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,11 @@ import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,6 +35,8 @@ import com.brebond.tipsarr.core.auth.Account
 import com.brebond.tipsarr.core.auth.SessionManager
 import com.brebond.tipsarr.design.Tokens
 import com.brebond.tipsarr.design.palette
+import com.brebond.tipsarr.features.settings.AccountsScreen
+import kotlinx.coroutines.launch
 import com.brebond.tipsarr.ui.ButtonKind
 import com.brebond.tipsarr.ui.OfflineState
 import com.brebond.tipsarr.ui.StateView
@@ -48,11 +56,34 @@ fun OfflineScreen(onRetry: () -> Unit) {
     Box(Modifier.fillMaxSize().background(Tokens.palette.bg)) { OfflineState(onRetry) }
 }
 
+/** The launch flow failed on a reachable server. Retry, or open the accounts (switch, add, sign out) so nobody is stuck. */
 @Composable
-fun FailedScreen(error: ApiError, onRetry: () -> Unit) {
+fun FailedScreen(session: SessionManager, error: ApiError, detail: String, onRetry: () -> Unit) {
     val context = LocalContext.current
-    Box(Modifier.fillMaxSize().background(Tokens.palette.bg)) {
-        StateView(Icons.Outlined.WarningAmber, error.message(context), actionTitle = stringResource(R.string.common_retry), onAction = onRetry)
+    val scope = rememberCoroutineScope()
+    var showAccounts by remember { mutableStateOf(false) }
+    if (showAccounts) {
+        BackHandler { showAccounts = false }
+        AccountsScreen(
+            session.accounts.accounts, session.accounts.activeId, avatarVersion = 0,
+            onBack = { showAccounts = false },
+            onSwitch = { scope.launch { session.switchTo(it) } },
+            onAdd = { session.beginAddAccount() },
+            onSignOut = { scope.launch { session.signOut(it) } },
+        )
+        return
+    }
+    Column(Modifier.fillMaxSize().background(Tokens.palette.bg), verticalArrangement = Arrangement.Bottom) {
+        Box(Modifier.weight(1f)) {
+            StateView(Icons.Outlined.WarningAmber, error.message(context), message = detail)
+        }
+        Column(
+            Modifier.padding(horizontal = Tokens.Spacing.x2xl).padding(bottom = Tokens.Spacing.x3xl),
+            verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm),
+        ) {
+            TipsarrButton(stringResource(R.string.common_retry), onRetry, fullWidth = true)
+            TipsarrButton(stringResource(R.string.m_failed_settings), { showAccounts = true }, kind = ButtonKind.Ghost, fullWidth = true)
+        }
     }
 }
 

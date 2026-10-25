@@ -9,7 +9,7 @@ enum SessionPhase: Equatable {
     case connect
     case login(Server, prefillUsername: String?)
     case offline
-    case failed(String)
+    case failed(String, detail: String)
     case updateRequired(minVersion: String)
     case sessionExpired(Account, Server)
     case ready(Account, Profile)
@@ -45,7 +45,7 @@ final class SessionManager {
             let status = try await TipsarrAPI(serverURL: account.serverURL, token: nil).status()
             server = Server(url: account.serverURL, status: status)
         } catch {
-            return fail(APIError.from(error))
+            return fail(APIError.from(error), step: "status")
         }
         if AppVersion.isOlder(TipsarrClient.appVersion, than: server.status.minAppVersion) {
             phase = .updateRequired(minVersion: server.status.minAppVersion)
@@ -59,12 +59,14 @@ final class SessionManager {
         } catch let error as APIError where error.isUnauthorized {
             phase = .sessionExpired(account, server)
         } catch {
-            fail(APIError.from(error))
+            fail(APIError.from(error), step: "me")
         }
     }
 
-    private func fail(_ error: APIError) {
-        phase = error == .unreachable ? .offline : .failed(error.localizedMessage)
+    private func fail(_ error: APIError, step: String) {
+        guard error != .unreachable else { return phase = .offline }
+        let host = accounts.active?.serverURL.host() ?? "?"
+        phase = .failed(error.localizedMessage, detail: "\(step) · \(error.diagnostic) · \(host) · ios/\(TipsarrClient.appVersion)")
     }
 
     /// Connect screen: the address answers `/status` like a Tipsarr server.

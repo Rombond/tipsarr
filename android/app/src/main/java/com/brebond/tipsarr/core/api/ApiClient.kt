@@ -92,9 +92,9 @@ class ApiClient(
     private fun <T> decode(text: String, serializer: KSerializer<T>): T = try {
         json.decodeFromString(serializer, text)
     } catch (e: SerializationException) {
-        throw ApiError.Unexpected
+        throw ApiError.Unexpected("decode: ${e.message.orEmpty().take(300)}")
     } catch (e: IllegalArgumentException) {
-        throw ApiError.Unexpected
+        throw ApiError.Unexpected("decode: ${e.message.orEmpty().take(300)}")
     }
 
     private suspend fun execute(request: Request, retry: Boolean): String {
