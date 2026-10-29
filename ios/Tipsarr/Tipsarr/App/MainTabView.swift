@@ -221,7 +221,15 @@ struct MainTabView: View {
     }
 
     private func refreshPending() async {
-        guard profile.can(.manageRequests), let counts = try? await api.requestCounts() else { return }
+        // Not an admin (anymore): the icon must not keep the count a previous account left there.
+        guard profile.can(.manageRequests) else {
+            pendingCount = 0
+            try? await UNUserNotificationCenter.current().setBadgeCount(0)
+            return
+        }
+        guard let counts = try? await api.requestCounts() else { return }
         pendingCount = counts.pending
+        // Set here too: onChange does not fire when a rebuilt view fetches the number the icon lacks.
+        try? await UNUserNotificationCenter.current().setBadgeCount(counts.pending)
     }
 }
