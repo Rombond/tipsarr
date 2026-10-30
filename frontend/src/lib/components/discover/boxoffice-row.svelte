@@ -37,7 +37,7 @@
 {:else if error}
 	<p class="text-sm text-muted-foreground">{t('boxrow.unavailable', { error })}</p>
 {:else if chart && matched.length}
-	<section class="grid gap-2">
+	<section class="grid grid-cols-1 gap-2">
 		<div class="flex items-baseline justify-between gap-3">
 			<h2 class="min-w-0 font-semibold text-lg">
 				{t('boxrow.title')}

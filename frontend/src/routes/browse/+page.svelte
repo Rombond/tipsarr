@@ -6,6 +6,7 @@
 	import MediaCard from '$lib/components/media/media-card.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import TagIcon from '@lucide/svelte/icons/tag';
 
 	// /browse?type=movie&genre=28  or  /browse?keyword=1234  (a tag spans movies and shows)
@@ -75,6 +76,14 @@
 </svelte:head>
 
 <div class="grid gap-6">
+	<button
+		type="button"
+		class="flex w-fit cursor-pointer items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm hover:bg-accent"
+		onclick={() => history.back()}
+	>
+		<ArrowLeftIcon class="size-4" />
+		{t('common.back')}
+	</button>
 	<div class="grid gap-1">
 		<p class="flex items-center gap-1.5 text-sm text-muted-foreground">
 			{#if keyword}<TagIcon class="size-4" />{t('browse.tag')}{:else}{typeParam === 'tv' ? t('type.shows') : t('type.movies')}{/if}

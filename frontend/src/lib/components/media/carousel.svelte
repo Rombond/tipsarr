@@ -50,12 +50,12 @@
 	}
 </script>
 
-<section class="grid gap-2">
+<section class="grid grid-cols-1 gap-2">
 	<div class="flex items-center justify-between">
 		<h2 class="flex min-w-0 items-baseline gap-2 font-semibold text-lg">
 			{#if href}
-				<a {href} class="group/title inline-flex shrink-0 items-center gap-1 hover:underline focus-visible:underline">{title}<ChevronRightIcon class="size-5 self-center text-muted-foreground transition-transform group-hover/title:translate-x-0.5" /></a>
-			{:else}<span class="shrink-0">{title}</span>{/if}
+				<a {href} class="group/title inline-flex min-w-0 items-center gap-1 hover:underline focus-visible:underline"><span class="truncate">{title}</span><ChevronRightIcon class="size-5 shrink-0 self-center text-muted-foreground transition-transform group-hover/title:translate-x-0.5" /></a>
+			{:else}<span class="min-w-0 truncate">{title}</span>{/if}
 			{#if description}<span class="hidden min-w-0 truncate text-sm font-normal text-muted-foreground sm:inline" title={description}>{description}</span>{/if}
 		</h2>
 		<div class="flex gap-1 [@media(hover:none)]:hidden">

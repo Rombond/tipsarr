@@ -103,7 +103,7 @@
 	<p class="text-sm text-muted-foreground">{t('suggest.unavailable', { error })}</p>
 	{#each fillers as filler}{@render filler()}{/each}
 {:else}
-	<div class="grid gap-8">
+	<div class="grid grid-cols-1 gap-8">
 		{#each sequence as part, i (i)}
 			{#if 'row' in part}
 				<Carousel title={rowTitle(part.row)} items={part.row.items} {onSelect} onDismiss={dismiss} />

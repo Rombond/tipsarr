@@ -3,6 +3,13 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { t, type Key } from '$lib/i18n/index.svelte';
+
+	// on phones the tab strip scrolls: keep the current tab in view
+	function reveal(node: HTMLElement, active: boolean) {
+		const show = (on: boolean) => on && node.scrollIntoView({ inline: 'center', block: 'nearest' });
+		show(active);
+		return { update: show };
+	}
 	import { auth } from '$lib/stores/auth.svelte';
 	import { admin } from '$lib/stores/admin-settings.svelte';
 	import { onEvent } from '$lib/events.svelte';
@@ -51,6 +58,7 @@
 				<a
 					href="/admin/settings/{tab.id}"
 					aria-current={active ? 'page' : undefined}
+					use:reveal={active}
 					class="flex shrink-0 items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm whitespace-nowrap transition-colors {active ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'}"
 				>
 					{t(tab.key)}

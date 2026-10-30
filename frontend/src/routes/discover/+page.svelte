@@ -30,7 +30,7 @@
 	<title>{t('discover.title')} · Tipsarr</title>
 </svelte:head>
 
-<div class="grid gap-8">
+<div class="grid grid-cols-1 gap-8">
 	<h1 class="sr-only">{t('discover.title')}</h1>
 	<SetupChecklist />
 	<Hero />

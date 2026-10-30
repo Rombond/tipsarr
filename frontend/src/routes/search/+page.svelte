@@ -7,6 +7,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 	import { Input } from '$lib/components/ui/input';
+	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import FilterIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import XIcon from '@lucide/svelte/icons/x';
 
@@ -103,6 +104,14 @@
 </svelte:head>
 
 <div class="grid gap-8">
+	<button
+		type="button"
+		class="flex w-fit cursor-pointer items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm hover:bg-accent"
+		onclick={() => history.back()}
+	>
+		<ArrowLeftIcon class="size-4" />
+		{t('common.back')}
+	</button>
 	<div>
 		<h1 class="font-bold text-3xl">{t('search.results_for', { query })}</h1>
 		{#if result && !loading}
