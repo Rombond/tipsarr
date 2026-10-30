@@ -30,7 +30,7 @@ fun TrendingPane(list: MediaListModel, onOpenItem: (MediaItem) -> Unit) {
     LaunchedEffect(list) { list.loadIfNeeded() }
     TopBarScaffold(stringResource(R.string.m_pane_trending), onBack = {}) {
         LazyVerticalGrid(
-            GridCells.Adaptive(104.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(Tokens.Spacing.lg),
+            GridCells.Adaptive(96.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(Tokens.Spacing.lg),
             verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md),
         ) {
             if (list.phase != Phase.Loaded) items(9) { PosterSkeleton() }

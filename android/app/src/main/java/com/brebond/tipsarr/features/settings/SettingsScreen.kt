@@ -23,6 +23,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.Movie
+import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Language
@@ -36,6 +41,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Switch
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.brebond.tipsarr.core.api.Permission
+import com.brebond.tipsarr.core.push.PushManager
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -86,6 +95,7 @@ fun SettingsScreen(
     settings: AppSettings,
     accountCount: Int,
     serverVersion: String?,
+    pushAvailable: Boolean,
     onBack: () -> Unit,
     onProfileChanged: (Profile) -> Unit,
     onLanguageChanged: () -> Unit,
@@ -144,6 +154,7 @@ fun SettingsScreen(
                     ) { name -> AppTheme.entries.firstOrNull { it.name == name }?.let(settings::updateTheme) }
                     NavRow(Icons.Outlined.Apps, stringResource(R.string.m_settings_app_icon), onClick = onOpenAppIcon)
                 }
+                if (pushAvailable) NotificationsSection(profile)
                 Group(stringResource(R.string.m_settings_security)) {
                     NavRow(Icons.Outlined.Devices, stringResource(R.string.profile_devices_title), value = deviceCount?.toString(), onClick = onOpenDevices)
                 }
@@ -220,5 +231,54 @@ internal fun MenuRow(icon: ImageVector, title: String, value: String, choices: L
         DropdownMenu(open, { open = false }, containerColor = Tokens.palette.card, modifier = Modifier.heightIn(max = 420.dp)) {
             choices.forEach { (label, key) -> DropdownMenuItem(text = { Text(label, color = Tokens.palette.fg) }, onClick = { open = false; onPick(key) }) }
         }
+    }
+}
+
+/** Push switch and the category toggles (the iOS notifications section). */
+@Composable
+private fun NotificationsSection(profile: Profile) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // Coming back from the system settings: the permission may have changed.
+    LifecycleResumeEffect(Unit) { PushManager.refresh(); onPauseOrDispose {} }
+    Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
+        Group(stringResource(R.string.m_settings_notifications)) {
+            SwitchRow(
+                Icons.Outlined.NotificationsActive, stringResource(R.string.m_settings_notifications_toggle),
+                checked = PushManager.isOn, enabled = !PushManager.isDenied,
+            ) { on -> scope.launch { if (on) PushManager.turnOn() else PushManager.turnOff() } }
+            if (PushManager.isDenied) {
+                NavRow(Icons.Outlined.Settings, stringResource(R.string.m_settings_notifications_open_settings), onClick = { PushManager.openSystemSettings(context) })
+            }
+            if (PushManager.isOn) {
+                SwitchRow(Icons.Outlined.Movie, stringResource(R.string.m_settings_notifications_requests), PushManager.categories and PushManager.REQUESTS != 0) { on ->
+                    scope.launch { PushManager.set(PushManager.REQUESTS, on) }
+                }
+                if (profile.can(Permission.MANAGE_REQUESTS)) {
+                    SwitchRow(Icons.Outlined.TaskAlt, stringResource(R.string.m_settings_notifications_admin), PushManager.categories and PushManager.ADMIN != 0) { on ->
+                        scope.launch { PushManager.set(PushManager.ADMIN, on) }
+                    }
+                }
+                SwitchRow(Icons.Outlined.ChatBubbleOutline, stringResource(R.string.m_settings_notifications_issues), PushManager.categories and PushManager.ISSUES != 0) { on ->
+                    scope.launch { PushManager.set(PushManager.ISSUES, on) }
+                }
+            }
+        }
+        Text(
+            stringResource(if (PushManager.isDenied) R.string.m_settings_notifications_denied else R.string.m_settings_notifications_footer),
+            fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg, modifier = Modifier.padding(horizontal = Tokens.Spacing.xs),
+        )
+    }
+}
+
+@Composable
+internal fun SwitchRow(icon: ImageVector, title: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().defaultMinSize(minHeight = Tokens.Size.touchTarget + Tokens.Spacing.md).padding(horizontal = Tokens.Spacing.md),
+        horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = Tokens.palette.fg)
+        Text(title, fontSize = Tokens.FontSize.body, color = Tokens.palette.fg, modifier = Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = onChange, enabled = enabled)
     }
 }

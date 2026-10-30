@@ -166,19 +166,59 @@ fun TeasersScreen(
         val landscape = !tablet && maxWidth > maxHeight
         Box(Modifier.width(column).fillMaxHeight()) {
             when (model.phase) {
-                Phase.Idle, Phase.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color.White) }
+                Phase.Idle, Phase.Loading -> Waiting(model, api, onOpenItem, preparing = false)
                 is Phase.Failed -> DarkState(stringResource(R.string.m_teasers_error), stringResource(R.string.common_retry)) { scope.launch { model.refresh() } }
-                Phase.Loaded -> if (model.preparing) {
-                    Column(
-                        Modifier.fillMaxSize().padding(Tokens.Spacing.x3xl),
-                        verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg, Alignment.CenterVertically),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        CircularProgressIndicator(color = Color.White)
-                        Text(stringResource(R.string.m_teasers_preparing), color = Color.White, fontSize = Tokens.FontSize.headline, textAlign = TextAlign.Center)
-                    }
-                } else Feed(model, api, me, settings, landscape, onOpenItem)
+                Phase.Loaded -> if (model.preparing) Waiting(model, api, onOpenItem, preparing = true)
+                else Feed(model, api, me, settings, landscape, onOpenItem)
             }
+        }
+    }
+}
+
+/**
+ * The first batch is not here yet (a first visit can take a while on the server): the trending titles stand in, swipe
+ * sideways, tap for the title page. A spinner (and the "preparing" text once the server said so) stays on top.
+ */
+@Composable
+private fun Waiting(model: TeasersModel, api: TipsarrApi, onOpenItem: (MediaItem) -> Unit, preparing: Boolean) {
+    LaunchedEffect(model) { model.loadFallback() }
+    val items = model.fallback
+    if (items.isEmpty()) {
+        Column(
+            Modifier.fillMaxSize().padding(Tokens.Spacing.x3xl),
+            verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            CircularProgressIndicator(color = Color.White)
+            if (preparing) Text(stringResource(R.string.m_teasers_preparing), color = Color.White, fontSize = Tokens.FontSize.headline, textAlign = TextAlign.Center)
+        }
+        return
+    }
+    val pager = androidx.compose.foundation.pager.rememberPagerState { items.size }
+    Box(Modifier.fillMaxSize()) {
+        androidx.compose.foundation.pager.HorizontalPager(pager, Modifier.fillMaxSize()) { index ->
+            val item = items[index]
+            Box(Modifier.fillMaxSize().background(Color.Black).clickable { onOpenItem(item) }) {
+                RemoteImage(item.backdropPath ?: item.posterPath, TmdbSize.W780, Modifier.fillMaxSize().alpha(0.7f))
+                Box(Modifier.fillMaxWidth().fillMaxHeight(0.5f).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)))))
+                Column(
+                    Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(Tokens.Spacing.lg).padding(bottom = Tokens.Spacing.xl),
+                    verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm),
+                ) {
+                    Text(item.title, color = Color.White, fontSize = Tokens.FontSize.title2, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    item.releaseYear?.let { Text(it, color = Color.White.copy(alpha = 0.85f), fontSize = Tokens.FontSize.subhead) }
+                    item.overview?.takeIf { it.isNotBlank() }?.let { Text(it, color = Color.White.copy(alpha = 0.85f), fontSize = Tokens.FontSize.subhead, maxLines = 3, overflow = TextOverflow.Ellipsis) }
+                }
+            }
+        }
+        Row(
+            Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = Tokens.Spacing.lg).padding(horizontal = Tokens.Spacing.lg)
+                .background(Color.Black.copy(alpha = 0.55f), CircleShape).padding(horizontal = Tokens.Spacing.md, vertical = Tokens.Spacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+            Text(stringResource(R.string.m_teasers_preparing), color = Color.White, fontSize = Tokens.FontSize.footnote)
         }
     }
 }
@@ -357,6 +397,15 @@ private fun TeaserCard(
     val bottom = Tokens.Spacing.xl + 16.dp
 
     LaunchedEffect(active) { if (!active) { paused = false; fast = false } }
+    // The screen does not go to sleep while this trailer plays (not paused, not in the background); cleared on leave.
+    val playingNow = video != null && active && !paused
+    if (playingNow) {
+        val view = androidx.compose.ui.platform.LocalView.current
+        DisposableEffect(view) {
+            view.keepScreenOn = true
+            onDispose { view.keepScreenOn = false }
+        }
+    }
     if (video != null) {
         LaunchedEffect(video, active, paused) { video.setPlaying(active && !paused) }
         LaunchedEffect(video, muted) { video.setMuted(muted) }

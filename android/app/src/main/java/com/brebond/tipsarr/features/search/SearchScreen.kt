@@ -126,8 +126,10 @@ fun SearchScreen(
                             SegmentedButton(
                                 selected = model.scope == scope, onClick = { model.scope = scope },
                                 shape = SegmentedButtonDefaults.itemShape(index, scopes.size),
-                                contentPadding = PaddingValues(horizontal = Tokens.Spacing.xs),
-                            ) { Text(stringResource(scope.title()), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                                contentPadding = PaddingValues(horizontal = 2.dp),
+                                // No check icon in the selected segment: it took the room the labels need ("Personnes" was cut).
+                                icon = {},
+                            ) { Text(stringResource(scope.title()), fontSize = Tokens.FontSize.footnote, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip) }
                         }
                     }
                     if (model.scope != SearchScope.People) FiltersButton(model.filters.activeCount) { filtersOpen = true }
@@ -259,7 +261,7 @@ private fun Results(model: SearchModel, onOpenItem: (MediaItem) -> Unit, onOpenP
     val context = LocalContext.current
     when (val phase = model.phase) {
         Phase.Idle, Phase.Loading -> LazyVerticalGrid(
-            GridCells.Adaptive(104.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(GUTTER),
+            GridCells.Adaptive(96.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(GUTTER),
             verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md),
         ) { gridItems(List(9) { it }) { PosterSkeleton() } }
         is Phase.Failed -> Box(Modifier.fillMaxSize()) {
@@ -275,7 +277,7 @@ private fun Results(model: SearchModel, onOpenItem: (MediaItem) -> Unit, onOpenP
         } else {
             val titles = model.visibleTitles
             LazyVerticalGrid(
-                GridCells.Adaptive(104.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(GUTTER),
+                GridCells.Adaptive(96.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(GUTTER),
                 verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md),
             ) {
                 if (model.scope == SearchScope.All || model.scope == SearchScope.People) {

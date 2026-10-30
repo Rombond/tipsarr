@@ -203,9 +203,10 @@ fun FilterMinRating(rating: Double?, onChange: (Double?) -> Unit) {
 @Composable
 fun <Option> FilterSort(selection: Option, options: List<Option>, title: (Option) -> String, onChange: (Option) -> Unit, trailing: @Composable () -> Unit = {}) {
     FilterSection(stringResource(R.string.library_sort_by)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+        // The menu takes the whole width and the extra control sits under it: side by side the menu was squashed on a phone.
+        Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
             var menu by remember { mutableStateOf(false) }
-            Box(Modifier.weight(1f)) {
+            Box(Modifier.fillMaxWidth()) {
                 FilterMenuField(title(selection)) { menu = true }
                 DropdownMenu(menu, { menu = false }, containerColor = Tokens.palette.card) {
                     options.forEach { option ->

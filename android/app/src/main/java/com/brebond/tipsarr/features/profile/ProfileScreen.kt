@@ -145,18 +145,18 @@ fun ProfileScreen(
                     }
                 }
             }
-            val adminRows = buildList<@Composable () -> Unit> {
-                if (profile.can(Permission.VIEW_ISSUES)) add { AdminRow(Icons.Outlined.ChatBubbleOutline, Tokens.Status.failed, stringResource(R.string.nav_issues), model.openIssues, onOpenIssues) }
-                if (profile.can(Permission.MANAGE_USERS)) add { AdminRow(Icons.Outlined.People, Tokens.Status.approved, stringResource(R.string.nav_users), null, onOpenUsers) }
-                if (profile.can(Permission.MANAGE_SETTINGS)) add { AdminRow(Icons.Outlined.Sync, Tokens.Status.searching, stringResource(R.string.m_admin_sync), null, onOpenSync) }
-            }
-            if (adminRows.isNotEmpty()) item { RowGroup(stringResource(R.string.m_admin_title), adminRows) }
             // Open to everyone, but only while the server has the Teasers feature on.
             if (teasersOn) item {
                 RowGroup(stringResource(R.string.m_tab_teasers), buildList<@Composable () -> Unit> {
                     add { AdminRow(Icons.Outlined.History, Tokens.Status.approved, stringResource(R.string.m_teasers_history_title), null, onOpenTeasersHistory) }
                 })
             }
+            val adminRows = buildList<@Composable () -> Unit> {
+                if (profile.can(Permission.VIEW_ISSUES)) add { AdminRow(Icons.Outlined.ChatBubbleOutline, Tokens.Status.failed, stringResource(R.string.nav_issues), model.openIssues, onOpenIssues) }
+                if (profile.can(Permission.MANAGE_USERS)) add { AdminRow(Icons.Outlined.People, Tokens.Status.approved, stringResource(R.string.nav_users), null, onOpenUsers) }
+                if (profile.can(Permission.MANAGE_SETTINGS)) add { AdminRow(Icons.Outlined.Sync, Tokens.Status.searching, stringResource(R.string.m_admin_sync), null, onOpenSync) }
+            }
+            if (adminRows.isNotEmpty()) item { RowGroup(stringResource(R.string.m_admin_title), adminRows) }
             if (model.recent.isNotEmpty()) item {
                 Column(Modifier.padding(horizontal = GUTTER), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

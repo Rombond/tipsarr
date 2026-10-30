@@ -44,3 +44,4 @@ vite.config.ts.timestamp-*
 /frontend/skills-lock.json
 /frontend/bun.lock
 /backend/cmd/devenv/devenv
+android/app/google-services.json

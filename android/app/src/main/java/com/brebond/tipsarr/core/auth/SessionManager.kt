@@ -8,6 +8,8 @@ import com.brebond.tipsarr.core.api.Server
 import com.brebond.tipsarr.core.api.ServerStatus
 import com.brebond.tipsarr.core.api.TipsarrApi
 import com.brebond.tipsarr.core.navigation.DeepLink
+import com.brebond.tipsarr.core.navigation.DeepLinkTarget
+import com.brebond.tipsarr.core.push.PushManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -99,6 +101,7 @@ class SessionManager(val accounts: AccountStore) {
 
     /** Removes the account from the phone; the next one (or Connect) takes over. */
     suspend fun signOut(account: Account) {
+        PushManager.detach(account)
         TipsarrApi(account.serverUrl, account.token).logout()
         accounts.remove(account)
         start()
@@ -118,6 +121,23 @@ class SessionManager(val accounts: AccountStore) {
         } else {
             runCatching { connect("https://${link.host}") }.getOrNull()?.let { continueToLogin(it) }
         }
+    }
+
+    /**
+     * A tapped push alert: the event names the screen, the id the request or issue. The alert names its server: the matching
+     * account is opened (switching if needed). An alert for a server that is not signed in here is ignored; without a server
+     * (older alerts) the active account is used.
+     */
+    suspend fun openFromPush(event: String, id: String, server: String?) {
+        val key = server?.lowercase().orEmpty()
+        val account = if (key.isNotEmpty()) {
+            accounts.accounts.firstOrNull { PushManager.serverKey(it.serverUrl) == key }
+                ?: accounts.accounts.firstOrNull { it.host == key.substringBefore(':') }
+        } else accounts.active
+        if (account == null) return
+        val target = if (event.startsWith("issue.")) DeepLinkTarget.Issue(id) else DeepLinkTarget.Request(id)
+        _pendingLink.value = DeepLink(account.host, target)
+        switchTo(account)
     }
 
     fun clearPendingLink() { _pendingLink.value = null }

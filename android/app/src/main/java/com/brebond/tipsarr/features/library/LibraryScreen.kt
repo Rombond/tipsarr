@@ -115,7 +115,7 @@ fun LibraryScreen(model: LibraryModel, onOpen: (MediaRoute) -> Unit, modifier: M
         modifier = modifier.fillMaxSize(),
     ) {
         LazyVerticalGrid(
-            columns = if (listLayout) GridCells.Fixed(1) else GridCells.Adaptive(104.dp),
+            columns = if (listLayout) GridCells.Fixed(1) else GridCells.Adaptive(96.dp),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = GUTTER, end = GUTTER, bottom = Tokens.Spacing.lg),
             verticalArrangement = Arrangement.spacedBy(if (listLayout) 0.dp else Tokens.Spacing.lg),
@@ -248,6 +248,6 @@ private fun LibraryRow(item: LibraryItem, onClick: () -> Unit) {
                 }
             }
         }
-        item.rating?.takeIf { it > 0 }?.let { ScoreLabel(it) }
+        ScoreLabel(item.type, item.tmdbId, item.rating)
     }
 }

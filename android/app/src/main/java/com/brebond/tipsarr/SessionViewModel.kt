@@ -19,4 +19,8 @@ class SessionViewModel(application: Application) : AndroidViewModel(application)
         val link = com.brebond.tipsarr.core.navigation.DeepLink.parse(uri) ?: return
         viewModelScope.launch { session.handle(link) }
     }
+
+    fun handlePush(event: String, id: String, server: String?) {
+        viewModelScope.launch { session.openFromPush(event, id, server) }
+    }
 }

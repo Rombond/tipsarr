@@ -96,6 +96,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.brebond.tipsarr.core.api.Profile
 import com.brebond.tipsarr.core.api.RatingSource
 import com.brebond.tipsarr.core.auth.SessionManager
+import com.brebond.tipsarr.core.push.PushManager
 import com.brebond.tipsarr.core.support.AppSettings
 import com.brebond.tipsarr.core.support.LocalRatings
 import com.brebond.tipsarr.features.profile.PictureSheet
@@ -149,6 +150,10 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
     LaunchedEffect(account.id, profile.region) {
         val code = java.util.Locale.getDefault().country
         if (profile.region.isEmpty() && code.length == 2) runCatching { session.update(model.api.updatePreferences(region = code.uppercase())) }
+    }
+    // Alerts: register this device for the account (managers are asked for the permission at once, like on iOS).
+    LaunchedEffect(account.id) {
+        PushManager.attach(account, session.serverStatus?.features?.push == true, askNow = profile.can(Permission.MANAGE_REQUESTS))
     }
     LaunchedEffect(profile.ratingSource) { model.ratings.changeSource(RatingSource.from(profile.ratingSource)) }
     var showPicture by remember { mutableStateOf(false) }
@@ -266,7 +271,7 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                                 )
                             }
                             Screen.Settings -> SettingsScreen(
-                                account, profile, model.api, settings, session.accounts.accounts.size, serverVersion,
+                                account, profile, model.api, settings, session.accounts.accounts.size, serverVersion, session.serverStatus?.features?.push == true,
                                 onBack = { model.back(tab) },
                                 onProfileChanged = { session.update(it) },
                                 onLanguageChanged = onLanguageChanged,

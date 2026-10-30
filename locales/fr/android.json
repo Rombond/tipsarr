@@ -10,5 +10,7 @@
   "m.settings.language_default": "Par défaut (langue du téléphone)",
   "m.settings.sign_out_confirm": "Se déconnecter de Tipsarr sur ce téléphone ?",
   "m.settings.faceid_signin": "Connexion biométrique",
-  "m.settings.faceid_signin_footer": "Votre mot de passe est conservé chiffré sur le téléphone, protégé par votre empreinte, votre visage ou le verrouillage de l’écran. Il sert uniquement à vous reconnecter quand votre session se termine."
+  "m.settings.faceid_signin_footer": "Votre mot de passe est conservé chiffré sur le téléphone, protégé par votre empreinte, votre visage ou le verrouillage de l’écran. Il sert uniquement à vous reconnecter quand votre session se termine.",
+  "m.settings.notifications_denied": "Les notifications sont désactivées pour Tipsarr dans les réglages d’Android.",
+  "m.settings.notifications_open_settings": "Ouvrir les réglages Android"
 }

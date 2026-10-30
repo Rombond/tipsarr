@@ -90,7 +90,7 @@ fun LibraryFiltersSheet(initial: LibraryFilters, facets: LibraryFacets?, onDismi
         // Titles are resolved here because FilterSort takes plain strings.
         val titles = LibrarySort.entries.associateWith { stringResource(it.title()) }
         FilterSort(filters.sort, LibrarySort.entries, { titles.getValue(it) }, { update(filters.copy(sort = it)) }) {
-            SingleChoiceSegmentedButtonRow {
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                 SegmentedButton(selected = filters.descending, onClick = { update(filters.copy(descending = true)) }, shape = SegmentedButtonDefaults.itemShape(0, 2)) { Text(stringResource(R.string.library_descending)) }
                 SegmentedButton(selected = !filters.descending, onClick = { update(filters.copy(descending = false)) }, shape = SegmentedButtonDefaults.itemShape(1, 2)) { Text(stringResource(R.string.library_ascending)) }
             }

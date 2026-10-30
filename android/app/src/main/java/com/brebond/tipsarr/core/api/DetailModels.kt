@@ -112,6 +112,10 @@ data class RequestView(
     val decidedBy: UserRef? = null,
     val dryRun: Boolean = false,
     val createdAt: Long = 0,
+    val qualityProfileId: Int? = null,
+    val rootFolder: String? = null,
+    /** Set when the request was imported from what Radarr/Sonarr already monitor. */
+    val source: String? = null,
 )
 
 data class RequestRecord(
@@ -131,6 +135,10 @@ data class RequestRecord(
     val decidedBy: String?,
     val dryRun: Boolean,
     val createdAt: Long,
+    val requestedById: String? = null,
+    val qualityProfileId: Int? = null,
+    val rootFolder: String? = null,
+    val imported: Boolean = false,
 ) {
     /** The owner may still cancel until the title is available. */
     val isOpen: Boolean get() = state != RequestState.Available && state != RequestState.Declined && state != RequestState.Failed
@@ -146,6 +154,9 @@ fun RequestView.toRecord() = RequestRecord(
     error = error?.takeIf { it.isNotEmpty() },
     requestedBy = requestedBy.name, decidedBy = decidedBy?.name?.takeIf { it.isNotEmpty() },
     dryRun = dryRun, createdAt = createdAt,
+    requestedById = requestedBy.id.takeIf { it.isNotEmpty() },
+    qualityProfileId = qualityProfileId?.takeIf { it != 0 }, rootFolder = rootFolder?.takeIf { it.isNotEmpty() },
+    imported = !source.isNullOrEmpty(),
 )
 
 @Serializable

@@ -109,7 +109,7 @@ private fun TitleGridScreen(
                 else StateView(Icons.Outlined.WarningAmber, failure.message(context), actionTitle = stringResource(R.string.common_retry), onAction = { scope.launch { reload() } })
                 loaded && items.isEmpty() -> StateView(Icons.Outlined.Inbox, emptyMessage, Modifier.height(320.dp))
                 else -> LazyVerticalGrid(
-                    GridCells.Adaptive(104.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(Tokens.Spacing.lg),
+                    GridCells.Adaptive(96.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(Tokens.Spacing.lg),
                     verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md),
                 ) {
                     if (hint != null) item(span = { GridItemSpan(maxLineSpan) }) { Text(hint, fontSize = Tokens.FontSize.subhead, color = Tokens.palette.mutedFg) }

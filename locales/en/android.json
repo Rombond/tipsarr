@@ -10,5 +10,7 @@
   "m.settings.language_default": "Default (phone language)",
   "m.settings.sign_out_confirm": "Sign out of Tipsarr on this phone?",
   "m.settings.faceid_signin": "Sign in with biometrics",
-  "m.settings.faceid_signin_footer": "Your password is kept encrypted on the phone, protected by your fingerprint, face or screen lock. It is only used to sign you back in when your session ends."
+  "m.settings.faceid_signin_footer": "Your password is kept encrypted on the phone, protected by your fingerprint, face or screen lock. It is only used to sign you back in when your session ends.",
+  "m.settings.notifications_denied": "Notifications are turned off for Tipsarr in Android settings.",
+  "m.settings.notifications_open_settings": "Open Android settings"
 }

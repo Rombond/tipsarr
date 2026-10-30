@@ -15,6 +15,10 @@ import com.brebond.tipsarr.core.api.request
 import com.brebond.tipsarr.core.api.Permission
 import com.brebond.tipsarr.core.api.Profile
 import com.brebond.tipsarr.core.api.requestCounts
+import com.brebond.tipsarr.core.api.updateRequestOptions
+import com.brebond.tipsarr.core.api.RequestOptions
+import com.brebond.tipsarr.core.api.MediaType
+import com.brebond.tipsarr.core.api.requestOptions
 import com.brebond.tipsarr.core.api.requests
 import com.brebond.tipsarr.core.api.retryRequest
 import com.brebond.tipsarr.features.discover.Phase
@@ -93,6 +97,17 @@ class RequestsModel(private val api: TipsarrApi, private val me: () -> Profile) 
             busy = busy - record.id
         }
     }
+
+    /** Same rule as the web: the requester or an admin may change the quality profile / folder until the request is sent. */
+    fun canEdit(record: RequestRecord): Boolean =
+        !record.imported && (record.state == RequestState.Requested || record.state == RequestState.Failed) &&
+            (canManage || (record.requestedById != null && record.requestedById == me().id))
+
+    suspend fun options(type: MediaType): RequestOptions? = api.requestOptions(type)
+
+    /** Only what changed from the instance defaults is sent (null: leave as is). */
+    suspend fun updateOptions(record: RequestRecord, profileId: Int?, folder: String?) =
+        act(record) { api.updateRequestOptions(record.id, profileId, folder) }
 
     suspend fun fresh(id: String): RequestRecord? = runCatching { api.request(id) }.getOrNull()
 

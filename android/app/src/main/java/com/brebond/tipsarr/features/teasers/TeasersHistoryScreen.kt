@@ -1,17 +1,37 @@
 package com.brebond.tipsarr.features.teasers
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.outlined.Undo
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import com.brebond.tipsarr.core.images.RemoteImage
+import com.brebond.tipsarr.core.images.TmdbSize
+import com.brebond.tipsarr.core.support.relativeTime
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.Inbox
@@ -86,7 +106,7 @@ fun TeasersHistoryScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (MediaItem
     var menuFor by remember { mutableStateOf<String?>(null) }
     var confirmAll by remember { mutableStateOf(false) }
     val dates = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
-    val gridState = rememberLazyGridState()
+    val listState = rememberLazyListState()
 
     suspend fun reload() {
         try {
@@ -113,8 +133,8 @@ fun TeasersHistoryScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (MediaItem
     }
     LaunchedEffect(Unit) { reload() }
     // Near the end of the list: the next page.
-    LaunchedEffect(gridState) {
-        snapshotFlow { (gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) to gridState.layoutInfo.totalItemsCount }
+    LaunchedEffect(listState) {
+        snapshotFlow { (listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) to listState.layoutInfo.totalItemsCount }
             .distinctUntilChanged()
             .collect { (last, count) -> if (count > 0 && last >= count - 8) loadMore() }
     }
@@ -122,8 +142,9 @@ fun TeasersHistoryScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (MediaItem
     TopBarScaffold(
         if (owner == null) stringResource(R.string.m_teasers_history_title) else stringResource(R.string.m_users_teasers_history_title, owner.name), onBack,
         actions = {
-            if (items.isNotEmpty()) IconButton({ confirmAll = true }) {
-                Icon(Icons.Outlined.DeleteSweep, stringResource(R.string.m_teasers_history_forget_all), tint = Tokens.palette.fg)
+            // Like iOS: a text button "Wipe all" (destructive), not an icon.
+            if (items.isNotEmpty()) TextButton({ confirmAll = true }) {
+                Text(stringResource(R.string.m_teasers_history_forget_all), color = Tokens.palette.destructive)
             }
         },
     ) {
@@ -132,37 +153,64 @@ fun TeasersHistoryScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (MediaItem
             when {
                 failure != null -> if (failure == ApiError.Unreachable) OfflineState({ scope.launch { reload() } })
                 else StateView(Icons.Outlined.WarningAmber, failure.message(context), actionTitle = stringResource(R.string.common_retry), onAction = { scope.launch { reload() } })
-                loaded && items.isEmpty() -> StateView(Icons.Outlined.Inbox, stringResource(R.string.m_teasers_history_empty), Modifier.height(320.dp))
-                else -> LazyVerticalGrid(
-                    GridCells.Adaptive(104.dp), Modifier.fillMaxSize(), gridState, contentPadding = PaddingValues(Tokens.Spacing.lg),
-                    verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md),
-                ) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        Text(stringResource(R.string.m_teasers_history_hint), fontSize = Tokens.FontSize.subhead, color = Tokens.palette.mutedFg)
+                !loaded -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                items.isEmpty() -> StateView(Icons.Outlined.History, stringResource(R.string.m_teasers_history_empty), Modifier.height(320.dp))
+                else -> LazyColumn(Modifier.fillMaxSize(), listState, contentPadding = PaddingValues(Tokens.Spacing.lg)) {
+                    item {
+                        Text(
+                            stringResource(R.string.m_teasers_history_hint), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg,
+                            modifier = Modifier.padding(horizontal = Tokens.Spacing.xs, vertical = Tokens.Spacing.sm),
+                        )
                     }
-                    if (!loaded) items(6) { PosterSkeleton() }
-                    items(items, key = { it.id }) { entry ->
-                        val seen = stringResource(R.string.m_teasers_history_seen_on, dates.format(Date(entry.seenAt * 1000)))
+                    itemsIndexed(items, key = { _, it -> it.id }) { index, entry ->
                         val forgot = stringResource(R.string.m_teasers_history_forgot, entry.title)
-                        Box {
-                            MediaPoster(
-                                entry.item, { onOpen(entry.item) },
-                                Modifier.combinedClickable(onClick = { onOpen(entry.item) }, onLongClick = { menuFor = entry.id }),
-                                longPressMenu = false, subtitle = seen,
-                            )
-                            DropdownMenu(menuFor == entry.id, { menuFor = null }, containerColor = Tokens.palette.card) {
-                                DropdownMenuItem(text = { Text(stringResource(R.string.m_teasers_history_forget), color = Tokens.palette.fg) }, onClick = {
-                                    menuFor = null
-                                    scope.launch {
-                                        try {
-                                            if (owner == null) api.forgetTeaser(entry.type, entry.tmdbId) else api.adminForgetTeaser(owner.id, entry.type, entry.tmdbId)
-                                            items = items.filter { it.id != entry.id }
-                                            total = (total - 1).coerceAtLeast(0)
-                                            toast?.show(forgot)
-                                        } catch (e: ApiError) { toast?.show(e.message(context), ToastKind.Error) }
-                                    }
-                                })
+                        val shape = when {
+                            items.size == 1 -> RoundedCornerShape(Tokens.Radius.md)
+                            index == 0 -> RoundedCornerShape(topStart = Tokens.Radius.md, topEnd = Tokens.Radius.md)
+                            index == items.lastIndex -> RoundedCornerShape(bottomStart = Tokens.Radius.md, bottomEnd = Tokens.Radius.md)
+                            else -> RectangleShape
+                        }
+                        // Swipe left to forget (iOS: trailing swipe action); the row springs back until the list drops it.
+                        val dismiss = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
+                            if (value == SwipeToDismissBoxValue.EndToStart) {
+                                scope.launch {
+                                    try {
+                                        if (owner == null) api.forgetTeaser(entry.type, entry.tmdbId) else api.adminForgetTeaser(owner.id, entry.type, entry.tmdbId)
+                                        items = items.filter { it.id != entry.id }
+                                        total = (total - 1).coerceAtLeast(0)
+                                        toast?.show(forgot)
+                                    } catch (e: ApiError) { toast?.show(e.message(context), ToastKind.Error) }
+                                }
                             }
+                            false
+                        })
+                        Column(Modifier.clip(shape)) {
+                            SwipeToDismissBox(
+                                dismiss, enableDismissFromStartToEnd = false,
+                                backgroundContent = {
+                                    Row(Modifier.fillMaxSize().background(Tokens.palette.primary).padding(horizontal = Tokens.Spacing.lg), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.AutoMirrored.Outlined.Undo, null, tint = Tokens.palette.primaryFg)
+                                        Text(stringResource(R.string.m_teasers_history_forget), color = Tokens.palette.primaryFg, fontSize = Tokens.FontSize.subhead, modifier = Modifier.padding(start = Tokens.Spacing.sm))
+                                    }
+                                },
+                            ) {
+                                Row(
+                                    Modifier.fillMaxWidth().background(Tokens.palette.card).clickable { onOpen(entry.item) }.padding(horizontal = Tokens.Spacing.lg, vertical = Tokens.Spacing.sm),
+                                    horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Box(Modifier.width(44.dp).height(66.dp).clip(RoundedCornerShape(Tokens.Radius.sm)).background(Tokens.palette.muted)) {
+                                        RemoteImage(entry.posterPath, TmdbSize.W185, Modifier.fillMaxSize())
+                                    }
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Text(entry.title, fontSize = Tokens.FontSize.body, fontWeight = FontWeight.Medium, color = Tokens.palette.fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        Text(
+                                            stringResource(R.string.m_teasers_history_seen_on, relativeTime(context, entry.seenAt)),
+                                            fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg,
+                                        )
+                                    }
+                                }
+                            }
+                            if (index < items.lastIndex) HorizontalDivider(Modifier.padding(start = 76.dp), color = Tokens.palette.border)
                         }
                     }
                 }

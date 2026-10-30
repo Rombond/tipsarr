@@ -179,7 +179,7 @@ internal fun formatBytes(bytes: Long): String {
 }
 
 @Composable
-private fun OptionRow(icon: ImageVector, title: String, value: String, choices: List<Pair<String, () -> Unit>>) {
+internal fun OptionRow(icon: ImageVector, title: String, value: String, choices: List<Pair<String, () -> Unit>>) {
     var menu by remember { mutableStateOf(false) }
     Box {
         Row(
@@ -195,6 +195,60 @@ private fun OptionRow(icon: ImageVector, title: String, value: String, choices: 
         }
         DropdownMenu(menu, { menu = false }, containerColor = Tokens.palette.card) {
             choices.forEach { (label, pick) -> DropdownMenuItem(text = { Text(label, color = Tokens.palette.fg) }, onClick = { menu = false; pick() }) }
+        }
+    }
+}
+
+/** Quality profile (and folder) of a pending or failed request, as the web dialog and the iOS sheet. */
+@Composable
+fun RequestOptionsSheet(record: RequestRecord, load: suspend () -> RequestOptions?, onDismiss: () -> Unit, onSave: suspend (profileId: Int?, folder: String?) -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var options by remember { mutableStateOf<RequestOptions?>(null) }
+    var profileId by remember { mutableStateOf<Int?>(null) }
+    var folder by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    var errorText by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(record.id) {
+        val o = load()
+        if (o == null) { onDismiss(); return@LaunchedEffect }
+        options = o
+        profileId = record.qualityProfileId ?: o.qualityProfileId
+        folder = record.rootFolder ?: o.rootFolder.ifEmpty { o.rootFolders.firstOrNull()?.path }
+    }
+    TipsarrSheet(onDismiss) {
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = Tokens.Spacing.xl).padding(bottom = Tokens.Spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.xl),
+        ) {
+            Text(stringResource(R.string.req_change_options, record.title), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.Bold, color = Tokens.palette.fg)
+            options?.let { o ->
+                Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
+                    OptionRow(Icons.Outlined.Tune, stringResource(R.string.req_quality_profile), o.profiles.firstOrNull { it.id == profileId }?.name.orEmpty(),
+                        o.profiles.map { it.name to { profileId = it.id } })
+                    if (o.rootFolders.isNotEmpty()) {
+                        OptionRow(Icons.Outlined.Storage, stringResource(R.string.req_root_folder), folder ?: o.rootFolder,
+                            o.rootFolders.map { "${it.path} · ${formatBytes(it.freeSpace)}" to { folder = it.path } })
+                    }
+                }
+            }
+            errorText?.let { Banner(it, kind = BannerKind.Error) }
+            Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
+                TipsarrButton(stringResource(if (busy) R.string.common_saving else R.string.common_save), {
+                    val o = options ?: return@TipsarrButton
+                    busy = true
+                    errorText = null
+                    scope.launch {
+                        try {
+                            onSave(
+                                profileId?.takeIf { it != o.qualityProfileId },
+                                folder?.takeIf { o.rootFolders.isNotEmpty() && it != o.rootFolder },
+                            )
+                        } catch (e: ApiError) { errorText = e.message(context) } finally { busy = false }
+                    }
+                }, fullWidth = true, enabled = !busy && options != null)
+                TipsarrButton(stringResource(R.string.common_cancel), onDismiss, kind = ButtonKind.Ghost, fullWidth = true)
+            }
         }
     }
 }

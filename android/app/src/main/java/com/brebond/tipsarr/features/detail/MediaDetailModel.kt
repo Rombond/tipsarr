@@ -180,6 +180,8 @@ class MediaDetailModel(
             request = record
             coveredSeasons = coveredSeasons + record.seasons
             detail = detail?.copy(requestStatus = com.brebond.tipsarr.core.api.RequestStatus.Pending)
+            // First request ever: the right moment to ask for the notification permission, once.
+            com.brebond.tipsarr.core.push.PushManager.askAfterFirstRequestLater()
             return record
         } finally {
             busy = false

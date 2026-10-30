@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.RadioButtonChecked
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
@@ -95,6 +96,10 @@ fun RequestDetailScreen(
     var record by remember { mutableStateOf(initial) }
     var declining by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf(false) }
+    // People who manage requests see the chosen quality profile and folder: the instance's names come from its options.
+    var options by remember { mutableStateOf<com.brebond.tipsarr.core.api.RequestOptions?>(null) }
+    LaunchedEffect(initial.type, model.canManage) { if (model.canManage) options = model.options(initial.type) }
     var refreshing by remember { mutableStateOf(false) }
     val busy = record.id in model.busy
 
@@ -139,12 +144,13 @@ fun RequestDetailScreen(
                         SectionTitle(stringResource(R.string.m_requests_progress))
                         Timeline(steps(context, record))
                     }
-                    Facts(record, currentUserName)
+                    Facts(record, currentUserName, model.canManage, options)
                     Actions(
                         record, model, busy,
                         onApprove = { run { record = model.approve(record) } },
                         onDecline = { declining = true },
                         onRetry = { run { record = model.retry(record) } },
+                        onEdit = { editing = true },
                         onDelete = { confirmDelete = true },
                     )
                 }
@@ -152,6 +158,13 @@ fun RequestDetailScreen(
         }
     }
 
+    if (editing) com.brebond.tipsarr.features.detail.RequestOptionsSheet(
+        record, load = { model.options(record.type) }, onDismiss = { editing = false },
+    ) { profileId, folder ->
+        record = model.updateOptions(record, profileId, folder)
+        editing = false
+        toast?.show(context.getString(R.string.common_saved))
+    }
     if (declining) DeclineSheet(record.title, onDismiss = { declining = false }) { reason ->
         record = model.decline(record, reason)
         declining = false
@@ -207,27 +220,35 @@ private fun Requester(record: RequestRecord) {
 }
 
 @Composable
-private fun Facts(record: RequestRecord, currentUserName: String) {
-    val context = LocalContext.current
-    Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
+private fun Facts(record: RequestRecord, currentUserName: String, canManage: Boolean, options: com.brebond.tipsarr.core.api.RequestOptions?) {
+    // Who asked, the chosen quality and folder: people who manage requests only (others see their own request without these).
+    if (canManage) Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
         SectionTitle(stringResource(R.string.m_requests_details))
+        val default = stringResource(R.string.m_requests_default_value)
+        val profileId = record.qualityProfileId ?: options?.qualityProfileId
+        val profileName = options?.profiles?.firstOrNull { it.id == profileId }?.name ?: profileId?.toString() ?: default
         Column {
             record.requestedBy?.takeIf { it.isNotEmpty() }?.let { name ->
                 val me = name == currentUserName
                 val you = stringResource(R.string.common_you).trim('(', ')').replaceFirstChar { it.titlecase() }
                 Fact(stringResource(R.string.m_requests_requested_by), if (me) you else name)
             }
+            record.decidedBy?.takeIf { it.isNotEmpty() }?.let { Fact(stringResource(R.string.m_requests_decided_by), it) }
             if (record.seasons.isNotEmpty()) Fact(stringResource(R.string.fact_seasons), record.seasons.sorted().joinToString(", "))
+            Fact(stringResource(R.string.m_requests_quality_profile), profileName)
+            Fact(stringResource(R.string.m_requests_root_folder), record.rootFolder ?: options?.rootFolder?.takeIf { it.isNotEmpty() } ?: default)
+            if (record.dryRun) Fact(stringResource(R.string.m_requests_dry_run), "\u2713")
+            if (record.imported) Fact(stringResource(R.string.m_requests_imported), "\u2713")
         }
-        if (record.seasons.isNotEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), modifier = Modifier.padding(top = Tokens.Spacing.sm)) {
-                record.seasons.sorted().forEach { number ->
-                    val percent = record.seasonProgress[number]
-                    Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.req_season_badge, number.toString()), fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg)
-                        Box(Modifier.weight(1f)) { ProgressBar(percent ?: 0, tint = if (percent == 100) Tokens.Status.available else Tokens.Status.downloading) }
-                        Text(percent?.let { "$it%" } ?: "–", fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg, textAlign = TextAlign.End, modifier = Modifier.width(44.dp))
-                    }
+    }
+    if (record.seasons.isNotEmpty()) {
+        Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), modifier = Modifier.padding(top = Tokens.Spacing.sm)) {
+            record.seasons.sorted().forEach { number ->
+                val percent = record.seasonProgress[number]
+                Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.req_season_badge, number.toString()), fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg)
+                    Box(Modifier.weight(1f)) { ProgressBar(percent ?: 0, tint = if (percent == 100) Tokens.Status.available else Tokens.Status.downloading) }
+                    Text(percent?.let { "$it%" } ?: "\u2013", fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg, textAlign = TextAlign.End, modifier = Modifier.width(44.dp))
                 }
             }
         }
@@ -254,6 +275,7 @@ private fun Actions(
     onApprove: () -> Unit,
     onDecline: () -> Unit,
     onRetry: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
@@ -269,6 +291,10 @@ private fun Actions(
         }
         if (model.canManage && record.state == RequestState.Failed) {
             TipsarrButton(stringResource(R.string.req_retry), onRetry, fullWidth = true, enabled = !busy) { Icon(Icons.Outlined.Refresh, null, Modifier.size(20.dp)); Spacer(Modifier.width(Tokens.Spacing.sm)) }
+        }
+        // Same rule as the web: the requester or an admin may change the quality profile until it is sent.
+        if (model.canEdit(record)) {
+            TipsarrButton(stringResource(R.string.req_change_options_short), onEdit, fullWidth = true, kind = ButtonKind.Secondary, enabled = !busy) { Icon(Icons.Outlined.Tune, null, Modifier.size(20.dp)); Spacer(Modifier.width(Tokens.Spacing.sm)) }
         }
         if (model.canDelete(record)) {
             TipsarrButton(stringResource(R.string.m_request_cancel), onDelete, fullWidth = true, kind = ButtonKind.Ghost, enabled = !busy)

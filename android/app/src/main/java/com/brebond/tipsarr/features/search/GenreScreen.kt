@@ -63,7 +63,7 @@ fun GenreScreen(route: GenreRoute, movies: MediaListModel?, shows: MediaListMode
         }
         when (val phase = list.phase) {
             Phase.Idle, Phase.Loading -> LazyVerticalGrid(
-                GridCells.Adaptive(104.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(Tokens.Spacing.lg),
+                GridCells.Adaptive(96.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(Tokens.Spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md),
             ) { items(9) { PosterSkeleton() } }
             is Phase.Failed -> Box(Modifier.fillMaxSize()) {
@@ -71,7 +71,7 @@ fun GenreScreen(route: GenreRoute, movies: MediaListModel?, shows: MediaListMode
                 else StateView(Icons.Outlined.WarningAmber, phase.error.message(context), actionTitle = stringResource(R.string.common_retry), onAction = { scope.launch { list.refresh() } })
             }
             Phase.Loaded -> LazyVerticalGrid(
-                GridCells.Adaptive(104.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(Tokens.Spacing.lg),
+                GridCells.Adaptive(96.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(Tokens.Spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md),
             ) {
                 itemsIndexed(list.items, key = { _, item -> item.id }) { index, item ->

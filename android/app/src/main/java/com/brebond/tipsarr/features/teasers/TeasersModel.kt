@@ -7,7 +7,10 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.brebond.tipsarr.core.api.ApiError
+import com.brebond.tipsarr.core.api.Availability
+import com.brebond.tipsarr.core.api.MediaItem
 import com.brebond.tipsarr.core.api.RequestStatus
+import com.brebond.tipsarr.core.api.trending
 import com.brebond.tipsarr.core.api.Teaser
 import com.brebond.tipsarr.core.api.TipsarrApi
 import com.brebond.tipsarr.core.api.markTeaserSeen
@@ -40,6 +43,13 @@ class TeasersModel(private val api: TipsarrApi, private val context: Context) {
     /** Two fingers are on the picture. */
     var pinching by mutableStateOf(false)
 
+    /**
+     * Shown while the first batch is slow (a new person: the server builds the pool and looks trailers up): the trending
+     * titles, which is what the server's own default pool is made of. Posters only, the trailers are not ready yet.
+     */
+    var fallback by mutableStateOf<List<MediaItem>>(emptyList())
+        private set
+
     private val seen = HashSet<String>()
 
     /** The server is still preparing trailer files: nothing to show yet, ask again shortly. */
@@ -50,6 +60,13 @@ class TeasersModel(private val api: TipsarrApi, private val context: Context) {
 
     /** Players of the first cards, prepared (buffering, not playing) before the screen is opened. Keyed by [Teaser.id]. */
     private val prepared = HashMap<String, TeaserVideo>()
+
+    suspend fun loadFallback() {
+        if (fallback.isNotEmpty()) return
+        try {
+            fallback = api.trending(1).items.filter { it.availability != Availability.Available && it.requestStatus == null }.take(20)
+        } catch (_: ApiError) {}
+    }
 
     suspend fun loadIfNeeded() {
         // A failed background load is tried again when the person opens the tab (unless the feature went away).

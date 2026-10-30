@@ -1,6 +1,6 @@
 import java.util.Properties
 
-val appVersion = "0.1.0"
+val appVersion = "0.8.0"
 
 // Release signing: `keystore.properties` (not committed) points at the keystore; without it the release build is left unsigned.
 val keystoreProps = Properties().apply {
@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -22,7 +23,7 @@ android {
         applicationId = "com.brebond.tipsarr"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
+        versionCode = 8
         versionName = appVersion
         buildConfigField("String", "APP_VERSION", "\"$appVersion\"")
     }
@@ -71,6 +72,9 @@ dependencies {
     implementation(libs.coil.svg)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.fragment)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     debugImplementation(libs.androidx.compose.ui.tooling)

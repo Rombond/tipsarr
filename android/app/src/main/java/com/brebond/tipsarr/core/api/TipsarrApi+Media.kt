@@ -39,3 +39,10 @@ suspend fun TipsarrApi.setBlocklisted(on: Boolean, type: MediaType, id: Int) {
 
 suspend fun TipsarrApi.reportIssue(type: MediaType, tmdbId: Int, kind: IssueKind, message: String) =
     postUnit("/issues", CreateIssueBody(kind, message, tmdbId, type), CreateIssueBody.serializer())
+
+@kotlinx.serialization.Serializable
+private data class UpdateRequestOptionsBody(val qualityProfileId: Int? = null, val rootFolder: String? = null)
+
+/** Changes the quality profile / folder of a pending or failed request (requester or admin). null: leave as is. */
+suspend fun TipsarrApi.updateRequestOptions(id: String, profileId: Int?, folder: String?): RequestRecord =
+    patch("/requests/$id", UpdateRequestOptionsBody(profileId, folder), UpdateRequestOptionsBody.serializer(), RequestView.serializer()).toRecord()

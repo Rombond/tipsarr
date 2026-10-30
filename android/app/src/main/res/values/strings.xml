@@ -414,10 +414,10 @@
     <string name="m_settings_language_default">Default (phone language)</string>
     <string name="m_settings_notifications">Notifications</string>
     <string name="m_settings_notifications_admin">New requests to approve</string>
-    <string name="m_settings_notifications_denied">Notifications are turned off for Tipsarr in iOS Settings.</string>
+    <string name="m_settings_notifications_denied">Notifications are turned off for Tipsarr in Android settings.</string>
     <string name="m_settings_notifications_footer">Alerts only say that something happened. Tipsarr fetches the details when you open it.</string>
     <string name="m_settings_notifications_issues">Issues</string>
-    <string name="m_settings_notifications_open_settings">Open iOS Settings</string>
+    <string name="m_settings_notifications_open_settings">Open Android settings</string>
     <string name="m_settings_notifications_requests">My requests</string>
     <string name="m_settings_notifications_toggle">Push notifications</string>
     <string name="m_settings_rating_imdb">IMDb</string>

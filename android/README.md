@@ -13,6 +13,10 @@ echo "sdk.dir=$ANDROID_HOME" > local.properties     # once, not committed
 
 `make generate` refreshes the generated files. Do not edit `Tokens.kt`, `strings.xml` or `openapi.yaml` by hand.
 
+## Push (Firebase)
+
+`app/google-services.json` (from your own Firebase project, package `com.brebond.tipsarr`) is not committed and the build needs it. Push goes through the relay (`push-relay` repo) with a Firebase service account; the app only needs the token.
+
 ## Release build
 
 ```sh

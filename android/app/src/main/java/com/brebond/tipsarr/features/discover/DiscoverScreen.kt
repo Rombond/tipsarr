@@ -200,7 +200,7 @@ private fun RailSkeleton() {
 private fun Grid(model: DiscoverModel, list: MediaListModel, onOpenItem: (MediaItem) -> Unit, onOpenProfile: () -> Unit, onOpenSettings: () -> Unit) {
     LaunchedEffect(list) { list.loadIfNeeded() }
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(104.dp),
+        columns = GridCells.Adaptive(96.dp),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = GUTTER, end = GUTTER, bottom = Tokens.Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg),
