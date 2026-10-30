@@ -43,3 +43,16 @@ func TestNormTitleAndSimilarity(t *testing.T) {
 		t.Fatal("similarity")
 	}
 }
+
+func TestScoresLeaveOutMissingTomatometer(t *testing.T) {
+	critics, audience, _ := (&RTScore{Critics: 0, Audience: 72}).scores()
+	if critics != nil {
+		t.Fatalf("critics = %v, want nil when Rotten Tomatoes has no Tomatometer", critics)
+	}
+	if audience == nil || audience.Value != 72 {
+		t.Fatalf("audience = %v, want 72", audience)
+	}
+	if critics, _, _ := (&RTScore{Critics: 91}).scores(); critics == nil || critics.Value != 91 {
+		t.Fatalf("critics = %v, want 91", critics)
+	}
+}
