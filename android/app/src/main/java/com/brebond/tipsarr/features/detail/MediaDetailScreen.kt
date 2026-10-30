@@ -65,6 +65,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import com.brebond.tipsarr.core.support.TableTopSplit
+import com.brebond.tipsarr.core.support.rememberTableTop
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -168,6 +171,7 @@ fun MediaDetailScreen(model: MediaDetailModel, serverUrl: String, onBack: () -> 
         )
     }
 
+    val tableTop = rememberTableTop()
     Box(modifier.fillMaxSize().background(Tokens.palette.bg)) {
         when (val phase = model.phase) {
             MediaDetailModel.Phase.Loading -> DetailSkeleton(model.route.title)
@@ -176,37 +180,49 @@ fun MediaDetailScreen(model: MediaDetailModel, serverUrl: String, onBack: () -> 
                 else StateView(Icons.Outlined.WarningAmber, phase.error.message(context), actionTitle = stringResource(R.string.common_retry), onAction = { scope.launch { model.load() } })
             }
             MediaDetailModel.Phase.Loaded -> model.detail?.let { detail ->
-                PullToRefreshBox(
+                val body: @Composable () -> Unit = {
+                    Column(
+                        Modifier.widthIn(max = 720.dp).fillMaxWidth().padding(horizontal = GUTTER).padding(bottom = Tokens.Spacing.x3xl),
+                        verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.xl),
+                    ) {
+                        RatingsStrip(model.ratings, detail)
+                        ActionRow(
+                            model = model, detail = detail,
+                            onRequest = ::startRequest,
+                            onRetry = { run { model.retryRequest() } },
+                            onWatchlist = { run { model.toggleWatchlist() } },
+                            onHidden = { run { model.toggleHidden() } },
+                            onReport = { sheet = DetailSheet.Report },
+                            onCancel = { confirmCancel = true },
+                        )
+                        Banners(model)
+                        Overview(detail)
+                        if (detail.type == MediaType.Tv && model.regularSeasons.isNotEmpty()) {
+                            SeasonList(model.api, model.route.tmdbId, model.regularSeasons, model.coveredSeasons, model.request?.state ?: RequestState.Requested)
+                        }
+                        Facts(detail)
+                        if (detail.cast.isNotEmpty()) Cast(detail) { onOpenPerson(com.brebond.tipsarr.features.person.PersonRoute(it.id, it.name)) }
+                        if (detail.recommendations.isNotEmpty()) Recommendations(detail.recommendations) { onOpen(MediaRoute(it.type, it.tmdbId, it.title)) }
+                        if (model.canReport) ReportRow { sheet = DetailSheet.Report }
+                    }
+                }
+                if (tableTop != null) {
+                    // Half-folded like a laptop: the backdrop and title stay in the upper half, the actions and the rest scroll in the lower one.
+                    TableTopSplit(
+                        tableTop,
+                        upper = { Box(Modifier.fillMaxSize().clipToBounds(), contentAlignment = Alignment.BottomCenter) { DetailHeader(detail, model.badge) } },
+                        lower = {
+                            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(top = Tokens.Spacing.lg), horizontalAlignment = Alignment.CenterHorizontally) { body() }
+                        },
+                    )
+                } else PullToRefreshBox(
                     isRefreshing = refreshing,
                     onRefresh = { scope.launch { refreshing = true; model.load(); refreshing = false } },
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding(), horizontalAlignment = Alignment.CenterHorizontally) {
                         DetailHeader(detail, model.badge)
-                        Column(
-                            Modifier.widthIn(max = 720.dp).fillMaxWidth().padding(horizontal = GUTTER).padding(bottom = Tokens.Spacing.x3xl),
-                            verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.xl),
-                        ) {
-                            RatingsStrip(model.ratings, detail)
-                            ActionRow(
-                                model = model, detail = detail,
-                                onRequest = ::startRequest,
-                                onRetry = { run { model.retryRequest() } },
-                                onWatchlist = { run { model.toggleWatchlist() } },
-                                onHidden = { run { model.toggleHidden() } },
-                                onReport = { sheet = DetailSheet.Report },
-                                onCancel = { confirmCancel = true },
-                            )
-                            Banners(model)
-                            Overview(detail)
-                            if (detail.type == MediaType.Tv && model.regularSeasons.isNotEmpty()) {
-                                SeasonList(model.api, model.route.tmdbId, model.regularSeasons, model.coveredSeasons, model.request?.state ?: RequestState.Requested)
-                            }
-                            Facts(detail)
-                            if (detail.cast.isNotEmpty()) Cast(detail) { onOpenPerson(com.brebond.tipsarr.features.person.PersonRoute(it.id, it.name)) }
-                            if (detail.recommendations.isNotEmpty()) Recommendations(detail.recommendations) { onOpen(MediaRoute(it.type, it.tmdbId, it.title)) }
-                            if (model.canReport) ReportRow { sheet = DetailSheet.Report }
-                        }
+                        body()
                     }
                 }
             }

@@ -3,6 +3,7 @@ package com.brebond.tipsarr.features.admin
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -170,7 +171,7 @@ fun IssuesScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (String) -> Unit) 
                         }
                     }
                     Phase.Loaded -> if (items.isEmpty()) item {
-                        StateView(Icons.Outlined.Verified, stringResource(R.string.issue_empty), Modifier.height(360.dp))
+                        StateView(Icons.Outlined.Verified, stringResource(R.string.issue_empty), Modifier.heightIn(min = 360.dp))
                     } else {
                         itemsIndexed(items, key = { _, issue -> issue.id }) { index, issue ->
                             LaunchedEffect(index, items.size) {

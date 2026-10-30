@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -216,7 +217,7 @@ private fun Content(r: FullStats, canManageSettings: Boolean, onOpenTitle: (Medi
         }
     }
     if (r.totals.plays == 0 && r.totals.titles == 0) {
-        StateView(Icons.Outlined.BarChart, stringResource(R.string.stats_empty), Modifier.height(240.dp))
+        StateView(Icons.Outlined.BarChart, stringResource(R.string.stats_empty), Modifier.heightIn(min = 240.dp))
         return
     }
     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {

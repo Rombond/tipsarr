@@ -2,6 +2,7 @@ package com.brebond.tipsarr.features.teasers
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -154,7 +155,7 @@ fun TeasersHistoryScreen(api: TipsarrApi, onBack: () -> Unit, onOpen: (MediaItem
                 failure != null -> if (failure == ApiError.Unreachable) OfflineState({ scope.launch { reload() } })
                 else StateView(Icons.Outlined.WarningAmber, failure.message(context), actionTitle = stringResource(R.string.common_retry), onAction = { scope.launch { reload() } })
                 !loaded -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-                items.isEmpty() -> StateView(Icons.Outlined.History, stringResource(R.string.m_teasers_history_empty), Modifier.height(320.dp))
+                items.isEmpty() -> StateView(Icons.Outlined.History, stringResource(R.string.m_teasers_history_empty), Modifier.heightIn(min = 320.dp))
                 else -> LazyColumn(Modifier.fillMaxSize(), listState, contentPadding = PaddingValues(Tokens.Spacing.lg)) {
                     item {
                         Text(

@@ -5,6 +5,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import com.brebond.tipsarr.core.support.ContentWidth
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -96,6 +98,9 @@ fun ProfileScreen(
     teasersOn: Boolean = false,
     onOpenTeasersHistory: () -> Unit = {},
     onBack: (() -> Unit)? = null,
+    server: String? = null,
+    serverVersion: String? = null,
+    onOpenSettings: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -108,79 +113,82 @@ fun ProfileScreen(
         onRefresh = { scope.launch { refreshing = true; model.load(); refreshing = false } },
         modifier = modifier.fillMaxSize(),
     ) {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Tokens.Spacing.lg), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.x2xl)) {
-            item {
-                Row(Modifier.fillMaxWidth().padding(start = if (onBack != null) Tokens.Spacing.xs else GUTTER, end = Tokens.Spacing.sm, top = Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                    if (onBack != null) IconButton(onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.common_back), tint = Tokens.palette.fg) }
-                    Text(
-                        stringResource(R.string.m_tab_profile), fontSize = Tokens.FontSize.largeTitle, fontWeight = FontWeight.Bold,
-                        color = Tokens.palette.fg, modifier = Modifier.weight(1f).semantics { heading() },
-                    )
-                }
-            }
-            item { Header(profile, avatarVersion) }
-            item {
-                Row(Modifier.padding(horizontal = GUTTER), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
-                    StatTile(Icons.Outlined.Checklist, model.requestCount, stringResource(R.string.profile_stat_requests), Modifier.weight(1f), onOpenRequests)
-                    StatTile(Icons.Outlined.Bookmark, model.watchlistCount, stringResource(R.string.profile_stat_watchlist), Modifier.weight(1f), onOpenWatchlist)
-                    StatTile(Icons.Outlined.RemoveRedEye, model.watchedCount, stringResource(R.string.profile_stat_watched), Modifier.weight(1f))
-                }
-            }
-            if (model.topWatched.isNotEmpty()) item {
-                Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
-                    Row(Modifier.padding(horizontal = GUTTER), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.stats_top), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.Bold, color = Tokens.palette.fg,
-                            modifier = Modifier.weight(1f).semantics { heading() },
-                        )
-                        Text(
-                            stringResource(R.string.m_stats_open), fontSize = Tokens.FontSize.subhead, color = Tokens.palette.mutedFg,
-                            modifier = Modifier.clickable(onClick = onOpenStats).padding(Tokens.Spacing.sm),
-                        )
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            // Tablet and wide windows: the dashboard layouts of Penpot page 10 (one wide column, or two columns in landscape).
+            val width = ContentWidth.of(maxWidth)
+            if (width != ContentWidth.Compact) {
+                ProfileWide(
+                    model, profile, avatarVersion, wide = width == ContentWidth.Wide, server = server, serverVersion = serverVersion,
+                    onOpenRequests = onOpenRequests, onOpenWatchlist = onOpenWatchlist, onOpenTitle = onOpenTitle, onOpenRequest = onOpenRequest,
+                    onOpenStats = onOpenStats, onOpenIssues = onOpenIssues, onOpenUsers = onOpenUsers, onOpenSync = onOpenSync,
+                    teasersOn = teasersOn, onOpenTeasersHistory = onOpenTeasersHistory, onOpenSettings = onOpenSettings, onBack = onBack,
+                )
+            } else LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Tokens.Spacing.lg), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.x2xl)) {
+                item { TitleRow(onBack) }
+                item { Header(profile, avatarVersion) }
+                item {
+                    Row(Modifier.padding(horizontal = GUTTER), horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
+                        StatTile(Icons.Outlined.Checklist, model.requestCount, stringResource(R.string.profile_stat_requests), Modifier.weight(1f), onOpenRequests)
+                        StatTile(Icons.Outlined.Bookmark, model.watchlistCount, stringResource(R.string.profile_stat_watchlist), Modifier.weight(1f), onOpenWatchlist)
+                        StatTile(Icons.Outlined.RemoveRedEye, model.watchedCount, stringResource(R.string.profile_stat_watched), Modifier.weight(1f))
                     }
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), contentPadding = PaddingValues(horizontal = GUTTER)) {
-                        items(model.topWatched.take(10), key = { "${it.type}-${it.tmdbId}" }) { top ->
-                            TopWatched(top) { onOpenTitle(MediaRoute(top.type, top.tmdbId, top.title)) }
+                }
+                if (model.topWatched.isNotEmpty()) item {
+                    Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
+                        Row(Modifier.padding(horizontal = GUTTER), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                stringResource(R.string.stats_top), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.Bold, color = Tokens.palette.fg,
+                                modifier = Modifier.weight(1f).semantics { heading() },
+                            )
+                            Text(
+                                stringResource(R.string.m_stats_open), fontSize = Tokens.FontSize.subhead, color = Tokens.palette.mutedFg,
+                                modifier = Modifier.clickable(onClick = onOpenStats).padding(Tokens.Spacing.sm),
+                            )
+                        }
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), contentPadding = PaddingValues(horizontal = GUTTER)) {
+                            items(model.topWatched.take(10), key = { "${it.type}-${it.tmdbId}" }) { top ->
+                                TopWatched(top) { onOpenTitle(MediaRoute(top.type, top.tmdbId, top.title)) }
+                            }
                         }
                     }
                 }
-            }
-            // Open to everyone, but only while the server has the Teasers feature on.
-            if (teasersOn) item {
-                RowGroup(stringResource(R.string.m_tab_teasers), buildList<@Composable () -> Unit> {
-                    add { AdminRow(Icons.Outlined.History, Tokens.Status.approved, stringResource(R.string.m_teasers_history_title), null, onOpenTeasersHistory) }
-                })
-            }
-            val adminRows = buildList<@Composable () -> Unit> {
-                if (profile.can(Permission.VIEW_ISSUES)) add { AdminRow(Icons.Outlined.ChatBubbleOutline, Tokens.Status.failed, stringResource(R.string.nav_issues), model.openIssues, onOpenIssues) }
-                if (profile.can(Permission.MANAGE_USERS)) add { AdminRow(Icons.Outlined.People, Tokens.Status.approved, stringResource(R.string.nav_users), null, onOpenUsers) }
-                if (profile.can(Permission.MANAGE_SETTINGS)) add { AdminRow(Icons.Outlined.Sync, Tokens.Status.searching, stringResource(R.string.m_admin_sync), null, onOpenSync) }
-            }
-            if (adminRows.isNotEmpty()) item { RowGroup(stringResource(R.string.m_admin_title), adminRows) }
-            if (model.recent.isNotEmpty()) item {
-                Column(Modifier.padding(horizontal = GUTTER), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.profile_recent_requests), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.Bold,
-                            color = Tokens.palette.fg, modifier = Modifier.weight(1f).semantics { heading() },
-                        )
-                        Text(stringResource(R.string.requests_tab_all), fontSize = Tokens.FontSize.subhead, color = Tokens.palette.mutedFg, modifier = Modifier.clickable(onClick = onOpenRequests).padding(Tokens.Spacing.sm))
-                    }
-                    Column {
-                        model.recent.take(3).forEach { record ->
-                            Row(
-                                Modifier.fillMaxWidth().clickable { onOpenRequest(record) }.padding(vertical = Tokens.Spacing.sm),
-                                horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Box(Modifier.width(44.dp).height(66.dp).clip(RoundedCornerShape(Tokens.Radius.sm - 2.dp)).background(Tokens.palette.muted)) {
-                                    RemoteImage(record.posterPath, TmdbSize.W92, Modifier.fillMaxSize())
+                // Open to everyone, but only while the server has the Teasers feature on.
+                if (teasersOn) item {
+                    RowGroup(stringResource(R.string.m_tab_teasers), buildList<@Composable () -> Unit> {
+                        add { AdminRow(Icons.Outlined.History, Tokens.Status.approved, stringResource(R.string.m_teasers_history_title), null, onOpenTeasersHistory) }
+                    })
+                }
+                val adminRows = buildList<@Composable () -> Unit> {
+                    if (profile.can(Permission.VIEW_ISSUES)) add { AdminRow(Icons.Outlined.ChatBubbleOutline, Tokens.Status.failed, stringResource(R.string.nav_issues), model.openIssues, onOpenIssues) }
+                    if (profile.can(Permission.MANAGE_USERS)) add { AdminRow(Icons.Outlined.People, Tokens.Status.approved, stringResource(R.string.nav_users), null, onOpenUsers) }
+                    if (profile.can(Permission.MANAGE_SETTINGS)) add { AdminRow(Icons.Outlined.Sync, Tokens.Status.searching, stringResource(R.string.m_admin_sync), null, onOpenSync) }
+                }
+                if (adminRows.isNotEmpty()) item { RowGroup(stringResource(R.string.m_admin_title), adminRows) }
+                if (model.recent.isNotEmpty()) item {
+                    Column(Modifier.padding(horizontal = GUTTER), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                stringResource(R.string.profile_recent_requests), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.Bold,
+                                color = Tokens.palette.fg, modifier = Modifier.weight(1f).semantics { heading() },
+                            )
+                            Text(stringResource(R.string.requests_tab_all), fontSize = Tokens.FontSize.subhead, color = Tokens.palette.mutedFg, modifier = Modifier.clickable(onClick = onOpenRequests).padding(Tokens.Spacing.sm))
+                        }
+                        Column {
+                            model.recent.take(3).forEach { record ->
+                                Row(
+                                    Modifier.fillMaxWidth().clickable { onOpenRequest(record) }.padding(vertical = Tokens.Spacing.sm),
+                                    horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Box(Modifier.width(44.dp).height(66.dp).clip(RoundedCornerShape(Tokens.Radius.sm - 2.dp)).background(Tokens.palette.muted)) {
+                                        RemoteImage(record.posterPath, TmdbSize.W92, Modifier.fillMaxSize())
+                                    }
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.xs)) {
+                                        Text(record.title, fontSize = Tokens.FontSize.body, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        StatusBadge(record.state)
+                                    }
                                 }
-                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.xs)) {
-                                    Text(record.title, fontSize = Tokens.FontSize.body, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    StatusBadge(record.state)
-                                }
+                                HorizontalDivider(color = Tokens.palette.border)
                             }
-                            HorizontalDivider(color = Tokens.palette.border)
                         }
                     }
                 }
@@ -189,10 +197,22 @@ fun ProfileScreen(
     }
 }
 
+/** "Profile" in large type, with a back arrow when the screen was pushed. */
+@Composable
+internal fun TitleRow(onBack: (() -> Unit)?, gutter: androidx.compose.ui.unit.Dp = GUTTER) {
+    Row(Modifier.fillMaxWidth().padding(start = if (onBack != null) Tokens.Spacing.xs else gutter, end = Tokens.Spacing.sm, top = Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+        if (onBack != null) IconButton(onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.common_back), tint = Tokens.palette.fg) }
+        Text(
+            stringResource(R.string.m_tab_profile), fontSize = Tokens.FontSize.largeTitle, fontWeight = FontWeight.Bold,
+            color = Tokens.palette.fg, modifier = Modifier.weight(1f).semantics { heading() },
+        )
+    }
+}
+
 /** A small label over a rounded card holding [rows] separated by dividers (the Administration look). */
 @Composable
-private fun RowGroup(label: String, rows: List<@Composable () -> Unit>) {
-    Column(Modifier.padding(horizontal = GUTTER), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
+internal fun RowGroup(label: String, rows: List<@Composable () -> Unit>, gutter: androidx.compose.ui.unit.Dp = GUTTER) {
+    Column(Modifier.padding(horizontal = gutter), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
         Text(label, fontSize = Tokens.FontSize.footnote, fontWeight = FontWeight.SemiBold, color = Tokens.palette.mutedFg, modifier = Modifier.padding(horizontal = Tokens.Spacing.xs))
         val shape = RoundedCornerShape(Tokens.Radius.md)
         Column(Modifier.fillMaxWidth().clip(shape).background(Tokens.palette.card).border(1.dp, Tokens.palette.border, shape)) {
@@ -204,16 +224,22 @@ private fun RowGroup(label: String, rows: List<@Composable () -> Unit>) {
     }
 }
 
+/** "Member since Mar 2025 · Last seen 2 days ago" (empty when the server sent neither date). */
 @Composable
-private fun Header(profile: Profile, avatarVersion: Int) {
+internal fun memberLine(profile: Profile): String {
     val context = LocalContext.current
-    val member = buildList {
+    return buildList {
         if (profile.createdAt > 0) {
             val month = java.text.SimpleDateFormat("MMM yyyy", Locale.getDefault()).format(Date(profile.createdAt * 1000))
             add(stringResource(R.string.profile_member_since, month))
         }
         if (profile.lastLoginAt > 0) add(stringResource(R.string.profile_last_seen, relativeTime(context, profile.lastLoginAt)))
     }.joinToString(" · ")
+}
+
+@Composable
+private fun Header(profile: Profile, avatarVersion: Int) {
+    val member = memberLine(profile)
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
         // Changing the picture lives in Settings only.
         AvatarView(profile.id, profile.name, 88.dp, avatarVersion)
@@ -223,7 +249,7 @@ private fun Header(profile: Profile, avatarVersion: Int) {
 }
 
 @Composable
-private fun StatTile(icon: ImageVector, value: Int?, label: String, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+internal fun StatTile(icon: ImageVector, value: Int?, label: String, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
     val shape = RoundedCornerShape(Tokens.Radius.md)
     Column(
         modifier.clip(shape).background(Tokens.palette.card).border(1.dp, Tokens.palette.border, shape)
@@ -232,17 +258,19 @@ private fun StatTile(icon: ImageVector, value: Int?, label: String, modifier: Mo
     ) {
         Icon(icon, null, tint = Tokens.palette.mutedFg)
         Text(value?.toString() ?: "–", fontSize = Tokens.FontSize.title2, fontWeight = FontWeight.Bold, color = Tokens.palette.fg)
-        Text(label, fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+        // One line: with large fonts a narrow tile cut the word in two ("Reques / ts").
+        Text(label, fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = Tokens.Spacing.xs))
     }
 }
 
 @Composable
-private fun TopWatched(top: com.brebond.tipsarr.core.api.StatsTop, onClick: () -> Unit) {
+internal fun TopWatched(top: com.brebond.tipsarr.core.api.StatsTop, width: androidx.compose.ui.unit.Dp = 120.dp, onClick: () -> Unit) {
     val context = LocalContext.current
     val hours = String.format(Locale.getDefault(), "%.0f", top.hours) + " " + stringResource(R.string.stats_unit_h)
     val plays = context.getString(if (top.type == MediaType.Tv) R.string.stats_n_episodes else R.string.stats_n_plays, top.plays.toString())
-    Column(Modifier.width(120.dp).clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
-        Box(Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(Tokens.Radius.md)).background(Tokens.palette.muted)) {
+    Column(Modifier.width(width).clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
+        Box(Modifier.fillMaxWidth().height(width * Tokens.Size.posterRatio).clip(RoundedCornerShape(Tokens.Radius.md)).background(Tokens.palette.muted)) {
             RemoteImage(top.posterPath, TmdbSize.W342, Modifier.fillMaxSize(), server = true)
         }
         Text(top.title, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium, color = Tokens.palette.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -251,7 +279,7 @@ private fun TopWatched(top: com.brebond.tipsarr.core.api.StatsTop, onClick: () -
 }
 
 @Composable
-private fun AdminRow(icon: ImageVector, color: androidx.compose.ui.graphics.Color, title: String, value: Int?, onClick: () -> Unit) {
+internal fun AdminRow(icon: ImageVector, color: androidx.compose.ui.graphics.Color, title: String, value: Int?, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).defaultMinSize(minHeight = Tokens.Size.touchTarget + Tokens.Spacing.sm).padding(horizontal = Tokens.Spacing.md),
         horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically,

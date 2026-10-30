@@ -3,6 +3,7 @@ package com.brebond.tipsarr.features.library
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -134,9 +135,9 @@ fun LibraryScreen(model: LibraryModel, onOpen: (MediaRoute) -> Unit, modifier: M
                 }
                 Phase.Loaded -> when {
                     model.neverSynced -> item(span = { GridItemSpan(maxLineSpan) }) {
-                        StateView(Icons.Outlined.VideoLibrary, stringResource(R.string.library_title), Modifier.height(360.dp), message = stringResource(R.string.library_empty))
+                        StateView(Icons.Outlined.VideoLibrary, stringResource(R.string.library_title), Modifier.heightIn(min = 360.dp), message = stringResource(R.string.library_empty))
                     }
-                    model.items.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) { NoResultsState(Modifier.height(360.dp)) }
+                    model.items.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) { NoResultsState(Modifier.heightIn(min = 360.dp)) }
                     else -> {
                         itemsIndexed(model.items, key = { _, item -> item.id }) { index, item ->
                             LaunchedEffect(index, model.items.size) { model.loadMore(index) }
