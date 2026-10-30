@@ -2985,7 +2985,6 @@ components:
         - stage
         - requestedBy
         - dryRun
-        - events
         - createdAt
         - updatedAt
       type: object

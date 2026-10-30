@@ -2849,7 +2849,7 @@ export interface components {
             dryRun: boolean;
             error?: string;
             /** @description What happened to the request and when, oldest first. Requests older than this history show an approximate one */
-            events: components["schemas"]["Event"][];
+            events?: components["schemas"]["Event"][];
             id: string;
             posterPath?: string;
             progress?: components["schemas"]["Progress"];

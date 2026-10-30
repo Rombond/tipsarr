@@ -101,7 +101,7 @@ type View struct {
 	Source           string           `json:"source,omitempty" doc:"Set when the request was imported from what Radarr/Sonarr already monitor"`
 	Progress         *Progress        `json:"progress,omitempty"`
 	SeasonProgress   []SeasonProgress `json:"seasonProgress,omitempty" doc:"Shows only: completion per season"`
-	Events           []Event          `json:"events" doc:"What happened to the request and when, oldest first. Requests older than this history show an approximate one"`
+	Events           []Event          `json:"events,omitempty" doc:"What happened to the request and when, oldest first. Requests older than this history show an approximate one"`
 	CreatedAt        int64            `json:"createdAt"`
 	UpdatedAt        int64            `json:"updatedAt"`
 }
