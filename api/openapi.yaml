@@ -4075,11 +4075,11 @@ paths:
       security:
         - session: []
         - bearer: []
-      summary: Whose watch history a person's recommendations also use (needs the manage-users right)
+      summary: Whose watch history a person's recommendations also use (admin only)
       tags:
         - admin
     put:
-      description: "Replaces the list. An empty list goes back to the person's own history. The sources must be Tipsarr users (import the shared account from Jellyfin first); a person cannot be their own source; at most 5. Only one level is followed: a source's own sources are not used. The person's recommendations are rebuilt in the background."
+      description: "Admins only, not even the manage-users right: it exposes what one account watched to another person. Replaces the list. An empty list goes back to the person's own history. The sources must be Tipsarr users (import the shared account from Jellyfin first); a person cannot be their own source; at most 5. Only one level is followed: a source's own sources are not used. The person's recommendations are rebuilt in the background."
       operationId: setHistorySources
       parameters:
         - in: path
@@ -4134,7 +4134,7 @@ paths:
       security:
         - session: []
         - bearer: []
-      summary: Set whose watch history a person's recommendations also use (needs the manage-users right)
+      summary: Set whose watch history a person's recommendations also use (admin only)
       tags:
         - admin
   /admin/users/{id}/teasers/history:

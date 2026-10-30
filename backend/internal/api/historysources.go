@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/danielgtaylor/huma/v2"
 )
 
@@ -56,12 +55,12 @@ func registerHistorySources(api huma.API, d Deps) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "adminHistorySources", Method: http.MethodGet, Path: "/admin/users/{id}/history-sources",
-		Summary: "Whose watch history a person's recommendations also use (needs the manage-users right)", Tags: []string{"admin"}, Security: sec,
+		Summary: "Whose watch history a person's recommendations also use (admin only)", Tags: []string{"admin"}, Security: sec,
 		Errors: append(adminErrs, http.StatusNotFound),
 	}, func(ctx context.Context, in *struct {
 		ID string `path:"id" maxLength:"64"`
 	}) (*struct{ Body historySourcesBody }, error) {
-		if _, err := requireCan(ctx, perms.ManageUsers); err != nil {
+		if _, err := requireAdmin(ctx); err != nil {
 			return nil, err
 		}
 		if _, err := d.Store.GetUser(ctx, in.ID); err != nil {
@@ -72,8 +71,8 @@ func registerHistorySources(api huma.API, d Deps) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "setHistorySources", Method: http.MethodPut, Path: "/admin/users/{id}/history-sources",
-		Summary:     "Set whose watch history a person's recommendations also use (needs the manage-users right)",
-		Description: "Replaces the list. An empty list goes back to the person's own history. The sources must be Tipsarr users (import the shared account from Jellyfin first); a person cannot be their own source; at most 5. Only one level is followed: a source's own sources are not used. The person's recommendations are rebuilt in the background.",
+		Summary:     "Set whose watch history a person's recommendations also use (admin only)",
+		Description: "Admins only, not even the manage-users right: it exposes what one account watched to another person. Replaces the list. An empty list goes back to the person's own history. The sources must be Tipsarr users (import the shared account from Jellyfin first); a person cannot be their own source; at most 5. Only one level is followed: a source's own sources are not used. The person's recommendations are rebuilt in the background.",
 		Tags:        []string{"admin"}, Security: sec,
 		Errors: append(adminErrs, http.StatusNotFound, http.StatusUnprocessableEntity),
 	}, func(ctx context.Context, in *struct {
@@ -82,7 +81,7 @@ func registerHistorySources(api huma.API, d Deps) {
 			Sources []string `json:"sources" maxItems:"5" doc:"Jellyfin user ids"`
 		}
 	}) (*struct{ Body historySourcesBody }, error) {
-		if _, err := requireCan(ctx, perms.ManageUsers); err != nil {
+		if _, err := requireAdmin(ctx); err != nil {
 			return nil, err
 		}
 		if _, err := d.Store.GetUser(ctx, in.ID); err != nil {

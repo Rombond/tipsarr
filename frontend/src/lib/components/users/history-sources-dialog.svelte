@@ -20,6 +20,7 @@
 	} = $props();
 
 	let chosen = $state<string[]>([]);
+	let loaded = $state(false); // the sources shown are the ones of this person, read from the server
 	let loading = $state(false);
 	let saving = $state(false);
 	let error = $state<string | null>(null);
@@ -30,10 +31,15 @@
 
 	async function load(id: string) {
 		loading = true;
+		loaded = false;
+		chosen = []; // never keep what another person's dialog showed
 		error = null;
 		try {
 			const r = await unwrap(api.GET('/admin/users/{id}/history-sources', { params: { path: { id } } }));
-			if (id === user.id) chosen = r.sources.map((s) => s.id);
+			if (id === user.id) {
+				chosen = r.sources.map((s) => s.id);
+				loaded = true;
+			}
 		} catch (e) {
 			error = errorText(e);
 		} finally {
@@ -78,14 +84,14 @@
 			<Dialog.Description>{t('users.sources_hint', { name: user.name })}</Dialog.Description>
 		</Dialog.Header>
 		<div class="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm" role="note">
-			<p>{chosen.length ? t('users.sources_warning', { name: user.name, sources: names }) : t('users.sources_warning_none')}</p>
+			<p>{chosen.length ? t('users.sources_warning', { name: user.name, sources: names }) : t('users.sources_warning_none', { name: user.name })}</p>
 		</div>
 		{#if error}<p class="text-sm text-destructive">{error}</p>{/if}
 		<div class="grid gap-1.5" aria-busy={loading}>
 			{#each others as u (u.id)}
 				{@const on = chosen.includes(u.id)}
 				<label class="flex cursor-pointer items-center gap-2 rounded-md border border-border p-2 text-sm {!on && chosen.length >= MAX ? 'cursor-not-allowed opacity-60' : ''}">
-					<input type="checkbox" checked={on} disabled={loading || (!on && chosen.length >= MAX)} onchange={(e) => toggle(u.id, e.currentTarget.checked)} />
+					<input type="checkbox" checked={on} disabled={loading || !loaded || (!on && chosen.length >= MAX)} onchange={(e) => toggle(u.id, e.currentTarget.checked)} />
 					{u.name}
 				</label>
 			{:else}
@@ -95,7 +101,7 @@
 		<p class="text-xs text-muted-foreground">{t('users.sources_import_hint', { max: MAX })}</p>
 		<Dialog.Footer>
 			<Button variant="outline" onclick={() => (open = false)}>{t('common.cancel')}</Button>
-			<Button disabled={saving || loading} onclick={save}>{saving ? t('common.saving') : t('common.save')}</Button>
+			<Button disabled={saving || loading || !loaded} onclick={save}>{saving ? t('common.saving') : t('common.save')}</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

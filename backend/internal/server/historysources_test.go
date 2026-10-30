@@ -59,6 +59,17 @@ func TestHistorySources(t *testing.T) {
 	if resp, _ := keyCall(t, e.app.URL, "PUT", path, `{"sources":["`+alice+`"]}`, key); resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("read-only key sets sources = %d, want 403", resp.StatusCode)
 	}
+	// the manage-users right is not enough: only an admin can lend one account's history to another person
+	if resp, body := call(t, e.app, "PATCH", "/api/v1/admin/users/"+bobID, `{"permissions":8}`, admin); resp.StatusCode != 200 {
+		t.Fatalf("give manage-users = %d %s", resp.StatusCode, body)
+	}
+	if resp, _ := call(t, e.app, "PUT", "/api/v1/admin/users/"+alice+"/history-sources", `{"sources":["`+bobID+`"]}`, bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("manage-users person sets sources = %d, want 403", resp.StatusCode)
+	}
+	if resp, _ := call(t, e.app, "GET", "/api/v1/admin/users/"+alice+"/history-sources", "", bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("manage-users person reads sources = %d, want 403", resp.StatusCode)
+	}
+	call(t, e.app, "PATCH", "/api/v1/admin/users/"+bobID, `{"permissions":0}`, admin)
 	if resp, _ := call(t, e.app, "PUT", path, `{"sources":["`+bobID+`"]}`, admin); resp.StatusCode != http.StatusUnprocessableEntity {
 		t.Fatalf("self source = %d, want 422", resp.StatusCode)
 	}

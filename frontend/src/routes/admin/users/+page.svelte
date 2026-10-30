@@ -125,7 +125,7 @@
 				/>
 				<Button variant="outline" size="sm" disabled={!flags.length} onclick={() => { editing = u; editOpen = true; }}>{t('users.permissions')}</Button>
 				<Button variant="outline" size="sm" onclick={() => { historyUser = u; historyOpen = true; }}>{t('users.teasers_history')}</Button>
-				<Button variant="outline" size="sm" onclick={() => { sourcesUser = u; sourcesOpen = true; }}>{t('users.sources')}</Button>
+				{#if auth.isAdmin}<Button variant="outline" size="sm" onclick={() => { sourcesUser = u; sourcesOpen = true; }}>{t('users.sources')}</Button>{/if}
 			</div>
 		{/each}
 	</div>

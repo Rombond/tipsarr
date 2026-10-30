@@ -295,11 +295,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Whose watch history a person's recommendations also use (needs the manage-users right) */
+        /** Whose watch history a person's recommendations also use (admin only) */
         get: operations["adminHistorySources"];
         /**
-         * Set whose watch history a person's recommendations also use (needs the manage-users right)
-         * @description Replaces the list. An empty list goes back to the person's own history. The sources must be Tipsarr users (import the shared account from Jellyfin first); a person cannot be their own source; at most 5. Only one level is followed: a source's own sources are not used. The person's recommendations are rebuilt in the background.
+         * Set whose watch history a person's recommendations also use (admin only)
+         * @description Admins only, not even the manage-users right: it exposes what one account watched to another person. Replaces the list. An empty list goes back to the person's own history. The sources must be Tipsarr users (import the shared account from Jellyfin first); a person cannot be their own source; at most 5. Only one level is followed: a source's own sources are not used. The person's recommendations are rebuilt in the background.
          */
         put: operations["setHistorySources"];
         post?: never;

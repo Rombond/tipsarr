@@ -168,7 +168,11 @@ func (s *Service) Get(ctx context.Context, u *store.User) (*Result, error) {
 	res := &Result{Rows: []Row{}}
 	sc, err := s.scopeOf(ctx, u.ID)
 	if err != nil {
-		return nil, err
+		// Discover must keep working as it did before sources existed: read the person's own history, ignoring errors
+		slog.Warn("suggestions: history scope", "user", u.ID, "err", err)
+		sc = historyScope{ids: []string{u.ID}}
+		sc.version, _ = s.store.HistoryVersion(ctx, u.ID)
+		sc.hasHistory, _ = s.store.HasHistory(ctx, u.ID)
 	}
 	if stale(rows[0:1], sc.version, sc.hasHistory) {
 		res.Generating = true
