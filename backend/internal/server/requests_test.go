@@ -278,6 +278,15 @@ func TestRequestFlowDryRun(t *testing.T) {
 	if d := decodeReq(t, body); resp.StatusCode != 200 || d.Status != "declined" {
 		t.Fatalf("decline = %d %s", resp.StatusCode, body)
 	}
+	// dry-run approve records "approved" but no "searching" (nothing was sent); decline keeps its reason
+	_, body = call(t, e.app, "GET", "/api/v1/requests/"+tv.ID, "", admin)
+	if !strings.Contains(body, `"events":[{"kind":"requested"`) || !strings.Contains(body, `"kind":"declined"`) || !strings.Contains(body, `"note":"too big"`) {
+		t.Fatalf("declined history = %s", body)
+	}
+	_, body = call(t, e.app, "GET", "/api/v1/requests/"+v.ID, "", admin)
+	if strings.Contains(body, `"kind":"searching"`) || !strings.Contains(body, `"kind":"approved"`) {
+		t.Fatalf("dry-run history = %s", body)
+	}
 
 	// visibility: bob sees only his own; alice sees all; counts follow
 	_, body = call(t, e.app, "GET", "/api/v1/requests", "", bob)
@@ -366,6 +375,40 @@ func TestRequestFlowLive(t *testing.T) {
 	}
 	if n, _ := e.reqs.Poll(ctx); n != 0 {
 		t.Fatalf("finished request still polled: %d", n)
+	}
+
+	// the history has every step in order, who did it, and the error only for admins
+	kinds := func(b string) string {
+		var out struct {
+			Events []struct {
+				Kind string                 `json:"kind"`
+				By   *struct{ Name string } `json:"by"`
+				Note string                 `json:"note"`
+			} `json:"events"`
+		}
+		if err := json.Unmarshal([]byte(b), &out); err != nil {
+			t.Fatal(err)
+		}
+		var parts []string
+		for _, ev := range out.Events {
+			s := ev.Kind
+			if ev.By != nil {
+				s += "@" + ev.By.Name
+			}
+			if ev.Note != "" {
+				s += "(" + ev.Note + ")"
+			}
+			parts = append(parts, s)
+		}
+		return strings.Join(parts, " ")
+	}
+	_, adminView := call(t, e.app, "GET", "/api/v1/requests/"+v.ID, "", admin)
+	if got := kinds(adminView); !strings.HasPrefix(got, "requested@bob failed@alice(") || !strings.HasSuffix(got, ") approved@alice searching downloading available") {
+		t.Fatalf("admin history = %q", got)
+	}
+	_, bobView := call(t, e.app, "GET", "/api/v1/requests/"+v.ID, "", bob)
+	if got := kinds(bobView); got != "requested@bob failed@alice approved@alice searching downloading available" {
+		t.Fatalf("bob history = %q", got)
 	}
 
 	// TV: only the requested seasons are monitored

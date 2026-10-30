@@ -1745,6 +1745,19 @@ export interface components {
              */
             type: string;
         };
+        Event: {
+            /**
+             * Format: int64
+             * @description Unix time of the step
+             */
+            at: number;
+            /** @description Who did it; absent when the server did */
+            by?: components["schemas"]["UserRef"];
+            /** @enum {string} */
+            kind: "requested" | "approved" | "searching" | "downloading" | "available" | "declined" | "failed";
+            /** @description The decline reason, or the error of a failed step (admins only) */
+            note?: string;
+        };
         Feed: {
             /** @description True when there is nothing new left to show. No items and not done: trailers are still being prepared, ask again in a few seconds */
             done: boolean;
@@ -2835,6 +2848,8 @@ export interface components {
             /** @description Approved in dry-run mode: nothing was sent to Radarr/Sonarr */
             dryRun: boolean;
             error?: string;
+            /** @description What happened to the request and when, oldest first. Requests older than this history show an approximate one */
+            events: components["schemas"]["Event"][];
             id: string;
             posterPath?: string;
             progress?: components["schemas"]["Progress"];

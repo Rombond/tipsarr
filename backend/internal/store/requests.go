@@ -142,6 +142,9 @@ func (s *Store) DeleteRequest(ctx context.Context, id string) error {
 		if _, err := tx.NewDelete().Model((*RequestSeason)(nil)).Where("request_id = ?", id).Exec(ctx); err != nil {
 			return err
 		}
+		if _, err := tx.NewDelete().Model((*RequestEvent)(nil)).Where("request_id = ?", id).Exec(ctx); err != nil {
+			return err
+		}
 		_, err := tx.NewDelete().Model((*Request)(nil)).Where("id = ?", id).Exec(ctx)
 		return err
 	})

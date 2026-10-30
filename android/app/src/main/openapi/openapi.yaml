@@ -612,6 +612,33 @@ components:
           format: uri
           type: string
       type: object
+    Event:
+      additionalProperties: false
+      properties:
+        at:
+          description: Unix time of the step
+          format: int64
+          type: integer
+        by:
+          $ref: "#/components/schemas/UserRef"
+          description: Who did it; absent when the server did
+        kind:
+          enum:
+            - requested
+            - approved
+            - searching
+            - downloading
+            - available
+            - declined
+            - failed
+          type: string
+        note:
+          description: The decline reason, or the error of a failed step (admins only)
+          type: string
+      required:
+        - kind
+        - at
+      type: object
     Feed:
       additionalProperties: false
       properties:
@@ -2882,6 +2909,11 @@ components:
           type: boolean
         error:
           type: string
+        events:
+          description: What happened to the request and when, oldest first. Requests older than this history show an approximate one
+          items:
+            $ref: "#/components/schemas/Event"
+          type: array
         id:
           type: string
         posterPath:
@@ -2953,6 +2985,7 @@ components:
         - stage
         - requestedBy
         - dryRun
+        - events
         - createdAt
         - updatedAt
       type: object

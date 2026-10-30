@@ -89,6 +89,7 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 			if uerr := s.store.UpdateRequest(ctx, r); uerr != nil {
 				return uerr
 			}
+			s.record(ctx, r.ID, "failed", "", r.Error)
 			s.changed(ctx, r)
 			s.notify.Dispatch(notify.RequestFailed, s.payload(ctx, r))
 			s.notify.Push(notify.PushEvent{Name: "request.failed", ID: r.ID, Subject: r.Title, Users: []string{r.RequestedBy}})
@@ -105,6 +106,7 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 		if err := s.store.UpdateRequest(ctx, r); err != nil {
 			return err
 		}
+		s.record(ctx, r.ID, "available", "", "")
 		s.changed(ctx, r)
 		s.hub.Publish("media.available", r.RequestedBy, map[string]any{"type": r.MediaType, "tmdbId": r.TMDBID}, false)
 		// The webhook and the push wait in SendDueAlerts until the library shows the title.
@@ -138,6 +140,10 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 	if downloading && (!had || prev != cur) {
 		s.hub.Publish("request.progress", r.RequestedBy, map[string]any{"id": r.ID, "percent": cur.Percent, "etaSeconds": cur.ETASeconds}, false)
 		if !had {
+			// the first time only: after a restart the progress is forgotten and the transfer looks new again
+			if seen, err := s.store.HasRequestEvent(ctx, r.ID, "downloading"); err == nil && !seen {
+				s.record(ctx, r.ID, "downloading", "", "")
+			}
 			s.changed(ctx, r) // searching -> downloading
 		}
 	} else if !downloading && had {

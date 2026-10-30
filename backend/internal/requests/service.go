@@ -101,8 +101,17 @@ type View struct {
 	Source           string           `json:"source,omitempty" doc:"Set when the request was imported from what Radarr/Sonarr already monitor"`
 	Progress         *Progress        `json:"progress,omitempty"`
 	SeasonProgress   []SeasonProgress `json:"seasonProgress,omitempty" doc:"Shows only: completion per season"`
+	Events           []Event          `json:"events" doc:"What happened to the request and when, oldest first. Requests older than this history show an approximate one"`
 	CreatedAt        int64            `json:"createdAt"`
 	UpdatedAt        int64            `json:"updatedAt"`
+}
+
+// Event is one step in the history of a request.
+type Event struct {
+	Kind string   `json:"kind" enum:"requested,approved,searching,downloading,available,declined,failed"`
+	At   int64    `json:"at" doc:"Unix time of the step"`
+	By   *UserRef `json:"by,omitempty" doc:"Who did it; absent when the server did"`
+	Note string   `json:"note,omitempty" doc:"The decline reason, or the error of a failed step (admins only)"`
 }
 
 func (s *Service) stage(r *store.Request) (string, *Progress) {
@@ -132,6 +141,17 @@ func (s *Service) views(ctx context.Context, rows []store.Request) ([]View, erro
 		people[r.RequestedBy] = true
 		if r.DecidedBy != "" {
 			people[r.DecidedBy] = true
+		}
+	}
+	history, err := s.store.RequestEvents(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	for _, evs := range history {
+		for _, e := range evs {
+			if e.ActorID != "" {
+				people[e.ActorID] = true
+			}
 		}
 	}
 	pl := make([]string, 0, len(people))
@@ -166,9 +186,49 @@ func (s *Service) views(ctx context.Context, rows []store.Request) ([]View, erro
 		if r.DecidedBy != "" {
 			v.DecidedBy = &UserRef{ID: r.DecidedBy, Name: names[r.DecidedBy]}
 		}
+		v.Events = []Event{}
+		for _, e := range history[r.ID] {
+			ev := Event{Kind: e.Kind, At: e.At, Note: e.Note}
+			if e.ActorID != "" {
+				ev.By = &UserRef{ID: e.ActorID, Name: names[e.ActorID]}
+			}
+			v.Events = append(v.Events, ev)
+		}
+		if len(v.Events) == 0 {
+			v.Events = approximateEvents(r, stage, v.RequestedBy, v.DecidedBy)
+		}
 		out = append(out, v)
 	}
 	return out, nil
+}
+
+// approximateEvents is the history of a request made before steps were recorded: when it was asked, and the step it
+// is at now (dated by its last change).
+func approximateEvents(r *store.Request, stage string, requestedBy UserRef, decidedBy *UserRef) []Event {
+	first := Event{Kind: "requested", At: r.CreatedAt}
+	if r.RequestedBy != "" {
+		first.By = &requestedBy
+	}
+	out := []Event{first}
+	if stage == "requested" {
+		return out
+	}
+	at := r.UpdatedAt
+	if stage == "available" && r.AvailableAt > 0 {
+		at = r.AvailableAt
+	}
+	cur := Event{Kind: stage, At: at}
+	if stage == "approved" || stage == "declined" || stage == "failed" {
+		cur.By = decidedBy
+	}
+	return append(out, cur)
+}
+
+// record writes a step of a request's history. It never fails the change it describes.
+func (s *Service) record(ctx context.Context, id, kind, actor, note string) {
+	if err := s.store.AddRequestEvent(ctx, id, kind, actor, truncate(note, 500)); err != nil {
+		slog.Warn("request history", "id", id, "kind", kind, "err", err)
+	}
 }
 
 func (s *Service) view(ctx context.Context, r *store.Request) (*View, error) {
@@ -239,8 +299,16 @@ func (s *Service) Get(ctx context.Context, u *store.User, id string) (*View, err
 // redact hides technical failure details (internal URLs, upstream response bodies) from
 // everyone but admins; webhooks pass a nil user and never carry them either.
 func redact(v *View, u *store.User) {
-	if v.Error != "" && (u == nil || !u.Can(perms.ManageRequests)) {
+	if u != nil && u.Can(perms.ManageRequests) {
+		return
+	}
+	if v.Error != "" {
 		v.Error = "Sending to the download manager failed; an admin can see the details."
+	}
+	for i := range v.Events { // a failed step keeps its error for admins only, even after a retry cleared v.Error
+		if v.Events[i].Kind == "failed" {
+			v.Events[i].Note = ""
+		}
 	}
 }
 
@@ -370,6 +438,7 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 	if err := s.store.CreateRequest(ctx, r, seasons); err != nil {
 		return nil, err
 	}
+	s.record(ctx, r.ID, "requested", u.ID, "")
 	s.changed(ctx, r)
 	s.notify.Dispatch(notify.RequestCreated, s.payload(ctx, r))
 	s.notify.Push(notify.PushEvent{Name: "request.created", ID: r.ID, Subject: r.Title, Admins: true, Needs: int64(perms.ManageRequests), Skip: u.ID})
@@ -477,6 +546,14 @@ func (s *Service) approve(ctx context.Context, by *store.User, id string, ov *Ov
 	if err := s.store.UpdateRequest(ctx, r); err != nil {
 		return nil, err
 	}
+	if r.Status == store.StatusFailed {
+		s.record(ctx, r.ID, "failed", by.ID, r.Error)
+	} else {
+		s.record(ctx, r.ID, "approved", by.ID, "")
+		if r.SentAt > 0 {
+			s.record(ctx, r.ID, "searching", "", "")
+		}
+	}
 	s.changed(ctx, r)
 	if r.Status == store.StatusFailed {
 		s.notify.Dispatch(notify.RequestFailed, s.payload(ctx, r))
@@ -550,6 +627,7 @@ func (s *Service) Decline(ctx context.Context, by *store.User, id, reason string
 	if err := s.store.UpdateRequest(ctx, r); err != nil {
 		return nil, err
 	}
+	s.record(ctx, r.ID, "declined", by.ID, r.DeclineReason)
 	s.changed(ctx, r)
 	s.notify.Dispatch(notify.RequestDeclined, s.payload(ctx, r))
 	s.notify.Push(notify.PushEvent{Name: "request.declined", ID: r.ID, Subject: r.Title, Users: []string{r.RequestedBy}, Skip: by.ID})

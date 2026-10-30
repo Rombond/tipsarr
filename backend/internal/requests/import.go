@@ -124,6 +124,8 @@ func (s *Service) importCandidates(ctx context.Context, inst *store.ServarrInsta
 		if err := s.store.CreateRequest(ctx, r, c.seasons); err != nil {
 			return imported, looked, err
 		}
+		s.record(ctx, r.ID, "approved", "", "")
+		s.record(ctx, r.ID, "searching", "", "")
 		s.changed(ctx, r)
 		imported++
 	}
