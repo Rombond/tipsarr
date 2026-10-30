@@ -2137,7 +2137,10 @@ components:
           description: Secrets are write-only; this only says whether a key is saved
           type: boolean
         webhookPath:
-          description: Path (with secret token) for the Jellyfin webhook plugin to call
+          description: "Path (with the secret token in the query) for the Jellyfin webhook plugin to call. Kept for older set-ups: prefer the plain path /api/v1/hooks/jellyfin with the secret in the X-Tipsarr-Token header"
+          type: string
+        webhookToken:
+          description: The Jellyfin webhook secret, to send in the X-Tipsarr-Token header
           type: string
       required:
         - jellyfinUrl
@@ -2146,6 +2149,7 @@ components:
         - jellyfinApiKeyConfigured
         - boxofficeRegions
         - webhookPath
+        - webhookToken
         - dryRun
         - oidcIssuer
         - oidcClientId
@@ -5203,14 +5207,21 @@ paths:
         - system
   /hooks/jellyfin:
     post:
-      description: Configure the Jellyfin Webhook plugin with a Generic destination pointing here and a template like {"NotificationType":"{{NotificationType}}","UserId":"{{UserId}}","ItemType":"{{ItemType}}"}. Library events refresh the library; everything else refreshes that user's watch history (debounced).
+      description: Send the secret in the X-Tipsarr-Token header (the Webhook plugin's Generic destination can add request headers); the token query parameter still works. Configure the Jellyfin Webhook plugin with a Generic destination pointing here and a template like {"NotificationType":"{{NotificationType}}","UserId":"{{UserId}}","ItemType":"{{ItemType}}"}. Library events refresh the library; everything else refreshes that user's watch history (debounced).
       operationId: jellyfinWebhook
       parameters:
-        - explode: false
+        - description: "The shared secret (preferred: a header does not end up in proxy and access logs)"
+          in: header
+          name: X-Tipsarr-Token
+          schema:
+            description: "The shared secret (preferred: a header does not end up in proxy and access logs)"
+            type: string
+        - description: "The same secret in the address: still accepted so existing set-ups keep working, but addresses are logged"
+          explode: false
           in: query
           name: token
-          required: true
           schema:
+            description: "The same secret in the address: still accepted so existing set-ups keep working, but addresses are logged"
             type: string
       requestBody:
         content:

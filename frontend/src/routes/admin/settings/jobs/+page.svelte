@@ -36,7 +36,7 @@
 	const every = (s: number) => (s >= 3600 ? t('settings.job_every', { hours: Math.round(s / 3600) }) : t('settings.job_every_min', { minutes: Math.max(1, Math.round(s / 60)) }));
 	const when = (unix: number) => (unix ? fmtDateTime(unix) : t('common.never'));
 	const statusLabel = (s: string) => (hasKey(`job.${s}`) ? t(`job.${s}` as 'job.ok') : s);
-	const webhookUrl = $derived(settings ? `${location.origin}${settings.webhookPath}` : '');
+	const webhookUrl = $derived(settings ? `${location.origin}${settings.webhookPath.split('?')[0]}` : '');
 </script>
 
 {#if sync}
@@ -106,6 +106,7 @@
 		</CardHeader>
 		<CardContent class="grid gap-2 text-xs">
 			<code class="break-all rounded bg-muted p-2">{webhookUrl}</code>
+			<code class="break-all rounded bg-muted p-2">X-Tipsarr-Token: {settings.webhookToken}</code>
 			<code class="break-all rounded bg-muted p-2">
 				{'{"NotificationType":"{{NotificationType}}","UserId":"{{UserId}}","ItemType":"{{ItemType}}"}'}
 			</code>

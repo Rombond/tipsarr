@@ -20,8 +20,9 @@ type syncStatusBody struct {
 }
 
 type webhookInput struct {
-	Token string `query:"token" required:"true"`
-	Body  struct {
+	Header string `header:"X-Tipsarr-Token" doc:"The shared secret (preferred: a header does not end up in proxy and access logs)"`
+	Token  string `query:"token" doc:"The same secret in the address: still accepted so existing set-ups keep working, but addresses are logged"`
+	Body   struct {
 		NotificationType string `json:"NotificationType,omitempty" doc:"Jellyfin webhook plugin event, e.g. PlaybackStop or ItemAdded"`
 		UserID           string `json:"UserId,omitempty"`
 		ItemType         string `json:"ItemType,omitempty"`
@@ -77,7 +78,7 @@ func registerSync(api huma.API, d Deps) {
 	huma.Register(api, huma.Operation{
 		OperationID: "jellyfinWebhook", Method: http.MethodPost, Path: "/hooks/jellyfin",
 		Summary:     "Receives Jellyfin webhook events (shared-secret token)",
-		Description: "Configure the Jellyfin Webhook plugin with a Generic destination pointing here and a template like {\"NotificationType\":\"{{NotificationType}}\",\"UserId\":\"{{UserId}}\",\"ItemType\":\"{{ItemType}}\"}. Library events refresh the library; everything else refreshes that user's watch history (debounced).",
+		Description: "Send the secret in the X-Tipsarr-Token header (the Webhook plugin's Generic destination can add request headers); the token query parameter still works. Configure the Jellyfin Webhook plugin with a Generic destination pointing here and a template like {\"NotificationType\":\"{{NotificationType}}\",\"UserId\":\"{{UserId}}\",\"ItemType\":\"{{ItemType}}\"}. Library events refresh the library; everything else refreshes that user's watch history (debounced).",
 		Tags:        []string{"hooks"}, DefaultStatus: http.StatusNoContent,
 		Errors: []int{http.StatusUnauthorized},
 	}, func(ctx context.Context, in *webhookInput) (*struct{}, error) {
@@ -85,7 +86,11 @@ func registerSync(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
-		if subtle.ConstantTimeCompare([]byte(in.Token), []byte(secret)) != 1 {
+		given := in.Header
+		if given == "" {
+			given = in.Token
+		}
+		if subtle.ConstantTimeCompare([]byte(given), []byte(secret)) != 1 {
 			return nil, fail(401, "invalid_token", "invalid token")
 		}
 		switch in.Body.NotificationType {

@@ -665,7 +665,7 @@ export interface paths {
         put?: never;
         /**
          * Receives Jellyfin webhook events (shared-secret token)
-         * @description Configure the Jellyfin Webhook plugin with a Generic destination pointing here and a template like {"NotificationType":"{{NotificationType}}","UserId":"{{UserId}}","ItemType":"{{ItemType}}"}. Library events refresh the library; everything else refreshes that user's watch history (debounced).
+         * @description Send the secret in the X-Tipsarr-Token header (the Webhook plugin's Generic destination can add request headers); the token query parameter still works. Configure the Jellyfin Webhook plugin with a Generic destination pointing here and a template like {"NotificationType":"{{NotificationType}}","UserId":"{{UserId}}","ItemType":"{{ItemType}}"}. Library events refresh the library; everything else refreshes that user's watch history (debounced).
          */
         post: operations["jellyfinWebhook"];
         delete?: never;
@@ -2477,8 +2477,10 @@ export interface components {
             teasersFilesUrl: string;
             /** @description Secrets are write-only; this only says whether a key is saved */
             tmdbConfigured: boolean;
-            /** @description Path (with secret token) for the Jellyfin webhook plugin to call */
+            /** @description Path (with the secret token in the query) for the Jellyfin webhook plugin to call. Kept for older set-ups: prefer the plain path /api/v1/hooks/jellyfin with the secret in the X-Tipsarr-Token header */
             webhookPath: string;
+            /** @description The Jellyfin webhook secret, to send in the X-Tipsarr-Token header */
+            webhookToken: string;
         };
         SetupInputBody: {
             /**
@@ -5559,10 +5561,14 @@ export interface operations {
     };
     jellyfinWebhook: {
         parameters: {
-            query: {
-                token: string;
+            query?: {
+                /** @description The same secret in the address: still accepted so existing set-ups keep working, but addresses are logged */
+                token?: string;
             };
-            header?: never;
+            header?: {
+                /** @description The shared secret (preferred: a header does not end up in proxy and access logs) */
+                "X-Tipsarr-Token"?: string;
+            };
             path?: never;
             cookie?: never;
         };
