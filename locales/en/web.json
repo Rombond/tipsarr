@@ -835,5 +835,13 @@
   "req.history": "History",
   "req.history.requested": "Requested",
   "req.history.by": "by {name}",
-  "req.history.approximate": "≈ Approximate dates: this request is older than the history, so its steps are dated by the last change."
+  "req.history.approximate": "≈ Approximate dates: this request is older than the history, so its steps are dated by the last change.",
+  "users.sources": "Recommendations",
+  "users.sources_title": "Recommendations of {name}",
+  "users.sources_hint": "Use the watch history of other accounts, besides {name}’s own, to build the recommendations on Discover. Useful when the family watches on one shared account.",
+  "users.sources_warning": "{name} will see titles from the history of {sources} in the “Because you watched…” rows, and titles those accounts already watched are hidden from {name}’s recommendations. Only their watch history is used, never their blocklist.",
+  "users.sources_warning_none": "No other account is used: {name}’s recommendations come from their own history. If you choose an account, {name} will see titles from its history in the “Because you watched…” rows.",
+  "users.sources_none": "There is no other user yet.",
+  "users.sources_import_hint": "Only Tipsarr users can be chosen: use “Import from Jellyfin” first for an account that never signed in (a shared TV account). Up to {max} accounts.",
+  "profile.history_sources": "Your recommendations also use the watch history of {sources} (set by an admin). That is why Discover can show titles you have not watched yourself."
 }

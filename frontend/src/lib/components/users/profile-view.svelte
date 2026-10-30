@@ -22,6 +22,8 @@
 	let profile = $state<Schemas['ProfileView'] | null>(null);
 	let recent = $state<Schemas['View'][]>([]);
 	let watchlist = $state<Schemas['Item'][]>([]);
+	// whose history my recommendations also use (set by an admin); a failure here is not worth an error screen
+	let borrowed = $state<string[]>([]);
 	let error = $state<string | null>(null);
 	let loading = $state(true);
 	let tab = $state<'overview' | 'settings'>('overview');
@@ -34,11 +36,13 @@
 			unwrap(api.GET('/users/{id}', { params: { path: { id } } })),
 			unwrap(api.GET('/requests', { params: { query: { take: 6, ...(self ? { filter: 'mine' as const } : { user: id }) } } })),
 			self ? unwrap(api.GET('/watchlist')) : Promise.resolve([] as Schemas['Item'][]),
+			self ? unwrap(api.GET('/me/history-sources')).catch(() => ({ sources: [] as Schemas['HistorySource'][] })) : Promise.resolve({ sources: [] as Schemas['HistorySource'][] }),
 		])
-			.then(([p, r, w]) => {
+			.then(([p, r, w, h]) => {
 				profile = p;
 				recent = r.items;
 				watchlist = w;
+				borrowed = h.sources.map((s) => s.name || t('req.unknown_user'));
 			})
 			.catch((e) => (error = errorText(e)))
 			.finally(() => (loading = false));
@@ -130,6 +134,10 @@
 				<a class="ml-auto text-sm underline" href="/admin/users">{t('profile.manage_user')}</a>
 			{/if}
 		</header>
+
+		{#if self && borrowed.length}
+			<p class="text-sm text-muted-foreground">{t('profile.history_sources', { sources: borrowed.join(', ') })}</p>
+		{/if}
 
 		{#if self}
 			<div class="flex gap-1" role="tablist" aria-label={t('profile.title')}>

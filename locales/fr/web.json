@@ -835,5 +835,13 @@
   "req.history": "Historique",
   "req.history.requested": "Demandé",
   "req.history.by": "par {name}",
-  "req.history.approximate": "≈ Dates approximatives : cette demande est antérieure à l’historique, ses étapes sont datées par le dernier changement."
+  "req.history.approximate": "≈ Dates approximatives : cette demande est antérieure à l’historique, ses étapes sont datées par le dernier changement.",
+  "users.sources": "Recommandations",
+  "users.sources_title": "Recommandations de {name}",
+  "users.sources_hint": "Utiliser l’historique de visionnage d’autres comptes, en plus de celui de {name}, pour construire les recommandations de Découvrir. Utile quand la famille regarde sur un compte partagé.",
+  "users.sources_warning": "{name} verra des titres de l’historique de {sources} dans les rangées « Parce que vous avez regardé… », et les titres déjà vus par ces comptes seront masqués dans les recommandations de {name}. Seul leur historique de visionnage est utilisé, jamais leur liste de blocage.",
+  "users.sources_warning_none": "Aucun autre compte n’est utilisé : les recommandations de {name} viennent de son propre historique. Si vous choisissez un compte, {name} verra des titres de son historique dans les rangées « Parce que vous avez regardé… ».",
+  "users.sources_none": "Il n’y a pas encore d’autre utilisateur.",
+  "users.sources_import_hint": "Seuls les utilisateurs de Tipsarr peuvent être choisis : utilisez d’abord « Importer depuis Jellyfin » pour un compte qui ne s’est jamais connecté (un compte TV partagé). Jusqu’à {max} comptes.",
+  "profile.history_sources": "Vos recommandations utilisent aussi l’historique de visionnage de {sources} (réglé par un administrateur). C’est pourquoi Découvrir peut montrer des titres que vous n’avez pas vus vous-même."
 }

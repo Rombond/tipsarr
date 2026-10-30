@@ -828,6 +828,28 @@ components:
         - voteAverage
         - availability
       type: object
+    HistorySource:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
+      type: object
+    HistorySourcesBody:
+      additionalProperties: false
+      properties:
+        sources:
+          description: Accounts whose watch history this person's recommendations also use, with their own. Titles they watched are hidden from the recommendations too
+          items:
+            $ref: "#/components/schemas/HistorySource"
+          type: array
+      required:
+        - sources
+      type: object
     ImportUsersResponse:
       additionalProperties: false
       properties:
@@ -2058,6 +2080,18 @@ components:
       required:
         - title
         - tmdbId
+      type: object
+    SetHistorySourcesRequest:
+      additionalProperties: false
+      properties:
+        sources:
+          description: Jellyfin user ids
+          items:
+            type: string
+          maxItems: 5
+          type: array
+      required:
+        - sources
       type: object
     SettingsBody:
       additionalProperties: false
@@ -3989,6 +4023,118 @@ paths:
         - session: []
         - bearer: []
       summary: Change a user's role, region, language, permissions or quotas (needs the manage-users right; roles are for admins)
+      tags:
+        - admin
+  /admin/users/{id}/history-sources:
+    get:
+      operationId: adminHistorySources
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            maxLength: 64
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistorySourcesBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: Whose watch history a person's recommendations also use (needs the manage-users right)
+      tags:
+        - admin
+    put:
+      description: "Replaces the list. An empty list goes back to the person's own history. The sources must be Tipsarr users (import the shared account from Jellyfin first); a person cannot be their own source; at most 5. Only one level is followed: a source's own sources are not used. The person's recommendations are rebuilt in the background."
+      operationId: setHistorySources
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            maxLength: 64
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetHistorySourcesRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistorySourcesBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: Set whose watch history a person's recommendations also use (needs the manage-users right)
       tags:
         - admin
   /admin/users/{id}/teasers/history:
@@ -6011,6 +6157,35 @@ paths:
       summary: Register or refresh this app's push token
       tags:
         - push
+  /me/history-sources:
+    get:
+      description: "Set by an admin (a shared TV account, say). Read-only here: it explains why titles that someone else watched appear in Discover."
+      operationId: myHistorySources
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistorySourcesBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: Whose watch history your recommendations also use
+      tags:
+        - me
   /me/quota:
     get:
       description: Movies count one per request, shows one per season, over the last N days. Admins and people who manage requests have no limit.

@@ -589,6 +589,7 @@
     <string name="profile_devices_title">Signed-in devices</string>
     <string name="profile_hidden_desc">Titles you marked “not interested”.</string>
     <string name="profile_hidden_title">Hidden from my suggestions</string>
+    <string name="profile_history_sources">Your recommendations also use the watch history of %1$s (set by an admin). That is why Discover can show titles you have not watched yourself.</string>
     <string name="profile_language">Language</string>
     <string name="profile_last_seen">last seen %1$s</string>
     <string name="profile_manage_user">Manage users</string>
@@ -884,6 +885,13 @@
     <string name="users_role">Role</string>
     <string name="users_role_admin">admin</string>
     <string name="users_role_user">user</string>
+    <string name="users_sources">Recommendations</string>
+    <string name="users_sources_hint">Use the watch history of other accounts, besides %1$s’s own, to build the recommendations on Discover. Useful when the family watches on one shared account.</string>
+    <string name="users_sources_import_hint">Only Tipsarr users can be chosen: use “Import from Jellyfin” first for an account that never signed in (a shared TV account). Up to %1$s accounts.</string>
+    <string name="users_sources_none">There is no other user yet.</string>
+    <string name="users_sources_title">Recommendations of %1$s</string>
+    <string name="users_sources_warning">%1$s will see titles from the history of %2$s in the “Because you watched…” rows, and titles those accounts already watched are hidden from %1$s’s recommendations. Only their watch history is used, never their blocklist.</string>
+    <string name="users_sources_warning_none">No other account is used: %1$s’s recommendations come from their own history. If you choose an account, %1$s will see titles from its history in the “Because you watched…” rows.</string>
     <string name="users_teasers_history">Teasers history</string>
     <string name="users_teasers_history_confirm_all">Wipe the whole Teasers history of %1$s? Every title can show up in their feed again.</string>
     <string name="users_teasers_history_empty">Nothing here yet.</string>

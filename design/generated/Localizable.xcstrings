@@ -9437,6 +9437,23 @@
         }
       }
     },
+    "profile.history_sources": {
+      "comment": "placeholders: sources",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your recommendations also use the watch history of %@ (set by an admin). That is why Discover can show titles you have not watched yourself."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vos recommandations utilisent aussi l’historique de visionnage de %@ (réglé par un administrateur). C’est pourquoi Découvrir peut montrer des titres que vous n’avez pas vus vous-même."
+          }
+        }
+      }
+    },
     "profile.language": {
       "localizations": {
         "en": {
@@ -14224,6 +14241,123 @@
           "stringUnit": {
             "state": "translated",
             "value": "utilisateur"
+          }
+        }
+      }
+    },
+    "users.sources": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommendations"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommandations"
+          }
+        }
+      }
+    },
+    "users.sources_hint": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the watch history of other accounts, besides %@’s own, to build the recommendations on Discover. Useful when the family watches on one shared account."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utiliser l’historique de visionnage d’autres comptes, en plus de celui de %@, pour construire les recommandations de Découvrir. Utile quand la famille regarde sur un compte partagé."
+          }
+        }
+      }
+    },
+    "users.sources_import_hint": {
+      "comment": "placeholders: max",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only Tipsarr users can be chosen: use “Import from Jellyfin” first for an account that never signed in (a shared TV account). Up to %@ accounts."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seuls les utilisateurs de Tipsarr peuvent être choisis : utilisez d’abord « Importer depuis Jellyfin » pour un compte qui ne s’est jamais connecté (un compte TV partagé). Jusqu’à %@ comptes."
+          }
+        }
+      }
+    },
+    "users.sources_none": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There is no other user yet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il n’y a pas encore d’autre utilisateur."
+          }
+        }
+      }
+    },
+    "users.sources_title": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommendations of %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommandations de %@"
+          }
+        }
+      }
+    },
+    "users.sources_warning": {
+      "comment": "placeholders: name, sources, name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ will see titles from the history of %2$@ in the “Because you watched…” rows, and titles those accounts already watched are hidden from %1$@’s recommendations. Only their watch history is used, never their blocklist."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ verra des titres de l’historique de %2$@ dans les rangées « Parce que vous avez regardé… », et les titres déjà vus par ces comptes seront masqués dans les recommandations de %1$@. Seul leur historique de visionnage est utilisé, jamais leur liste de blocage."
+          }
+        }
+      }
+    },
+    "users.sources_warning_none": {
+      "comment": "placeholders: name, name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No other account is used: %1$@’s recommendations come from their own history. If you choose an account, %1$@ will see titles from its history in the “Because you watched…” rows."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun autre compte n’est utilisé : les recommandations de %1$@ viennent de son propre historique. Si vous choisissez un compte, %1$@ verra des titres de son historique dans les rangées « Parce que vous avez regardé… »."
           }
         }
       }

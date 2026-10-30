@@ -12,6 +12,7 @@
 	import UserAvatar from '$lib/components/users/user-avatar.svelte';
 	import UserAccessDialog from '$lib/components/users/user-access-dialog.svelte';
 	import TeaserHistoryDialog from '$lib/components/users/teaser-history-dialog.svelte';
+	import HistorySourcesDialog from '$lib/components/users/history-sources-dialog.svelte';
 	import PermissionDefaults from '$lib/components/users/permission-defaults.svelte';
 	import type { Flag } from '$lib/permissions';
 
@@ -25,6 +26,8 @@
 	let editOpen = $state(false);
 	let historyUser = $state<Schemas['User'] | null>(null);
 	let historyOpen = $state(false);
+	let sourcesUser = $state<Schemas['User'] | null>(null);
+	let sourcesOpen = $state(false);
 
 	async function load() {
 		try {
@@ -122,6 +125,7 @@
 				/>
 				<Button variant="outline" size="sm" disabled={!flags.length} onclick={() => { editing = u; editOpen = true; }}>{t('users.permissions')}</Button>
 				<Button variant="outline" size="sm" onclick={() => { historyUser = u; historyOpen = true; }}>{t('users.teasers_history')}</Button>
+				<Button variant="outline" size="sm" onclick={() => { sourcesUser = u; sourcesOpen = true; }}>{t('users.sources')}</Button>
 			</div>
 		{/each}
 	</div>
@@ -143,4 +147,8 @@
 
 {#if historyUser}
 	<TeaserHistoryDialog bind:open={historyOpen} user={historyUser} />
+{/if}
+
+{#if sourcesUser}
+	<HistorySourcesDialog bind:open={sourcesOpen} user={sourcesUser} {users} />
 {/if}

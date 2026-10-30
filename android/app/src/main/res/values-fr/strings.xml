@@ -589,6 +589,7 @@
     <string name="profile_devices_title">Appareils connectés</string>
     <string name="profile_hidden_desc">Les titres que vous avez marqués « pas intéressé ».</string>
     <string name="profile_hidden_title">Masqués de mes suggestions</string>
+    <string name="profile_history_sources">Vos recommandations utilisent aussi l’historique de visionnage de %1$s (réglé par un administrateur). C’est pourquoi Découvrir peut montrer des titres que vous n’avez pas vus vous-même.</string>
     <string name="profile_language">Langue</string>
     <string name="profile_last_seen">dernière visite : %1$s</string>
     <string name="profile_manage_user">Gérer les utilisateurs</string>
@@ -884,6 +885,13 @@
     <string name="users_role">Rôle</string>
     <string name="users_role_admin">administrateur</string>
     <string name="users_role_user">utilisateur</string>
+    <string name="users_sources">Recommandations</string>
+    <string name="users_sources_hint">Utiliser l’historique de visionnage d’autres comptes, en plus de celui de %1$s, pour construire les recommandations de Découvrir. Utile quand la famille regarde sur un compte partagé.</string>
+    <string name="users_sources_import_hint">Seuls les utilisateurs de Tipsarr peuvent être choisis : utilisez d’abord « Importer depuis Jellyfin » pour un compte qui ne s’est jamais connecté (un compte TV partagé). Jusqu’à %1$s comptes.</string>
+    <string name="users_sources_none">Il n’y a pas encore d’autre utilisateur.</string>
+    <string name="users_sources_title">Recommandations de %1$s</string>
+    <string name="users_sources_warning">%1$s verra des titres de l’historique de %2$s dans les rangées « Parce que vous avez regardé… », et les titres déjà vus par ces comptes seront masqués dans les recommandations de %1$s. Seul leur historique de visionnage est utilisé, jamais leur liste de blocage.</string>
+    <string name="users_sources_warning_none">Aucun autre compte n’est utilisé : les recommandations de %1$s viennent de son propre historique. Si vous choisissez un compte, %1$s verra des titres de son historique dans les rangées « Parce que vous avez regardé… ».</string>
     <string name="users_teasers_history">Historique Teasers</string>
     <string name="users_teasers_history_confirm_all">Effacer tout l\'historique Teasers de %1$s ? Chaque titre pourra revenir dans son fil.</string>
     <string name="users_teasers_history_empty">Rien pour l\'instant.</string>
