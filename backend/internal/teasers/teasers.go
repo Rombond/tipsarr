@@ -27,8 +27,9 @@ const (
 	seenFor      = 60 * 24 * time.Hour
 	maxLookups   = 40 // detail lookups (cached 24 h) for recommendations per call
 	lookupBatch  = 4
-	ensureBudget = 4 * time.Second // time the feed spends telling the resolver about missing files
-	ensureMax    = 8               // missing files asked for per call
+	ensureBudget = 4 * time.Second         // time the feed spends telling the resolver about missing files
+	ensureMax    = 8                       // missing files asked for per call
+	recBudget    = 1500 * time.Millisecond // time the feed waits for recommendations when the pool can already fill it
 
 	// PoolMovies and PoolShows are how many titles with a trailer the server keeps ready for each language and region.
 	PoolMovies  = 75
@@ -199,29 +200,53 @@ func (s *Service) Next(ctx context.Context, u *store.User, limit int, exclude ma
 		}
 	}
 
-	// recommendations: the person's suggestion rows, with the trailer looked up in their language
-	var recItems []media.Item
-	taken := map[string]bool{}
-	if res, err := s.sugg.Get(ctx, u); err == nil {
-		for _, r := range res.Rows {
-			for _, it := range r.Items {
-				k := store.WatchKey(it.Type, int64(it.TMDBID))
-				if taken[k] || skip(it) {
-					continue
+	// recommendations: the person's suggestion rows, with the trailer looked up in their language.
+	// A new person has nothing cached, so this can take many seconds: when the pool already has a playable
+	// title the feed does not wait for it (the work goes on in the background and warms the caches).
+	recsFor := func(ctx context.Context) []cand {
+		var recItems []media.Item
+		taken := map[string]bool{}
+		if res, err := s.sugg.Get(ctx, u); err == nil {
+			for _, r := range res.Rows {
+				for _, it := range r.Items {
+					k := store.WatchKey(it.Type, int64(it.TMDBID))
+					if taken[k] || skip(it) {
+						continue
+					}
+					taken[k] = true
+					recItems = append(recItems, it)
 				}
-				taken[k] = true
-				recItems = append(recItems, it)
 			}
 		}
+		s.media.Annotate(ctx, recItems)
+		var recQueue []media.Item
+		for _, it := range recItems {
+			if usable(it) {
+				recQueue = append(recQueue, it)
+			}
+		}
+		return s.withTrailers(ctx, o, recQueue, 1<<30, maxLookups)
 	}
-	s.media.Annotate(ctx, recItems)
-	var recQueue []media.Item
-	for _, it := range recItems {
-		if usable(it) {
-			recQueue = append(recQueue, it)
+	poolReady := false
+	for _, c := range pool {
+		if _, ok := s.files.Ready(ctx, c.key); ok {
+			poolReady = true
+			break
 		}
 	}
-	recs := s.withTrailers(ctx, o, recQueue, 1<<30, maxLookups)
+	var recs []cand
+	recCh := make(chan []cand, 1)
+	bg, cancelBg := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Minute)
+	go func() { defer cancelBg(); recCh <- recsFor(bg) }()
+	if poolReady {
+		select {
+		case recs = <-recCh:
+		case <-time.After(recBudget):
+		case <-ctx.Done():
+		}
+	} else {
+		recs = <-recCh
+	}
 
 	// split what is playable from what still downloads
 	var readyPool, readyRecs []Teaser
