@@ -821,5 +821,15 @@
   "trailers.test_failed": "Le test a échoué : {error}",
   "trailers.clear": "Vider le cache",
   "trailers.clear_confirm": "Supprimer toutes les bandes-annonces téléchargées ? Elles seront récupérées à nouveau au besoin.",
-  "trailers.cleared": "Cache vidé"
+  "trailers.cleared": "Cache vidé",
+  "apikey.title": "Clé d’API pour les tableaux de bord",
+  "apikey.desc": "Une clé en lecture seule pour des tableaux de bord comme Glance ou Homepage, envoyée dans l’en-tête X-Api-Key. Elle lit tout ce qu’un administrateur voit et ne peut jamais rien modifier.",
+  "apikey.toggle": "Activer la clé",
+  "apikey.show": "Afficher la clé",
+  "apikey.hide": "Masquer la clé",
+  "apikey.copy": "Copier la clé",
+  "apikey.copied": "Clé copiée",
+  "apikey.regenerate": "Créer une nouvelle clé",
+  "apikey.regenerate_confirm": "Remplacer la clé ? L’ancienne cesse de fonctionner immédiatement : mettez à jour chaque tableau de bord qui l’utilise.",
+  "apikey.usage": "Envoyez-la dans l’en-tête X-Api-Key, jamais dans l’adresse (les adresses finissent dans les journaux du proxy). Exemple : GET /api/v1/requests/counts"
 }

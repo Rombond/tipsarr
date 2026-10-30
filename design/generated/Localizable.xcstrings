@@ -210,6 +210,166 @@
         }
       }
     },
+    "apikey.copied": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key copied"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé copiée"
+          }
+        }
+      }
+    },
+    "apikey.copy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy the key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copier la clé"
+          }
+        }
+      }
+    },
+    "apikey.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A read-only key for dashboards such as Glance or Homepage, sent in the X-Api-Key header. It can read everything an admin sees and can never change anything."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une clé en lecture seule pour des tableaux de bord comme Glance ou Homepage, envoyée dans l’en-tête X-Api-Key. Elle lit tout ce qu’un administrateur voit et ne peut jamais rien modifier."
+          }
+        }
+      }
+    },
+    "apikey.hide": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide the key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masquer la clé"
+          }
+        }
+      }
+    },
+    "apikey.regenerate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer une nouvelle clé"
+          }
+        }
+      }
+    },
+    "apikey.regenerate_confirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace the key? The old one stops working at once, so update every dashboard that uses it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remplacer la clé ? L’ancienne cesse de fonctionner immédiatement : mettez à jour chaque tableau de bord qui l’utilise."
+          }
+        }
+      }
+    },
+    "apikey.show": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show the key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher la clé"
+          }
+        }
+      }
+    },
+    "apikey.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API key for dashboards"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé d’API pour les tableaux de bord"
+          }
+        }
+      }
+    },
+    "apikey.toggle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn the key on"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activer la clé"
+          }
+        }
+      }
+    },
+    "apikey.usage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send it as the X-Api-Key header, never in the address (addresses end up in proxy logs). Example: GET /api/v1/requests/counts"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyez-la dans l’en-tête X-Api-Key, jamais dans l’adresse (les adresses finissent dans les journaux du proxy). Exemple : GET /api/v1/requests/counts"
+          }
+        }
+      }
+    },
     "banner.dry_run": {
       "localizations": {
         "en": {

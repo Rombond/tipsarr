@@ -152,6 +152,18 @@ func sessionMiddleware(a *auth.Service, st *store.Store) func(http.Handler) http
 					r = r.WithContext(context.WithValue(r.Context(), userCtxKey{}, u))
 				}
 			}
+			// A dashboard key (X-Api-Key) reads everything as an admin and never writes.
+			if userFrom(r.Context()) == nil && r.Header.Get(apiKeyHeader) != "" {
+				if saved, _ := st.GetSetting(r.Context(), settingAPIKey); apiKeyMatches(r, saved) {
+					if !readOnlyMethod(r.Method) {
+						writeCodedError(w, http.StatusForbidden, "api_key_read_only", "the API key can only read")
+						return
+					}
+					u := apiKeyUser()
+					u.Language, _ = st.GetSetting(r.Context(), media.SettingDefaultLanguage)
+					r = r.WithContext(context.WithValue(r.Context(), userCtxKey{}, u))
+				}
+			}
 			next.ServeHTTP(w, r)
 		})
 	}

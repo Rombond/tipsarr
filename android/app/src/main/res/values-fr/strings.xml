@@ -14,6 +14,16 @@
     <string name="actions_toast_watch_removed">Retiré de votre liste</string>
     <string name="actions_trailer">Bande-annonce</string>
     <string name="actions_watchlist">À voir</string>
+    <string name="apikey_copied">Clé copiée</string>
+    <string name="apikey_copy">Copier la clé</string>
+    <string name="apikey_desc">Une clé en lecture seule pour des tableaux de bord comme Glance ou Homepage, envoyée dans l’en-tête X-Api-Key. Elle lit tout ce qu’un administrateur voit et ne peut jamais rien modifier.</string>
+    <string name="apikey_hide">Masquer la clé</string>
+    <string name="apikey_regenerate">Créer une nouvelle clé</string>
+    <string name="apikey_regenerate_confirm">Remplacer la clé ? L’ancienne cesse de fonctionner immédiatement : mettez à jour chaque tableau de bord qui l’utilise.</string>
+    <string name="apikey_show">Afficher la clé</string>
+    <string name="apikey_title">Clé d’API pour les tableaux de bord</string>
+    <string name="apikey_toggle">Activer la clé</string>
+    <string name="apikey_usage">Envoyez-la dans l’en-tête X-Api-Key, jamais dans l’adresse (les adresses finissent dans les journaux du proxy). Exemple : GET /api/v1/requests/counts</string>
     <string name="banner_dry_run">Simulation</string>
     <string name="banner_dry_run_hint">Les demandes sont enregistrées et suivent l’approbation, mais rien n’est envoyé à Radarr ni Sonarr. Définissez TIPSARR_DRY_RUN=false pour passer en réel.</string>
     <string name="banner_dry_run_long">rien n’est envoyé à Radarr ni Sonarr</string>

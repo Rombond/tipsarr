@@ -2414,6 +2414,8 @@ export interface components {
             tmdbId: number;
         };
         SettingsBody: {
+            /** @description Read-only key for dashboards (Glance, Homepage...), sent as the X-Api-Key header; it reads everything an admin sees and never writes. Empty = off */
+            apiKey: string;
             /** @description Comma-separated box-office region codes, e.g. US,GB,FR */
             boxofficeRegions: string;
             /** @description App-wide default language, e.g. fr-FR; empty = the browser decides. A person's own language wins */
@@ -2729,6 +2731,8 @@ export interface components {
             rootFolder?: string;
         };
         UpdateSettingsInputBody: {
+            /** @description Turn the read-only dashboard key on (a key is created if there is none) or off (the key is deleted) */
+            apiKeyEnabled?: boolean;
             /** @description Comma-separated region codes; empty resets to US */
             boxofficeRegions?: string;
             /** @description e.g. fr-FR; empty clears it */
@@ -2757,6 +2761,8 @@ export interface components {
             /** @description Empty string clears it (and turns push off) */
             pushRelayUrl?: string;
             pushText?: boolean;
+            /** @description True: replace the dashboard key with a new one (the old one stops working) */
+            regenerateApiKey?: boolean;
             servarrAutoImport?: boolean;
             /** @description Needs the resolver address and key; turning it on with either missing is refused */
             teasersFilesEnabled?: boolean;

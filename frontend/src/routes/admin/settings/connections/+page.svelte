@@ -8,6 +8,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import TrailerFilesCard from '$lib/components/admin/trailer-files-card.svelte';
+	import ApiKeyCard from '$lib/components/admin/api-key-card.svelte';
 
 	const settings = $derived(admin.settings);
 	let tmdbKey = $state('');
@@ -170,6 +171,8 @@
 	</Card>
 
 	<TrailerFilesCard />
+
+	<ApiKeyCard />
 
 	<Card>
 		<CardHeader>

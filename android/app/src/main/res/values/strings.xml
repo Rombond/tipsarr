@@ -14,6 +14,16 @@
     <string name="actions_toast_watch_removed">Removed from your watchlist</string>
     <string name="actions_trailer">Trailer</string>
     <string name="actions_watchlist">Watchlist</string>
+    <string name="apikey_copied">Key copied</string>
+    <string name="apikey_copy">Copy the key</string>
+    <string name="apikey_desc">A read-only key for dashboards such as Glance or Homepage, sent in the X-Api-Key header. It can read everything an admin sees and can never change anything.</string>
+    <string name="apikey_hide">Hide the key</string>
+    <string name="apikey_regenerate">Create a new key</string>
+    <string name="apikey_regenerate_confirm">Replace the key? The old one stops working at once, so update every dashboard that uses it.</string>
+    <string name="apikey_show">Show the key</string>
+    <string name="apikey_title">API key for dashboards</string>
+    <string name="apikey_toggle">Turn the key on</string>
+    <string name="apikey_usage">Send it as the X-Api-Key header, never in the address (addresses end up in proxy logs). Example: GET /api/v1/requests/counts</string>
     <string name="banner_dry_run">Dry-run</string>
     <string name="banner_dry_run_hint">Requests are recorded and move through approval, but nothing is sent to Radarr or Sonarr. Set TIPSARR_DRY_RUN=false to go live.</string>
     <string name="banner_dry_run_long">nothing is sent to Radarr or Sonarr</string>

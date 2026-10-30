@@ -2035,6 +2035,9 @@ components:
     SettingsBody:
       additionalProperties: false
       properties:
+        apiKey:
+          description: Read-only key for dashboards (Glance, Homepage...), sent as the X-Api-Key header; it reads everything an admin sees and never writes. Empty = off
+          type: string
         boxofficeRegions:
           description: Comma-separated box-office region codes, e.g. US,GB,FR
           type: string
@@ -2136,6 +2139,7 @@ components:
         - teasersFilesUrl
         - teasersFilesKeyConfigured
         - teasersFilesMaxHeight
+        - apiKey
       type: object
     SetupInputBody:
       additionalProperties: false
@@ -2687,6 +2691,9 @@ components:
     UpdateSettingsInputBody:
       additionalProperties: false
       properties:
+        apiKeyEnabled:
+          description: Turn the read-only dashboard key on (a key is created if there is none) or off (the key is deleted)
+          type: boolean
         boxofficeRegions:
           description: Comma-separated region codes; empty resets to US
           type: string
@@ -2731,6 +2738,9 @@ components:
           description: Empty string clears it (and turns push off)
           type: string
         pushText:
+          type: boolean
+        regenerateApiKey:
+          description: "True: replace the dashboard key with a new one (the old one stops working)"
           type: boolean
         servarrAutoImport:
           type: boolean

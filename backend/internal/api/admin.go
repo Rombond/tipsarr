@@ -49,6 +49,7 @@ type settingsBody struct {
 	TeasersFilesURL          string `json:"teasersFilesUrl" doc:"Address of the trailer resolver on the Docker network, e.g. http://trailer-resolver:8080"`
 	TeasersFilesKeySet       bool   `json:"teasersFilesKeyConfigured" doc:"The resolver key is write-only; this only says whether one is saved"`
 	TeasersFilesMaxHeight    int    `json:"teasersFilesMaxHeight" doc:"Largest video height the resolver downloads: 360, 480, 720 or 1080"`
+	APIKey                   string `json:"apiKey" doc:"Read-only key for dashboards (Glance, Homepage...), sent as the X-Api-Key header; it reads everything an admin sees and never writes. Empty = off"`
 }
 
 type settingsOutput struct{ Body settingsBody }
@@ -78,6 +79,8 @@ type updateSettingsInput struct {
 		TeasersFilesURL       *string `json:"teasersFilesUrl,omitempty" doc:"Empty string clears it (and turns trailer files off)"`
 		TeasersFilesKey       *string `json:"teasersFilesKey,omitempty" doc:"Write-only; empty string clears it (and turns trailer files off)"`
 		TeasersFilesMaxHeight *int    `json:"teasersFilesMaxHeight,omitempty" doc:"360, 480, 720 or 1080"`
+		APIKeyEnabled         *bool   `json:"apiKeyEnabled,omitempty" doc:"Turn the read-only dashboard key on (a key is created if there is none) or off (the key is deleted)"`
+		RegenerateAPIKey      *bool   `json:"regenerateApiKey,omitempty" doc:"True: replace the dashboard key with a new one (the old one stops working)"`
 	}
 }
 
@@ -112,6 +115,7 @@ func registerAdmin(api huma.API, d Deps) {
 		tfOn, _ := d.Store.GetSetting(ctx, trailers.SettingEnabled)
 		tfURL, _ := d.Store.GetSetting(ctx, trailers.SettingURL)
 		tfKey, _ := d.Store.GetSetting(ctx, trailers.SettingKey)
+		apiKey, _ := d.Store.GetSetting(ctx, settingAPIKey)
 		tfHeight := trailers.DefaultMaxHeight
 		if v, _ := d.Store.GetSetting(ctx, trailers.SettingMaxHeight); v != "" {
 			if n, err := strconv.Atoi(v); err == nil && n > 0 {
@@ -119,6 +123,7 @@ func registerAdmin(api huma.API, d Deps) {
 			}
 		}
 		return settingsBody{
+			APIKey:              apiKey,
 			TeasersFilesEnabled: tfOn == "true", TeasersFilesURL: tfURL, TeasersFilesKeySet: tfKey != "", TeasersFilesMaxHeight: tfHeight,
 			PushEnabled: pushOn == "true", PushText: pushText == "true", PushRelayURL: pushURL, PushRelayKeyConfigured: pushKey != "",
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
@@ -243,6 +248,9 @@ func registerAdmin(api huma.API, d Deps) {
 			return nil, err
 		}
 		if err := updateTeaserFiles(ctx, d, in.Body.TeasersFilesEnabled, in.Body.TeasersFilesURL, in.Body.TeasersFilesKey, in.Body.TeasersFilesMaxHeight); err != nil {
+			return nil, err
+		}
+		if err := updateAPIKey(ctx, d, in.Body.APIKeyEnabled, in.Body.RegenerateAPIKey); err != nil {
 			return nil, err
 		}
 		if in.Body.PushText != nil {

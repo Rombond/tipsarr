@@ -821,5 +821,15 @@
   "trailers.test_failed": "The test failed: {error}",
   "trailers.clear": "Clear cache",
   "trailers.clear_confirm": "Delete every downloaded trailer? They are fetched again when needed.",
-  "trailers.cleared": "Cache cleared"
+  "trailers.cleared": "Cache cleared",
+  "apikey.title": "API key for dashboards",
+  "apikey.desc": "A read-only key for dashboards such as Glance or Homepage, sent in the X-Api-Key header. It can read everything an admin sees and can never change anything.",
+  "apikey.toggle": "Turn the key on",
+  "apikey.show": "Show the key",
+  "apikey.hide": "Hide the key",
+  "apikey.copy": "Copy the key",
+  "apikey.copied": "Key copied",
+  "apikey.regenerate": "Create a new key",
+  "apikey.regenerate_confirm": "Replace the key? The old one stops working at once, so update every dashboard that uses it.",
+  "apikey.usage": "Send it as the X-Api-Key header, never in the address (addresses end up in proxy logs). Example: GET /api/v1/requests/counts"
 }
