@@ -42,7 +42,8 @@ struct SeasonList: View {
             }
             Spacer()
             ForEach(season.badges, id: \.self) { StatusBadge(state: $0) }
-            if covered.contains(season.number) { StatusBadge(state: state) }
+            // The request's own state, unless the library already says the same (an available season showed "Available" twice).
+            if covered.contains(season.number), !season.badges.contains(state) { StatusBadge(state: state) }
             Image(systemName: "chevron.down")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(Tokens.palette.mutedFg)

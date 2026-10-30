@@ -92,13 +92,14 @@ fun SeasonList(api: TipsarrApi, tmdbId: Int, seasons: List<SeasonInfo>, covered:
                     horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(season.name, fontSize = Tokens.FontSize.body, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg)
+                        Text(season.name, fontSize = Tokens.FontSize.body, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         val count = context.plural("seasons_episodes", season.episodeCount)
                         val year = season.airDate?.takeIf { it.length >= 4 }?.take(4)
                         Text(if (year != null) "$count · $year" else count, fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
                     }
                     season.badges.forEach { StatusBadge(it) }
-                    if (season.number in covered) StatusBadge(state)
+                    // The request's own state, unless the library already says the same (an available season showed "Available" twice).
+                    if (season.number in covered && state !in season.badges) StatusBadge(state)
                     Icon(
                         Icons.Outlined.KeyboardArrowDown, null, tint = Tokens.palette.mutedFg,
                         modifier = Modifier.rotate(if (open == season.number) 180f else 0f),
