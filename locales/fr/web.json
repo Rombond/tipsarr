@@ -563,7 +563,7 @@
   "job.running": "en cours",
   "settings.hook_title": "Webhook Jellyfin (facultatif)",
   "settings.hook_desc": "Met à jour l’historique et les badges « disponible » en quelques secondes au lieu d’attendre la synchronisation horaire. Installez le plugin Webhook de Jellyfin, ajoutez une destination générique avec cette adresse (événements : Élément ajouté, Lecture arrêtée, Données utilisateur enregistrées) et ce modèle :",
-  "settings.hook_secret": "L’adresse contient un jeton secret : gardez-la privée. Jellyfin doit pouvoir joindre Tipsarr à cette adresse.",
+  "settings.hook_secret": "Envoyez le secret dans un en-tête de requête nommé X-Tipsarr-Token (la destination générique du plugin Webhook propose « Add Request Header ») et gardez-le privé. L’ancienne adresse terminée par ?token=… fonctionne encore, mais les adresses finissent dans les journaux du proxy. Jellyfin doit pouvoir joindre Tipsarr à l’adresse ci-dessus.",
   "box.subtitle": "Classements du week-end ou de la semaine, du plus récent au plus ancien. Identiques pour tout le monde ; rien n’est ajouté automatiquement.",
   "box.bar_hint": "Chaque barre compare les recettes d’un film à celles du n°1 de la même période.",
   "box.period": "Période",

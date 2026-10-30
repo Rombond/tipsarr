@@ -766,7 +766,8 @@ func TestHistorySyncAndWebhook(t *testing.T) {
 	admin := loginAs(t, app, jf.URL, "alice", "secret")
 	_, body := call(t, app, "PUT", "/api/v1/admin/settings", `{"jellyfinApiKey":"jfkey"}`, admin)
 	var settings struct {
-		WebhookPath string `json:"webhookPath"`
+		WebhookPath  string `json:"webhookPath"`
+		WebhookToken string `json:"webhookToken"`
 	}
 	_ = json.Unmarshal([]byte(body), &settings)
 	const alice = "aaaaaaaabbbbccccddddeeeeeeeeeeee"
@@ -796,6 +797,25 @@ func TestHistorySyncAndWebhook(t *testing.T) {
 	// webhook: bad token rejected
 	if resp, _ := call(t, app, "POST", "/api/v1/hooks/jellyfin?token=nope", `{"NotificationType":"PlaybackStop"}`); resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("bad token = %d", resp.StatusCode)
+	}
+	// the secret also works as a header (no token in the address), a wrong or missing one does not
+	for _, c := range []struct {
+		header string
+		want   int
+	}{{settings.WebhookToken, http.StatusNoContent}, {"nope", http.StatusUnauthorized}, {"", http.StatusUnauthorized}} {
+		req, _ := http.NewRequest("POST", app.URL+"/api/v1/hooks/jellyfin", strings.NewReader(`{"NotificationType":"ItemAdded"}`))
+		req.Header.Set("Content-Type", "application/json")
+		if c.header != "" {
+			req.Header.Set("X-Tipsarr-Token", c.header)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != c.want {
+			t.Fatalf("webhook header %q = %d, want %d", c.header, resp.StatusCode, c.want)
+		}
 	}
 	// unchanged history: re-sync must NOT bump the version
 	call(t, app, "POST", settings.WebhookPath, `{"NotificationType":"PlaybackStop","UserId":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}`)

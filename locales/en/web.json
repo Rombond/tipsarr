@@ -563,7 +563,7 @@
   "job.running": "running",
   "settings.hook_title": "Jellyfin webhook (optional)",
   "settings.hook_desc": "Makes watch history and “available” badges update within seconds instead of waiting for the hourly sync. Install Jellyfin’s Webhook plugin, add a Generic destination with this URL (event types: Item Added, Playback Stop, User Data Saved) and this template:",
-  "settings.hook_secret": "The URL contains a secret token: keep it private. Jellyfin must be able to reach Tipsarr at that address.",
+  "settings.hook_secret": "Send the secret in a request header named X-Tipsarr-Token (the Webhook plugin’s Generic destination has “Add Request Header”) and keep it private. The older address ending in ?token=… still works, but addresses end up in proxy logs. Jellyfin must be able to reach Tipsarr at the address above.",
   "box.subtitle": "Weekend or weekly charts, newest first. The same for everyone; nothing is added automatically.",
   "box.bar_hint": "Each bar compares a movie’s gross with the #1 of the same period.",
   "box.period": "Period",
