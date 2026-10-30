@@ -55,7 +55,7 @@ struct MainTabView: View {
         }
         .sheet(isPresented: $router.settingsOpen) {
             SettingsScreen(account: account, profile: profile, path: $router.settingsPath) { router.settingsOpen = false }
-                .tipsarrSheet(detents: [.large])
+                .tipsarrSheet(detents: [.large], sizing: .page)
         }
         .environment(\.imageSource, ImageSource(serverURL: account.serverURL, token: account.token))
         .environment(\.appContext, AppContext(api: api, profile: profile))

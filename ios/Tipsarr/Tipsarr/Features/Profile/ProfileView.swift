@@ -152,7 +152,7 @@ struct ProfileView: View {
     }
 }
 
-enum ProfileRoute: Hashable { case watchlist, hidden, teaserHistory, userTeaserHistory(String, String), settings, devices, accounts, appIcon, issues, issue(String), users, user(String), sync, stats, posterList(PosterListRoute) }
+enum ProfileRoute: Hashable { case watchlist, hidden, teaserHistory, userTeaserHistory(String, String), settings, region, ratingSource, devices, accounts, appIcon, issues, issue(String), users, user(String), sync, stats, posterList(PosterListRoute) }
 
 /// Number with an icon and a label.
 struct StatTile: View {
@@ -291,6 +291,8 @@ struct ProfileDestination: View {
     let route: ProfileRoute
     let account: Account
     let profile: Profile
+    /// Shown at the root of a detail column (Duo right pane, Settings on iPad) instead of pushed: pickers stay open after a pick.
+    var isRoot = false
 
     var body: some View {
         switch route {
@@ -299,6 +301,8 @@ struct ProfileDestination: View {
         case .teaserHistory: TeaserHistoryScreen()
         case .userTeaserHistory(let id, let name): TeaserHistoryScreen(owner: .init(id: id, name: name))
         case .settings: SettingsView(account: account, profile: profile)
+        case .region: RegionPickerScreen(profile: profile, popsOnPick: !isRoot)
+        case .ratingSource: RatingSourceScreen(profile: profile, popsOnPick: !isRoot)
         case .devices: DevicesView()
         case .accounts: AccountsView()
         case .appIcon: AppIconPicker()

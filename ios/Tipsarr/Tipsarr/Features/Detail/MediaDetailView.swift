@@ -14,9 +14,16 @@ struct MediaDetailScreen: View {
 }
 
 struct MediaDetailView: View {
+    /// Widest the text column gets (padding included); wider pages centre it.
+    static let columnWidth: CGFloat = 720
+
     @State private var model: MediaDetailModel
     private let serverURL: URL
     @State private var sheet: Sheet?
+    /// Width of the page: the detail can fill a phone, an iPad screen, a split view column or a Duo pane.
+    @State private var width: CGFloat = 0
+    /// Where the column's text starts; horizontal rows start there too but scroll to the edges of the page.
+    private var columnInset: CGFloat { max(0, (width - Self.columnWidth) / 2) + Tokens.Spacing.lg }
     @State private var confirmCancel = false
     @Environment(ToastCenter.self) private var toast
     @Environment(\.liveUpdates) private var live
@@ -94,25 +101,25 @@ struct MediaDetailView: View {
     private func content(_ detail: MediaDetail) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Spacing.xl) {
-                DetailHeader(detail: detail, badge: model.badge)
+                DetailHeader(detail: detail, badge: model.badge, width: width)
                     .padding(.bottom, -Tokens.Spacing.sm)
-                VStack(alignment: .leading, spacing: Tokens.Spacing.xl) {
+                Group {
                     RatingsStrip(ratings: model.ratings, link: .init(type: detail.type, tmdbId: detail.tmdbId, title: detail.title, imdbId: detail.imdbId))
                     actionRow(detail)
                     banners
                     overview(detail)
                     if detail.type == .tv, !model.regularSeasons.isEmpty { seasons }
                     facts(detail)
-                    if !detail.cast.isEmpty { cast(detail) }
-                    if !detail.recommendations.isEmpty { recommendations(detail) }
-                    if model.canReport { reportRow }
                 }
-                .padding(.horizontal, Tokens.Spacing.lg)
-                .frame(maxWidth: 720)
-                .frame(maxWidth: .infinity)
+                .modifier(DetailColumn())
+                // The horizontal rows run the whole width of the page; their first card lines up with the column.
+                if !detail.cast.isEmpty { cast(detail) }
+                if !detail.recommendations.isEmpty { recommendations(detail) }
+                if model.canReport { reportRow.modifier(DetailColumn()) }
             }
             .padding(.bottom, Tokens.Spacing._3xl)
         }
+        .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
         .ignoresSafeArea(edges: .top)
         // No blur over the banner under the status bar.
         .scrollEdgeEffectHidden(true, for: .top)
@@ -324,6 +331,7 @@ struct MediaDetailView: View {
     private func cast(_ detail: MediaDetail) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
             Text("detail.cast").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
+                .modifier(DetailColumn())
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: Tokens.Spacing.md) {
                     ForEach(detail.cast.prefix(15)) { member in
@@ -347,13 +355,14 @@ struct MediaDetailView: View {
                     }
                 }
             }
-            .scrollClipDisabled()
+            .contentMargins(.horizontal, columnInset, for: .scrollContent)
         }
     }
 
     private func recommendations(_ detail: MediaDetail) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
             Text("detail.more_like").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
+                .modifier(DetailColumn())
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: Tokens.Spacing.md) {
                     ForEach(detail.recommendations.prefix(15)) { item in
@@ -365,7 +374,7 @@ struct MediaDetailView: View {
                     }
                 }
             }
-            .scrollClipDisabled()
+            .contentMargins(.horizontal, columnInset, for: .scrollContent)
         }
     }
 
@@ -421,6 +430,16 @@ struct MediaDetailView: View {
 
     private func run(_ work: () async throws -> Void) async {
         do { try await work() } catch { toast.show(APIError.from(error).localizedMessage, kind: .error) }
+    }
+}
+
+/// The centred text column of the detail page.
+private struct DetailColumn: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, Tokens.Spacing.lg)
+            .frame(maxWidth: MediaDetailView.columnWidth, alignment: .leading)
+            .frame(maxWidth: .infinity)
     }
 }
 

@@ -1,11 +1,20 @@
 import SwiftUI
 
 /// Backdrop, poster, title, year / runtime and the state badge.
+/// The backdrop spans the whole width; the poster and title sit in the same centred column as the rest of the page.
 struct DetailHeader: View {
     let detail: MediaDetail
     var badge: RequestState?
+    /// Width of the page (a full screen, a split view column or a Duo pane); 0 until measured.
+    var width: CGFloat = 0
 
-    private let backdropHeight: CGFloat = 260
+    /// A column as wide as an iPad half screen or more: taller backdrop and a bigger poster.
+    private var roomy: Bool { width >= 600 }
+    /// Taller on wide pages so the banner is not a thin strip; never more than 400 pt.
+    private var backdropHeight: CGFloat { roomy ? max(260, min(width * 0.38, 400)) : 260 }
+    private var posterWidth: CGFloat { roomy ? 150 : 120 }
+    /// How far the poster row rises into the backdrop.
+    private var overlap: CGFloat { roomy ? 80 : 64 }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -14,7 +23,7 @@ struct DetailHeader: View {
                 RemoteImage(path: detail.posterPath, size: .w342) {
                     Image(systemName: "film").font(.title).foregroundStyle(Tokens.palette.mutedFg)
                 }
-                .frame(width: 120, height: 120 * Tokens.Size.posterRatio)
+                .frame(width: posterWidth, height: posterWidth * Tokens.Size.posterRatio)
                 .background(Tokens.palette.muted)
                 .clipShape(.rect(cornerRadius: Tokens.Radius.md))
                 .overlay { RoundedRectangle(cornerRadius: Tokens.Radius.md).strokeBorder(Tokens.palette.border) }
@@ -22,7 +31,7 @@ struct DetailHeader: View {
                 .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
                     Text(verbatim: detail.title)
-                        .font(.title2.weight(.bold))
+                        .font(roomy ? .title.weight(.bold) : .title2.weight(.bold))
                         .accessibilityAddTraits(.isHeader)
                     if !meta.isEmpty {
                         Text(verbatim: meta).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
@@ -32,8 +41,10 @@ struct DetailHeader: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(.horizontal, Tokens.Spacing.lg)
-            .offset(y: -64)
-            .padding(.bottom, -64)
+            .frame(maxWidth: MediaDetailView.columnWidth)
+            .frame(maxWidth: .infinity)
+            .offset(y: -overlap)
+            .padding(.bottom, -overlap)
         }
     }
 
@@ -89,6 +100,7 @@ struct DetailSkeleton: View {
                 ForEach(0..<4, id: \.self) { _ in SkeletonBlock(height: 14) }
             }
             .padding(.horizontal, Tokens.Spacing.lg)
+            .readableColumn(MediaDetailView.columnWidth)
             .skeleton()
         }
     }
