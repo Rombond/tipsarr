@@ -228,30 +228,35 @@ struct RequestDetailView: View {
     // MARK: Timeline
 
     private var steps: [Timeline.Step] {
-        let created = record.createdAt.formatted(.dateTime.month(.abbreviated).day().hour().minute())
-        let decider = record.decidedBy.flatMap { $0.isEmpty ? nil : L10n.string("m.request.approved_by", $0) } ?? ""
         switch record.state {
         case .declined:
-            return [.init(title: RequestState.requested.title, detail: created, status: .done),
-                    .init(title: RequestState.declined.title, detail: decider, status: .failed)]
+            return [.init(title: RequestState.requested.title, detail: detail(.requested), status: .done),
+                    .init(title: RequestState.declined.title, detail: detail(.declined), status: .failed)]
         case .failed:
-            return [.init(title: RequestState.requested.title, detail: created, status: .done),
-                    .init(title: RequestState.approved.title, detail: decider, status: .done),
-                    .init(title: RequestState.failed.title, detail: "", status: .failed)]
+            return [.init(title: RequestState.requested.title, detail: detail(.requested), status: .done),
+                    .init(title: RequestState.approved.title, detail: detail(.approved), status: .done),
+                    .init(title: RequestState.failed.title, detail: detail(.failed), status: .failed)]
         default:
             let order: [RequestState] = [.requested, .approved, .searching, .downloading, .available]
             let current = order.firstIndex(of: record.state == .partial ? .available : record.state) ?? 0
             return order.enumerated().map { index, state in
-                let detail: String = switch state {
-                case .requested: created
-                case .approved: decider
-                case .downloading: index <= current ? record.progressPercent.map { "\($0)%" } ?? "" : ""
-                default: ""
-                }
+                let percent = state == .downloading ? record.progressPercent.map { "\($0)%" } : nil
                 let status: Timeline.Step.Status = record.state == .available || index < current ? .done : (index == current ? .current : .todo)
-                return .init(title: state.title, detail: detail, status: status)
+                return .init(title: state.title, detail: index <= current ? detail(state, extra: percent) : "", status: status)
             }
         }
+    }
+
+    /// When the step happened (latest time, from the request history), who did it, then the decline reason or the error
+    /// on a second line. A server older than 0.11 sends no history: only the request date and the approver show then.
+    private func detail(_ state: RequestState, extra: String? = nil) -> String {
+        let event = record.event(state)
+        let at = event?.at ?? (state == .requested ? record.createdAt : nil)
+        let date = at.map { (record.approximateHistory && state != .requested ? "≈ " : "") + $0.formatted(.dateTime.month(.abbreviated).day().hour().minute()) }
+        let name = state == .requested ? nil : event?.by ?? (state == .approved || state == .declined ? record.decidedBy : nil)
+        let who = name.flatMap { $0.isEmpty ? nil : L10n.string("m.request.approved_by", $0) }
+        let line = [date, who, extra].compactMap { $0 }.joined(separator: " · ")
+        return [line, event?.note ?? ""].filter { !$0.isEmpty }.joined(separator: "\n")
     }
 
     // MARK: Data

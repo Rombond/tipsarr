@@ -141,9 +141,28 @@ struct RequestRecord: Sendable, Identifiable, Hashable {
     /// Imported from what Radarr/Sonarr already monitor.
     var imported = false
     var createdAt: Date
+    /// What happened to the request and when, oldest first; empty from a server older than 0.11.
+    var events: [RequestEvent] = []
 
     /// The owner may still cancel until the title is available.
     var isOpen: Bool { state != .available && state != .declined && state != .failed }
+
+    /// The latest time a step happened (a step repeats after a retry).
+    func event(_ kind: RequestState) -> RequestEvent? { events.last { $0.kind == kind } }
+
+    /// Requests made before 0.11 get an approximate history from the server: when it was asked, and the current step
+    /// dated by its last change. Such a history skips the approval of a request already past it.
+    var approximateHistory: Bool {
+        [.searching, .downloading, .available, .partial].contains(state) && event(.approved) == nil
+    }
+}
+
+/// One step in the history of a request. `by` is nil when the server did it; `note` is the decline reason or the error.
+struct RequestEvent: Sendable, Hashable {
+    var kind: RequestState
+    var at: Date
+    var by: String?
+    var note: String?
 }
 
 struct TitleFlags: Sendable, Equatable {

@@ -177,7 +177,13 @@ extension RequestRecord {
             qualityProfileId: v.qualityProfileId.flatMap { $0 > 0 ? Int($0) : nil },
             rootFolder: v.rootFolder.flatMap { $0.isEmpty ? nil : $0 },
             imported: !(v.source ?? "").isEmpty,
-            createdAt: Date(timeIntervalSince1970: TimeInterval(v.createdAt ?? 0))
+            createdAt: Date(timeIntervalSince1970: TimeInterval(v.createdAt ?? 0)),
+            events: v.events.compactMap { e in
+                RequestState(rawValue: e.kind.rawValue).map {
+                    RequestEvent(kind: $0, at: Date(timeIntervalSince1970: TimeInterval(e.at)),
+                                 by: e.by.flatMap { $0.name.isEmpty ? nil : $0.name }, note: e.note.flatMap { $0.isEmpty ? nil : $0 })
+                }
+            }
         )
     }
 

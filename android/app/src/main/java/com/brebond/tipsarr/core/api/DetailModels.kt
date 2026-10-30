@@ -116,7 +116,14 @@ data class RequestView(
     val rootFolder: String? = null,
     /** Set when the request was imported from what Radarr/Sonarr already monitor. */
     val source: String? = null,
+    /** What happened to the request and when, oldest first; a server older than 0.11 sends none. */
+    val events: List<RequestEvent> = emptyList(),
 )
+
+/** One step in the history of a request: `kind` is a stage name, `at` unix seconds, `by` absent when the server did it,
+ *  `note` the decline reason or the error of a failed step. */
+@Serializable
+data class RequestEvent(val kind: String, val at: Long, val by: UserRef? = null, val note: String? = null)
 
 data class RequestRecord(
     val id: String,
@@ -139,9 +146,19 @@ data class RequestRecord(
     val qualityProfileId: Int? = null,
     val rootFolder: String? = null,
     val imported: Boolean = false,
+    val events: List<RequestEvent> = emptyList(),
 ) {
     /** The owner may still cancel until the title is available. */
     val isOpen: Boolean get() = state != RequestState.Available && state != RequestState.Declined && state != RequestState.Failed
+
+    /** The latest time a step happened (a step repeats after a retry). */
+    fun event(state: RequestState): RequestEvent? = events.lastOrNull { it.kind == state.name.lowercase() }
+
+    /** Requests made before 0.11 get an approximate history from the server: when it was asked, and the current step
+     *  dated by its last change. Such a history skips the approval of a request already past it. */
+    val approximateHistory: Boolean
+        get() = state in setOf(RequestState.Searching, RequestState.Downloading, RequestState.Available, RequestState.Partial) &&
+            event(RequestState.Approved) == null
 }
 
 fun RequestView.toRecord() = RequestRecord(
@@ -157,6 +174,7 @@ fun RequestView.toRecord() = RequestRecord(
     requestedById = requestedBy.id.takeIf { it.isNotEmpty() },
     qualityProfileId = qualityProfileId?.takeIf { it != 0 }, rootFolder = rootFolder?.takeIf { it.isNotEmpty() },
     imported = !source.isNullOrEmpty(),
+    events = events,
 )
 
 @Serializable

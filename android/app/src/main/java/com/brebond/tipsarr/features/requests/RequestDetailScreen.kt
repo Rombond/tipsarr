@@ -308,38 +308,45 @@ private enum class StepStatus { Done, Current, Todo, Failed }
 
 private data class Step(val title: Int, val detail: String, val status: StepStatus)
 
-private fun steps(context: android.content.Context, record: RequestRecord): List<Step> {
-    val created = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(record.createdAt * 1000))
-    val decider = record.decidedBy?.let { context.getString(R.string.m_request_approved_by, it) }.orEmpty()
-    return when (record.state) {
-        RequestState.Declined -> listOf(
-            Step(RequestState.Requested.title, created, StepStatus.Done),
-            Step(RequestState.Declined.title, decider, StepStatus.Failed),
-        )
-        RequestState.Failed -> listOf(
-            Step(RequestState.Requested.title, created, StepStatus.Done),
-            Step(RequestState.Approved.title, decider, StepStatus.Done),
-            Step(RequestState.Failed.title, "", StepStatus.Failed),
-        )
-        else -> {
-            val order = listOf(RequestState.Requested, RequestState.Approved, RequestState.Searching, RequestState.Downloading, RequestState.Available)
-            val current = order.indexOf(if (record.state == RequestState.Partial) RequestState.Available else record.state).coerceAtLeast(0)
-            order.mapIndexed { index, state ->
-                val detail = when (state) {
-                    RequestState.Requested -> created
-                    RequestState.Approved -> decider
-                    RequestState.Downloading -> if (index <= current) record.progressPercent?.let { "$it%" }.orEmpty() else ""
-                    else -> ""
-                }
-                val status = when {
-                    record.state == RequestState.Available || index < current -> StepStatus.Done
-                    index == current -> StepStatus.Current
-                    else -> StepStatus.Todo
-                }
-                Step(state.title, detail, status)
+private fun steps(context: android.content.Context, record: RequestRecord): List<Step> = when (record.state) {
+    RequestState.Declined -> listOf(
+        Step(RequestState.Requested.title, detail(context, record, RequestState.Requested), StepStatus.Done),
+        Step(RequestState.Declined.title, detail(context, record, RequestState.Declined), StepStatus.Failed),
+    )
+    RequestState.Failed -> listOf(
+        Step(RequestState.Requested.title, detail(context, record, RequestState.Requested), StepStatus.Done),
+        Step(RequestState.Approved.title, detail(context, record, RequestState.Approved), StepStatus.Done),
+        Step(RequestState.Failed.title, detail(context, record, RequestState.Failed), StepStatus.Failed),
+    )
+    else -> {
+        val order = listOf(RequestState.Requested, RequestState.Approved, RequestState.Searching, RequestState.Downloading, RequestState.Available)
+        val current = order.indexOf(if (record.state == RequestState.Partial) RequestState.Available else record.state).coerceAtLeast(0)
+        order.mapIndexed { index, state ->
+            val percent = if (state == RequestState.Downloading) record.progressPercent?.let { "$it%" } else null
+            val status = when {
+                record.state == RequestState.Available || index < current -> StepStatus.Done
+                index == current -> StepStatus.Current
+                else -> StepStatus.Todo
             }
+            Step(state.title, if (index <= current) detail(context, record, state, percent) else "", status)
         }
     }
+}
+
+/** When the step happened (latest time, from the request history), who did it, then the decline reason or the error on a
+ *  second line. A server older than 0.11 sends no history: only the request date and the approver show then. */
+private fun detail(context: android.content.Context, record: RequestRecord, state: RequestState, extra: String? = null): String {
+    val event = record.event(state)
+    val at = event?.at ?: if (state == RequestState.Requested) record.createdAt else null
+    val date = at?.let {
+        (if (record.approximateHistory && state != RequestState.Requested) "≈ " else "") +
+            DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it * 1000))
+    }
+    val name = if (state == RequestState.Requested) null
+        else event?.by?.name ?: if (state == RequestState.Approved || state == RequestState.Declined) record.decidedBy else null
+    val who = name?.takeIf { it.isNotEmpty() }?.let { context.getString(R.string.m_request_approved_by, it) }
+    val line = listOfNotNull(date, who, extra).joinToString(" · ")
+    return listOf(line, event?.note.orEmpty()).filter { it.isNotEmpty() }.joinToString("\n")
 }
 
 /** Vertical steps: done (green check), current, todo, failed. */
