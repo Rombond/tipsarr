@@ -64,7 +64,7 @@ func seed(base string) {
 	s := newSession(base, "setup")
 	s.do("POST", "/setup", pretty(obj{"jellyfinUrl": "http://127.0.0.1:18096"})) // 409 when the env var already did it
 	users := map[string]*session{}
-	for _, n := range []string{"alice", "bob", "carol", "dave"} {
+	for _, n := range []string{"alice", "bob", "carol", "dave", "erin"} {
 		u := newSession(base, n)
 		code, body := u.do("POST", "/auth/login", pretty(obj{"username": n, "password": "test"}))
 		if code != 200 {
@@ -164,6 +164,7 @@ func seed(base string) {
 	fmt.Println("bob      test      default rights, 3 movies per 7 days (2 used), pending / failed / declined requests, watchlist")
 	fmt.Println("carol    test      request manager (not admin): approves, sees all requests, no limit")
 	fmt.Println("dave     test      movies only, no shows, 1 movie per day (unused), can report issues")
+	fmt.Println("erin     test      default rights and no watch history: map her to alice (Users page) to try the history sources")
 }
 
 func waitJob(s *session, name string, max time.Duration) {

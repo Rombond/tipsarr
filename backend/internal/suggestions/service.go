@@ -11,6 +11,8 @@ package suggestions
 import (
 	"context"
 	"errors"
+	"fmt"
+	"hash/fnv"
 	"log/slog"
 	"sort"
 	"strings"
@@ -98,6 +100,56 @@ func (s *Service) userLock(id string) *sync.Mutex {
 
 // ---- reading ----------------------------------------------------------------------------
 
+// historyScope is whose watch history a person's rows come from: their own, plus the accounts an admin mapped to
+// them (one level, no chains). Get and Generate must both read it, so they agree on the version.
+type historyScope struct {
+	ids        []string // the person first, then the sources
+	version    int64    // staleness token of the whole scope
+	hasHistory bool
+	borrowed   bool // there is at least one source
+}
+
+func (s *Service) scopeOf(ctx context.Context, userID string) (historyScope, error) {
+	sources, err := s.store.HistorySources(ctx, userID)
+	if err != nil {
+		return historyScope{}, err
+	}
+	sc := historyScope{ids: []string{userID}}
+	for _, id := range sources {
+		if id != userID {
+			sc.ids = append(sc.ids, id)
+		}
+	}
+	sc.borrowed = len(sc.ids) > 1
+	own, err := s.store.HistoryVersion(ctx, userID)
+	if err != nil {
+		return sc, err
+	}
+	if !sc.borrowed {
+		sc.version = own // exactly what it was before sources existed, so no row goes stale
+		sc.hasHistory, err = s.store.HasHistory(ctx, userID)
+		return sc, err
+	}
+	// the source ids are part of the hash, so adding, changing or removing a source changes the version too
+	h := fnv.New64a()
+	fmt.Fprintf(h, "%s:%d", userID, own)
+	rest := append([]string{}, sc.ids[1:]...)
+	sort.Strings(rest)
+	for _, id := range rest {
+		v, err := s.store.HistoryVersion(ctx, id)
+		if err != nil {
+			return sc, err
+		}
+		fmt.Fprintf(h, "|%s:%d", id, v)
+	}
+	sc.version = int64(h.Sum64() >> 1) // keep it positive: 0 is "never synced"
+	if sc.version == 0 {
+		sc.version = 1
+	}
+	sc.hasHistory, err = s.store.HasHistoryOf(ctx, sc.ids)
+	return sc, err
+}
+
 // Get returns the user's rows. The first call generates them (synchronously); later calls
 // serve what is stored and refresh in the background when the history changed.
 func (s *Service) Get(ctx context.Context, u *store.User) (*Result, error) {
@@ -114,16 +166,18 @@ func (s *Service) Get(ctx context.Context, u *store.User) (*Result, error) {
 		}
 	}
 	res := &Result{Rows: []Row{}}
-	cur, _ := s.store.HistoryVersion(ctx, u.ID)
-	hasHistory, _ := s.store.HasHistory(ctx, u.ID)
-	if stale(rows[0:1], cur, hasHistory) {
+	sc, err := s.scopeOf(ctx, u.ID)
+	if err != nil {
+		return nil, err
+	}
+	if stale(rows[0:1], sc.version, sc.hasHistory) {
 		res.Generating = true
 		if s.claimBackground(u.ID) {
 			go s.refreshInBackground(u.ID)
 		}
 	}
 
-	watched, err := s.hiddenSet(ctx, u.ID)
+	watched, err := s.hiddenSet(ctx, sc, u.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -173,10 +227,10 @@ func stale(rows []store.SuggestionRow, currentVersion int64, hasHistory bool) bo
 	return hasHistory || time.Since(time.Unix(r.GeneratedAt, 0)) > staleNoHistory
 }
 
-// hiddenSet is everything that must not appear in a user's suggestions: titles they watched
-// and titles they put on their blocklist.
-func (s *Service) hiddenSet(ctx context.Context, userID string) (map[string]bool, error) {
-	watched, err := s.store.WatchedSet(ctx, userID)
+// hiddenSet is everything that must not appear in a user's suggestions: titles they or their source accounts
+// watched, and titles they put on their own blocklist (another account's blocklist is never borrowed).
+func (s *Service) hiddenSet(ctx context.Context, sc historyScope, userID string) (map[string]bool, error) {
+	watched, err := s.store.WatchedSetOf(ctx, sc.ids)
 	if err != nil {
 		return nil, err
 	}
@@ -234,8 +288,24 @@ func (s *Service) Force(ctx context.Context, userID string) error {
 	return nil
 }
 
-// QueueRefresh schedules a debounced background regeneration (used when history changed).
+// QueueRefresh schedules a debounced background regeneration (used when history changed), for the person and for
+// everyone whose recommendations borrow from them. The version check already refreshes those rows when they are next
+// read; this only makes it sooner.
 func (s *Service) QueueRefresh(userID string) {
+	s.queue(userID)
+	deps, err := s.store.UsersBorrowingFrom(context.Background(), userID)
+	if err != nil {
+		slog.Warn("suggestions: who borrows history", "user", userID, "err", err)
+		return
+	}
+	for _, id := range deps {
+		if id != userID {
+			s.queue(id) // not QueueRefresh: two accounts mapped to each other would loop
+		}
+	}
+}
+
+func (s *Service) queue(userID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if t, ok := s.timers[userID]; ok {
@@ -276,15 +346,21 @@ func (s *Service) Generate(ctx context.Context, userID string) error {
 			opts.Language, _ = s.store.GetSetting(ctx, media.SettingDefaultLanguage)
 		}
 	}
-	hist, err := s.store.UserHistory(ctx, userID, 0)
+	sc, err := s.scopeOf(ctx, userID)
 	if err != nil {
 		return err
 	}
-	version, err := s.store.HistoryVersion(ctx, userID)
+	var hist []store.WatchHistory
+	if sc.borrowed {
+		hist, err = s.store.MergedHistory(ctx, sc.ids) // one row per title, newest first: seeds and "because" rows share it
+	} else {
+		hist, err = s.store.UserHistory(ctx, userID, 0)
+	}
 	if err != nil {
 		return err
 	}
-	watched, err := s.hiddenSet(ctx, userID) // watched + blocklisted
+	version := sc.version
+	watched, err := s.hiddenSet(ctx, sc, userID) // watched (by them and their sources) + their own blocklist
 	if err != nil {
 		return err
 	}

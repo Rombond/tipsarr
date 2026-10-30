@@ -110,6 +110,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerOIDC(api, d)
 		registerMarks(api, d)
 		registerUsers(api, d)
+		registerHistorySources(api, d)
 		registerPermissions(api, d)
 		registerServarr(api, d)
 		registerWebhooks(api, d)
