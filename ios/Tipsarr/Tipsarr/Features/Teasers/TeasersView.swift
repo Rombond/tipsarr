@@ -56,7 +56,9 @@ struct TeasersView: View {
             GeometryReader { geo in
                 // The feed fills the whole screen; `insets` tell the cards where the notch, the home bar and the tab bar are.
                 let insets = geo.safeAreaInsets
-                content(insets: insets, width: geo.size.width)
+                // The cards cover the safe areas too, so the fold moves down by the top inset in their coordinates.
+                let fold = FoldInfo.laptopFold(geo).map { LaptopFold(top: $0.top + insets.top, bottom: $0.bottom + insets.top) }
+                content(insets: insets, width: geo.size.width, fold: fold)
                     .frame(width: geo.size.width + insets.leading + insets.trailing, height: geo.size.height + insets.top + insets.bottom)
                     .offset(x: -insets.leading, y: -insets.top)
             }
@@ -106,7 +108,7 @@ struct TeasersView: View {
 
     // MARK: Pages
 
-    @ViewBuilder private func content(insets: EdgeInsets, width: CGFloat) -> some View {
+    @ViewBuilder private func content(insets: EdgeInsets, width: CGFloat, fold: LaptopFold?) -> some View {
         switch model.phase {
         case _ where model.items.isEmpty && !model.done && !model.placeholders.isEmpty && !model.phase.isFailed:
             placeholderPager(insets: insets)
@@ -117,7 +119,7 @@ struct TeasersView: View {
                       actionTitle: "common.retry") { Task { await model.load() } }
                 .background(Tokens.palette.bg)
         default:
-            pager(insets: insets, width: width)
+            pager(insets: insets, width: width, fold: fold)
         }
     }
 
@@ -164,14 +166,14 @@ struct TeasersView: View {
         }
     }
 
-    private func pager(insets: EdgeInsets, width: CGFloat) -> some View {
+    private func pager(insets: EdgeInsets, width: CGFloat, fold: LaptopFold?) -> some View {
         ScrollView(.vertical) {
             LazyVStack(spacing: 0) {
                 ForEach(model.items) { teaser in
                     TeaserPage(
                         teaser: teaser, video: pool.video(for: teaser), isCurrent: current == teaser.id || (current == nil && teaser.id == model.items.first?.id),
                         feedActive: feedActive, paused: tapPaused, muted: muted, uiHidden: uiHidden, bottomInset: max(insets.bottom, bottomInset), topInset: insets.top,
-                        leadingInset: insets.leading, trailingInset: insets.trailing, showsHint: model.items.first?.id == teaser.id,
+                        leadingInset: insets.leading, trailingInset: insets.trailing, fold: fold, showsHint: model.items.first?.id == teaser.id,
                         onTap: { tapPaused.toggle() },
                         onZoom: { zoomed = $0; if $0 { uiHidden = true } },
                         onShowUI: { uiHidden = false },
@@ -318,6 +320,8 @@ private struct TeaserPage: View {
     /// Sideways, the notch side: the title and description keep clear of it, the action buttons do not.
     let leadingInset: CGFloat
     let trailingInset: CGFloat
+    /// Duo half folded like a laptop: the picture above the fold, the title and buttons below it.
+    let fold: LaptopFold?
     let showsHint: Bool
     var onTap: () -> Void
     var onZoom: (Bool) -> Void
@@ -368,16 +372,35 @@ private struct TeaserPage: View {
                 .onChange(of: muted) { _, now in video.set(playing: wantsPlay, muted: now) }
                 .onChange(of: fast) { _, now in video.setFast(now) }
                 .onChange(of: video.failed) { _, failed in if failed { onFileFailed() } }
-            if playing, !video.isReady, !paused { ProgressView().tint(.white).allowsHitTesting(false) }
-            touchLayer
-            if paused && playing {
-                Image(systemName: "play.fill").font(.system(size: 56)).foregroundStyle(.white.opacity(0.85)).allowsHitTesting(false)
+                .modifier(UpperArea(fold: fold))
+            if let fold { Color.black.padding(.top, fold.top) }
+            Group {
+                if playing, !video.isReady, !paused { ProgressView().tint(.white).allowsHitTesting(false) }
+                touchLayer
+                if paused && playing {
+                    Image(systemName: "play.fill").font(.system(size: 56)).foregroundStyle(.white.opacity(0.85)).allowsHitTesting(false)
+                }
             }
+            .modifier(UpperArea(fold: fold))
             if !hidden {
-                LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .center, endPoint: .bottom).allowsHitTesting(false)
-                overlay
+                if let fold {
+                    laptopOverlay(fold)
+                } else {
+                    LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .center, endPoint: .bottom).allowsHitTesting(false)
+                    overlay
+                }
             }
-            if video.isReady, !hidden { scrubBar(video) }
+            if video.isReady, !hidden {
+                if let fold {
+                    // Along the top of the lower half, right under the picture.
+                    scrubBar(video).padding(.top, fold.bottom).frame(maxHeight: .infinity, alignment: .top)
+                } else {
+                    VStack {
+                        Spacer()
+                        scrubBar(video).padding(.bottom, bottomInset)
+                    }
+                }
+            }
             if fast { speedBadge }
             if uiHidden && !zoomed { showUIButton }
         }
@@ -450,31 +473,27 @@ private struct TeaserPage: View {
 
     /// The progress line along the bottom edge: drag it to go forward or back.
     private func scrubBar(_ video: TeaserVideo) -> some View {
-        VStack {
-            Spacer()
-            GeometryReader { geo in
-                ZStack(alignment: .bottomLeading) {
-                    Color.clear
-                    Rectangle().fill(.white.opacity(0.25)).frame(height: scrubbing ? 8 : 3)
-                    Rectangle().fill(.white.opacity(0.9)).frame(width: geo.size.width * video.progress, height: scrubbing ? 8 : 3)
-                }
-                .contentShape(.rect)
-                .animation(.easeOut(duration: 0.12), value: scrubbing)
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { drag in
-                            if !scrubbing { scrubbing = true; video.beginScrub() }
-                            video.scrub(to: drag.location.x / max(geo.size.width, 1))
-                        }
-                        .onEnded { _ in
-                            scrubbing = false
-                            video.endScrub()
-                        }
-                )
+        GeometryReader { geo in
+            ZStack(alignment: .bottomLeading) {
+                Color.clear
+                Rectangle().fill(.white.opacity(0.25)).frame(height: scrubbing ? 8 : 3)
+                Rectangle().fill(.white.opacity(0.9)).frame(width: geo.size.width * video.progress, height: scrubbing ? 8 : 3)
             }
-            .frame(height: 28)
-            .padding(.bottom, bottomInset)
+            .contentShape(.rect)
+            .animation(.easeOut(duration: 0.12), value: scrubbing)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { drag in
+                        if !scrubbing { scrubbing = true; video.beginScrub() }
+                        video.scrub(to: drag.location.x / max(geo.size.width, 1))
+                    }
+                    .onEnded { _ in
+                        scrubbing = false
+                        video.endScrub()
+                    }
+            )
         }
+        .frame(height: 28)
     }
 
     private static func clock(_ seconds: Double) -> String {
@@ -493,6 +512,19 @@ private struct TeaserPage: View {
             .padding(.trailing, Tokens.Spacing.lg)
             .padding(.bottom, max(bottomInset, Tokens.Spacing.lg) + Tokens.Spacing.md + 24)
         }
+        .environment(\.colorScheme, .dark)
+    }
+
+    /// Laptop posture: the lower half holds the title, the description and the buttons in a row (the picture is above the fold).
+    private func laptopOverlay(_ fold: LaptopFold) -> some View {
+        VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
+            info
+            actions
+        }
+        .padding(.top, fold.bottom + 28)
+        .padding(.leading, Tokens.Spacing.lg + leadingInset)
+        .padding(.trailing, Tokens.Spacing.lg + trailingInset)
+        .frame(maxHeight: .infinity, alignment: .top)
         .environment(\.colorScheme, .dark)
     }
 
@@ -549,7 +581,9 @@ private struct TeaserPage: View {
     }
 
     private var actions: some View {
-        VStack(spacing: Tokens.Spacing.lg) {
+        // A column on the right edge of the card; a row under the title in the laptop posture.
+        let layout = fold == nil ? AnyLayout(VStackLayout(spacing: Tokens.Spacing.lg)) : AnyLayout(HStackLayout(spacing: Tokens.Spacing.lg))
+        return layout {
             if let state = teaser.item.state {
                 circle(state.symbol, label: state.title, tint: state.color) {}.disabled(true)
             } else if context?.profile.mayRequest(teaser.item.type) ?? false {
@@ -573,5 +607,18 @@ private struct TeaserPage: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(label))
+    }
+}
+
+/// Keeps a layer of the card in the area above the fold (the whole card when there is none).
+private struct UpperArea: ViewModifier {
+    let fold: LaptopFold?
+
+    func body(content: Content) -> some View {
+        if let fold {
+            content.frame(height: fold.top).frame(maxHeight: .infinity, alignment: .top)
+        } else {
+            content
+        }
     }
 }
