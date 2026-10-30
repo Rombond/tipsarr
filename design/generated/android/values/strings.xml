@@ -638,6 +638,10 @@
     <string name="req_delete_aria">Delete the request for %1$s</string>
     <string name="req_dialog_title">Request %1$s</string>
     <string name="req_failed_generic">Sending to the download manager failed; an admin can see the details.</string>
+    <string name="req_history">History</string>
+    <string name="req_history_approximate">≈ Approximate dates: this request is older than the history, so its steps are dated by the last change.</string>
+    <string name="req_history_by">by %1$s</string>
+    <string name="req_history_requested">Requested</string>
     <string name="req_imported_from">Already in %1$s</string>
     <string name="req_options_hint">Optional: choose how %1$s adds it. The defaults are pre-selected.</string>
     <string name="req_quality_profile">Quality profile</string>

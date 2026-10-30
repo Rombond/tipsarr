@@ -638,6 +638,10 @@
     <string name="req_delete_aria">Supprimer la demande pour %1$s</string>
     <string name="req_dialog_title">Demander %1$s</string>
     <string name="req_failed_generic">L’envoi au gestionnaire de téléchargement a échoué ; un administrateur peut voir les détails.</string>
+    <string name="req_history">Historique</string>
+    <string name="req_history_approximate">≈ Dates approximatives : cette demande est antérieure à l’historique, ses étapes sont datées par le dernier changement.</string>
+    <string name="req_history_by">par %1$s</string>
+    <string name="req_history_requested">Demandé</string>
     <string name="req_imported_from">Déjà dans %1$s</string>
     <string name="req_options_hint">Facultatif : choisissez comment %1$s l’ajoute. Les valeurs par défaut sont présélectionnées.</string>
     <string name="req_quality_profile">Profil de qualité</string>

@@ -10228,6 +10228,71 @@
         }
       }
     },
+    "req.history": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique"
+          }
+        }
+      }
+    },
+    "req.history.approximate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈ Approximate dates: this request is older than the history, so its steps are dated by the last change."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈ Dates approximatives : cette demande est antérieure à l’historique, ses étapes sont datées par le dernier changement."
+          }
+        }
+      }
+    },
+    "req.history.by": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "by %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "par %@"
+          }
+        }
+      }
+    },
+    "req.history.requested": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requested"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demandé"
+          }
+        }
+      }
+    },
     "req.imported_from": {
       "comment": "placeholders: source",
       "localizations": {

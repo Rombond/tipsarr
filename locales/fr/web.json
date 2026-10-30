@@ -831,5 +831,9 @@
   "apikey.copied": "Clé copiée",
   "apikey.regenerate": "Créer une nouvelle clé",
   "apikey.regenerate_confirm": "Remplacer la clé ? L’ancienne cesse de fonctionner immédiatement : mettez à jour chaque tableau de bord qui l’utilise.",
-  "apikey.usage": "Envoyez-la dans l’en-tête X-Api-Key, jamais dans l’adresse (les adresses finissent dans les journaux du proxy). Exemple : GET /api/v1/requests/counts"
+  "apikey.usage": "Envoyez-la dans l’en-tête X-Api-Key, jamais dans l’adresse (les adresses finissent dans les journaux du proxy). Exemple : GET /api/v1/requests/counts",
+  "req.history": "Historique",
+  "req.history.requested": "Demandé",
+  "req.history.by": "par {name}",
+  "req.history.approximate": "≈ Dates approximatives : cette demande est antérieure à l’historique, ses étapes sont datées par le dernier changement."
 }

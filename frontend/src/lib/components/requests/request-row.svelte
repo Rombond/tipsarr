@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.svelte';
-	import { fmtDate, fmtDuration } from '$lib/i18n/format';
+	import { fmtDate, fmtDateTime, fmtDuration } from '$lib/i18n/format';
 	import { imageUrl, type Schemas } from '$lib/api/client';
 	import { auth } from '$lib/stores/auth.svelte';
 	import StatusBadge from '$lib/components/ui/status-badge.svelte';
@@ -8,6 +8,7 @@
 	import type { StatusKey } from '$lib/status';
 	import XIcon from '@lucide/svelte/icons/x';
 	import SlidersIcon from '@lucide/svelte/icons/sliders-horizontal';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import RequestOptionsDialog from './request-options-dialog.svelte';
 
 	let {
@@ -30,6 +31,22 @@
 	} = $props();
 
 	let editing = $state(false);
+	let showHistory = $state(false);
+
+	// What happened and when. A request made before the server kept a history comes with an approximate one: when it
+	// was asked, and the step it is at now dated by its last change (it has no approval step although it is past it).
+	const events = $derived(request.events ?? []);
+	const approximate = $derived(['searching', 'downloading', 'available'].includes(request.stage) && !events.some((e) => e.kind === 'approved'));
+	const eventLabel = (kind: Schemas['Event']['kind']) =>
+		({
+			requested: t('req.history.requested'),
+			approved: t('req.stage.approved'),
+			searching: t('req.stage.searching'),
+			downloading: t('req.stage.downloading'),
+			available: t('req.stage.available'),
+			declined: t('req.stage.declined'),
+			failed: t('req.stage.failed'),
+		})[kind];
 
 	const poster = $derived(imageUrl(request.posterPath, 'w154'));
 
@@ -111,6 +128,36 @@
 			· {fmtDate(request.createdAt)}
 			{#if request.decidedBy}· {t('req.decided_by_link')} {@render person(request.decidedBy)}{/if}
 		</p>
+		{#if events.length > 1}
+			<div>
+				<button
+					type="button"
+					class="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+					aria-expanded={showHistory}
+					onclick={() => (showHistory = !showHistory)}
+				>
+					<ChevronDownIcon class="size-3.5 transition-transform {showHistory ? 'rotate-180' : ''}" />
+					{t('req.history')}
+				</button>
+				{#if showHistory}
+					<ol class="mt-1.5 grid gap-1.5 border-l border-border pl-3 text-xs">
+						{#each events as e, i (i)}
+							<li class="grid gap-0.5">
+								<span>
+									<span class="font-medium {e.kind === 'failed' || e.kind === 'declined' ? 'text-destructive' : ''}">{eventLabel(e.kind)}</span>
+									<span class="text-muted-foreground">
+										· {approximate && e.kind !== 'requested' ? '≈ ' : ''}{fmtDateTime(e.at)}{#if e.by}
+											· {t('req.history.by', { name: e.by.name || t('req.unknown_user') })}{/if}
+									</span>
+								</span>
+								{#if e.note}<span class="break-words text-muted-foreground">{e.note}</span>{/if}
+							</li>
+						{/each}
+					</ol>
+					{#if approximate}<p class="mt-1.5 text-[11px] text-muted-foreground">{t('req.history.approximate')}</p>{/if}
+				{/if}
+			</div>
+		{/if}
 		{#if request.seasons?.length}
 			<div class="flex flex-wrap items-center gap-1" aria-label={t('req.seasons', { count: request.seasons.length, list: request.seasons.join(', ') })}>
 				{#each request.seasons as n (n)}
