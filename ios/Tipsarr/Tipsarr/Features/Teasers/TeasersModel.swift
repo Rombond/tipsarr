@@ -11,6 +11,9 @@ final class TeasersModel {
     private(set) var phase: Phase = .loading
     /// Nothing new is left to show (the end card is the last page).
     private(set) var done = false
+    /// Trending titles shown (no video) while the first trailers still download on the server. The server's own default feed is
+    /// its pool of trending, upcoming and popular titles plus the person's suggestions, but only titles whose file is ready.
+    private(set) var placeholders: [MediaItem] = []
     private var loadingMore = false
     private var reported: Set<String> = []
 
@@ -26,6 +29,7 @@ final class TeasersModel {
 
     func load() async {
         phase = .loading
+        if items.isEmpty, placeholders.isEmpty { Task { await loadPlaceholders() } }
         do {
             let feed = try await api.teasers(exclude: [])
             items = feed.items
@@ -34,6 +38,11 @@ final class TeasersModel {
         } catch {
             phase = .failed(APIError.from(error))
         }
+    }
+
+    private func loadPlaceholders() async {
+        guard let page = try? await api.trending(page: 1), items.isEmpty else { return }
+        placeholders = Array(page.items.filter { $0.backdropPath != nil || $0.posterPath != nil }.prefix(10))
     }
 
     /// The card with this id is on screen: the ones before it are seen, and the next batch is fetched when the end is near.
@@ -90,4 +99,8 @@ final class TeasersModel {
         try await api.setBlocklisted(true, teaser.item.type, id: teaser.item.tmdbId)
         remove(id)
     }
+}
+
+extension TeasersModel.Phase {
+    var isFailed: Bool { if case .failed = self { true } else { false } }
 }

@@ -206,7 +206,7 @@ struct RequestSheet: View {
     }
 }
 
-private struct OptionRow<Control: View>: View {
+struct OptionRow<Control: View>: View {
     let symbol: String
     let title: LText
     @ViewBuilder var control: Control

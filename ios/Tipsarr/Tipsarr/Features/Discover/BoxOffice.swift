@@ -121,7 +121,7 @@ struct BoxOfficeRail: View {
                                 Text(verbatim: chart.title).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                             }
                             Spacer()
-                            NavigationLink { BoxOfficeScreen(api: api, first: chart) } label: {
+                            NavigationLink(value: BoxOfficeRoute()) {
                                 Text("m.boxoffice.full").font(.subheadline)
                             }
                             .foregroundStyle(Tokens.palette.mutedFg)
@@ -149,6 +149,9 @@ struct BoxOfficeRail: View {
         .task { await model.loadIfNeeded() }
     }
 }
+
+/// Value route to the full chart: a value (not a destination closure) so the stack's path stays consistent with the detail pushed from it.
+struct BoxOfficeRoute: Hashable {}
 
 /// Every entry of the chart, with the region and the week to pick.
 struct BoxOfficeScreen: View {

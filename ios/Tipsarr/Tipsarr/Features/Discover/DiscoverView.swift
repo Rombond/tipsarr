@@ -77,6 +77,9 @@ struct DiscoverView: View {
                         .accessibilityLabel(Text("m.tab.profile"))
                 }
             }
+            .navigationDestination(for: BoxOfficeRoute.self) { _ in
+                if let chart = model.boxOffice.chart { BoxOfficeScreen(api: api, first: chart) }
+            }
             .mediaDestinations()
         }
     }

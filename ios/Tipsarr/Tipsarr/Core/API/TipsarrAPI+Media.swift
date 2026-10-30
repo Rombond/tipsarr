@@ -78,6 +78,15 @@ extension TipsarrAPI {
         }
     }
 
+    /// Changes the quality profile / folder of a pending or failed request (requester or admin). nil: leave as is.
+    func updateRequestOptions(id: String, profileID: Int?, folder: String?) async throws -> RequestRecord {
+        try await load { client in
+            let body = Components.Schemas.UpdateRequestOptionsRequest(qualityProfileId: profileID.map(Int64.init), rootFolder: folder)
+            guard case .ok(let ok) = try await client.updateRequestOptions(path: .init(id: id), body: .json(body)) else { throw APIError.unexpected }
+            return RequestRecord(try ok.body.json)
+        }
+    }
+
     func myRequests() async throws -> [RequestRecord] {
         try await load { client in
             guard case .ok(let ok) = try await client.listRequests(query: .init(filter: .mine, take: 100)) else { throw APIError.unexpected }

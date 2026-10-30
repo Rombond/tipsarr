@@ -14,6 +14,7 @@ struct RequestDetailView: View {
     @State private var record: RequestRecord
     @State private var declining = false
     @State private var confirmDelete = false
+    @State private var editing = false
     @State private var options: RequestOptions?
     @Environment(\.appContext) private var context
     @Environment(ToastCenter.self) private var toast
@@ -49,6 +50,14 @@ struct RequestDetailView: View {
         .refreshable { await reload() }
         .task { await reload() }
         .task { if model.canManage { options = try? await context?.api.requestOptions(record.type) } }
+        .sheet(isPresented: $editing) {
+            RequestOptionsSheet(record: record) { updated in
+                record = updated
+                editing = false
+                toast.show(L10n.string("common.saved"))
+            }
+            .tipsarrSheet(detents: [.medium])
+        }
         .onChange(of: live?.requestsTick) { Task { await reload() } }
         .sheet(isPresented: $declining) {
             DeclineSheet(title: record.title) { reason in
@@ -189,6 +198,13 @@ struct RequestDetailView: View {
                 }
                 .buttonStyle(.tipsarr(.primary, fullWidth: true))
             }
+            // Same rule as the web: the requester or an admin may change the quality profile until it is sent.
+            if !record.imported, record.state == .requested || record.state == .failed {
+                Button { editing = true } label: {
+                    Label { Text("req.change_options_short") } icon: { Image(systemName: "slider.horizontal.3") }
+                }
+                .buttonStyle(.tipsarr(.secondary, fullWidth: true))
+            }
             if model.canDelete(record) {
                 Button { confirmDelete = true } label: { Text("m.request.cancel") }
                     .buttonStyle(.tipsarr(.ghost, fullWidth: true))
@@ -316,6 +332,107 @@ struct Timeline: View {
             Image(systemName: "circle.dotted.circle").font(.title2).foregroundStyle(Tokens.Status.downloading)
         case .todo:
             Image(systemName: "circle").font(.title2).foregroundStyle(Tokens.palette.border)
+        }
+    }
+}
+
+/// Quality profile (and folder) of a pending or failed request, as the web dialog.
+private struct RequestOptionsSheet: View {
+    let record: RequestRecord
+    var onSaved: (RequestRecord) -> Void
+
+    @Environment(\.appContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var options: RequestOptions?
+    @State private var profileID: Int?
+    @State private var folder: String?
+    @State private var busy = false
+    @State private var errorText: String?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Tokens.Spacing.xl) {
+                Text(verbatim: L10n.string("req.change_options", record.title)).font(.title3.weight(.bold))
+                if let options {
+                    VStack(spacing: Tokens.Spacing.sm) {
+                        OptionRow(symbol: "slider.horizontal.3", title: "req.quality_profile") {
+                            Menu {
+                                ForEach(options.profiles) { profile in
+                                    Button {
+                                        profileID = profile.id
+                                    } label: {
+                                        if profileID == profile.id { Image(systemName: "checkmark") }
+                                        Text(verbatim: profile.name)
+                                    }
+                                }
+                            } label: { menuLabel(options.profiles.first { $0.id == profileID }?.name ?? "") }
+                        }
+                        if !options.rootFolders.isEmpty {
+                            OptionRow(symbol: "externaldrive", title: "req.root_folder") {
+                                Menu {
+                                    ForEach(options.rootFolders) { root in
+                                        Button {
+                                            folder = root.path
+                                        } label: {
+                                            if folder == root.path { Image(systemName: "checkmark") }
+                                            Text(verbatim: root.path)
+                                        }
+                                    }
+                                } label: { menuLabel(folder ?? options.defaultFolder) }
+                            }
+                        }
+                    }
+                } else if errorText == nil {
+                    ProgressView().frame(maxWidth: .infinity)
+                }
+                if let errorText { Banner(kind: .error, title: LText.verbatim(errorText)) }
+                VStack(spacing: Tokens.Spacing.sm) {
+                    Button { Task { await save() } } label: { Text(busy ? "common.saving" : "common.save") }
+                        .buttonStyle(.tipsarr(.primary, fullWidth: true))
+                        .disabled(busy || options == nil)
+                    Button("common.cancel") { dismiss() }
+                        .buttonStyle(.tipsarr(.tonal, fullWidth: true))
+                }
+            }
+            .padding(Tokens.Spacing.xl)
+        }
+        .task { await load() }
+    }
+
+    private func menuLabel(_ text: String) -> some View {
+        HStack(spacing: Tokens.Spacing.xs) {
+            Text(verbatim: text).lineLimit(1).truncationMode(.middle)
+            Image(systemName: "chevron.up.chevron.down").font(.caption2)
+        }
+        .foregroundStyle(Tokens.palette.mutedFg)
+    }
+
+    private func load() async {
+        do {
+            guard let o = try await context?.api.requestOptions(record.type) else { dismiss(); return }
+            options = o
+            profileID = (record.qualityProfileId ?? 0) != 0 ? record.qualityProfileId : o.defaultProfileID
+            folder = record.rootFolder ?? o.defaultFolder
+        } catch {
+            errorText = APIError.from(error).localizedMessage
+        }
+    }
+
+    /// Only what changed from the instance defaults is sent, like the web.
+    private func save() async {
+        guard let options, let api = context?.api else { return }
+        busy = true
+        errorText = nil
+        defer { busy = false }
+        do {
+            let updated = try await api.updateRequestOptions(
+                id: record.id,
+                profileID: profileID != options.defaultProfileID ? profileID : nil,
+                folder: !options.rootFolders.isEmpty && folder != options.defaultFolder ? folder : nil
+            )
+            onSaved(updated)
+        } catch {
+            errorText = APIError.from(error).localizedMessage
         }
     }
 }

@@ -75,6 +75,10 @@ struct TeasersView: View {
             }
         }
         .onChange(of: current) { _, _ in preload() }
+        .onChange(of: model.items.isEmpty) { _, _ in updateIdleTimer() }
+        .onChange(of: feedActive, initial: true) { _, _ in updateIdleTimer() }
+        .onChange(of: tapPaused) { _, _ in updateIdleTimer() }
+        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
         .onChange(of: model.items.count) { _, _ in preload() }
         .onChange(of: isSelected, initial: true) { _, selected in
             // Playback follows the media volume, not the ringer switch. The audio session calls can block for a
@@ -104,6 +108,8 @@ struct TeasersView: View {
 
     @ViewBuilder private func content(insets: EdgeInsets, width: CGFloat) -> some View {
         switch model.phase {
+        case _ where model.items.isEmpty && !model.done && !model.placeholders.isEmpty && !model.phase.isFailed:
+            placeholderPager(insets: insets)
         case .loading where model.items.isEmpty:
             ProgressView().tint(.white).frame(maxWidth: .infinity, maxHeight: .infinity)
         case .failed(let error) where model.items.isEmpty:
@@ -112,6 +118,49 @@ struct TeasersView: View {
                 .background(Tokens.palette.bg)
         default:
             pager(insets: insets, width: width)
+        }
+    }
+
+    /// First visit: the trailers are still downloading on the server, so trending titles (no video) fill the screen meanwhile.
+    private func placeholderPager(insets: EdgeInsets) -> some View {
+        ScrollView(.vertical) {
+            LazyVStack(spacing: 0) {
+                ForEach(model.placeholders) { item in
+                    ZStack(alignment: .bottomLeading) {
+                        Color.black
+                        RemoteImage(path: item.backdropPath ?? item.posterPath, size: .w780) { Color.black }
+                            .opacity(0.8)
+                        LinearGradient(colors: [.clear, .black.opacity(0.85)], startPoint: .center, endPoint: .bottom)
+                        VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
+                            HStack(spacing: Tokens.Spacing.sm) {
+                                ProgressView().tint(.white)
+                                Text("m.teasers.preparing").font(.footnote).foregroundStyle(.white.opacity(0.8))
+                            }
+                            Button { open(item.route) } label: {
+                                Text(verbatim: item.title).font(.title2.weight(.bold)).lineLimit(2).multilineTextAlignment(.leading).contentShape(.rect)
+                            }
+                            .buttonStyle(.plain)
+                            if let overview = item.overview { Text(verbatim: overview).font(.subheadline).lineLimit(3).foregroundStyle(.white.opacity(0.85)) }
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, Tokens.Spacing.lg)
+                        .padding(.bottom, max(insets.bottom, bottomInset) + Tokens.Spacing.xl + 24)
+                        .shadow(color: .black.opacity(0.5), radius: 4)
+                    }
+                    .containerRelativeFrame([.horizontal, .vertical])
+                    .clipped()
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.paging)
+        .scrollIndicators(.hidden)
+        .frame(maxWidth: .infinity)
+        .task(id: waiting) {
+            while waiting, !Task.isCancelled {
+                if await model.loadMore() != nil { break }
+                try? await Task.sleep(for: .seconds(8))
+            }
         }
     }
 
@@ -186,6 +235,15 @@ struct TeasersView: View {
         let wanted = items[index...].prefix(2)
         pool.keep(Set(wanted.map(\.id)))
         for teaser in wanted { _ = pool.video(for: teaser) }
+    }
+
+    /// The screen stays awake only while a trailer is actually playing.
+    private func updateIdleTimer() {
+        UIApplication.shared.isIdleTimerDisabled = feedActive && !tapPaused && !model.items.isEmpty
+    }
+
+    private func open(_ route: MediaRoute) {
+        if let pane { pane.content = .media(route) } else { path.append(route) }
     }
 
     private func open(_ teaser: Teaser) {
