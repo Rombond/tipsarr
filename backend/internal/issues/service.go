@@ -12,6 +12,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/perms"
+	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
 
@@ -22,12 +23,22 @@ var (
 
 var Kinds = []string{"video", "audio", "subtitles", "other"}
 
+// Arr is what the issues need from Radarr/Sonarr (the requests service).
+type Arr interface {
+	ArrLink(ctx context.Context, o media.Opts, typ string, tmdbID int) (*requests.ArrLink, error)
+	ArrSearch(ctx context.Context, o media.Opts, typ string, tmdbID, season, episode int) error
+}
+
 type Service struct {
 	store  *store.Store
 	media  *media.Service
 	hub    *events.Hub
 	notify *notify.Service
+	arr    Arr
 }
+
+// SetArr wires Radarr/Sonarr in; without it the Radarr/Sonarr actions answer requests.ErrNoInstance.
+func (s *Service) SetArr(a Arr) { s.arr = a }
 
 func New(s *store.Store, m *media.Service, h *events.Hub, n *notify.Service) *Service {
 	return &Service{store: s, media: m, hub: h, notify: n}
@@ -316,4 +327,37 @@ func (s *Service) Delete(ctx context.Context, u *store.User, id string) error {
 
 func (s *Service) changed(i *store.Issue) {
 	s.hub.Publish("issue.updated", i.CreatedBy, map[string]any{"id": i.ID, "status": i.Status}, false)
+}
+
+// arrIssue loads the issue for a Radarr/Sonarr action, which only people who manage issues may start.
+func (s *Service) arrIssue(ctx context.Context, u *store.User, id string) (*store.Issue, error) {
+	if !u.Can(perms.ManageIssues) {
+		return nil, ErrForbidden
+	}
+	i, err := s.store.GetIssue(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if s.arr == nil {
+		return nil, requests.ErrNoInstance
+	}
+	return i, nil
+}
+
+// ArrLink is the address of the issue's title in Radarr/Sonarr.
+func (s *Service) ArrLink(ctx context.Context, u *store.User, id string) (*requests.ArrLink, error) {
+	i, err := s.arrIssue(ctx, u, id)
+	if err != nil {
+		return nil, err
+	}
+	return s.arr.ArrLink(ctx, media.Opts{Language: u.Language, Region: u.Region}, i.MediaType, int(i.TMDBID))
+}
+
+// Search starts an automatic Radarr/Sonarr search for the issue's title (its season or episode when it names one).
+func (s *Service) Search(ctx context.Context, u *store.User, id string) error {
+	i, err := s.arrIssue(ctx, u, id)
+	if err != nil {
+		return err
+	}
+	return s.arr.ArrSearch(ctx, media.Opts{Language: u.Language, Region: u.Region}, i.MediaType, int(i.TMDBID), i.SeasonNumber, i.EpisodeNumber)
 }

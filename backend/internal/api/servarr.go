@@ -24,6 +24,7 @@ type instanceView struct {
 	QualityProfileID int               `json:"qualityProfileId"`
 	RootFolder       string            `json:"rootFolder"`
 	IsDefault        bool              `json:"isDefault"`
+	PublicURL        string            `json:"publicUrl" doc:"Address people open the app at in their browser, used by links to it; empty = url"`
 	AnimeRoot        string            `json:"animeRoot" doc:"Sonarr only: root folder for anime (Animation + Japanese original language); such shows are also added with series type anime"`
 	GenreRoots       map[string]string `json:"genreRoots" doc:"Radarr only: TMDB genre id -> root folder; the first matching genre of a movie wins"`
 }
@@ -32,7 +33,7 @@ func toInstanceView(in store.ServarrInstance) instanceView {
 	roots := map[string]string{}
 	_ = json.Unmarshal([]byte(in.GenreRoots), &roots)
 	return instanceView{ID: in.ID, Kind: in.Kind, Name: in.Name, URL: in.URL, APIKeyConfigured: in.APIKey != "",
-		QualityProfileID: in.QualityProfileID, RootFolder: in.RootFolder, IsDefault: in.IsDefault == 1, GenreRoots: roots, AnimeRoot: in.AnimeRoot}
+		QualityProfileID: in.QualityProfileID, RootFolder: in.RootFolder, IsDefault: in.IsDefault == 1, GenreRoots: roots, AnimeRoot: in.AnimeRoot, PublicURL: in.PublicURL}
 }
 
 type instanceBody struct {
@@ -43,6 +44,7 @@ type instanceBody struct {
 	QualityProfileID int               `json:"qualityProfileId" minimum:"1"`
 	RootFolder       string            `json:"rootFolder" minLength:"1"`
 	IsDefault        bool              `json:"isDefault"`
+	PublicURL        *string           `json:"publicUrl,omitempty" doc:"Omit to keep, empty string to clear. http(s)://host[:port]"`
 	AnimeRoot        *string           `json:"animeRoot,omitempty" doc:"Sonarr only. Omit to keep, empty string to clear"`
 	GenreRoots       map[string]string `json:"genreRoots,omitempty" doc:"Radarr only. Omit to keep the saved map, send {} to clear it"`
 }
@@ -88,6 +90,12 @@ func registerServarr(api huma.API, d Deps) {
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 			return fail(422, "url_invalid", "url must be http(s)://host[:port]")
 		}
+		if b.PublicURL != nil && strings.TrimSpace(*b.PublicURL) != "" {
+			pu, err := url.Parse(strings.TrimSpace(*b.PublicURL))
+			if err != nil || (pu.Scheme != "http" && pu.Scheme != "https") || pu.Host == "" {
+				return fail(422, "public_url_invalid", "publicUrl must be http(s)://host[:port]")
+			}
+		}
 		return nil
 	}
 	genreJSON := func(m map[string]string) (string, error) {
@@ -130,6 +138,9 @@ func registerServarr(api huma.API, d Deps) {
 		}
 		if in.Body.AnimeRoot != nil {
 			inst.AnimeRoot = strings.TrimSpace(*in.Body.AnimeRoot)
+		}
+		if in.Body.PublicURL != nil {
+			inst.PublicURL = strings.TrimRight(strings.TrimSpace(*in.Body.PublicURL), "/")
 		}
 		if err := d.Store.SaveServarr(ctx, inst); err != nil {
 			return nil, err
@@ -179,6 +190,9 @@ func registerServarr(api huma.API, d Deps) {
 		}
 		if in.Body.AnimeRoot != nil {
 			cur.AnimeRoot = strings.TrimSpace(*in.Body.AnimeRoot)
+		}
+		if in.Body.PublicURL != nil {
+			cur.PublicURL = strings.TrimRight(strings.TrimSpace(*in.Body.PublicURL), "/")
 		}
 		if err := d.Store.SaveServarr(ctx, cur); err != nil {
 			return nil, err

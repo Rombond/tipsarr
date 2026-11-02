@@ -217,6 +217,7 @@ type ServarrInstance struct {
 	CreatedAt        int64  `bun:"created_at" json:"-"`
 	GenreRoots       string `bun:"genre_roots" json:"-"` // JSON {"<genre id>": "<root folder>"}
 	AnimeRoot        string `bun:"anime_root" json:"-"`  // Sonarr: root folder (and series type) for anime
+	PublicURL        string `bun:"public_url" json:"-"`  // browser address of the app, "" = same as URL
 }
 
 const (

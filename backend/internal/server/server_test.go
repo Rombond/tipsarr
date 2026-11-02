@@ -424,9 +424,11 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 		}
 		return msg, err
 	}})
+	issueSvc := issues.New(st, mediaSvc, hub, notifier)
+	issueSvc.SetArr(reqs)
 	authSvc.SetRecheckEvery(0) // tests: ask the fake Jellyfin about the account on every request
 	h, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issues.New(st, mediaSvc, hub, notifier), Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier, Push: pusher,
+		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issueSvc, Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier, Push: pusher,
 		DryRun: dryRun, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)

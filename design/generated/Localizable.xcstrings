@@ -1930,13 +1930,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No Radarr/Sonarr is configured for this type of title yet."
+            "value": "No Radarr or Sonarr instance is configured for this type of title."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aucun Radarr/Sonarr n’est encore configuré pour ce type de titre."
+            "value": "Aucune instance Radarr ou Sonarr n'est configurée pour ce type de titre."
           }
         }
       }
@@ -1969,6 +1969,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Introuvable."
+          }
+        }
+      }
+    },
+    "error.not_in_servarr": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radarr or Sonarr does not track this title."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radarr ou Sonarr ne suit pas ce titre."
           }
         }
       }
@@ -2049,6 +2065,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vous n’avez pas la permission de faire ça."
+          }
+        }
+      }
+    },
+    "error.public_url_invalid": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The public address must start with http:// or https://."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'adresse publique doit commencer par http:// ou https://."
           }
         }
       }
@@ -2594,6 +2626,90 @@
           "stringUnit": {
             "state": "translated",
             "value": "Afficher %@"
+          }
+        }
+      }
+    },
+    "issue.arr_dry_run": {
+      "comment": "placeholders: app",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dry-run is on: nothing was sent to %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le mode test est actif : rien n'a été envoyé à %@."
+          }
+        }
+      }
+    },
+    "issue.arr_open": {
+      "comment": "placeholders: app",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open in %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir dans %@"
+          }
+        }
+      }
+    },
+    "issue.arr_search": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relancer la recherche"
+          }
+        }
+      }
+    },
+    "issue.arr_search_hint": {
+      "comment": "placeholders: app, app",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic search, not interactive: %1$@ only grabs a release it considers an upgrade. For the same quality, open it in %1$@ and use Interactive Search."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche automatique, pas interactive : %1$@ ne prend qu'une version qu'il juge meilleure. Pour la même qualité, ouvre la fiche dans %1$@ et utilise la recherche interactive."
+          }
+        }
+      }
+    },
+    "issue.arr_search_started": {
+      "comment": "placeholders: app",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search started in %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche lancée dans %@."
           }
         }
       }
