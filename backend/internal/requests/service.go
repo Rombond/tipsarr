@@ -99,7 +99,7 @@ type View struct {
 	DryRun           bool             `json:"dryRun" doc:"Approved in dry-run mode: nothing was sent to Radarr/Sonarr"`
 	Error            string           `json:"error,omitempty"`
 	QualityProfileID int              `json:"qualityProfileId,omitempty" doc:"Chosen quality profile (absent = the instance default)"`
-	UHD              bool             `json:"uhd" doc:"The quality profile allows 4K (2160p)"`
+	UHD              bool             `json:"uhd,omitempty" doc:"The quality profile allows 4K (2160p); absent when not (and from servers older than 4K requests)"`
 	RootFolder       string           `json:"rootFolder,omitempty" doc:"Chosen root folder (absent = the instance default)"`
 	Source           string           `json:"source,omitempty" doc:"Set when the request was imported from what Radarr/Sonarr already monitor"`
 	Progress         *Progress        `json:"progress,omitempty"`

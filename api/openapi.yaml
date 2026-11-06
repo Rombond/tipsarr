@@ -1752,8 +1752,6 @@ components:
       required:
         - id
         - name
-        - maxResolution
-        - uhd
       type: object
     Quota:
       additionalProperties: false
@@ -3020,7 +3018,7 @@ components:
             - tv
           type: string
         uhd:
-          description: The quality profile allows 4K (2160p)
+          description: The quality profile allows 4K (2160p); absent when not (and from servers older than 4K requests)
           type: boolean
         updatedAt:
           format: int64
@@ -3034,7 +3032,6 @@ components:
         - stage
         - requestedBy
         - dryRun
-        - uhd
         - createdAt
         - updatedAt
       type: object
