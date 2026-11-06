@@ -128,8 +128,8 @@ func (c *Client) Status(ctx context.Context) (*Status, error) {
 type QualityProfile struct {
 	ID            int    `json:"id"`
 	Name          string `json:"name"`
-	MaxResolution int    `json:"maxResolution" doc:"Highest resolution the profile allows (2160 = 4K), 0 when unknown"`
-	UHD           bool   `json:"uhd" doc:"The profile allows 4K (2160p): only people with the 4K right may pick it"`
+	MaxResolution int    `json:"maxResolution,omitempty" doc:"Highest resolution the profile allows (2160 = 4K), 0 when unknown"`
+	UHD           bool   `json:"uhd,omitempty" doc:"The profile allows 4K (2160p): only people with the 4K right may pick it"`
 }
 
 // UHDResolution is the vertical resolution from which a quality counts as 4K.
