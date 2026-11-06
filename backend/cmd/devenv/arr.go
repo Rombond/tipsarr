@@ -129,7 +129,10 @@ func newArr(kind string) http.Handler {
 		writeJSON(w, obj{"appName": strings.ToUpper(kind[:1]) + kind[1:], "version": "5.0"})
 	})
 	h("GET /api/v3/qualityprofile", func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, []obj{{"id": 4, "name": "HD-1080p"}, {"id": 6, "name": "UHD-2160p"}})
+		quality := func(name string, res int) []obj {
+			return []obj{{"quality": obj{"name": name, "resolution": res}, "items": []obj{}, "allowed": true}}
+		}
+		writeJSON(w, []obj{{"id": 4, "name": "HD-1080p", "items": quality("Bluray-1080p", 1080)}, {"id": 6, "name": "UHD-2160p", "items": quality("Bluray-2160p", 2160)}})
 	})
 	h("GET /api/v3/rootfolder", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, []obj{{"id": 1, "path": "/data/media/" + map[string]string{"radarr": "movies", "sonarr": "tv"}[kind], "freeSpace": 812345678901}, {"id": 2, "path": "/data/media/other", "freeSpace": 99345678901}})

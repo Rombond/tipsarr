@@ -123,9 +123,51 @@ func (c *Client) Status(ctx context.Context) (*Status, error) {
 	return &out, c.get(ctx, "/system/status", &out)
 }
 
+// QualityProfile is a Radarr/Sonarr quality profile. UHD (and MaxResolution) come from the qualities it allows:
+// a profile is 4K when it allows a 2160p quality, so one instance can serve HD and 4K requests.
 type QualityProfile struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	MaxResolution int    `json:"maxResolution" doc:"Highest resolution the profile allows (2160 = 4K), 0 when unknown"`
+	UHD           bool   `json:"uhd" doc:"The profile allows 4K (2160p): only people with the 4K right may pick it"`
+}
+
+// UHDResolution is the vertical resolution from which a quality counts as 4K.
+const UHDResolution = 2160
+
+type profileItem struct {
+	Allowed bool `json:"allowed"`
+	Quality *struct {
+		Resolution int `json:"resolution"`
+	} `json:"quality"`
+	Items []profileItem `json:"items"`
+}
+
+// maxResolution is the highest resolution among the allowed qualities. A group that is allowed allows
+// every quality in it.
+func maxResolution(items []profileItem, allowed bool) int {
+	best := 0
+	for _, it := range items {
+		ok := allowed || it.Allowed
+		r := 0
+		if len(it.Items) > 0 {
+			r = maxResolution(it.Items, ok)
+		} else if ok && it.Quality != nil {
+			r = it.Quality.Resolution
+		}
+		best = max(best, r)
+	}
+	return best
+}
+
+// IsUHD reports whether the profile with this id allows 4K (false when it is not in the list).
+func IsUHD(profiles []QualityProfile, id int) bool {
+	for _, p := range profiles {
+		if p.ID == id {
+			return p.UHD
+		}
+	}
+	return false
 }
 
 type RootFolder struct {
@@ -140,8 +182,20 @@ type Tag struct {
 }
 
 func (c *Client) QualityProfiles(ctx context.Context) ([]QualityProfile, error) {
-	out := []QualityProfile{}
-	return out, c.get(ctx, "/qualityprofile", &out)
+	var raw []struct {
+		ID    int           `json:"id"`
+		Name  string        `json:"name"`
+		Items []profileItem `json:"items"`
+	}
+	if err := c.get(ctx, "/qualityprofile", &raw); err != nil {
+		return []QualityProfile{}, err
+	}
+	out := make([]QualityProfile, 0, len(raw))
+	for _, p := range raw {
+		res := maxResolution(p.Items, false)
+		out = append(out, QualityProfile{ID: p.ID, Name: p.Name, MaxResolution: res, UHD: res >= UHDResolution})
+	}
+	return out, nil
 }
 
 func (c *Client) RootFolders(ctx context.Context) ([]RootFolder, error) {

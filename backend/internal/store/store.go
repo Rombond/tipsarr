@@ -6,12 +6,15 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/Rombond/tipsarr/backend/internal/perms"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/uptrace/bun"
@@ -136,6 +139,11 @@ func (s *Store) migrate(ctx context.Context) error {
 					return fmt.Errorf("%s: %w", name, err)
 				}
 			}
+			if after := afterMigration[name]; after != nil {
+				if err := after(ctx, tx); err != nil {
+					return fmt.Errorf("%s: %w", name, err)
+				}
+			}
 			_, err := tx.ExecContext(ctx, `INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)`, name, time.Now().Unix())
 			return err
 		})
@@ -144,6 +152,43 @@ func (s *Store) migrate(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// afterMigration holds the steps of a migration that portable SQL cannot do, run in its transaction after its SQL.
+var afterMigration = map[string]func(ctx context.Context, tx bun.Tx) error{
+	"027_request_4k.sql": func(ctx context.Context, tx bun.Tx) error {
+		return updateDefaultPermissions(ctx, tx, Grant4K)
+	},
+}
+
+// Grant4K adds the 4K rights 027_request_4k.sql gives everyone: request 4K, and 4K auto-approve where the person
+// already auto-approves.
+func Grant4K(m int64) int64 {
+	m |= int64(perms.Request4K | perms.Request4KMovie | perms.Request4KTV)
+	for from, to := range map[perms.Mask]perms.Mask{perms.AutoApprove: perms.AutoApprove4K, perms.AutoApproveMovie: perms.AutoApprove4KMovie, perms.AutoApproveTV: perms.AutoApprove4KTV} {
+		if m&int64(from) != 0 {
+			m |= int64(to)
+		}
+	}
+	return m
+}
+
+// updateDefaultPermissions rewrites the stored default mask (when there is one) with fn.
+func updateDefaultPermissions(ctx context.Context, tx bun.Tx, fn func(int64) int64) error {
+	var v string
+	err := tx.NewSelect().Model((*Setting)(nil)).Column("svalue").Where("skey = ?", SettingDefaultPermissions).Scan(ctx, &v)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	n, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
+	if err != nil {
+		return nil // not a number: DefaultPermissions ignores it too
+	}
+	_, err = tx.NewUpdate().Model((*Setting)(nil)).Set("svalue = ?", strconv.FormatInt(fn(n), 10)).Where("skey = ?", SettingDefaultPermissions).Exec(ctx)
+	return err
 }
 
 // splitStatements splits a migration file on ';', dropping "--" comment lines.

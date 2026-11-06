@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"slices"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/servarr"
 	"github.com/Rombond/tipsarr/backend/internal/media"
@@ -33,6 +34,10 @@ func reqErr(err error) error {
 		return fail(409, "no_instance", err.Error())
 	case errors.Is(err, requests.ErrQuota):
 		return fail(403, "quota_reached", err.Error())
+	case errors.Is(err, requests.ErrNo4K):
+		return fail(403, "4k_not_allowed", err.Error())
+	case errors.Is(err, requests.ErrServarrDown):
+		return fail(502, "servarr_error", err.Error())
 	case errors.Is(err, requests.ErrForbidden):
 		return fail(403, "forbidden", err.Error())
 	case errors.Is(err, requests.ErrServarrFailed):
@@ -152,6 +157,9 @@ func registerRequests(api huma.API, d Deps) {
 		o, err := d.Requests.Options(ctx, in.Type)
 		if err != nil && !errors.Is(err, requests.ErrNoInstance) {
 			return nil, fail(502, "servarr_error", err.Error())
+		}
+		if o != nil && !u.Mask().MayRequest4K(in.Type) { // 4K profiles only for people with the 4K right
+			o.Profiles = slices.DeleteFunc(o.Profiles, func(p servarr.QualityProfile) bool { return p.UHD })
 		}
 		if o != nil && !u.Can(perms.RequestAdvanced) {
 			o.RootFolders, o.RootFolder = []servarr.RootFolder{}, "" // everyone picks the quality profile; the folder needs the advanced-requests right
