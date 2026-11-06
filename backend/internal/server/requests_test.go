@@ -57,7 +57,8 @@ func newFakeArr(t *testing.T, kind string) *fakeArr {
 		case p == "/system/status":
 			out(`{"appName":"` + kind + `","version":"5.0"}`)
 		case p == "/qualityprofile":
-			out(`[{"id":4,"name":"HD-1080p"}]`)
+			out(`[{"id":4,"name":"HD-1080p","items":[{"quality":{"name":"Bluray-1080p","resolution":1080},"allowed":true}]},` +
+				`{"id":5,"name":"Ultra-HD","items":[{"quality":{"name":"Bluray-2160p","resolution":2160},"allowed":true}]}]`)
 		case p == "/rootfolder":
 			out(`[{"id":1,"path":"/data/media","freeSpace":123}]`)
 		case p == "/queue":

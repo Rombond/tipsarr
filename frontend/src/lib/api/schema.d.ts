@@ -2313,7 +2313,14 @@ export interface components {
         QualityProfile: {
             /** Format: int64 */
             id: number;
+            /**
+             * Format: int64
+             * @description Highest resolution the profile allows (2160 = 4K), 0 when unknown
+             */
+            maxResolution: number;
             name: string;
+            /** @description The profile allows 4K (2160p): only people with the 4K right may pick it */
+            uhd: boolean;
         };
         Quota: {
             movie: components["schemas"]["QuotaWindow"];
@@ -2935,6 +2942,8 @@ export interface components {
             tmdbId: number;
             /** @enum {string} */
             type: "movie" | "tv";
+            /** @description The quality profile allows 4K (2160p) */
+            uhd: boolean;
             /** Format: int64 */
             updatedAt: number;
         };

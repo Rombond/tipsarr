@@ -290,3 +290,74 @@ func TestIssueRights(t *testing.T) {
 		t.Fatalf("delete with manage = %d", resp.StatusCode)
 	}
 }
+
+// A request is 4K when its quality profile allows 2160p: requesting it and having it auto-approved are rights of their own.
+func TestRequest4K(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	radarr := newFakeArr(t, "radarr")
+	addInstance(t, e, admin, "radarr", radarr)
+	addInstance(t, e, admin, "sonarr", newFakeArr(t, "sonarr"))
+	no4K := perms.Default &^ (perms.Request4K | perms.Request4KMovie | perms.Request4KTV)
+
+	// everyone has 4K by default and sees the 4K profile, marked as such
+	if _, body := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", bob); !strings.Contains(body, `"name":"Ultra-HD","maxResolution":2160,"uhd":true`) {
+		t.Fatalf("options with 4K = %s", body)
+	}
+	grantPermissions(t, e, admin, bob, no4K)
+	if _, body := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", bob); strings.Contains(body, `Ultra-HD`) || !strings.Contains(body, `HD-1080p`) {
+		t.Fatalf("options without 4K = %s", body)
+	}
+	if resp, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"qualityProfileId":5}`, bob); resp.StatusCode != http.StatusForbidden || !strings.Contains(body, "4k_not_allowed") {
+		t.Fatalf("4K without the right = %d %s", resp.StatusCode, body)
+	}
+	resp, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5}`, bob)
+	v := decodeReq(t, body)
+	if resp.StatusCode != http.StatusCreated || strings.Contains(body, `"uhd":true`) {
+		t.Fatalf("HD request = %d %s", resp.StatusCode, body)
+	}
+	if resp, body := call(t, e.app, "PATCH", "/api/v1/requests/"+v.ID, `{"qualityProfileId":5}`, bob); resp.StatusCode != http.StatusForbidden || !strings.Contains(body, "4k_not_allowed") {
+		t.Fatalf("switching to 4K without the right = %d %s", resp.StatusCode, body)
+	}
+	// a manager may switch it to 4K; the request then says so
+	if resp, body := call(t, e.app, "PATCH", "/api/v1/requests/"+v.ID, `{"qualityProfileId":5}`, admin); resp.StatusCode != 200 || !strings.Contains(body, `"uhd":true`) {
+		t.Fatalf("manager switches to 4K = %d %s", resp.StatusCode, body)
+	}
+	call(t, e.app, "DELETE", "/api/v1/requests/"+v.ID, "", admin)
+
+	// 4K for shows only
+	grantPermissions(t, e, admin, bob, no4K|perms.Request4KTV)
+	if resp, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"tv","tmdbId":2,"qualityProfileId":5}`, bob); resp.StatusCode != http.StatusCreated || !strings.Contains(body, `"uhd":true`) {
+		t.Fatalf("4K show with the show right = %d %s", resp.StatusCode, body)
+	}
+	if resp, _ := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"qualityProfileId":5}`, bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("4K movie with the show right = %d", resp.StatusCode)
+	}
+
+	// auto-approve does not cover 4K; the 4K auto-approve does
+	grantPermissions(t, e, admin, bob, perms.Default|perms.AutoApproveMovie)
+	_, body = call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"qualityProfileId":5}`, bob)
+	v = decodeReq(t, body)
+	if v.Status != "pending" || !strings.Contains(body, `"uhd":true`) {
+		t.Fatalf("4K movie without 4K auto-approve = %s", body)
+	}
+	_, body = call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":1}`, bob)
+	if decodeReq(t, body).Status != "approved" {
+		t.Fatalf("HD movie with auto-approve = %s", body)
+	}
+	if resp, body := call(t, e.app, "POST", "/api/v1/requests/"+v.ID+"/approve", `{}`, admin); resp.StatusCode != 200 || !strings.Contains(body, `"uhd":true`) {
+		t.Fatalf("manager approves the 4K request = %d %s", resp.StatusCode, body)
+	}
+	call(t, e.app, "DELETE", "/api/v1/requests/"+v.ID, "", admin)
+	grantPermissions(t, e, admin, bob, perms.Default|perms.AutoApprove4KMovie)
+	if _, body = call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5,"qualityProfileId":5}`, bob); decodeReq(t, body).Status != "approved" {
+		t.Fatalf("4K movie with 4K auto-approve = %s", body)
+	}
+
+	// Radarr down: refused for someone without 4K (the profile cannot be checked)
+	grantPermissions(t, e, admin, bob, no4K)
+	radarr.srv.Close()
+	if resp, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":10}`, bob); resp.StatusCode != http.StatusBadGateway {
+		t.Fatalf("request while Radarr is down = %d %s", resp.StatusCode, body)
+	}
+}

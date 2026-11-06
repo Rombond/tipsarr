@@ -1,6 +1,7 @@
 // Package perms is Tipsarr's permission model, taken from Seerr: one integer mask per person, a flag per right,
 // and an admin who may do everything. The bit values are Seerr's, so a mask can be copied across as it is
-// (4K and voting have no counterpart here and are left out).
+// (voting has no counterpart here and is left out). 4K works with one Radarr/Sonarr instance: a request is 4K
+// when its quality profile allows a 2160p quality.
 package perms
 
 import "slices"
@@ -12,21 +13,27 @@ const (
 	None Mask = 0
 
 	// Admin and management.
-	Admin            Mask = 2
-	ManageSettings   Mask = 4   // server settings, Radarr/Sonarr, webhooks, jobs
-	ManageUsers      Mask = 8   // the user list, roles, permissions
-	ManageRequests   Mask = 16  // approve, decline, retry, edit and delete any request; no quota; implies auto-approve
-	Request          Mask = 32  // make requests at all
-	AutoApprove      Mask = 128 // requests are approved without an admin
-	AutoApproveMovie Mask = 256
-	AutoApproveTV    Mask = 512
-	RequestAdvanced  Mask = 8192    // choose the root folder of a request
-	RequestView      Mask = 16384   // see everyone's requests
-	RequestMovie     Mask = 262144  // request movies
-	RequestTV        Mask = 524288  // request shows
-	ManageIssues     Mask = 1048576 // comment on and resolve any issue
-	ViewIssues       Mask = 2097152 // see everyone's issues
-	CreateIssues     Mask = 4194304 // report a problem with a title
+	Admin              Mask = 2
+	ManageSettings     Mask = 4   // server settings, Radarr/Sonarr, webhooks, jobs
+	ManageUsers        Mask = 8   // the user list, roles, permissions
+	ManageRequests     Mask = 16  // approve, decline, retry, edit and delete any request; no quota; implies auto-approve
+	Request            Mask = 32  // make requests at all
+	AutoApprove        Mask = 128 // requests are approved without an admin
+	AutoApproveMovie   Mask = 256
+	AutoApproveTV      Mask = 512
+	Request4K          Mask = 1024 // request in 4K (a quality profile that allows 2160p)
+	Request4KMovie     Mask = 2048
+	Request4KTV        Mask = 4096
+	RequestAdvanced    Mask = 8192  // choose the root folder of a request
+	RequestView        Mask = 16384 // see everyone's requests
+	AutoApprove4K      Mask = 32768 // 4K requests are approved without an admin
+	AutoApprove4KMovie Mask = 65536
+	AutoApprove4KTV    Mask = 131072
+	RequestMovie       Mask = 262144  // request movies
+	RequestTV          Mask = 524288  // request shows
+	ManageIssues       Mask = 1048576 // comment on and resolve any issue
+	ViewIssues         Mask = 2097152 // see everyone's issues
+	CreateIssues       Mask = 4194304 // report a problem with a title
 
 	// Reserved: part of the mask so the numbers match Seerr, but no feature uses them yet.
 	AutoRequest      Mask = 8388608
@@ -51,15 +58,21 @@ type Flag struct {
 var Catalog = []Flag{
 	{Name: "manageSettings", Value: ManageSettings, Group: "admin"},
 	{Name: "manageUsers", Value: ManageUsers, Group: "admin"},
-	{Name: "manageRequests", Value: ManageRequests, Group: "requests", Implies: []string{"requestAdvanced", "requestView", "autoApprove", "autoApproveMovie", "autoApproveTV"}},
+	{Name: "manageRequests", Value: ManageRequests, Group: "requests", Implies: []string{"requestAdvanced", "requestView", "autoApprove", "autoApproveMovie", "autoApproveTV", "request4K", "request4KMovie", "request4KTV", "autoApprove4K", "autoApprove4KMovie", "autoApprove4KTV"}},
 	{Name: "request", Value: Request, Group: "requests", Implies: []string{"requestMovie", "requestTV"}},
 	{Name: "requestMovie", Value: RequestMovie, Group: "requests"},
 	{Name: "requestTV", Value: RequestTV, Group: "requests"},
+	{Name: "request4K", Value: Request4K, Group: "requests", Implies: []string{"request4KMovie", "request4KTV"}},
+	{Name: "request4KMovie", Value: Request4KMovie, Group: "requests"},
+	{Name: "request4KTV", Value: Request4KTV, Group: "requests"},
 	{Name: "requestAdvanced", Value: RequestAdvanced, Group: "requests"},
 	{Name: "requestView", Value: RequestView, Group: "requests"},
 	{Name: "autoApprove", Value: AutoApprove, Group: "auto-approve", Implies: []string{"autoApproveMovie", "autoApproveTV"}},
 	{Name: "autoApproveMovie", Value: AutoApproveMovie, Group: "auto-approve"},
 	{Name: "autoApproveTV", Value: AutoApproveTV, Group: "auto-approve"},
+	{Name: "autoApprove4K", Value: AutoApprove4K, Group: "auto-approve", Implies: []string{"autoApprove4KMovie", "autoApprove4KTV"}},
+	{Name: "autoApprove4KMovie", Value: AutoApprove4KMovie, Group: "auto-approve"},
+	{Name: "autoApprove4KTV", Value: AutoApprove4KTV, Group: "auto-approve"},
 	{Name: "manageIssues", Value: ManageIssues, Group: "issues", Implies: []string{"viewIssues", "createIssues"}},
 	{Name: "viewIssues", Value: ViewIssues, Group: "issues"},
 	{Name: "createIssues", Value: CreateIssues, Group: "issues"},
@@ -81,8 +94,8 @@ var All = func() Mask {
 	return m
 }()
 
-// Default is what a new person gets: request movies and shows and report problems, nothing auto-approved.
-const Default = Request | RequestMovie | RequestTV | CreateIssues
+// Default is what a new person gets: request movies and shows (4K included) and report problems, nothing auto-approved.
+const Default = Request | RequestMovie | RequestTV | Request4K | Request4KMovie | Request4KTV | CreateIssues
 
 // Has reports whether every given flag is set. Admin passes everything.
 func (m Mask) Has(flags ...Mask) bool {
@@ -146,15 +159,39 @@ func ByName(name string) (Mask, bool) {
 	return m, ok
 }
 
-// AutoApproves reports whether a request of this type is approved without an admin.
-func (m Mask) AutoApproves(mediaType string) bool {
-	if m&Admin != 0 || m&(ManageRequests|AutoApprove) != 0 {
+// AutoApproves reports whether a request of this type is approved without an admin. A 4K request (uhd) needs
+// the 4K auto-approve rights, which are separate from the others.
+func (m Mask) AutoApproves(mediaType string, uhd bool) bool {
+	if m&(Admin|ManageRequests) != 0 {
+		return true
+	}
+	if uhd {
+		if m&AutoApprove4K != 0 {
+			return true
+		}
+		if mediaType == "movie" {
+			return m&AutoApprove4KMovie != 0
+		}
+		return m&AutoApprove4KTV != 0
+	}
+	if m&AutoApprove != 0 {
 		return true
 	}
 	if mediaType == "movie" {
 		return m&AutoApproveMovie != 0
 	}
 	return m&AutoApproveTV != 0
+}
+
+// MayRequest4K reports whether a 4K request of this type is allowed.
+func (m Mask) MayRequest4K(mediaType string) bool {
+	if m&(Admin|Request4K) != 0 {
+		return true
+	}
+	if mediaType == "movie" {
+		return m&Request4KMovie != 0
+	}
+	return m&Request4KTV != 0
 }
 
 // MayRequest reports whether a request of this type is allowed.

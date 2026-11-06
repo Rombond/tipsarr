@@ -4,10 +4,12 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/Rombond/tipsarr/backend/internal/perms"
+	"github.com/uptrace/bun"
 )
 
 func TestDefaultPermissionsAndNewUsers(t *testing.T) {
@@ -118,5 +120,66 @@ func TestMigrationKeepsTheFolderChoice(t *testing.T) {
 	}
 	if v, _ := s.GetSetting(ctx, "requests.user_folder"); v != "" {
 		t.Fatalf("old setting still there: %q", v)
+	}
+}
+
+// 027_request_4k.sql: everyone keeps 4K, and whoever auto-approves keeps auto-approving in 4K (the stored default too).
+func TestMigration4KKeepsEveryoneAsBefore(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(ctx, "sqlite:"+filepath.Join(t.TempDir(), "m.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	old := perms.Request | perms.RequestMovie | perms.RequestTV | perms.CreateIssues // 4980768, the default before 4K
+	plain, _ := s.UpsertUser(ctx, "u1", "ann", false)
+	movies, _ := s.UpsertUser(ctx, "u2", "bob", false)
+	all, _ := s.UpsertUser(ctx, "u3", "cid", false)
+	set := func(id string, m perms.Mask) {
+		if _, err := s.DB.NewUpdate().Model((*User)(nil)).Set("permissions = ?", int64(m)).Where("id = ?", id).Exec(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	set(plain.ID, old)
+	set(movies.ID, old|perms.AutoApproveMovie)
+	set(all.ID, old|perms.AutoApprove|perms.AutoApproveMovie|perms.AutoApproveTV)
+	if err := s.SetSetting(ctx, SettingDefaultPermissions, strconv.FormatInt(int64(old|perms.AutoApproveTV), 10)); err != nil {
+		t.Fatal(err)
+	}
+
+	body, err := migrationsFS.ReadFile("migrations/027_request_4k.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = s.DB.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		for _, stmt := range splitStatements(string(body)) {
+			if strings.HasPrefix(stmt, "UPDATE") { // the column already exists: Open applied the whole file
+				if _, err := tx.ExecContext(ctx, stmt); err != nil {
+					return err
+				}
+			}
+		}
+		return afterMigration["027_request_4k.sql"](ctx, tx)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	four := perms.Request4K | perms.Request4KMovie | perms.Request4KTV
+	for id, want := range map[string]perms.Mask{
+		plain.ID:  old | four,
+		movies.ID: old | perms.AutoApproveMovie | four | perms.AutoApprove4KMovie,
+		all.ID:    old | perms.AutoApprove | perms.AutoApproveMovie | perms.AutoApproveTV | four | perms.AutoApprove4K | perms.AutoApprove4KMovie | perms.AutoApprove4KTV,
+	} {
+		u, err := s.GetUser(ctx, id)
+		if err != nil || perms.Mask(u.Permissions) != want {
+			t.Errorf("%s = %d, want %d (%v)", id, u.Permissions, want, err)
+		}
+	}
+	if got := s.DefaultPermissions(ctx); got != old|perms.AutoApproveTV|four|perms.AutoApprove4KTV {
+		t.Errorf("stored default = %d", got)
+	}
+	if Grant4K(int64(old)) != int64(perms.Default) {
+		t.Error("the old default plus 4K must be the new default")
 	}
 }
