@@ -53,7 +53,7 @@ extension TipsarrAPI {
                 let body = try ok.body.json
                 return RequestOptions(
                     instanceName: body.instanceName,
-                    profiles: body.profiles.map { QualityProfile(id: Int($0.id), name: $0.name) },
+                    profiles: body.profiles.map { QualityProfile(id: Int($0.id), name: $0.name, uhd: $0.uhd ?? false) },
                     defaultProfileID: Int(body.qualityProfileId),
                     rootFolders: body.rootFolders.map { RootFolderOption(id: Int($0.id), path: $0.path, freeSpace: $0.freeSpace) },
                     defaultFolder: body.rootFolder
@@ -177,6 +177,7 @@ extension RequestRecord {
             qualityProfileId: v.qualityProfileId.flatMap { $0 > 0 ? Int($0) : nil },
             rootFolder: v.rootFolder.flatMap { $0.isEmpty ? nil : $0 },
             imported: !(v.source ?? "").isEmpty,
+            uhd: v.uhd ?? false,
             createdAt: Date(timeIntervalSince1970: TimeInterval(v.createdAt ?? 0)),
             events: (v.events ?? []).compactMap { e in
                 RequestState(rawValue: e.kind.rawValue).map {

@@ -212,7 +212,7 @@ struct RequestRow: View {
                 HStack(alignment: .top) {
                     Text(verbatim: record.title).font(.body.weight(.semibold)).lineLimit(2)
                     Spacer(minLength: Tokens.Spacing.sm)
-                    StatusBadge(state: record.state)
+                    RequestBadges(record: record)
                 }
                 Text(choose(record.type == .tv, "type.tv", "type.movie")).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                 Text(verbatim: when).font(.caption).foregroundStyle(Tokens.palette.mutedFg)

@@ -126,7 +126,7 @@ struct RequestCardTile: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
                 Text(verbatim: record.title).font(.body.weight(.semibold)).lineLimit(1)
-                StatusBadge(state: record.state)
+                RequestBadges(record: record)
                 Text(record.createdAt, format: .relative(presentation: .named)).font(.caption).foregroundStyle(Tokens.palette.mutedFg)
             }
             Spacer(minLength: 0)
