@@ -67,7 +67,8 @@ data class RatingsSummary(val tmdb: Double? = null, val imdb: Double? = null, va
 data class TitleFlags(val watchlisted: Boolean = false, val blocklisted: Boolean = false)
 
 @Serializable
-data class QualityProfile(val id: Int, val name: String)
+/** A Radarr/Sonarr quality profile; `uhd` when it allows 2160p (a 4K request). Older servers send neither extra field. */
+data class QualityProfile(val id: Int, val name: String, val maxResolution: Int = 0, val uhd: Boolean = false)
 
 @Serializable
 data class RootFolder(val id: Int, val path: String, val freeSpace: Long = 0)
@@ -118,6 +119,8 @@ data class RequestView(
     val source: String? = null,
     /** What happened to the request and when, oldest first; a server older than 0.11 sends none. */
     val events: List<RequestEvent> = emptyList(),
+    /** A 4K request (its quality profile allows 2160p); older servers do not send it. */
+    val uhd: Boolean = false,
 )
 
 /** One step in the history of a request: `kind` is a stage name, `at` unix seconds, `by` absent when the server did it,
@@ -147,6 +150,7 @@ data class RequestRecord(
     val rootFolder: String? = null,
     val imported: Boolean = false,
     val events: List<RequestEvent> = emptyList(),
+    val uhd: Boolean = false,
 ) {
     /** The owner may still cancel until the title is available. */
     val isOpen: Boolean get() = state != RequestState.Available && state != RequestState.Declined && state != RequestState.Failed
@@ -175,6 +179,7 @@ fun RequestView.toRecord() = RequestRecord(
     qualityProfileId = qualityProfileId?.takeIf { it != 0 }, rootFolder = rootFolder?.takeIf { it.isNotEmpty() },
     imported = !source.isNullOrEmpty(),
     events = events,
+    uhd = uhd,
 )
 
 @Serializable

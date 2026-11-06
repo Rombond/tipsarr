@@ -14,6 +14,12 @@ object Permission {
     const val AUTO_APPROVE = 128L
     const val AUTO_APPROVE_MOVIE = 256L
     const val AUTO_APPROVE_TV = 512L
+    const val REQUEST_4K_MOVIE = 2048L
+    const val REQUEST_4K_TV = 4096L
+    const val AUTO_APPROVE_4K = 32768L
+    const val AUTO_APPROVE_4K_MOVIE = 65536L
+    const val AUTO_APPROVE_4K_TV = 131072L
+    const val REQUEST_4K = 1024L
     const val REQUEST_ADVANCED = 8192L
     const val REQUEST_VIEW = 16384L
     const val REQUEST_MOVIE = 262144L

@@ -61,6 +61,7 @@ import com.brebond.tipsarr.design.Tokens
 import com.brebond.tipsarr.design.palette
 import com.brebond.tipsarr.features.detail.MediaRoute
 import com.brebond.tipsarr.ui.StatusBadge
+import com.brebond.tipsarr.ui.UhdBadge
 
 private val GUTTER = Tokens.Spacing.lg
 
@@ -248,7 +249,10 @@ private fun RecentGrid(recent: List<RequestRecord>, onOpenRequests: () -> Unit, 
                         }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.xs)) {
                             Text(record.title, fontSize = Tokens.FontSize.body, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            StatusBadge(record.state)
+                            Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
+                                StatusBadge(record.state)
+                                if (record.uhd) UhdBadge()
+                            }
                             if (record.createdAt > 0) Text(relativeTime(context, record.createdAt), fontSize = Tokens.FontSize.caption, color = Tokens.palette.mutedFg, maxLines = 1)
                         }
                     }

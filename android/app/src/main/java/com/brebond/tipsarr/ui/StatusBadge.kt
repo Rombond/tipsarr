@@ -20,7 +20,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.brebond.tipsarr.R
 import com.brebond.tipsarr.design.Tokens
+import com.brebond.tipsarr.design.palette
 
 /** Pill with the state's symbol and name; `compact` keeps the symbol only (poster corner). Colour is never the only signal. */
 @Composable
@@ -46,4 +48,14 @@ fun StatusBadge(state: RequestState, modifier: Modifier = Modifier, compact: Boo
         Icon(state.icon, contentDescription = null, tint = state.color, modifier = Modifier.size(14.dp))
         Text(label, color = state.color, fontSize = Tokens.FontSize.caption, fontWeight = FontWeight.SemiBold)
     }
+}
+
+/** "4K" next to a request whose quality profile allows 2160p: a small neutral pill, quieter than the status. */
+@Composable
+fun UhdBadge(modifier: Modifier = Modifier) {
+    Text(
+        stringResource(R.string.req_uhd_badge),
+        color = Tokens.palette.mutedFg, fontSize = Tokens.FontSize.caption, fontWeight = FontWeight.SemiBold,
+        modifier = modifier.clip(CircleShape).background(Tokens.palette.muted).padding(horizontal = Tokens.Spacing.sm, vertical = 2.dp),
+    )
 }

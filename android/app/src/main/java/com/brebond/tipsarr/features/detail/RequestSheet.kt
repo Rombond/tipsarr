@@ -152,15 +152,15 @@ fun RequestSheet(model: MediaDetailModel, onDismiss: () -> Unit, onDone: (Reques
             }
             model.options?.let { options ->
                 Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
-                    OptionRow(Icons.Outlined.Tune, stringResource(R.string.req_quality_profile), options.profiles.firstOrNull { it.id == profileId }?.name.orEmpty(),
-                        options.profiles.map { it.name to { profileId = it.id } })
+                    OptionRow(Icons.Outlined.Tune, stringResource(R.string.req_quality_profile), options.profiles.firstOrNull { it.id == profileId }?.let { profileLabel(it) }.orEmpty(),
+                        options.profiles.map { profileLabel(it) to { profileId = it.id } })
                     if (model.canChooseFolder && options.rootFolders.isNotEmpty()) {
                         OptionRow(Icons.Outlined.Storage, stringResource(R.string.req_root_folder), folder ?: options.rootFolder,
                             options.rootFolders.map { "${it.path} · ${formatBytes(it.freeSpace)}" to { folder = it.path } })
                     }
                 }
             }
-            Text(stringResource(if (model.autoApproves) R.string.m_request_admin_note else R.string.m_request_user_note), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+            Text(stringResource(if (model.autoApproves(model.options?.profiles?.firstOrNull { it.id == profileId }?.uhd == true)) R.string.m_request_admin_note else R.string.m_request_user_note), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
             errorText?.let { Banner(it, kind = BannerKind.Error) }
             Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
                 TipsarrButton(
@@ -224,8 +224,8 @@ fun RequestOptionsSheet(record: RequestRecord, load: suspend () -> RequestOption
             Text(stringResource(R.string.req_change_options, record.title), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.Bold, color = Tokens.palette.fg)
             options?.let { o ->
                 Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
-                    OptionRow(Icons.Outlined.Tune, stringResource(R.string.req_quality_profile), o.profiles.firstOrNull { it.id == profileId }?.name.orEmpty(),
-                        o.profiles.map { it.name to { profileId = it.id } })
+                    OptionRow(Icons.Outlined.Tune, stringResource(R.string.req_quality_profile), o.profiles.firstOrNull { it.id == profileId }?.let { profileLabel(it) }.orEmpty(),
+                        o.profiles.map { profileLabel(it) to { profileId = it.id } })
                     if (o.rootFolders.isNotEmpty()) {
                         OptionRow(Icons.Outlined.Storage, stringResource(R.string.req_root_folder), folder ?: o.rootFolder,
                             o.rootFolders.map { "${it.path} · ${formatBytes(it.freeSpace)}" to { folder = it.path } })
@@ -252,3 +252,8 @@ fun RequestOptionsSheet(record: RequestRecord, load: suspend () -> RequestOption
         }
     }
 }
+
+/** A quality profile's name, with "(4K)" when it allows 2160p. */
+@Composable
+internal fun profileLabel(profile: com.brebond.tipsarr.core.api.QualityProfile): String =
+    if (profile.uhd) stringResource(R.string.req_profile_uhd, profile.name) else profile.name

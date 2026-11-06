@@ -43,9 +43,13 @@ data class Profile(
     fun mayRequest(type: MediaType): Boolean =
         can(Permission.REQUEST) || can(if (type == MediaType.Movie) Permission.REQUEST_MOVIE else Permission.REQUEST_TV)
 
-    /** Requests of this kind are approved right away. */
-    fun autoApproves(type: MediaType): Boolean =
-        can(Permission.MANAGE_REQUESTS) || can(Permission.AUTO_APPROVE) || can(if (type == MediaType.Movie) Permission.AUTO_APPROVE_MOVIE else Permission.AUTO_APPROVE_TV)
+    /** Requests of this kind are approved right away. A 4K request (`uhd`) needs a 4K auto-approve right: the
+     *  ordinary ones do not cover it. */
+    fun autoApproves(type: MediaType, uhd: Boolean = false): Boolean = when {
+        can(Permission.MANAGE_REQUESTS) -> true
+        uhd -> can(Permission.AUTO_APPROVE_4K) || can(if (type == MediaType.Movie) Permission.AUTO_APPROVE_4K_MOVIE else Permission.AUTO_APPROVE_4K_TV)
+        else -> can(Permission.AUTO_APPROVE) || can(if (type == MediaType.Movie) Permission.AUTO_APPROVE_MOVIE else Permission.AUTO_APPROVE_TV)
+    }
 }
 
 @Serializable
