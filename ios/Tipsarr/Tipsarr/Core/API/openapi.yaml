@@ -1,7 +1,6 @@
 components:
   schemas:
     Add_blocklistRequest:
-      additionalProperties: false
       properties:
         tmdbId:
           format: int64
@@ -17,7 +16,6 @@ components:
         - tmdbId
       type: object
     Add_watchlistRequest:
-      additionalProperties: false
       properties:
         tmdbId:
           format: int64
@@ -33,7 +31,6 @@ components:
         - tmdbId
       type: object
     AdminTeaserHistoryResponse:
-      additionalProperties: false
       properties:
         items:
           items:
@@ -47,7 +44,6 @@ components:
         - total
       type: object
     ApproveRequestRequest:
-      additionalProperties: false
       properties:
         qualityProfileId:
           format: int64
@@ -56,7 +52,6 @@ components:
           type: string
       type: object
     ArrLink:
-      additionalProperties: false
       properties:
         kind:
           enum:
@@ -73,7 +68,6 @@ components:
         - url
       type: object
     AuthMethods:
-      additionalProperties: false
       properties:
         password:
           description: The Jellyfin username/password form works
@@ -89,7 +83,6 @@ components:
         - sso
       type: object
     Breaker:
-      additionalProperties: false
       properties:
         state:
           enum:
@@ -104,7 +97,6 @@ components:
         - until
       type: object
     CastMember:
-      additionalProperties: false
       properties:
         character:
           type: string
@@ -120,7 +112,6 @@ components:
         - name
       type: object
     Chart:
-      additionalProperties: false
       properties:
         end:
           type: string
@@ -164,7 +155,6 @@ components:
         - entries
       type: object
     ChartEntry:
-      additionalProperties: false
       properties:
         hasFile:
           description: Radarr already has the file
@@ -200,7 +190,6 @@ components:
         - hasFile
       type: object
     CollectionDetail:
-      additionalProperties: false
       properties:
         backdropPath:
           type: string
@@ -223,7 +212,6 @@ components:
         - parts
       type: object
     CommentIssueRequest:
-      additionalProperties: false
       properties:
         message:
           maxLength: 2000
@@ -233,7 +221,6 @@ components:
         - message
       type: object
     Counts:
-      additionalProperties: false
       properties:
         failed:
           format: int64
@@ -254,7 +241,6 @@ components:
         - failed
       type: object
     CreateIssueRequest:
-      additionalProperties: false
       properties:
         episode:
           description: TV only, 0 = whole season
@@ -293,7 +279,6 @@ components:
         - message
       type: object
     CreateRequestRequest:
-      additionalProperties: false
       properties:
         qualityProfileId:
           description: Radarr/Sonarr quality profile to use (omit for the default); see /requests/options
@@ -322,7 +307,6 @@ components:
         - tmdbId
       type: object
     CrewMember:
-      additionalProperties: false
       properties:
         id:
           format: int64
@@ -340,14 +324,12 @@ components:
         - job
       type: object
     DeclineRequestRequest:
-      additionalProperties: false
       properties:
         reason:
           maxLength: 500
           type: string
       type: object
     Detail:
-      additionalProperties: false
       properties:
         availability:
           description: Library availability (filled by library sync)
@@ -513,7 +495,6 @@ components:
         - availability
       type: object
     DeviceSession:
-      additionalProperties: false
       properties:
         appVersion:
           type: string
@@ -554,7 +535,6 @@ components:
         - current
       type: object
     Episode:
-      additionalProperties: false
       properties:
         airDate:
           type: string
@@ -585,7 +565,6 @@ components:
         - voteAverage
       type: object
     ErrorDetail:
-      additionalProperties: false
       properties:
         location:
           description: Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'
@@ -597,7 +576,6 @@ components:
           description: The value at the given location
       type: object
     ErrorModel:
-      additionalProperties: false
       properties:
         detail:
           description: A human-readable explanation specific to this occurrence of the problem.
@@ -630,7 +608,6 @@ components:
           type: string
       type: object
     Event:
-      additionalProperties: false
       properties:
         at:
           description: Unix time of the step
@@ -657,7 +634,6 @@ components:
         - at
       type: object
     Feed:
-      additionalProperties: false
       properties:
         done:
           description: "True when there is nothing new left to show. No items and not done: trailers are still being prepared, ask again in a few seconds"
@@ -671,7 +647,6 @@ components:
         - done
       type: object
     Flag:
-      additionalProperties: false
       properties:
         group:
           enum:
@@ -701,7 +676,6 @@ components:
         - reserved
       type: object
     Flags:
-      additionalProperties: false
       properties:
         blocklisted:
           type: boolean
@@ -712,7 +686,6 @@ components:
         - blocklisted
       type: object
     Genre:
-      additionalProperties: false
       properties:
         id:
           format: int64
@@ -724,7 +697,6 @@ components:
         - name
       type: object
     GenreCount:
-      additionalProperties: false
       properties:
         count:
           format: int64
@@ -736,7 +708,6 @@ components:
         - count
       type: object
     GetPermissionsResponse:
-      additionalProperties: false
       properties:
         defaults:
           $ref: "#/components/schemas/PermissionDefaults"
@@ -749,7 +720,6 @@ components:
         - defaults
       type: object
     Health:
-      additionalProperties: false
       properties:
         breaker:
           $ref: "#/components/schemas/Breaker"
@@ -782,7 +752,6 @@ components:
         - breaker
       type: object
     HealthOutputBody:
-      additionalProperties: false
       properties:
         ok:
           type: boolean
@@ -790,7 +759,6 @@ components:
         - ok
       type: object
     HistoryItem:
-      additionalProperties: false
       properties:
         availability:
           description: Library availability (filled by library sync)
@@ -846,7 +814,6 @@ components:
         - availability
       type: object
     HistorySource:
-      additionalProperties: false
       properties:
         id:
           type: string
@@ -857,7 +824,6 @@ components:
         - name
       type: object
     HistorySourcesBody:
-      additionalProperties: false
       properties:
         sources:
           description: Accounts whose watch history this person's recommendations also use, with their own. Titles they watched are hidden from the recommendations too
@@ -868,7 +834,6 @@ components:
         - sources
       type: object
     ImportUsersResponse:
-      additionalProperties: false
       properties:
         created:
           format: int64
@@ -881,7 +846,6 @@ components:
         - total
       type: object
     InstanceBody:
-      additionalProperties: false
       properties:
         animeRoot:
           description: Sonarr only. Omit to keep, empty string to clear
@@ -927,7 +891,6 @@ components:
         - isDefault
       type: object
     InstanceView:
-      additionalProperties: false
       properties:
         animeRoot:
           description: "Sonarr only: root folder for anime (Animation + Japanese original language); such shows are also added with series type anime"
@@ -974,7 +937,6 @@ components:
         - genreRoots
       type: object
     IssueComment:
-      additionalProperties: false
       properties:
         createdAt:
           format: int64
@@ -992,7 +954,6 @@ components:
         - createdAt
       type: object
     IssueCounts:
-      additionalProperties: false
       properties:
         open:
           format: int64
@@ -1005,7 +966,6 @@ components:
         - resolved
       type: object
     IssueServarrSearchResponse:
-      additionalProperties: false
       properties:
         dryRun:
           description: "Dry-run is on: nothing was sent to Radarr/Sonarr"
@@ -1014,7 +974,6 @@ components:
         - dryRun
       type: object
     IssueThread:
-      additionalProperties: false
       properties:
         commentCount:
           format: int64
@@ -1079,7 +1038,6 @@ components:
         - updatedAt
       type: object
     IssueUser:
-      additionalProperties: false
       properties:
         id:
           type: string
@@ -1090,7 +1048,6 @@ components:
         - name
       type: object
     IssueView:
-      additionalProperties: false
       properties:
         commentCount:
           format: int64
@@ -1150,7 +1107,6 @@ components:
         - updatedAt
       type: object
     Item:
-      additionalProperties: false
       properties:
         availability:
           description: Library availability (filled by library sync)
@@ -1201,7 +1157,6 @@ components:
         - availability
       type: object
     Keyword:
-      additionalProperties: false
       properties:
         id:
           format: int64
@@ -1213,7 +1168,6 @@ components:
         - name
       type: object
     LdapImportBody:
-      additionalProperties: false
       properties:
         connected:
           description: True when Tipsarr could sign in to the LDAP server with the imported settings
@@ -1234,7 +1188,6 @@ components:
         - connected
       type: object
     LibraryFacets:
-      additionalProperties: false
       properties:
         genres:
           description: Most common first
@@ -1265,7 +1218,6 @@ components:
         - maxRuntimeMinutes
       type: object
     LibraryItem:
-      additionalProperties: false
       properties:
         addedAt:
           description: When Jellyfin added it (unix seconds)
@@ -1324,7 +1276,6 @@ components:
         - watched
       type: object
     LibraryList:
-      additionalProperties: false
       properties:
         items:
           items:
@@ -1346,7 +1297,6 @@ components:
         - items
       type: object
     List:
-      additionalProperties: false
       properties:
         items:
           items:
@@ -1364,7 +1314,6 @@ components:
         - items
       type: object
     ListIssuesResponse:
-      additionalProperties: false
       properties:
         items:
           items:
@@ -1378,7 +1327,6 @@ components:
         - items
       type: object
     LoginInputBody:
-      additionalProperties: false
       properties:
         password:
           maxLength: 512
@@ -1392,7 +1340,6 @@ components:
         - password
       type: object
     MovieScores:
-      additionalProperties: false
       properties:
         imdb:
           $ref: "#/components/schemas/Score"
@@ -1410,7 +1357,6 @@ components:
           type: string
       type: object
     Options:
-      additionalProperties: false
       properties:
         instanceName:
           type: string
@@ -1437,7 +1383,6 @@ components:
         - rootFolders
       type: object
     Overview:
-      additionalProperties: false
       properties:
         available:
           description: The resolver answered its health check
@@ -1465,7 +1410,6 @@ components:
         - files
       type: object
     PermissionDefaults:
-      additionalProperties: false
       properties:
         movieQuotaDays:
           format: int64
@@ -1501,7 +1445,6 @@ components:
         - tvQuotaDays
       type: object
     Person:
-      additionalProperties: false
       properties:
         department:
           type: string
@@ -1517,7 +1460,6 @@ components:
         - name
       type: object
     PersonDetail:
-      additionalProperties: false
       properties:
         biography:
           type: string
@@ -1547,7 +1489,6 @@ components:
         - name
       type: object
     PrefsBody:
-      additionalProperties: false
       properties:
         language:
           description: TMDB language, e.g. fr-FR or fr (empty = English)
@@ -1566,7 +1507,6 @@ components:
           type: string
       type: object
     ProbeBody:
-      additionalProperties: false
       properties:
         apiKey:
           description: Leave empty to use the saved key of the instance given by id
@@ -1586,7 +1526,6 @@ components:
         - url
       type: object
     ProbeResult:
-      additionalProperties: false
       properties:
         appName:
           type: string
@@ -1607,7 +1546,6 @@ components:
         - rootFolders
       type: object
     ProfileStats:
-      additionalProperties: false
       properties:
         approved:
           format: int64
@@ -1655,7 +1593,6 @@ components:
         - watched
       type: object
     ProfileView:
-      additionalProperties: false
       properties:
         createdAt:
           format: int64
@@ -1716,7 +1653,6 @@ components:
         - hasUploadedAvatar
       type: object
     Progress:
-      additionalProperties: false
       properties:
         etaSeconds:
           format: int64
@@ -1729,7 +1665,6 @@ components:
         - etaSeconds
       type: object
     PushDevice:
-      additionalProperties: false
       properties:
         categories:
           description: "Bitmask: 1 my requests, 2 new requests to approve (admins), 4 issues"
@@ -1757,7 +1692,6 @@ components:
         - updatedAt
       type: object
     QualityProfile:
-      additionalProperties: false
       properties:
         id:
           format: int64
@@ -1776,7 +1710,6 @@ components:
         - name
       type: object
     Quota:
-      additionalProperties: false
       properties:
         movie:
           $ref: "#/components/schemas/QuotaWindow"
@@ -1787,7 +1720,6 @@ components:
         - tv
       type: object
     QuotaWindow:
-      additionalProperties: false
       properties:
         days:
           format: int64
@@ -1816,7 +1748,6 @@ components:
         - restricted
       type: object
     RegisterDeviceInputBody:
-      additionalProperties: false
       properties:
         categories:
           description: Bitmask of the notifications wanted; default all (7), unchanged on refresh when omitted
@@ -1844,7 +1775,6 @@ components:
         - pushToken
       type: object
     RequestCountsResponse:
-      additionalProperties: false
       properties:
         approved:
           format: int64
@@ -1869,7 +1799,6 @@ components:
         - failed
       type: object
     RequestList:
-      additionalProperties: false
       properties:
         items:
           items:
@@ -1883,7 +1812,6 @@ components:
         - items
       type: object
     Result:
-      additionalProperties: false
       properties:
         generating:
           description: A refresh is running in the background; a suggestions.updated event follows
@@ -1897,7 +1825,6 @@ components:
         - generating
       type: object
     Review:
-      additionalProperties: false
       properties:
         author:
           type: string
@@ -1917,7 +1844,6 @@ components:
         - content
       type: object
     RootFolder:
-      additionalProperties: false
       properties:
         freeSpace:
           format: int64
@@ -1933,7 +1859,6 @@ components:
         - freeSpace
       type: object
     Row:
-      additionalProperties: false
       properties:
         generatedAt:
           format: int64
@@ -1975,7 +1900,6 @@ components:
         - items
       type: object
     Score:
-      additionalProperties: false
       properties:
         value:
           description: "IMDb: out of 10. Metacritic and Rotten Tomatoes: out of 100"
@@ -1988,7 +1912,6 @@ components:
         - value
       type: object
     SearchResult:
-      additionalProperties: false
       properties:
         items:
           items:
@@ -2023,7 +1946,6 @@ components:
         - tagged
       type: object
     Season:
-      additionalProperties: false
       properties:
         airDate:
           type: string
@@ -2052,7 +1974,6 @@ components:
         - monitored
       type: object
     SeasonDetail:
-      additionalProperties: false
       properties:
         airDate:
           type: string
@@ -2075,7 +1996,6 @@ components:
         - episodes
       type: object
     SeasonProgress:
-      additionalProperties: false
       properties:
         percent:
           description: Episodes Sonarr has plus what is being downloaded, as a percentage of the season
@@ -2089,7 +2009,6 @@ components:
         - percent
       type: object
     Seed:
-      additionalProperties: false
       properties:
         title:
           type: string
@@ -2107,7 +2026,6 @@ components:
         - title
       type: object
     SetBoxOfficeAliasRequest:
-      additionalProperties: false
       properties:
         title:
           maxLength: 255
@@ -2122,7 +2040,6 @@ components:
         - tmdbId
       type: object
     SetHistorySourcesRequest:
-      additionalProperties: false
       properties:
         sources:
           description: Jellyfin user ids
@@ -2134,7 +2051,6 @@ components:
         - sources
       type: object
     SettingsBody:
-      additionalProperties: false
       properties:
         apiKey:
           description: Read-only key for dashboards (Glance, Homepage...), sent as the X-Api-Key header; it reads everything an admin sees and never writes. Empty = off
@@ -2247,7 +2163,6 @@ components:
         - apiKey
       type: object
     SetupInputBody:
-      additionalProperties: false
       properties:
         jellyfinUrl:
           description: Base URL of the Jellyfin server
@@ -2263,7 +2178,6 @@ components:
         - jellyfinUrl
       type: object
     SetupOutputBody:
-      additionalProperties: false
       properties:
         serverName:
           type: string
@@ -2271,7 +2185,6 @@ components:
         - serverName
       type: object
     SetupStatusOutputBody:
-      additionalProperties: false
       properties:
         configured:
           description: True once a Jellyfin URL is saved
@@ -2284,7 +2197,6 @@ components:
         - tokenRequired
       type: object
     StatsBucket:
-      additionalProperties: false
       properties:
         hours:
           format: double
@@ -2300,7 +2212,6 @@ components:
         - titles
       type: object
     StatsMonth:
-      additionalProperties: false
       properties:
         hours:
           format: double
@@ -2317,7 +2228,6 @@ components:
         - plays
       type: object
     StatsPlugin:
-      additionalProperties: false
       properties:
         hint:
           description: "Admins only: the Playback Reporting plugin is missing and would make these numbers exact"
@@ -2326,7 +2236,6 @@ components:
         - hint
       type: object
     StatsReport:
-      additionalProperties: false
       properties:
         decades:
           items:
@@ -2406,7 +2315,6 @@ components:
         - plugin
       type: object
     StatsRequests:
-      additionalProperties: false
       properties:
         approved:
           format: int64
@@ -2435,7 +2343,6 @@ components:
         - failed
       type: object
     StatsTop:
-      additionalProperties: false
       properties:
         hours:
           format: double
@@ -2470,7 +2377,6 @@ components:
         - hours
       type: object
     StatsTotals:
-      additionalProperties: false
       properties:
         hours:
           format: double
@@ -2495,7 +2401,6 @@ components:
         - hours
       type: object
     Status:
-      additionalProperties: false
       properties:
         everySeconds:
           format: int64
@@ -2534,7 +2439,6 @@ components:
         - message
       type: object
     StatusFeatures:
-      additionalProperties: false
       properties:
         push:
           description: Push notifications are set up on this server
@@ -2547,7 +2451,6 @@ components:
         - teasers
       type: object
     StatusOutputBody:
-      additionalProperties: false
       properties:
         apiVersion:
           format: int64
@@ -2576,7 +2479,6 @@ components:
         - features
       type: object
     SyncStatusBody:
-      additionalProperties: false
       properties:
         canSync:
           description: True when a Jellyfin API key is saved
@@ -2600,7 +2502,6 @@ components:
         - jobs
       type: object
     Teaser:
-      additionalProperties: false
       properties:
         availability:
           description: Library availability (filled by library sync)
@@ -2665,14 +2566,12 @@ components:
         - availability
       type: object
     TeaserFilesTestRequest:
-      additionalProperties: false
       properties:
         key:
           description: YouTube video key; default is a short public video
           type: string
       type: object
     TeaserHistoryResponse:
-      additionalProperties: false
       properties:
         items:
           items:
@@ -2687,7 +2586,6 @@ components:
         - total
       type: object
     TeaserSeenRequest:
-      additionalProperties: false
       properties:
         tmdbId:
           format: int64
@@ -2703,7 +2601,6 @@ components:
         - tmdbId
       type: object
     TestResult:
-      additionalProperties: false
       properties:
         bytes:
           format: int64
@@ -2738,7 +2635,6 @@ components:
         - duration
       type: object
     TokenBody:
-      additionalProperties: false
       properties:
         expiresAt:
           description: Unix seconds; every use renews it, see sessions
@@ -2755,7 +2651,6 @@ components:
         - user
       type: object
     TokenInputBody:
-      additionalProperties: false
       properties:
         appVersion:
           maxLength: 32
@@ -2783,7 +2678,6 @@ components:
         - platform
       type: object
     UpdateRequestOptionsRequest:
-      additionalProperties: false
       properties:
         qualityProfileId:
           description: Omit for the instance default
@@ -2794,7 +2688,6 @@ components:
           type: string
       type: object
     UpdateSettingsInputBody:
-      additionalProperties: false
       properties:
         apiKeyEnabled:
           description: Turn the read-only dashboard key on (a key is created if there is none) or off (the key is deleted)
@@ -2867,7 +2760,6 @@ components:
           type: string
       type: object
     UpdateUserRequest:
-      additionalProperties: false
       properties:
         language:
           description: e.g. fr or fr-FR, empty to clear
@@ -2887,7 +2779,6 @@ components:
           type: string
       type: object
     User:
-      additionalProperties: false
       properties:
         createdAt:
           format: int64
@@ -2938,7 +2829,6 @@ components:
         - effectivePermissions
       type: object
     UserQuota:
-      additionalProperties: false
       properties:
         movieDays:
           format: int64
@@ -2962,7 +2852,6 @@ components:
           type: integer
       type: object
     UserRef:
-      additionalProperties: false
       properties:
         id:
           type: string
@@ -2973,7 +2862,6 @@ components:
         - name
       type: object
     View:
-      additionalProperties: false
       properties:
         createdAt:
           format: int64
@@ -3070,7 +2958,6 @@ components:
         - updatedAt
       type: object
     WebhookBody:
-      additionalProperties: false
       properties:
         enabled:
           type: boolean
@@ -3095,7 +2982,6 @@ components:
         - enabled
       type: object
     WebhookInputBody:
-      additionalProperties: false
       properties:
         ItemType:
           type: string
@@ -3106,7 +2992,6 @@ components:
           type: string
       type: object
     WebhookView:
-      additionalProperties: false
       properties:
         enabled:
           type: boolean
@@ -3133,7 +3018,6 @@ components:
         - secretConfigured
       type: object
     WeekRef:
-      additionalProperties: false
       properties:
         end:
           description: Last day covered, YYYY-MM-DD

@@ -20,7 +20,8 @@ test:
 generate:
 	cd backend && go run ./cmd/tipsarr openapi > ../frontend/src/lib/api/openapi.json
 	mkdir -p api && cd backend && go run ./cmd/tipsarr openapi yaml > ../api/openapi.yaml
-	cp api/openapi.yaml ios/Tipsarr/Tipsarr/Core/API/openapi.yaml
+	# iOS: no additionalProperties: false, so an older app still decodes answers from a newer server that added fields
+	grep -v '^ *additionalProperties: false$$' api/openapi.yaml > ios/Tipsarr/Tipsarr/Core/API/openapi.yaml
 	cp api/openapi.yaml android/app/src/main/openapi/openapi.yaml
 	node design/build-tokens.mjs
 	cp design/generated/Tokens.swift ios/Tipsarr/Tipsarr/DesignSystem/Tokens.swift
