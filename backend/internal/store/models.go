@@ -248,6 +248,7 @@ type Request struct {
 	Error         string `bun:"error"`
 	ProfileID     int    `bun:"profile_id"`   // chosen quality profile, 0 = instance default
 	RootFolder    string `bun:"root_folder"`  // chosen root folder, "" = instance default
+	UHD           int    `bun:"uhd"`          // 1 = the quality profile allows 4K (2160p)
 	Source        string `bun:"source"`       // "" = a user asked; "radarr"/"sonarr" = imported from what they monitor
 	AvailableAt   int64  `bun:"available_at"` // when the request turned available
 	NotifiedAt    int64  `bun:"notified_at"`  // when its "now available" alert was handled, 0 = still due

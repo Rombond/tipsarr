@@ -35,10 +35,16 @@ final class MediaDetailModel {
 
     /// Retry a failed request (the manage-requests permission).
     var canManage: Bool { context.profile.can(.manageRequests) }
-    /// This person's requests are approved at once.
-    var autoApproves: Bool {
+    /// This person's requests are approved at once (non-4K profile).
+    var autoApproves: Bool { autoApproves(uhd: false) }
+
+    /// Whether a request with this profile is approved at once: a 4K profile needs the 4K auto-approve rights,
+    /// the normal ones do not cover it.
+    func autoApproves(uhd: Bool) -> Bool {
         let p = context.profile
-        return p.can(.manageRequests) || p.can(.autoApprove) || p.can(route.type == .movie ? .autoApproveMovie : .autoApproveTV)
+        if p.can(.manageRequests) { return true }
+        if uhd { return p.can(.autoApprove4K) || p.can(route.type == .movie ? .autoApprove4KMovie : .autoApprove4KTV) }
+        return p.can(.autoApprove) || p.can(route.type == .movie ? .autoApproveMovie : .autoApproveTV)
     }
     var mayRequest: Bool { context.profile.mayRequest(route.type) }
     var canReport: Bool { context.profile.can(.createIssues) }

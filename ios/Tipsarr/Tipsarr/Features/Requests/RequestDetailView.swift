@@ -85,7 +85,7 @@ struct RequestDetailView: View {
             VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
                 Text(verbatim: record.title).font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
                 Text(choose(record.type == .tv, "type.tv", "type.movie")).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
-                StatusBadge(state: record.state)
+                RequestBadges(record: record)
             }
         }
     }
@@ -156,7 +156,7 @@ struct RequestDetailView: View {
 
     private var profileName: String {
         let id = record.qualityProfileId ?? options?.defaultProfileID
-        return options?.profiles.first { $0.id == id }?.name ?? id.map(String.init) ?? L10n.string("m.requests.default_value")
+        return options?.profiles.first { $0.id == id }?.label ?? id.map(String.init) ?? L10n.string("m.requests.default_value")
     }
 
     /// One bar per requested season: how much of it Sonarr has or is downloading (as on the web).
@@ -367,10 +367,10 @@ private struct RequestOptionsSheet: View {
                                         profileID = profile.id
                                     } label: {
                                         if profileID == profile.id { Image(systemName: "checkmark") }
-                                        Text(verbatim: profile.name)
+                                        Text(verbatim: profile.label)
                                     }
                                 }
-                            } label: { menuLabel(options.profiles.first { $0.id == profileID }?.name ?? "") }
+                            } label: { menuLabel(options.profiles.first { $0.id == profileID }?.label ?? "") }
                         }
                         if !options.rootFolders.isEmpty {
                             OptionRow(symbol: "externaldrive", title: "req.root_folder") {

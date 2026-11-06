@@ -1525,6 +1525,22 @@
         }
       }
     },
+    "error.4k_not_allowed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You may not request in 4K. Pick another quality profile."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous ne pouvez pas demander en 4K. Choisissez un autre profil de qualité."
+          }
+        }
+      }
+    },
     "error.admin_only": {
       "localizations": {
         "en": {
@@ -8688,6 +8704,102 @@
         }
       }
     },
+    "perm.autoApprove4K": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-approve 4K"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approbation automatique en 4K"
+          }
+        }
+      }
+    },
+    "perm.autoApprove4K.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4K requests are approved at once. The other auto-approve rights do not cover 4K."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les demandes en 4K sont approuvées tout de suite. Les autres approbations automatiques ne couvrent pas la 4K."
+          }
+        }
+      }
+    },
+    "perm.autoApprove4KMovie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-approve 4K movies"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approbation automatique des films en 4K"
+          }
+        }
+      }
+    },
+    "perm.autoApprove4KMovie.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4K movie requests are approved at once."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les demandes de films en 4K sont approuvées tout de suite."
+          }
+        }
+      }
+    },
+    "perm.autoApprove4KTV": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-approve 4K TV shows"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approbation automatique des séries en 4K"
+          }
+        }
+      }
+    },
+    "perm.autoApprove4KTV.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4K TV show requests are approved at once."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les demandes de séries en 4K sont approuvées tout de suite."
+          }
+        }
+      }
+    },
     "perm.autoApproveMovie": {
       "localizations": {
         "en": {
@@ -9004,6 +9116,102 @@
           "stringUnit": {
             "state": "translated",
             "value": "Peut demander des films et des séries."
+          }
+        }
+      }
+    },
+    "perm.request4K": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request in 4K"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander en 4K"
+          }
+        }
+      }
+    },
+    "perm.request4K.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "May pick a 4K quality profile (one that allows 2160p) for movies and TV shows."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peut choisir un profil de qualité 4K (qui autorise le 2160p) pour les films et les séries."
+          }
+        }
+      }
+    },
+    "perm.request4KMovie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request movies in 4K"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander des films en 4K"
+          }
+        }
+      }
+    },
+    "perm.request4KMovie.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "May pick a 4K quality profile for movies."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peut choisir un profil de qualité 4K pour les films."
+          }
+        }
+      }
+    },
+    "perm.request4KTV": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request TV shows in 4K"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander des séries en 4K"
+          }
+        }
+      }
+    },
+    "perm.request4KTV.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "May pick a 4K quality profile for TV shows."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peut choisir un profil de qualité 4K pour les séries."
           }
         }
       }
@@ -10460,6 +10668,23 @@
         }
       }
     },
+    "req.profile_uhd": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (4K)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (4K)"
+          }
+        }
+      }
+    },
     "req.quality_profile": {
       "localizations": {
         "en": {
@@ -10882,6 +11107,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Demandé"
+          }
+        }
+      }
+    },
+    "req.uhd_badge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4K"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4K"
           }
         }
       }

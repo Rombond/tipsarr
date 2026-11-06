@@ -186,3 +186,42 @@ func TestRefreshDownloads(t *testing.T) {
 		t.Fatalf("command body = %v", f.last)
 	}
 }
+
+// Shapes taken from the owner's Radarr (2026-11-06): an HD profile, an Ultra-HD one, and a mixed one whose
+// allowed group holds a 2160p quality.
+func TestQualityProfilesKnow4K(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`[
+ {"id":4,"name":"HD-1080p","items":[
+   {"quality":{"id":19,"name":"Bluray-2160p","resolution":2160},"items":[],"allowed":false},
+   {"quality":{"id":7,"name":"Bluray-1080p","resolution":1080},"items":[],"allowed":true},
+   {"name":"WEB 1080p","items":[{"quality":{"id":3,"name":"WEBDL-1080p","resolution":1080},"items":[],"allowed":true}],"allowed":true,"id":1001}]},
+ {"id":5,"name":"Ultra-HD","items":[
+   {"quality":{"id":7,"name":"Bluray-1080p","resolution":1080},"items":[],"allowed":false},
+   {"name":"WEB 2160p","items":[{"quality":{"id":18,"name":"WEBDL-2160p","resolution":2160},"items":[],"allowed":false}],"allowed":true,"id":1002}]},
+ {"id":8,"name":"Any","items":[
+   {"name":"WEB 2160p","items":[{"quality":{"id":18,"name":"WEBDL-2160p","resolution":2160},"items":[],"allowed":true}],"allowed":true,"id":1002},
+   {"quality":{"id":7,"name":"Bluray-1080p","resolution":1080},"items":[],"allowed":true}]},
+ {"id":9,"name":"Bare"}]`))
+	}))
+	defer srv.Close()
+	got, err := New(KindRadarr, srv.URL, "key", true).QualityProfiles(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[int]struct {
+		res int
+		uhd bool
+	}{4: {1080, false}, 5: {2160, true}, 8: {2160, true}, 9: {0, false}}
+	if len(got) != len(want) {
+		t.Fatalf("got %+v", got)
+	}
+	for _, p := range got {
+		if w := want[p.ID]; p.MaxResolution != w.res || p.UHD != w.uhd {
+			t.Errorf("%s: res %d uhd %v, want %+v", p.Name, p.MaxResolution, p.UHD, w)
+		}
+	}
+	if !IsUHD(got, 5) || IsUHD(got, 4) || IsUHD(got, 99) {
+		t.Error("IsUHD")
+	}
+}

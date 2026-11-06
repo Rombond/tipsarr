@@ -24,6 +24,30 @@ struct StatusBadge: View {
     }
 }
 
+/// Small neutral "4K" pill next to a request's status badge, when its quality profile allows 2160p.
+struct UHDBadge: View {
+    var body: some View {
+        Text("req.uhd_badge")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Tokens.palette.mutedFg)
+            .padding(.horizontal, Tokens.Spacing.sm)
+            .padding(.vertical, Tokens.Spacing.xs)
+            .background(Tokens.palette.muted, in: .capsule)
+    }
+}
+
+/// The status badge, with the 4K pill after it when the request is 4K.
+struct RequestBadges: View {
+    let record: RequestRecord
+
+    var body: some View {
+        HStack(spacing: Tokens.Spacing.xs) {
+            StatusBadge(state: record.state)
+            if record.uhd { UHDBadge() }
+        }
+    }
+}
+
 #Preview {
     VStack(alignment: .leading, spacing: Tokens.Spacing.sm) {
         ForEach(RequestState.allCases, id: \.self) { StatusBadge(state: $0) }

@@ -33,7 +33,7 @@ struct RequestSheet: View {
                 if isTV { seasonPicker }
                 if let options = model.options { optionRows(options) }
                 if let quota = quotaText { Text(verbatim: quota).font(.footnote.weight(.medium)) }
-                Text(choose(model.autoApproves, "m.request.admin_note", "m.request.user_note"))
+                Text(choose(model.autoApproves(uhd: model.options?.profiles.first { $0.id == profileID }?.uhd ?? false), "m.request.admin_note", "m.request.user_note"))
                     .font(.footnote)
                     .foregroundStyle(Tokens.palette.mutedFg)
                 if let errorText { Banner(kind: .error, title: LText.verbatim(errorText)) }
@@ -140,11 +140,11 @@ struct RequestSheet: View {
                             profileID = profile.id
                         } label: {
                             if profileID == profile.id { Image(systemName: "checkmark") }
-                            Text(verbatim: profile.name)
+                            Text(verbatim: profile.label)
                         }
                     }
                 } label: {
-                    menuLabel(options.profiles.first { $0.id == profileID }?.name ?? "")
+                    menuLabel(options.profiles.first { $0.id == profileID }?.label ?? "")
                 }
             }
             if model.canChooseFolder, !options.rootFolders.isEmpty {

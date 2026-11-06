@@ -95,15 +95,16 @@ func seed(base string) {
 		request        = 32
 		requestMovie   = 262144
 		requestTV      = 524288
+		request4K      = 1024 // brings 4K movies and shows
 		createIssues   = 4194304
-		defaults       = request | requestMovie | requestTV | createIssues
+		defaults       = request | requestMovie | requestTV | request4K | createIssues
 	)
 	setAccess := func(name string, perms int, quota obj) {
 		alice.must("PATCH", "/admin/users/"+ids[name], pretty(obj{"permissions": perms, "quota": quota}))
 	}
 	setAccess("bob", defaults, obj{"movieLimit": 3, "movieDays": 7})
 	setAccess("carol", defaults|manageRequests, obj{})
-	setAccess("dave", requestMovie|createIssues, obj{"movieLimit": 1, "movieDays": 1})
+	setAccess("dave", requestMovie|createIssues, obj{"movieLimit": 1, "movieDays": 1}) // no 4K: the UHD profile is hidden
 
 	// requests that must be approved early so they have finished downloading when the person starts testing
 	ask := func(u *session, typ string, id int, seasons ...int) string {
@@ -126,7 +127,8 @@ func seed(base string) {
 	// requests in every state
 	p1 := ask(bob, "movie", 40) // stays pending
 	_ = p1
-	ask(bob, "tv", 216) // pending
+	ask(bob, "tv", 216)                                                                            // pending
+	bob.must("POST", "/requests", pretty(obj{"type": "tv", "tmdbId": 218, "qualityProfileId": 6})) // pending, in 4K
 	tv := ask(bob, "tv", 215, 1, 2)
 	alice.must("POST", "/requests/"+tv+"/approve", "{}")
 	bad := ask(bob, "movie", 50)
@@ -163,7 +165,7 @@ func seed(base string) {
 	fmt.Println("alice    test      admin: everything, settings, users and permissions")
 	fmt.Println("bob      test      default rights, 3 movies per 7 days (2 used), pending / failed / declined requests, watchlist")
 	fmt.Println("carol    test      request manager (not admin): approves, sees all requests, no limit")
-	fmt.Println("dave     test      movies only, no shows, 1 movie per day (unused), can report issues")
+	fmt.Println("dave     test      movies only, no shows, no 4K, 1 movie per day (unused), can report issues")
 	fmt.Println("erin     test      default rights and no watch history: map her to alice (Users page) to try the history sources")
 }
 

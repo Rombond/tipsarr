@@ -36,6 +36,8 @@ var (
 	ErrForbidden        = errors.New("not allowed")
 	ErrInvalid          = errors.New("invalid request")
 	ErrServarrFailed    = errors.New("Radarr/Sonarr could not remove it")
+	ErrNo4K             = errors.New("this quality profile is 4K and you may not request in 4K")
+	ErrServarrDown      = errors.New("Radarr/Sonarr could not be reached to check the quality profile")
 )
 
 type Service struct {
@@ -97,6 +99,7 @@ type View struct {
 	DryRun           bool             `json:"dryRun" doc:"Approved in dry-run mode: nothing was sent to Radarr/Sonarr"`
 	Error            string           `json:"error,omitempty"`
 	QualityProfileID int              `json:"qualityProfileId,omitempty" doc:"Chosen quality profile (absent = the instance default)"`
+	UHD              bool             `json:"uhd,omitempty" doc:"The quality profile allows 4K (2160p); absent when not (and from servers older than 4K requests)"`
 	RootFolder       string           `json:"rootFolder,omitempty" doc:"Chosen root folder (absent = the instance default)"`
 	Source           string           `json:"source,omitempty" doc:"Set when the request was imported from what Radarr/Sonarr already monitor"`
 	Progress         *Progress        `json:"progress,omitempty"`
@@ -174,7 +177,7 @@ func (s *Service) views(ctx context.Context, rows []store.Request) ([]View, erro
 			ID: r.ID, Type: r.MediaType, TMDBID: int(r.TMDBID), Title: r.Title, PosterPath: r.PosterPath,
 			ReleaseDate: r.ReleaseDate, Seasons: seasons[r.ID], Status: r.Status, Stage: stage,
 			RequestedBy: UserRef{ID: r.RequestedBy, Name: names[r.RequestedBy]}, DeclineReason: r.DeclineReason,
-			DryRun: r.DryRun == 1, Error: r.Error, Source: r.Source, QualityProfileID: r.ProfileID, RootFolder: r.RootFolder, Progress: prog, SeasonProgress: s.seasonProgress(r.ID), CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+			DryRun: r.DryRun == 1, Error: r.Error, Source: r.Source, QualityProfileID: r.ProfileID, UHD: r.UHD == 1, RootFolder: r.RootFolder, Progress: prog, SeasonProgress: s.seasonProgress(r.ID), CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
 		}
 		if r.Status == store.StatusAvailable && r.MediaType == "tv" {
 			// nothing is downloading any more: every requested season is complete (the live percentages are gone)
@@ -428,6 +431,19 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 		}
 		r.RootFolder = p.Overrides.RootFolder
 	}
+	mask := u.Mask()
+	uhd, err := s.profileUHD(ctx, p.Type, r.ProfileID)
+	switch {
+	case errors.Is(err, ErrNoInstance): // nothing to check against: decided when it is approved
+	case err != nil:
+		// Only refuse when the answer matters: the 4K right, or an auto-approval that 4K would not get.
+		if !mask.MayRequest4K(p.Type) || mask.AutoApproves(p.Type, false) != mask.AutoApproves(p.Type, true) {
+			return nil, err
+		}
+	case uhd && !mask.MayRequest4K(p.Type):
+		return nil, ErrNo4K
+	}
+	r.UHD = b2i(uhd)
 	needed := 1
 	if p.Type == "tv" {
 		needed = len(seasons)
@@ -443,7 +459,7 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 	s.notify.Dispatch(notify.RequestCreated, s.payload(ctx, r))
 	s.notify.Push(notify.PushEvent{Name: "request.created", ID: r.ID, Subject: r.Title, Admins: true, Needs: int64(perms.ManageRequests), Skip: u.ID})
 
-	if u.Mask().AutoApproves(p.Type) {
+	if mask.AutoApproves(p.Type, uhd) {
 		v, err := s.approve(ctx, u, r.ID, p.Overrides)
 		if errors.Is(err, ErrNoInstance) {
 			return s.view(ctx, r) // stays pending until a Radarr/Sonarr instance is configured
@@ -531,8 +547,16 @@ func (s *Service) approve(ctx context.Context, by *store.User, id string, ov *Ov
 			r.RootFolder = ov.RootFolder
 		}
 	}
-	r.DecidedBy, r.InstanceID, r.DeclineReason, r.Error = by.ID, inst.ID, "", ""
 	client := s.newServarr(inst)
+	// Decide 4K on the profile actually sent. Best effort: when Radarr/Sonarr cannot list its profiles, the send fails too.
+	if profiles, err := client.QualityProfiles(ctx); err == nil {
+		uhd := servarr.IsUHD(profiles, profile)
+		if uhd && !by.Mask().MayRequest4K(r.MediaType) {
+			return nil, ErrNo4K
+		}
+		r.UHD = b2i(uhd)
+	}
+	r.DecidedBy, r.InstanceID, r.DeclineReason, r.Error = by.ID, inst.ID, "", ""
 	servarrID, sendErr := s.send(ctx, client, r, profile, root, seriesType)
 	switch {
 	case errors.Is(sendErr, servarr.ErrDryRun):
@@ -725,6 +749,37 @@ func (s *Service) Options(ctx context.Context, mediaType string) (*Options, erro
 
 func nowUnix() int64 { return time.Now().Unix() }
 
+// profileUHD reports whether a quality profile of the default instance for mediaType allows 4K (profile 0 = the
+// instance default). ErrNoInstance when none is configured, ErrServarrDown when its profiles cannot be read.
+func (s *Service) profileUHD(ctx context.Context, mediaType string, profile int) (bool, error) {
+	kind := servarr.KindRadarr
+	if mediaType == "tv" {
+		kind = servarr.KindSonarr
+	}
+	inst, err := s.store.DefaultServarr(ctx, kind)
+	if errors.Is(err, store.ErrNotFound) {
+		return false, ErrNoInstance
+	}
+	if err != nil {
+		return false, err
+	}
+	if profile <= 0 {
+		profile = inst.QualityProfileID
+	}
+	profiles, err := s.newServarr(inst).QualityProfiles(ctx)
+	if err != nil {
+		return false, fmt.Errorf("%w: %s: %v", ErrServarrDown, inst.Name, err)
+	}
+	return servarr.IsUHD(profiles, profile), nil
+}
+
+func b2i(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 // removeFromServarr takes a request that was sent to Radarr/Sonarr (and is not downloaded yet) out
 // of there too. Files on disk are never deleted, finished requests are left alone, and dry-run
 // blocks it like every other write. A title that is already gone from Radarr/Sonarr is fine.
@@ -768,6 +823,17 @@ func (s *Service) UpdateOptions(ctx context.Context, u *store.User, id string, o
 	if ov.ProfileID != nil {
 		r.ProfileID = *ov.ProfileID
 	}
+	uhd, err := s.profileUHD(ctx, r.MediaType, r.ProfileID)
+	switch {
+	case errors.Is(err, ErrNoInstance):
+	case err != nil:
+		if !u.Mask().MayRequest4K(r.MediaType) {
+			return nil, err
+		}
+	case uhd && !u.Mask().MayRequest4K(r.MediaType):
+		return nil, ErrNo4K
+	}
+	r.UHD = b2i(uhd)
 	if err := s.store.UpdateRequest(ctx, r); err != nil {
 		return nil, err
 	}

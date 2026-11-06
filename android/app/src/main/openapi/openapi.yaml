@@ -1762,8 +1762,15 @@ components:
         id:
           format: int64
           type: integer
+        maxResolution:
+          description: Highest resolution the profile allows (2160 = 4K), 0 when unknown
+          format: int64
+          type: integer
         name:
           type: string
+        uhd:
+          description: "The profile allows 4K (2160p): only people with the 4K right may pick it"
+          type: boolean
       required:
         - id
         - name
@@ -3044,6 +3051,9 @@ components:
             - movie
             - tv
           type: string
+        uhd:
+          description: The quality profile allows 4K (2160p); absent when not (and from servers older than 4K requests)
+          type: boolean
         updatedAt:
           format: int64
           type: integer

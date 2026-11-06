@@ -80,6 +80,7 @@ import com.brebond.tipsarr.ui.Skeleton
 import com.brebond.tipsarr.ui.SkeletonBlock
 import com.brebond.tipsarr.ui.StateView
 import com.brebond.tipsarr.ui.StatusBadge
+import com.brebond.tipsarr.ui.UhdBadge
 import com.brebond.tipsarr.ui.TipsarrButton
 import kotlinx.coroutines.launch
 
@@ -260,7 +261,10 @@ fun RequestRow(
                 Text(record.title, fontSize = Tokens.FontSize.body, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 StatusBadge(record.state)
             }
-            Text(stringResource(if (record.type == MediaType.Tv) R.string.type_tv else R.string.type_movie), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+            Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(if (record.type == MediaType.Tv) R.string.type_tv else R.string.type_movie), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+                if (record.uhd) UhdBadge()
+            }
             Text(whenText, fontSize = Tokens.FontSize.caption, color = Tokens.palette.mutedFg)
             val percent = record.progressPercent
             if (record.state == RequestState.Downloading && percent != null) {

@@ -65,7 +65,7 @@
 			<div class="grid gap-3 text-sm">
 				<div class="grid gap-1.5">
 					<span class="font-medium">{t('req.quality_profile')}</span>
-					<SimpleSelect label={t('req.quality_profile')} value={profile} options={options.profiles.map((p) => ({ value: String(p.id), label: p.name }))} onchange={(v) => (profile = v)} class="w-full" />
+					<SimpleSelect label={t('req.quality_profile')} value={profile} options={options.profiles.map((p) => ({ value: String(p.id), label: p.uhd ? t('req.profile_uhd', { name: p.name }) : p.name }))} onchange={(v) => (profile = v)} class="w-full" />
 				</div>
 				{#if options.rootFolders.length}
 					<div class="grid gap-1.5">
