@@ -55,7 +55,7 @@ struct RequestSheet: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         // Only as tall as the form needs (a movie), up to the full height (a long list of seasons).
-        .presentationDetents([.height(min(contentHeight, 640)), .large])
+        .fittedSheetDetents(contentHeight)
         .onAppear(perform: setDefaults)
     }
 

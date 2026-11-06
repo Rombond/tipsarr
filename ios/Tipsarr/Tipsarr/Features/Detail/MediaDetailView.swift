@@ -66,6 +66,19 @@ struct MediaDetailView: View {
         }
         .task { await model.load() }
         .onChange(of: live?.requestsTick) { Task { await model.load() } }
+        // iOS 26 floats a sheet that is not full height above the bottom edge: darken the page so its text does not
+        // show in the gap under the request sheet. The system dim alone leaves that text readable in the thin gap, so the
+        // lower half fades to opaque black (the sheet covers most of it).
+        .overlay {
+            ZStack {
+                Color.black.opacity(0.45)
+                LinearGradient(colors: [.clear, .black], startPoint: .center, endPoint: .bottom)
+            }
+                .opacity(sheet == nil ? 0 : 1)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+                .animation(.easeInOut(duration: 0.25), value: sheet == nil)
+        }
         .sheet(item: $sheet) { item in
             switch item {
             case .request:

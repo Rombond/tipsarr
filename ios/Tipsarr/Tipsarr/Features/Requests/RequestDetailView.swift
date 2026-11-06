@@ -56,7 +56,7 @@ struct RequestDetailView: View {
                 editing = false
                 toast.show(L10n.string("common.saved"))
             }
-            .tipsarrSheet(detents: [.medium])
+            .tipsarrSheet(detents: nil)
         }
         .onChange(of: live?.requestsTick) { Task { await reload() } }
         .sheet(isPresented: $declining) {
@@ -353,6 +353,7 @@ private struct RequestOptionsSheet: View {
     @State private var folder: String?
     @State private var busy = false
     @State private var errorText: String?
+    @State private var contentHeight: CGFloat = 0
 
     var body: some View {
         ScrollView {
@@ -400,7 +401,11 @@ private struct RequestOptionsSheet: View {
                 }
             }
             .padding(Tokens.Spacing.xl)
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { contentHeight = $0 }
         }
+        .scrollBounceBehavior(.basedOnSize)
+        // Only as tall as the form (it was a half-screen sheet with empty space under the buttons).
+        .fittedSheetDetents(contentHeight)
         .task { await load() }
     }
 
