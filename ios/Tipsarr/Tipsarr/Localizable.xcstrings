@@ -210,6 +210,166 @@
         }
       }
     },
+    "apikey.copied": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key copied"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé copiée"
+          }
+        }
+      }
+    },
+    "apikey.copy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy the key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copier la clé"
+          }
+        }
+      }
+    },
+    "apikey.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A read-only key for dashboards such as Glance or Homepage, sent in the X-Api-Key header. It can read everything an admin sees and can never change anything."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une clé en lecture seule pour des tableaux de bord comme Glance ou Homepage, envoyée dans l’en-tête X-Api-Key. Elle lit tout ce qu’un administrateur voit et ne peut jamais rien modifier."
+          }
+        }
+      }
+    },
+    "apikey.hide": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide the key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masquer la clé"
+          }
+        }
+      }
+    },
+    "apikey.regenerate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer une nouvelle clé"
+          }
+        }
+      }
+    },
+    "apikey.regenerate_confirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace the key? The old one stops working at once, so update every dashboard that uses it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remplacer la clé ? L’ancienne cesse de fonctionner immédiatement : mettez à jour chaque tableau de bord qui l’utilise."
+          }
+        }
+      }
+    },
+    "apikey.show": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show the key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher la clé"
+          }
+        }
+      }
+    },
+    "apikey.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API key for dashboards"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé d’API pour les tableaux de bord"
+          }
+        }
+      }
+    },
+    "apikey.toggle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn the key on"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activer la clé"
+          }
+        }
+      }
+    },
+    "apikey.usage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send it as the X-Api-Key header, never in the address (addresses end up in proxy logs). Example: GET /api/v1/requests/counts"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyez-la dans l’en-tête X-Api-Key, jamais dans l’adresse (les adresses finissent dans les journaux du proxy). Exemple : GET /api/v1/requests/counts"
+          }
+        }
+      }
+    },
     "banner.dry_run": {
       "localizations": {
         "en": {
@@ -1365,6 +1525,22 @@
         }
       }
     },
+    "error.4k_not_allowed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You may not request in 4K. Pick another quality profile."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous ne pouvez pas demander en 4K. Choisissez un autre profil de qualité."
+          }
+        }
+      }
+    },
     "error.admin_only": {
       "localizations": {
         "en": {
@@ -1770,13 +1946,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No Radarr/Sonarr is configured for this type of title yet."
+            "value": "No Radarr or Sonarr instance is configured for this type of title."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aucun Radarr/Sonarr n’est encore configuré pour ce type de titre."
+            "value": "Aucune instance Radarr ou Sonarr n'est configurée pour ce type de titre."
           }
         }
       }
@@ -1809,6 +1985,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Introuvable."
+          }
+        }
+      }
+    },
+    "error.not_in_servarr": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radarr or Sonarr does not track this title."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radarr ou Sonarr ne suit pas ce titre."
           }
         }
       }
@@ -1889,6 +2081,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vous n’avez pas la permission de faire ça."
+          }
+        }
+      }
+    },
+    "error.public_url_invalid": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The public address must start with http:// or https://."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'adresse publique doit commencer par http:// ou https://."
           }
         }
       }
@@ -2434,6 +2642,90 @@
           "stringUnit": {
             "state": "translated",
             "value": "Afficher %@"
+          }
+        }
+      }
+    },
+    "issue.arr_dry_run": {
+      "comment": "placeholders: app",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dry-run is on: nothing was sent to %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le mode test est actif : rien n'a été envoyé à %@."
+          }
+        }
+      }
+    },
+    "issue.arr_open": {
+      "comment": "placeholders: app",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open in %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir dans %@"
+          }
+        }
+      }
+    },
+    "issue.arr_search": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relancer la recherche"
+          }
+        }
+      }
+    },
+    "issue.arr_search_hint": {
+      "comment": "placeholders: app, app",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic search, not interactive: %1$@ only grabs a release it considers an upgrade. For the same quality, open it in %1$@ and use Interactive Search."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche automatique, pas interactive : %1$@ ne prend qu'une version qu'il juge meilleure. Pour la même qualité, ouvre la fiche dans %1$@ et utilise la recherche interactive."
+          }
+        }
+      }
+    },
+    "issue.arr_search_started": {
+      "comment": "placeholders: app",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search started in %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche lancée dans %@."
           }
         }
       }
@@ -8412,6 +8704,102 @@
         }
       }
     },
+    "perm.autoApprove4K": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-approve 4K"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approbation automatique en 4K"
+          }
+        }
+      }
+    },
+    "perm.autoApprove4K.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4K requests are approved at once. The other auto-approve rights do not cover 4K."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les demandes en 4K sont approuvées tout de suite. Les autres approbations automatiques ne couvrent pas la 4K."
+          }
+        }
+      }
+    },
+    "perm.autoApprove4KMovie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-approve 4K movies"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approbation automatique des films en 4K"
+          }
+        }
+      }
+    },
+    "perm.autoApprove4KMovie.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4K movie requests are approved at once."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les demandes de films en 4K sont approuvées tout de suite."
+          }
+        }
+      }
+    },
+    "perm.autoApprove4KTV": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-approve 4K TV shows"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approbation automatique des séries en 4K"
+          }
+        }
+      }
+    },
+    "perm.autoApprove4KTV.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4K TV show requests are approved at once."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les demandes de séries en 4K sont approuvées tout de suite."
+          }
+        }
+      }
+    },
     "perm.autoApproveMovie": {
       "localizations": {
         "en": {
@@ -8728,6 +9116,102 @@
           "stringUnit": {
             "state": "translated",
             "value": "Peut demander des films et des séries."
+          }
+        }
+      }
+    },
+    "perm.request4K": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request in 4K"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander en 4K"
+          }
+        }
+      }
+    },
+    "perm.request4K.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "May pick a 4K quality profile (one that allows 2160p) for movies and TV shows."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peut choisir un profil de qualité 4K (qui autorise le 2160p) pour les films et les séries."
+          }
+        }
+      }
+    },
+    "perm.request4KMovie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request movies in 4K"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander des films en 4K"
+          }
+        }
+      }
+    },
+    "perm.request4KMovie.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "May pick a 4K quality profile for movies."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peut choisir un profil de qualité 4K pour les films."
+          }
+        }
+      }
+    },
+    "perm.request4KTV": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request TV shows in 4K"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander des séries en 4K"
+          }
+        }
+      }
+    },
+    "perm.request4KTV.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "May pick a 4K quality profile for TV shows."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peut choisir un profil de qualité 4K pour les séries."
           }
         }
       }
@@ -10068,6 +10552,71 @@
         }
       }
     },
+    "req.history": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique"
+          }
+        }
+      }
+    },
+    "req.history.approximate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈ Approximate dates: this request is older than the history, so its steps are dated by the last change."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈ Dates approximatives : cette demande est antérieure à l’historique, ses étapes sont datées par le dernier changement."
+          }
+        }
+      }
+    },
+    "req.history.by": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "by %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "par %@"
+          }
+        }
+      }
+    },
+    "req.history.requested": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requested"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demandé"
+          }
+        }
+      }
+    },
     "req.imported_from": {
       "comment": "placeholders: source",
       "localizations": {
@@ -10098,6 +10647,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Facultatif : choisissez comment %@ l’ajoute. Les valeurs par défaut sont présélectionnées."
+          }
+        }
+      }
+    },
+    "req.profile_uhd": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (4K)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (4K)"
           }
         }
       }
@@ -10524,6 +11090,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Demandé"
+          }
+        }
+      }
+    },
+    "req.uhd_badge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4K"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4K"
           }
         }
       }

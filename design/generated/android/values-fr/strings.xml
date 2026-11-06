@@ -96,6 +96,7 @@
     <string name="discover_upcoming">Films à venir</string>
     <string name="discover_upcoming_desc">Bientôt au cinéma</string>
     <string name="discover_upcoming_hint">Les films qui vont bientôt sortir.</string>
+    <string name="error_4k_not_allowed">Vous ne pouvez pas demander en 4K. Choisissez un autre profil de qualité.</string>
     <string name="error_admin_only">Réservé aux administrateurs.</string>
     <string name="error_already_available">Ce titre est déjà disponible dans la bibliothèque.</string>
     <string name="error_already_monitored">Radarr/Sonarr suit déjà ce titre et récupérera ce qui manque.</string>
@@ -542,6 +543,12 @@
     <string name="nav_webhooks">Webhooks</string>
     <string name="perm_autoapprove">Approbation automatique</string>
     <string name="perm_autoapprove_desc">Les demandes sont approuvées tout de suite, sans attendre quelqu’un.</string>
+    <string name="perm_autoapprove4k">Approbation automatique en 4K</string>
+    <string name="perm_autoapprove4k_desc">Les demandes en 4K sont approuvées tout de suite. Les autres approbations automatiques ne couvrent pas la 4K.</string>
+    <string name="perm_autoapprove4kmovie">Approbation automatique des films en 4K</string>
+    <string name="perm_autoapprove4kmovie_desc">Les demandes de films en 4K sont approuvées tout de suite.</string>
+    <string name="perm_autoapprove4ktv">Approbation automatique des séries en 4K</string>
+    <string name="perm_autoapprove4ktv_desc">Les demandes de séries en 4K sont approuvées tout de suite.</string>
     <string name="perm_autoapprovemovie">Approbation automatique des films</string>
     <string name="perm_autoapprovemovie_desc">Les demandes de films sont approuvées tout de suite.</string>
     <string name="perm_autoapprovetv">Approbation automatique des séries</string>
@@ -562,6 +569,12 @@
     <string name="perm_manageusers_desc">Voir la liste des utilisateurs, changer les permissions et les limites de demandes, importer des utilisateurs, voir les statistiques de tout le monde.</string>
     <string name="perm_request">Demander</string>
     <string name="perm_request_desc">Peut demander des films et des séries.</string>
+    <string name="perm_request4k">Demander en 4K</string>
+    <string name="perm_request4k_desc">Peut choisir un profil de qualité 4K (qui autorise le 2160p) pour les films et les séries.</string>
+    <string name="perm_request4kmovie">Demander des films en 4K</string>
+    <string name="perm_request4kmovie_desc">Peut choisir un profil de qualité 4K pour les films.</string>
+    <string name="perm_request4ktv">Demander des séries en 4K</string>
+    <string name="perm_request4ktv_desc">Peut choisir un profil de qualité 4K pour les séries.</string>
     <string name="perm_requestadvanced">Demandes avancées</string>
     <string name="perm_requestadvanced_desc">Peut choisir le dossier d’une demande.</string>
     <string name="perm_requestmovie">Demander des films</string>
@@ -651,6 +664,7 @@
     <string name="req_history_requested">Demandé</string>
     <string name="req_imported_from">Déjà dans %1$s</string>
     <string name="req_options_hint">Facultatif : choisissez comment %1$s l’ajoute. Les valeurs par défaut sont présélectionnées.</string>
+    <string name="req_profile_uhd">%1$s (4K)</string>
     <string name="req_quality_profile">Profil de qualité</string>
     <string name="req_quota_movie">%1$s demande de film restante sur les %2$s prochains jours | %1$s demandes de films restantes sur les %2$s prochains jours</string>
     <string name="req_quota_none">Vous avez utilisé toutes vos demandes pour le moment. Vous pourrez de nouveau demander à partir du %1$s.</string>
@@ -677,6 +691,7 @@
     <string name="req_stage_searching">Recherche en cours</string>
     <string name="req_toast_approved_generic">Demande approuvée</string>
     <string name="req_toast_requested_generic">Demandé</string>
+    <string name="req_uhd_badge">4K</string>
     <string name="req_unknown_user">inconnu</string>
     <string name="req_which_seasons">Quelles saisons ?</string>
     <string name="requests_approve_all">Tout approuver (%1$s en attente)</string>

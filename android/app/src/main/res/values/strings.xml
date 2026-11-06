@@ -96,6 +96,7 @@
     <string name="discover_upcoming">Upcoming movies</string>
     <string name="discover_upcoming_desc">Coming soon to cinemas</string>
     <string name="discover_upcoming_hint">Movies that are about to be released.</string>
+    <string name="error_4k_not_allowed">You may not request in 4K. Pick another quality profile.</string>
     <string name="error_admin_only">Only administrators can do this.</string>
     <string name="error_already_available">This title is already available in the library.</string>
     <string name="error_already_monitored">Radarr/Sonarr already monitors this title and will fetch what is missing.</string>
@@ -542,6 +543,12 @@
     <string name="nav_webhooks">Webhooks</string>
     <string name="perm_autoapprove">Auto-approve</string>
     <string name="perm_autoapprove_desc">Requests are approved at once, without waiting for someone.</string>
+    <string name="perm_autoapprove4k">Auto-approve 4K</string>
+    <string name="perm_autoapprove4k_desc">4K requests are approved at once. The other auto-approve rights do not cover 4K.</string>
+    <string name="perm_autoapprove4kmovie">Auto-approve 4K movies</string>
+    <string name="perm_autoapprove4kmovie_desc">4K movie requests are approved at once.</string>
+    <string name="perm_autoapprove4ktv">Auto-approve 4K TV shows</string>
+    <string name="perm_autoapprove4ktv_desc">4K TV show requests are approved at once.</string>
     <string name="perm_autoapprovemovie">Auto-approve movies</string>
     <string name="perm_autoapprovemovie_desc">Movie requests are approved at once.</string>
     <string name="perm_autoapprovetv">Auto-approve TV shows</string>
@@ -562,6 +569,12 @@
     <string name="perm_manageusers_desc">See the user list, change permissions and request limits, import users, see everyone\'s statistics.</string>
     <string name="perm_request">Request</string>
     <string name="perm_request_desc">May request movies and TV shows.</string>
+    <string name="perm_request4k">Request in 4K</string>
+    <string name="perm_request4k_desc">May pick a 4K quality profile (one that allows 2160p) for movies and TV shows.</string>
+    <string name="perm_request4kmovie">Request movies in 4K</string>
+    <string name="perm_request4kmovie_desc">May pick a 4K quality profile for movies.</string>
+    <string name="perm_request4ktv">Request TV shows in 4K</string>
+    <string name="perm_request4ktv_desc">May pick a 4K quality profile for TV shows.</string>
     <string name="perm_requestadvanced">Advanced requests</string>
     <string name="perm_requestadvanced_desc">May choose the folder of a request.</string>
     <string name="perm_requestmovie">Request movies</string>
@@ -651,6 +664,7 @@
     <string name="req_history_requested">Requested</string>
     <string name="req_imported_from">Already in %1$s</string>
     <string name="req_options_hint">Optional: choose how %1$s adds it. The defaults are pre-selected.</string>
+    <string name="req_profile_uhd">%1$s (4K)</string>
     <string name="req_quality_profile">Quality profile</string>
     <string name="req_quota_movie">%1$s movie request left in the next %2$s days | %1$s movie requests left in the next %2$s days</string>
     <string name="req_quota_none">You have used all your requests for now. You can request again from %1$s.</string>
@@ -677,6 +691,7 @@
     <string name="req_stage_searching">Searching</string>
     <string name="req_toast_approved_generic">Request approved</string>
     <string name="req_toast_requested_generic">Requested</string>
+    <string name="req_uhd_badge">4K</string>
     <string name="req_unknown_user">unknown</string>
     <string name="req_which_seasons">Which seasons?</string>
     <string name="requests_approve_all">Approve all %1$s pending</string>
