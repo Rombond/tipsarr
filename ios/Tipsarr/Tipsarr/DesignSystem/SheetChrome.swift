@@ -22,6 +22,23 @@ extension View {
     }
 }
 
+extension View {
+    /// A bottom sheet as tall as its content (`contentHeight`, measured by the sheet), up to `maxHeight`; drag up for
+    /// the full height. iOS 26 adds the bottom safe area to a custom height on a floating sheet (empty space under the
+    /// last button), so it is taken off here.
+    func fittedSheetDetents(_ contentHeight: CGFloat, maxHeight: CGFloat = 640) -> some View {
+        let height = contentHeight > 0 ? max(contentHeight - Self.windowBottomInset, 1) : 0
+        return presentationDetents([.height(min(height, maxHeight)), .large])
+    }
+
+    @MainActor private static var windowBottomInset: CGFloat {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow)?.safeAreaInsets.bottom ?? 0
+    }
+}
+
 private struct OptionalDetents: ViewModifier {
     let detents: Set<PresentationDetent>?
 
