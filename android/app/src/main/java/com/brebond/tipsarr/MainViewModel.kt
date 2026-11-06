@@ -124,6 +124,17 @@ class MainViewModel(
     fun openRequest(tab: AppTab, record: RequestRecord) = push(tab, Screen.Request(record))
     fun open(tab: AppTab, screen: Screen) = push(tab, screen)
 
+    /** The screens pushed above the tab's root, bottom first. */
+    fun stack(tab: AppTab): List<Screen> = stacks[tab].orEmpty()
+
+    /** Pops [screen] and everything above it (Settings closed from its pane while one of its pages is open beside it). */
+    fun close(tab: AppTab, screen: Screen) {
+        val stack = stacks[tab] ?: return
+        val at = stack.lastIndexOf(screen)
+        if (at < 0) return
+        while (stack.size > at) stack.removeAt(stack.lastIndex)
+    }
+
     /** Back to the root screen of the tab. */
     fun reset(tab: AppTab) { stacks[tab]?.clear() }
 

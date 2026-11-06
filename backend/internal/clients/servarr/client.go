@@ -249,3 +249,28 @@ func (c *Client) DeleteMedia(ctx context.Context, id int) error {
 	}
 	return c.send(ctx, http.MethodDelete, fmt.Sprintf("/movie/%d?deleteFiles=false&addImportExclusion=false", id), nil, nil)
 }
+
+// SearchMovie asks Radarr to look for a release of the movie now (an automatic search, not an interactive one).
+func (c *Client) SearchMovie(ctx context.Context, movieID int) error {
+	return c.send(ctx, http.MethodPost, "/command", map[string]any{"name": "MoviesSearch", "movieIds": []int{movieID}}, nil)
+}
+
+// SearchSeries asks Sonarr to look for the whole series (season 0), one season, or one episode.
+func (c *Client) SearchSeries(ctx context.Context, seriesID, season, episode int) error {
+	switch {
+	case season == 0:
+		return c.send(ctx, http.MethodPost, "/command", map[string]any{"name": "SeriesSearch", "seriesId": seriesID}, nil)
+	case episode == 0:
+		return c.send(ctx, http.MethodPost, "/command", map[string]any{"name": "SeasonSearch", "seriesId": seriesID, "seasonNumber": season}, nil)
+	}
+	eps, err := c.Episodes(ctx, seriesID, season)
+	if err != nil {
+		return err
+	}
+	for _, e := range eps {
+		if e.EpisodeNumber == episode {
+			return c.send(ctx, http.MethodPost, "/command", map[string]any{"name": "EpisodeSearch", "episodeIds": []int{e.ID}}, nil)
+		}
+	}
+	return fmt.Errorf("episode %d of season %d not found in Sonarr", episode, season)
+}

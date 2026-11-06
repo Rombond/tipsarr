@@ -120,6 +120,10 @@ import com.brebond.tipsarr.features.discover.Phase
 import com.brebond.tipsarr.ui.ButtonKind
 import com.brebond.tipsarr.ui.RequestState
 import com.brebond.tipsarr.ui.TipsarrButton
+import com.brebond.tipsarr.core.support.TableTop
+import com.brebond.tipsarr.core.support.foldOffset
+import com.brebond.tipsarr.core.support.rememberTableTop
+import androidx.compose.foundation.layout.ColumnScope
 import kotlinx.coroutines.launch
 
 /**
@@ -160,16 +164,20 @@ fun TeasersScreen(
         }
     }
     val tablet = LocalConfiguration.current.smallestScreenWidthDp >= 600
+    val tableTop = rememberTableTop()
+    var top by remember { mutableStateOf(0.dp) }
     // The whole width on a phone (also sideways); a narrow 9:16 column in the middle on a tablet.
-    BoxWithConstraints(modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
-        val column = if (tablet) minOf(maxWidth, maxHeight * 9f / 16f) else maxWidth
-        val landscape = !tablet && maxWidth > maxHeight
+    BoxWithConstraints(modifier.fillMaxSize().background(Color.Black).foldOffset { top = it }, contentAlignment = Alignment.Center) {
+        // Half folded like a laptop: the whole width, the trailer above the fold and its controls below it.
+        val fold = tableTop?.let { TableTop(it.top - top, it.bottom - top) }?.takeIf { it.top > 0.dp && it.bottom < maxHeight }
+        val column = if (tablet && fold == null) minOf(maxWidth, maxHeight * 9f / 16f) else maxWidth
+        val landscape = !tablet && fold == null && maxWidth > maxHeight
         Box(Modifier.width(column).fillMaxHeight()) {
             when (model.phase) {
                 Phase.Idle, Phase.Loading -> Waiting(model, api, onOpenItem, preparing = false)
                 is Phase.Failed -> DarkState(stringResource(R.string.m_teasers_error), stringResource(R.string.common_retry)) { scope.launch { model.refresh() } }
                 Phase.Loaded -> if (model.preparing) Waiting(model, api, onOpenItem, preparing = true)
-                else Feed(model, api, me, settings, landscape, onOpenItem)
+                else Feed(model, api, me, settings, landscape, fold, onOpenItem)
             }
         }
     }
@@ -244,7 +252,7 @@ private fun DarkState(text: String, actionTitle: String? = null, onAction: () ->
 }
 
 @Composable
-private fun Feed(model: TeasersModel, api: TipsarrApi, me: () -> Profile, settings: AppSettings, landscape: Boolean, onOpenItem: (MediaItem) -> Unit) {
+private fun Feed(model: TeasersModel, api: TipsarrApi, me: () -> Profile, settings: AppSettings, landscape: Boolean, fold: TableTop?, onOpenItem: (MediaItem) -> Unit) {
     val context = LocalContext.current
     val toast = LocalToast.current
     val scope = rememberCoroutineScope()
@@ -329,6 +337,7 @@ private fun Feed(model: TeasersModel, api: TipsarrApi, me: () -> Profile, settin
                 muted = settings.teaserMuted,
                 showHint = index == 0 && !hintGone,
                 landscape = landscape,
+                fold = fold,
                 uiHidden = model.uiHidden,
                 onUiHidden = { model.uiHidden = it },
                 onPinching = { model.pinching = it },
@@ -368,6 +377,7 @@ private fun TeaserCard(
     muted: Boolean,
     showHint: Boolean,
     landscape: Boolean,
+    fold: TableTop?,
     uiHidden: Boolean,
     mayRequest: Boolean,
     requesting: Boolean,
@@ -461,99 +471,118 @@ private fun TeaserCard(
             },
     ) {
         // The picture, like iOS: the whole screen, the video fitted and centred over a blurred, dimmed backdrop.
-        Box(Modifier.fillMaxSize().graphicsLayer { scaleX = scale; scaleY = scale; transformOrigin = pinchOrigin }) {
+        // Table-top: the picture fills the upper half only.
+        val pictureArea = if (fold != null) Modifier.fillMaxWidth().height(fold.top) else Modifier.fillMaxSize()
+        Box(pictureArea.graphicsLayer { scaleX = scale; scaleY = scale; transformOrigin = pinchOrigin }) {
             RemoteImage(teaser.backdropPath ?: teaser.posterPath, TmdbSize.W780, Modifier.fillMaxSize().alpha(0.55f).blur(24.dp))
             if (video != null) {
                 TeaserSurface(video, Modifier.fillMaxSize().alpha(if (video.ready) 1f else 0f))
             }
         }
-        if (active && video != null && !video.ready && !paused) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
-        }
+        Box(pictureArea) {
+            if (active && video != null && !video.ready && !paused) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
+            }
 
-        // Tap anywhere pauses or resumes; holding a side plays at 2x until the finger lifts (or the pager takes the gesture).
-        Box(
-            Modifier.fillMaxSize().pointerInput(active) {
-                if (!active) return@pointerInput
-                val edge = size.width * SIDE
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    val side = down.position.x < edge || down.position.x > size.width - edge
-                    var finished = false
-                    val up = withTimeoutOrNull(HOLD_MS) { waitForUpOrCancellation().also { finished = true } }
-                    if (finished) {
-                        if (up != null) paused = !paused
-                    } else if (side) {
-                        fast = true
-                        try { waitForUpOrCancellation() } finally { fast = false }
-                    } else if (waitForUpOrCancellation() != null) {
-                        paused = !paused
+            // Tap anywhere pauses or resumes; holding a side plays at 2x until the finger lifts (or the pager takes the gesture).
+            Box(
+                Modifier.fillMaxSize().pointerInput(active) {
+                    if (!active) return@pointerInput
+                    val edge = size.width * SIDE
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val side = down.position.x < edge || down.position.x > size.width - edge
+                        var finished = false
+                        val up = withTimeoutOrNull(HOLD_MS) { waitForUpOrCancellation().also { finished = true } }
+                        if (finished) {
+                            if (up != null) paused = !paused
+                        } else if (side) {
+                            fast = true
+                            try { waitForUpOrCancellation() } finally { fast = false }
+                        } else if (waitForUpOrCancellation() != null) {
+                            paused = !paused
+                        }
                     }
-                }
-            },
-        )
-        if (paused && active) {
-            Icon(Icons.Outlined.PlayCircle, contentDescription = null, tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.align(Alignment.Center).size(56.dp))
+                },
+            )
+            if (paused && active) {
+                Icon(Icons.Outlined.PlayCircle, contentDescription = null, tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.align(Alignment.Center).size(56.dp))
+            }
         }
 
         if (!hidden) {
-            Box(Modifier.fillMaxWidth().fillMaxHeight(0.5f).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f)))))
-
-            // Like iOS: the title block on the left, the round actions on the right, both resting on the same bottom line.
-            Row(
-                Modifier.align(Alignment.BottomCenter).navigationBarsPadding().fillMaxWidth()
-                    .padding(start = Tokens.Spacing.lg + leading, end = Tokens.Spacing.lg, bottom = bottom),
-                horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg),
-                verticalAlignment = Alignment.Bottom,
-            ) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
-                    Text(
-                        teaser.title, color = Color.White, fontSize = Tokens.FontSize.title2, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.plainClickable(onDetails),
-                    )
-                    val light = Color.White.copy(alpha = 0.85f)
-                    Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(if (teaser.type == MediaType.Tv) R.string.m_poster_tv else R.string.m_poster_movie), color = light, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium)
-                        teaser.releaseDate?.take(4)?.takeIf { it.isNotEmpty() }?.let { Text("· $it", color = light, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium) }
-                        if (teaser.voteAverage > 0) {
-                            Text("·", color = light, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium)
-                            ScoreLabel(teaser.type, teaser.tmdbId, teaser.voteAverage, textColor = light)
-                        }
-                    }
-                    if (video != null && video.scrubbing) {
-                        Text(
-                            "${clock(video.positionMs)} / ${clock(video.durationMs)}",
-                            color = Color.White, fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.SemiBold, style = TextStyle(fontFeatureSettings = "tnum"),
-                        )
-                    } else {
-                        teaser.overview?.takeIf { it.isNotBlank() }?.let { Overview(it, overviewOpen) { overviewOpen = !overviewOpen } }
-                    }
-                    // The hint shows once the first trailer played to its end three times in a row (two full loops after the first play).
-                    AnimatedVisibility(showHint && (video?.loops ?: 0) >= 2) {
-                        Text(stringResource(R.string.m_teasers_swipe_hint), color = Color.White.copy(alpha = 0.7f), fontSize = Tokens.FontSize.footnote, textAlign = TextAlign.Start, modifier = Modifier.padding(top = Tokens.Spacing.xs))
+            val info: @Composable ColumnScope.() -> Unit = {
+                Text(
+                    teaser.title, color = Color.White, fontSize = Tokens.FontSize.title2, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.plainClickable(onDetails),
+                )
+                val light = Color.White.copy(alpha = 0.85f)
+                Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(if (teaser.type == MediaType.Tv) R.string.m_poster_tv else R.string.m_poster_movie), color = light, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium)
+                    teaser.releaseDate?.take(4)?.takeIf { it.isNotEmpty() }?.let { Text("· $it", color = light, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium) }
+                    if (teaser.voteAverage > 0) {
+                        Text("·", color = light, fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium)
+                        ScoreLabel(teaser.type, teaser.tmdbId, teaser.voteAverage, textColor = light)
                     }
                 }
-
-                // Same order as iOS: request (or its state), details, watchlist, not interested, mute.
-                Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg), horizontalAlignment = Alignment.CenterHorizontally) {
-                    val state = teaser.item.state
-                    if (state != null) {
-                        Action(state.icon, stringResource(state.title), {}, tint = state.color, enabled = false)
-                    } else if (mayRequest) {
-                        Action(Icons.Filled.Add, stringResource(R.string.media_request), onRequest, enabled = !requesting)
-                    }
-                    Action(Icons.Outlined.Info, stringResource(R.string.media_view_details), onDetails)
-                    Action(
-                        if (teaser.watchlisted) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                        stringResource(if (teaser.watchlisted) R.string.actions_on_watchlist else R.string.actions_watchlist), onWatchlist,
+                if (video != null && video.scrubbing) {
+                    Text(
+                        "${clock(video.positionMs)} / ${clock(video.durationMs)}",
+                        color = Color.White, fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.SemiBold, style = TextStyle(fontFeatureSettings = "tnum"),
                     )
-                    Action(Icons.Outlined.VisibilityOff, stringResource(R.string.media_not_interested), onHide)
-                    Action(if (muted) Icons.Outlined.VolumeOff else Icons.Outlined.VolumeUp, stringResource(if (muted) R.string.m_teasers_unmute else R.string.m_teasers_mute), onToggleMute)
+                } else {
+                    teaser.overview?.takeIf { it.isNotBlank() }?.let { Overview(it, overviewOpen) { overviewOpen = !overviewOpen } }
+                }
+                // The hint shows once the first trailer played to its end three times in a row (two full loops after the first play).
+                AnimatedVisibility(showHint && (video?.loops ?: 0) >= 2) {
+                    Text(stringResource(R.string.m_teasers_swipe_hint), color = Color.White.copy(alpha = 0.7f), fontSize = Tokens.FontSize.footnote, textAlign = TextAlign.Start, modifier = Modifier.padding(top = Tokens.Spacing.xs))
+                }
+            }
+            // Same order as iOS: request (or its state), details, watchlist, not interested, mute.
+            val actions: @Composable () -> Unit = {
+                val state = teaser.item.state
+                if (state != null) {
+                    Action(state.icon, stringResource(state.title), {}, tint = state.color, enabled = false)
+                } else if (mayRequest) {
+                    Action(Icons.Filled.Add, stringResource(R.string.media_request), onRequest, enabled = !requesting)
+                }
+                Action(Icons.Outlined.Info, stringResource(R.string.media_view_details), onDetails)
+                Action(
+                    if (teaser.watchlisted) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                    stringResource(if (teaser.watchlisted) R.string.actions_on_watchlist else R.string.actions_watchlist), onWatchlist,
+                )
+                Action(Icons.Outlined.VisibilityOff, stringResource(R.string.media_not_interested), onHide)
+                Action(if (muted) Icons.Outlined.VolumeOff else Icons.Outlined.VolumeUp, stringResource(if (muted) R.string.m_teasers_unmute else R.string.m_teasers_mute), onToggleMute)
+            }
+            if (fold != null) {
+                // Table-top: the progress line under the picture, then the title block and a row of actions in the lower half.
+                Column(Modifier.fillMaxSize().padding(top = fold.bottom)) {
+                    if (video != null && video.ready) ScrubBar(video, Modifier)
+                    Column(
+                        Modifier.fillMaxWidth().weight(1f).padding(start = Tokens.Spacing.lg, end = Tokens.Spacing.lg, top = Tokens.Spacing.sm, bottom = Tokens.Spacing.lg),
+                        verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg),
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), content = info)
+                        Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg), verticalAlignment = Alignment.CenterVertically) { actions() }
+                    }
+                }
+            } else {
+                Box(Modifier.fillMaxWidth().fillMaxHeight(0.5f).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f)))))
+
+                // Like iOS: the title block on the left, the round actions on the right, both resting on the same bottom line.
+                Row(
+                    Modifier.align(Alignment.BottomCenter).navigationBarsPadding().fillMaxWidth()
+                        .padding(start = Tokens.Spacing.lg + leading, end = Tokens.Spacing.lg, bottom = bottom),
+                    horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg),
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), content = info)
+                    Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg), horizontalAlignment = Alignment.CenterHorizontally) { actions() }
                 }
             }
         }
 
-        if (video != null && video.ready && !hidden) ScrubBar(video, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
+        if (video != null && video.ready && !hidden && fold == null) ScrubBar(video, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
 
         if (fast) {
             Row(

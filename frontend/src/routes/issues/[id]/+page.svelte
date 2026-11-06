@@ -12,6 +12,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
+	import SearchIcon from '@lucide/svelte/icons/search';
 
 	const id = $derived(page.params.id ?? '');
 	let issue = $state<Schemas['IssueThread'] | null>(null);
@@ -19,6 +21,7 @@
 	let error = $state<string | null>(null);
 	let reply = $state('');
 	let busy = $state(false);
+	let arr = $state<Schemas['ArrLink'] | null>(null);
 
 	async function load(spinner = true) {
 		if (spinner) loading = true;
@@ -35,6 +38,17 @@
 	$effect(() => {
 		id;
 		load();
+	});
+	// where the title lives in Radarr/Sonarr; stays null (no button) when it is not tracked there
+	$effect(() => {
+		const current = id;
+		arr = null;
+		if (!auth.canManageIssues) return;
+		unwrap(api.GET('/issues/{id}/servarr', { params: { path: { id: current } } }))
+			.then((l) => {
+				if (current === id) arr = l;
+			})
+			.catch(() => {});
 	});
 	$effect(() =>
 		onEvent('issue.updated', (d: { id: string }) => {
@@ -64,6 +78,13 @@
 	const setResolved = (resolved: boolean) =>
 		act(async () => {
 			issue = await unwrap(api.POST(resolved ? '/issues/{id}/resolve' : '/issues/{id}/reopen', { params: { path: { id } } }));
+		});
+	const searchAgain = () =>
+		act(async () => {
+			const r = await unwrap(api.POST('/issues/{id}/servarr/search', { params: { path: { id } } }));
+			const app = arr?.name ?? 'Radarr/Sonarr';
+			if (r.dryRun) toast.info(t('issue.arr_dry_run', { app }));
+			else toast.success(t('issue.arr_search_started', { app }));
 		});
 	const remove = () => {
 		if (!confirm(t('issue.confirm_delete'))) return;
@@ -111,6 +132,14 @@
 				</p>
 			</div>
 		</header>
+
+		{#if auth.canManageIssues && arr}
+			<div class="flex flex-wrap items-center gap-2">
+				<Button href={arr.url} target="_blank" rel="noopener noreferrer" variant="outline"><ExternalLinkIcon class="size-4" />{t('issue.arr_open', { app: arr.name })}</Button>
+				<Button type="button" variant="outline" disabled={busy} onclick={searchAgain}><SearchIcon class="size-4" />{t('issue.arr_search')}</Button>
+			</div>
+			<p class="-mt-2 text-xs text-muted-foreground">{t('issue.arr_search_hint', { app: arr.name })}</p>
+		{/if}
 
 		<section class="grid gap-3" aria-label={t('issue.thread')}>
 			{#each issue.comments as c (c.id)}

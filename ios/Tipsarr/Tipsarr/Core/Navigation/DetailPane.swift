@@ -99,13 +99,15 @@ struct ProfileLink<Label: View>: View {
     var body: some View {
         if let pane {
             Button { pane.content = .profile(route) } label: {
-                HStack {
+                HStack(spacing: Tokens.Spacing.sm) {
                     label
                     if chevron { Spacer(minLength: 0); Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Tokens.palette.mutedFg) }
                 }
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
+            // The row whose screen is in the pane stays highlighted (Settings rows).
+            .listRowBackground(pane.content == .profile(route) ? Tokens.palette.muted : nil)
         } else {
             NavigationLink(value: route) { label }
         }

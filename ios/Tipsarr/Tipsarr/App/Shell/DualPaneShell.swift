@@ -36,7 +36,7 @@ struct DetailPaneView: View {
                     placeholder
                 }
             case .profile(let route):
-                ProfileDestination(route: route, account: account, profile: profile)
+                ProfileDestination(route: route, account: account, profile: profile, isRoot: true)
             case nil:
                 defaultContent
         }

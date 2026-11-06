@@ -12,6 +12,7 @@ type Series struct {
 	Title      string `json:"title"`
 	TVDBID     int    `json:"tvdbId"`
 	TMDBID     int    `json:"tmdbId"`
+	TitleSlug  string `json:"titleSlug"`
 	Monitored  bool   `json:"monitored"`
 	Year       int    `json:"year"`
 	Statistics struct {
@@ -41,6 +42,7 @@ func (s Series) MissingSeasons() []int {
 
 // Episode is the part of a Sonarr episode the app needs.
 type Episode struct {
+	ID            int  `json:"id"`
 	SeasonNumber  int  `json:"seasonNumber"`
 	EpisodeNumber int  `json:"episodeNumber"`
 	HasFile       bool `json:"hasFile"`

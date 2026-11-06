@@ -57,8 +57,11 @@ import java.util.Locale
 /** Countries sorted by their name in the current language: code and "flag name". */
 internal fun regionChoices(): List<Pair<String, String>> {
     val locale = Locale.getDefault()
-    return Locale.getISOCountries().map { it to flag(it) + " " + Locale("", it).getDisplayCountry(locale) }
-        .filter { it.second.isNotEmpty() }.sortedBy { it.second.lowercase() }
+    // Sorted on the name alone: with the flag in front the order followed the country code (Andorra before Afghanistan).
+    val collator = java.text.Collator.getInstance(locale)
+    return Locale.getISOCountries().map { it to Locale("", it).getDisplayCountry(locale) }
+        .filter { it.second.isNotEmpty() }.sortedWith(compareBy(collator) { it.second })
+        .map { (code, name) -> code to flag(code) + " " + name }
 }
 
 @Composable

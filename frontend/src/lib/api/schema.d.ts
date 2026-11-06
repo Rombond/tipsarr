@@ -802,6 +802,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/issues/{id}/servarr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where the title of an issue lives in Radarr/Sonarr (admin)
+         * @description The address of its page, built from the instance's public URL (or its URL when none is set). Read-only.
+         */
+        get: operations["issueServarrLink"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issues/{id}/servarr/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start an automatic Radarr/Sonarr search for the title of an issue (admin)
+         * @description Not an interactive search: Radarr/Sonarr picks the release itself and ignores one that is no upgrade. In dry-run mode nothing is sent and dryRun is true.
+         */
+        post: operations["issueServarrSearch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/library": {
         parameters: {
             query?: never;
@@ -1511,6 +1551,12 @@ export interface components {
             qualityProfileId?: number;
             rootFolder?: string;
         };
+        ArrLink: {
+            /** @enum {string} */
+            kind: "radarr" | "sonarr";
+            name: string;
+            url: string;
+        };
         AuthMethods: {
             /** @description The Jellyfin username/password form works */
             password: boolean;
@@ -1909,6 +1955,8 @@ export interface components {
             /** @enum {string} */
             kind: "radarr" | "sonarr";
             name: string;
+            /** @description Omit to keep, empty string to clear. http(s)://host[:port] */
+            publicUrl?: string;
             /** Format: int64 */
             qualityProfileId: number;
             rootFolder: string;
@@ -1928,6 +1976,8 @@ export interface components {
             /** @enum {string} */
             kind: "radarr" | "sonarr";
             name: string;
+            /** @description Address people open the app at in their browser, used by links to it; empty = url */
+            publicUrl: string;
             /** Format: int64 */
             qualityProfileId: number;
             rootFolder: string;
@@ -1945,6 +1995,10 @@ export interface components {
             open: number;
             /** Format: int64 */
             resolved: number;
+        };
+        IssueServarrSearchResponse: {
+            /** @description Dry-run is on: nothing was sent to Radarr/Sonarr */
+            dryRun: boolean;
         };
         IssueThread: {
             /** Format: int64 */
@@ -6231,6 +6285,158 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    issueServarrLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArrLink"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    issueServarrSearch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssueServarrSearchResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

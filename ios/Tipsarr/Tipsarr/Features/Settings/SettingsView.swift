@@ -16,16 +16,7 @@ struct SettingsView: View {
     @State private var faceIDPassword = ""
     @State private var push = PushManager.shared
 
-    private var ratingSource: Binding<RatingSource> {
-        Binding(
-            get: { RatingSource(rawValue: profile.ratingSource) ?? .tmdb },
-            set: { value in Task { await save(rating: value) } }
-        )
-    }
-
-    private var region: Binding<String> {
-        Binding(get: { profile.region.uppercased() }, set: { value in Task { await save(region: value) } })
-    }
+    private var ratingSource: RatingSource { RatingSource(rawValue: profile.ratingSource) ?? .tmdb }
 
     /// The flag emoji of a 2-letter country code.
     static func flag(_ code: String) -> String {
@@ -33,7 +24,7 @@ struct SettingsView: View {
     }
 
     /// Countries sorted by their name in the chosen language.
-    private var regions: [(code: String, name: String)] {
+    static var regions: [(code: String, name: String)] {
         let locale = AppLanguage.locale
         return Locale.Region.isoRegions
             .filter { $0.identifier.count == 2 && $0.subRegions.isEmpty }
@@ -61,22 +52,18 @@ struct SettingsView: View {
                     .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
-                NavigationLink {
-                    RegionPickerScreen(regions: regions, selection: region)
-                } label: {
+                ProfileLink(route: .region, chevron: true) {
                     LabeledContent {
-                        Text(verbatim: regions.first { $0.code == profile.region.uppercased() }.map { "\(Self.flag($0.code)) \($0.name)" } ?? "")
+                        Text(verbatim: Self.regions.first { $0.code == profile.region.uppercased() }.map { "\(Self.flag($0.code)) \($0.name)" } ?? "")
                     } label: {
                         Label { Text("m.settings.region") } icon: { Image(systemName: "globe") }
                     }
                 }
-                NavigationLink {
-                    RatingSourceScreen(selection: ratingSource)
-                } label: {
+                ProfileLink(route: .ratingSource, chevron: true) {
                     LabeledContent {
                         HStack(spacing: Tokens.Spacing.sm) {
-                            ProviderMark(source: ratingSource.wrappedValue, value: 80, height: 14)
-                            Text(ratingSource.wrappedValue.title)
+                            ProviderMark(source: ratingSource, value: 80, height: 14)
+                            Text(ratingSource.title)
                         }
                     } label: {
                         Label { Text("profile.rating_source") } icon: { Image(systemName: "star") }
@@ -217,34 +204,30 @@ struct SettingsView: View {
             toast.show(L10n.string("m.settings.faceid_failed"), kind: .error)
         }
     }
+}
 
-    private func save(rating: RatingSource) async {
-        guard let context else { return }
-        do {
-            session.update(profile: try await context.api.updatePreferences(ratingSource: rating))
-            toast.show(L10n.string("profile.saved"))
-        } catch {
-            toast.show(APIError.from(error).localizedMessage, kind: .error)
-        }
-    }
-
-    private func save(region code: String) async {
-        guard let context else { return }
-        do {
-            session.update(profile: try await context.api.updatePreferences(region: code))
-            toast.show(L10n.string("profile.saved"))
-        } catch {
-            toast.show(APIError.from(error).localizedMessage, kind: .error)
-        }
+/// Saves a preference picked on a Settings screen; the result is shown as a toast.
+@MainActor private func savePreference(session: SessionManager, toast: ToastCenter, _ update: () async throws -> Profile) async {
+    do {
+        session.update(profile: try await update())
+        toast.show(L10n.string("profile.saved"))
+    } catch {
+        toast.show(APIError.from(error).localizedMessage, kind: .error)
     }
 }
 
 /// Countries with a search field: about 250 entries are too many for a plain list.
-private struct RegionPickerScreen: View {
-    let regions: [(code: String, name: String)]
-    @Binding var selection: String
+struct RegionPickerScreen: View {
+    let profile: Profile
+    /// Goes back after a pick (pushed screen); false when it is the root of a detail column.
+    var popsOnPick = true
+    @Environment(SessionManager.self) private var session
+    @Environment(\.appContext) private var context
+    @Environment(ToastCenter.self) private var toast
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
+    private let regions = SettingsView.regions
+    private var selection: String { profile.region.uppercased() }
 
     private var shown: [(code: String, name: String)] {
         query.isEmpty ? regions : regions.filter { $0.name.localizedStandardContains(query) || $0.code.localizedCaseInsensitiveContains(query) }
@@ -253,8 +236,7 @@ private struct RegionPickerScreen: View {
     var body: some View {
         List(shown, id: \.code) { region in
             Button {
-                selection = region.code
-                dismiss()
+                pick(region.code)
             } label: {
                 HStack {
                     Text(verbatim: SettingsView.flag(region.code)).font(.title3)
@@ -270,18 +252,31 @@ private struct RegionPickerScreen: View {
         .navigationTitle("m.settings.region")
         .navigationBarTitleDisplayMode(.inline)
     }
+
+    private func pick(_ code: String) {
+        if popsOnPick { dismiss() }
+        guard let api = context?.api, code != selection else { return }
+        Task { await savePreference(session: session, toast: toast) { try await api.updatePreferences(region: code) } }
+    }
 }
 
 /// The score shown on posters: each choice with its logo.
-private struct RatingSourceScreen: View {
-    @Binding var selection: RatingSource
+struct RatingSourceScreen: View {
+    let profile: Profile
+    /// Goes back after a pick (pushed screen); false when it is the root of a detail column.
+    var popsOnPick = true
+    @Environment(SessionManager.self) private var session
+    @Environment(\.appContext) private var context
+    @Environment(ToastCenter.self) private var toast
     @Environment(\.dismiss) private var dismiss
+    private var selection: RatingSource { RatingSource(rawValue: profile.ratingSource) ?? .tmdb }
 
     var body: some View {
         List(RatingSource.allCases, id: \.self) { source in
             Button {
-                selection = source
-                dismiss()
+                if popsOnPick { dismiss() }
+                guard let api = context?.api, source != selection else { return }
+                Task { await savePreference(session: session, toast: toast) { try await api.updatePreferences(ratingSource: source) } }
             } label: {
                 HStack(spacing: Tokens.Spacing.md) {
                     ProviderMark(source: source, value: 80, height: 18)
@@ -313,22 +308,63 @@ private extension RatingSource {
 }
 
 /// Settings as its own sheet (opened from Discover), with its own navigation stack for Devices, Accounts and the icon picker.
+/// A wide sheet (iPad, Duo inner display) shows two columns: the settings on the left, the screen of the picked row on the right.
 struct SettingsScreen: View {
     let account: Account
     let profile: Profile
     @Binding var path: NavigationPath
     var close: () -> Void = {}
+    @State private var width: CGFloat = 0
+    /// Right column of the two-column layout; the rows open their screen there instead of pushing it.
+    @State private var pane = DetailPane()
+
+    private var split: Bool { width >= 700 }
 
     var body: some View {
+        Group {
+            if split { splitBody } else { stackBody }
+        }
+        .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
+    }
+
+    private var stackBody: some View {
         NavigationStack(path: $path) {
             SettingsView(account: account, profile: profile)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button(action: close) { Image(systemName: "xmark") }
-                            .accessibilityLabel(Text("m.library.close"))
+                .toolbar { closeButton }
+                .navigationDestination(for: ProfileRoute.self) { ProfileDestination(route: $0, account: account, profile: profile).paneInset() }
+        }
+    }
+
+    private var splitBody: some View {
+        NavigationSplitView(columnVisibility: .constant(.all)) {
+            SettingsView(account: account, profile: profile)
+                .toolbar { closeButton }
+                .toolbar(removing: .sidebarToggle)
+                .environment(\.detailPane, pane)
+                .navigationSplitViewColumnWidth(min: 320, ideal: 380, max: 440)
+        } detail: {
+            NavigationStack {
+                Group {
+                    if case .profile(let route) = pane.content {
+                        ProfileDestination(route: route, account: account, profile: profile, isRoot: true)
                     }
                 }
-                .navigationDestination(for: ProfileRoute.self) { ProfileDestination(route: $0, account: account, profile: profile).paneInset() }
+                .navigationDestination(for: ProfileRoute.self) { ProfileDestination(route: $0, account: account, profile: profile) }
+                .mediaDestinations()
+            }
+            // A new row starts a fresh stack on the right.
+            .id(pane.content)
+            .environment(\.detailPane, nil)
+        }
+        .navigationSplitViewStyle(.balanced)
+        // The first row (accounts) is shown until another one is picked.
+        .onAppear { if pane.content == nil { pane.content = .profile(.accounts) } }
+    }
+
+    private var closeButton: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            Button(action: close) { Image(systemName: "xmark") }
+                .accessibilityLabel(Text("m.library.close"))
         }
     }
 }

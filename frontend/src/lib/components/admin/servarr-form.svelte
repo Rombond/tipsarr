@@ -30,6 +30,8 @@
 	let isDefault = $state(instance?.isDefault ?? false);
 	// svelte-ignore state_referenced_locally
 	let animeRoot = $state(instance?.animeRoot ?? '');
+	// svelte-ignore state_referenced_locally
+	let publicUrl = $state(instance?.publicUrl ?? '');
 	let probe = $state<Schemas['ProbeResult'] | null>(null);
 	let status = $state<string | null>(null);
 	let error = $state<string | null>(null);
@@ -56,7 +58,7 @@
 		busy = true;
 		error = null;
 		try {
-			const body = { kind, name: name.trim(), url: url.trim(), apiKey: apiKey.trim(), qualityProfileId: profileId, rootFolder, isDefault, ...(kind === 'sonarr' ? { animeRoot } : {}) };
+			const body = { kind, name: name.trim(), url: url.trim(), apiKey: apiKey.trim(), qualityProfileId: profileId, rootFolder, isDefault, publicUrl: publicUrl.trim(), ...(kind === 'sonarr' ? { animeRoot } : {}) };
 			if (instance) await unwrap(api.PUT('/admin/servarr/{id}', { params: { path: { id: instance.id } }, body }));
 			else await unwrap(api.POST('/admin/servarr', { body }));
 			onSaved();
@@ -72,6 +74,7 @@
 <form class="grid gap-3 rounded-lg border border-border p-3" onsubmit={save}>
 	<Input placeholder={t('form.name')} bind:value={name} required />
 	<Input placeholder={t('form.url', { port: kind === 'radarr' ? 7878 : 8989 })} type="url" bind:value={url} required />
+	<Input placeholder={t('form.public_url')} type="url" bind:value={publicUrl} />
 	<Input
 		placeholder={instance ? t('form.api_key_keep') : t('form.api_key')}
 		bind:value={apiKey}

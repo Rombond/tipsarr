@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Rombond/tipsarr/backend/internal/clients/servarr"
 	"github.com/Rombond/tipsarr/backend/internal/issues"
 	"github.com/Rombond/tipsarr/backend/internal/media"
+	"github.com/Rombond/tipsarr/backend/internal/requests"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -20,6 +22,10 @@ func issueErr(err error) error {
 		return fail(404, "not_found", "not found")
 	case errors.Is(err, media.ErrNotConfigured):
 		return fail(503, "tmdb_not_configured", "TMDB API key is not configured")
+	case errors.Is(err, requests.ErrNoInstance):
+		return fail(409, "no_instance", err.Error())
+	case errors.Is(err, requests.ErrNotInServarr):
+		return fail(409, "not_in_servarr", err.Error())
 	case errors.Is(err, issues.ErrForbidden):
 		return fail(403, "forbidden", err.Error())
 	case errors.Is(err, issues.ErrInvalid):
@@ -171,5 +177,46 @@ func registerIssues(api huma.API, d Deps) {
 			return nil, err
 		}
 		return &struct{}{}, issueErr(d.Issues.Delete(ctx, u, in.ID))
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "issueServarrLink", Method: http.MethodGet, Path: "/issues/{id}/servarr",
+		Summary:     "Where the title of an issue lives in Radarr/Sonarr (admin)",
+		Description: "The address of its page, built from the instance's public URL (or its URL when none is set). Read-only.",
+		Tags:        []string{"issues"}, Security: sec, Errors: append(errs, http.StatusForbidden, http.StatusConflict),
+	}, func(ctx context.Context, in *idIn) (*struct{ Body *requests.ArrLink }, error) {
+		u, err := requireUser(ctx)
+		if err != nil {
+			return nil, err
+		}
+		l, err := d.Issues.ArrLink(ctx, u, in.ID)
+		return &struct{ Body *requests.ArrLink }{l}, issueErr(err)
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "issueServarrSearch", Method: http.MethodPost, Path: "/issues/{id}/servarr/search",
+		Summary:     "Start an automatic Radarr/Sonarr search for the title of an issue (admin)",
+		Description: "Not an interactive search: Radarr/Sonarr picks the release itself and ignores one that is no upgrade. In dry-run mode nothing is sent and dryRun is true.",
+		Tags:        []string{"issues"}, Security: sec, Errors: append(errs, http.StatusForbidden, http.StatusConflict),
+	}, func(ctx context.Context, in *idIn) (*struct {
+		Body struct {
+			DryRun bool `json:"dryRun" doc:"Dry-run is on: nothing was sent to Radarr/Sonarr"`
+		}
+	}, error) {
+		u, err := requireUser(ctx)
+		if err != nil {
+			return nil, err
+		}
+		out := &struct {
+			Body struct {
+				DryRun bool `json:"dryRun" doc:"Dry-run is on: nothing was sent to Radarr/Sonarr"`
+			}
+		}{}
+		err = d.Issues.Search(ctx, u, in.ID)
+		if errors.Is(err, servarr.ErrDryRun) {
+			out.Body.DryRun = true
+			return out, nil
+		}
+		return out, issueErr(err)
 	})
 }

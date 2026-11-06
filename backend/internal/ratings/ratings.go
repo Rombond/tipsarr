@@ -123,8 +123,12 @@ func (s *Service) Show(ctx context.Context, tmdbID int, name string, year int) M
 	return out
 }
 
+// scores leaves out a score Rotten Tomatoes does not have (0: no Tomatometer yet), so the apps never show
+// its logo without a number.
 func (r *RTScore) scores() (critics, audience *Score, url string) {
-	critics = &Score{Value: float64(r.Critics)}
+	if r.Critics > 0 {
+		critics = &Score{Value: float64(r.Critics)}
+	}
 	if r.Audience > 0 {
 		audience = &Score{Value: float64(r.Audience)}
 	}

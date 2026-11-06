@@ -210,6 +210,166 @@
         }
       }
     },
+    "apikey.copied": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key copied"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé copiée"
+          }
+        }
+      }
+    },
+    "apikey.copy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy the key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copier la clé"
+          }
+        }
+      }
+    },
+    "apikey.desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A read-only key for dashboards such as Glance or Homepage, sent in the X-Api-Key header. It can read everything an admin sees and can never change anything."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une clé en lecture seule pour des tableaux de bord comme Glance ou Homepage, envoyée dans l’en-tête X-Api-Key. Elle lit tout ce qu’un administrateur voit et ne peut jamais rien modifier."
+          }
+        }
+      }
+    },
+    "apikey.hide": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide the key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masquer la clé"
+          }
+        }
+      }
+    },
+    "apikey.regenerate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer une nouvelle clé"
+          }
+        }
+      }
+    },
+    "apikey.regenerate_confirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace the key? The old one stops working at once, so update every dashboard that uses it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remplacer la clé ? L’ancienne cesse de fonctionner immédiatement : mettez à jour chaque tableau de bord qui l’utilise."
+          }
+        }
+      }
+    },
+    "apikey.show": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show the key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher la clé"
+          }
+        }
+      }
+    },
+    "apikey.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API key for dashboards"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé d’API pour les tableaux de bord"
+          }
+        }
+      }
+    },
+    "apikey.toggle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn the key on"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activer la clé"
+          }
+        }
+      }
+    },
+    "apikey.usage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send it as the X-Api-Key header, never in the address (addresses end up in proxy logs). Example: GET /api/v1/requests/counts"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyez-la dans l’en-tête X-Api-Key, jamais dans l’adresse (les adresses finissent dans les journaux du proxy). Exemple : GET /api/v1/requests/counts"
+          }
+        }
+      }
+    },
     "banner.dry_run": {
       "localizations": {
         "en": {
@@ -1770,13 +1930,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No Radarr/Sonarr is configured for this type of title yet."
+            "value": "No Radarr or Sonarr instance is configured for this type of title."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aucun Radarr/Sonarr n’est encore configuré pour ce type de titre."
+            "value": "Aucune instance Radarr ou Sonarr n'est configurée pour ce type de titre."
           }
         }
       }
@@ -1809,6 +1969,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Introuvable."
+          }
+        }
+      }
+    },
+    "error.not_in_servarr": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radarr or Sonarr does not track this title."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radarr ou Sonarr ne suit pas ce titre."
           }
         }
       }
@@ -1889,6 +2065,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vous n’avez pas la permission de faire ça."
+          }
+        }
+      }
+    },
+    "error.public_url_invalid": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The public address must start with http:// or https://."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'adresse publique doit commencer par http:// ou https://."
           }
         }
       }
@@ -2434,6 +2626,90 @@
           "stringUnit": {
             "state": "translated",
             "value": "Afficher %@"
+          }
+        }
+      }
+    },
+    "issue.arr_dry_run": {
+      "comment": "placeholders: app",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dry-run is on: nothing was sent to %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le mode test est actif : rien n'a été envoyé à %@."
+          }
+        }
+      }
+    },
+    "issue.arr_open": {
+      "comment": "placeholders: app",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open in %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir dans %@"
+          }
+        }
+      }
+    },
+    "issue.arr_search": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relancer la recherche"
+          }
+        }
+      }
+    },
+    "issue.arr_search_hint": {
+      "comment": "placeholders: app, app",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic search, not interactive: %1$@ only grabs a release it considers an upgrade. For the same quality, open it in %1$@ and use Interactive Search."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche automatique, pas interactive : %1$@ ne prend qu'une version qu'il juge meilleure. Pour la même qualité, ouvre la fiche dans %1$@ et utilise la recherche interactive."
+          }
+        }
+      }
+    },
+    "issue.arr_search_started": {
+      "comment": "placeholders: app",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search started in %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche lancée dans %@."
           }
         }
       }
@@ -9277,6 +9553,23 @@
         }
       }
     },
+    "profile.history_sources": {
+      "comment": "placeholders: sources",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your recommendations also use the watch history of %@ (set by an admin). That is why Discover can show titles you have not watched yourself."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vos recommandations utilisent aussi l’historique de visionnage de %@ (réglé par un administrateur). C’est pourquoi Découvrir peut montrer des titres que vous n’avez pas vus vous-même."
+          }
+        }
+      }
+    },
     "profile.language": {
       "localizations": {
         "en": {
@@ -10064,6 +10357,71 @@
           "stringUnit": {
             "state": "translated",
             "value": "L’envoi au gestionnaire de téléchargement a échoué ; un administrateur peut voir les détails."
+          }
+        }
+      }
+    },
+    "req.history": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique"
+          }
+        }
+      }
+    },
+    "req.history.approximate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈ Approximate dates: this request is older than the history, so its steps are dated by the last change."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈ Dates approximatives : cette demande est antérieure à l’historique, ses étapes sont datées par le dernier changement."
+          }
+        }
+      }
+    },
+    "req.history.by": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "by %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "par %@"
+          }
+        }
+      }
+    },
+    "req.history.requested": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requested"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demandé"
           }
         }
       }
@@ -13999,6 +14357,123 @@
           "stringUnit": {
             "state": "translated",
             "value": "utilisateur"
+          }
+        }
+      }
+    },
+    "users.sources": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommendations"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommandations"
+          }
+        }
+      }
+    },
+    "users.sources_hint": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the watch history of other accounts, besides %@’s own, to build the recommendations on Discover. Useful when the family watches on one shared account."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utiliser l’historique de visionnage d’autres comptes, en plus de celui de %@, pour construire les recommandations de Découvrir. Utile quand la famille regarde sur un compte partagé."
+          }
+        }
+      }
+    },
+    "users.sources_import_hint": {
+      "comment": "placeholders: max",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only Tipsarr users can be chosen: use “Import from Jellyfin” first for an account that never signed in (a shared TV account). Up to %@ accounts."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seuls les utilisateurs de Tipsarr peuvent être choisis : utilisez d’abord « Importer depuis Jellyfin » pour un compte qui ne s’est jamais connecté (un compte TV partagé). Jusqu’à %@ comptes."
+          }
+        }
+      }
+    },
+    "users.sources_none": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There is no other user yet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il n’y a pas encore d’autre utilisateur."
+          }
+        }
+      }
+    },
+    "users.sources_title": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommendations of %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommandations de %@"
+          }
+        }
+      }
+    },
+    "users.sources_warning": {
+      "comment": "placeholders: name, sources, name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ will see titles from the history of %2$@ in the “Because you watched…” rows, and titles those accounts already watched are hidden from %1$@’s recommendations. Only their watch history is used, never their blocklist."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ verra des titres de l’historique de %2$@ dans les rangées « Parce que vous avez regardé… », et les titres déjà vus par ces comptes seront masqués dans les recommandations de %1$@. Seul leur historique de visionnage est utilisé, jamais leur liste de blocage."
+          }
+        }
+      }
+    },
+    "users.sources_warning_none": {
+      "comment": "placeholders: name, name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No other account is used: %1$@’s recommendations come from their own history. If you choose an account, %1$@ will see titles from its history in the “Because you watched…” rows."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun autre compte n’est utilisé : les recommandations de %1$@ viennent de son propre historique. Si vous choisissez un compte, %1$@ verra des titres de son historique dans les rangées « Parce que vous avez regardé… »."
           }
         }
       }

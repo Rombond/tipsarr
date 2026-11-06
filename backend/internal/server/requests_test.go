@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"io"
@@ -67,6 +68,10 @@ func newFakeArr(t *testing.T, kind string) *fakeArr {
 			} else {
 				out(`{"records":[{"seriesId":77,"size":1000,"sizeleft":500,"timeleft":"00:10:00","status":"downloading"}],"totalRecords":1}`)
 			}
+		case r.Method == http.MethodPost && p == "/command":
+			f.recordPost(r)
+			w.WriteHeader(http.StatusCreated)
+			out(`{"id":1}`)
 		case kind == "radarr" && r.Method == http.MethodPost && p == "/movie":
 			f.recordPost(r)
 			if f.failPost.Load() {
@@ -890,5 +895,62 @@ func TestRadarrMonitoringBlocksRequests(t *testing.T) {
 	}
 	if resp, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5}`, bob); resp.StatusCode != http.StatusConflict || !strings.Contains(body, "already_monitored") {
 		t.Fatalf("request = %d %s", resp.StatusCode, body)
+	}
+}
+
+func TestIssueServarrActions(t *testing.T) {
+	for _, dry := range []bool{true, false} {
+		e := newEnv(t, dry)
+		_, admin, bob := setupUsers(t, e)
+		arr := newFakeArr(t, "radarr")
+		arr.movieByTMDB.Store(`[{"id":42,"tmdbId":5,"hasFile":true}]`)
+
+		_, body := call(t, e.app, "POST", "/api/v1/issues", `{"type":"movie","tmdbId":5,"kind":"video","message":"bad"}`, bob)
+		var iss struct{ ID string }
+		_ = json.Unmarshal([]byte(body), &iss)
+		link, search := "/api/v1/issues/"+iss.ID+"/servarr", "/api/v1/issues/"+iss.ID+"/servarr/search"
+
+		if resp, _ := call(t, e.app, "GET", link, "", admin); resp.StatusCode != http.StatusConflict {
+			t.Fatalf("dry=%v no instance = %d", dry, resp.StatusCode)
+		}
+		addInstance(t, e, admin, "radarr", arr)
+		if resp, _ := call(t, e.app, "GET", link, "", bob); resp.StatusCode != http.StatusForbidden {
+			t.Fatalf("dry=%v reporter link = %d", dry, resp.StatusCode)
+		}
+		resp, body := call(t, e.app, "GET", link, "", admin)
+		if resp.StatusCode != 200 || !strings.Contains(body, `"url":"`+arr.srv.URL+`/movie/5"`) {
+			t.Fatalf("dry=%v link = %d %s", dry, resp.StatusCode, body)
+		}
+		// a public address wins over the one Tipsarr itself uses
+		_, list := call(t, e.app, "GET", "/api/v1/admin/servarr", "", admin)
+		var insts []struct{ ID string }
+		_ = json.Unmarshal([]byte(list), &insts)
+		put := `{"kind":"radarr","name":"radarr","url":"` + arr.srv.URL + `","qualityProfileId":4,"rootFolder":"/data/media","isDefault":true,"publicUrl":"https://radarr.example.com/"}`
+		if resp, b := call(t, e.app, "PUT", "/api/v1/admin/servarr/"+insts[0].ID, put, admin); resp.StatusCode != 200 {
+			t.Fatalf("dry=%v update = %d %s", dry, resp.StatusCode, b)
+		}
+		if _, body := call(t, e.app, "GET", link, "", admin); !strings.Contains(body, `"url":"https://radarr.example.com/movie/5"`) {
+			t.Fatalf("dry=%v public link = %s", dry, body)
+		}
+
+		if resp, _ := call(t, e.app, "POST", search, `{}`, bob); resp.StatusCode != http.StatusForbidden {
+			t.Fatalf("dry=%v reporter search = %d", dry, resp.StatusCode)
+		}
+		resp, body = call(t, e.app, "POST", search, `{}`, admin)
+		if resp.StatusCode != 200 || !strings.Contains(body, `"dryRun":`+strconv.FormatBool(dry)) {
+			t.Fatalf("dry=%v search = %d %s", dry, resp.StatusCode, body)
+		}
+		w := arr.writes()
+		if dry && len(w) != 0 {
+			t.Fatalf("DRY-RUN LEAK: %v", w)
+		}
+		if !dry {
+			arr.mu.Lock()
+			name, ids := arr.posted["name"], arr.posted["movieIds"]
+			arr.mu.Unlock()
+			if len(w) != 1 || name != "MoviesSearch" || fmt.Sprint(ids) != "[42]" {
+				t.Fatalf("live writes = %v posted = %v %v", w, name, ids)
+			}
+		}
 	}
 }

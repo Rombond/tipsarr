@@ -91,7 +91,7 @@ struct LibraryView: View {
     @ViewBuilder private var content: some View {
         switch model.phase {
         case .idle, .loading:
-            LazyVGrid(columns: Self.columns, spacing: Tokens.Spacing.lg) {
+            LazyVGrid(columns: columns, spacing: Tokens.Spacing.lg) {
                 ForEach(0..<9, id: \.self) { _ in PosterSkeleton() }
             }
             .padding(.horizontal, Tokens.Spacing.lg)
@@ -108,7 +108,7 @@ struct LibraryView: View {
     }
 
     private var grid: some View {
-        LazyVGrid(columns: Self.columns, spacing: Tokens.Spacing.lg) {
+        LazyVGrid(columns: columns, spacing: Tokens.Spacing.lg) {
             ForEach(model.items) { item in
                 MediaLink(route: item.route) {
                     PosterCard(title: item.title, subtitle: item.year.map(String.init), posterPath: item.tmdbPosterPath,
@@ -134,7 +134,11 @@ struct LibraryView: View {
         .padding(.horizontal, Tokens.Spacing.lg)
     }
 
-    private static let columns = [GridItem(.adaptive(minimum: 104, maximum: 180), spacing: Tokens.Spacing.md, alignment: .top)]
+    /// Phone: 3 columns. Wide pages get bigger posters (about 6 columns on an iPad in landscape, as in Penpot) instead of
+    /// a dozen thumbnails.
+    private var columns: [GridItem] {
+        [GridItem(.adaptive(minimum: roomy ? 150 : 104, maximum: roomy ? 220 : 180), spacing: Tokens.Spacing.md, alignment: .top)]
+    }
 }
 
 private struct LibraryRow: View {

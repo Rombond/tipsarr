@@ -1,6 +1,25 @@
 package com.brebond.tipsarr.features.discover
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
+import com.brebond.tipsarr.core.api.MediaType
+import com.brebond.tipsarr.core.images.RemoteImage
+import com.brebond.tipsarr.core.images.TmdbSize
+import com.brebond.tipsarr.ui.StatusBadge
+import com.brebond.tipsarr.ui.TipsarrButton
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -84,12 +103,18 @@ fun DiscoverScreen(
         onRefresh = { scope.launch { refreshing = true; model.refreshCurrent(); if (model.chip == DiscoverChip.ForYou) boxOffice.refresh(); refreshing = false } },
         modifier = modifier.fillMaxSize(),
     ) {
-        if (source == null) ForYou(model, boxOffice, onOpenChart, onOpenItem, onOpenProfile, onOpenSettings) else Grid(model, model.list(source), onOpenItem, onOpenProfile, onOpenSettings)
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            // Landscape tablet: a hero over the "For you" rails. Tablets get bigger posters in the grids (more columns all the same).
+            val wide = maxWidth >= 900.dp
+            val poster = if (maxWidth >= 600.dp) 120.dp else 96.dp
+            if (source == null) ForYou(model, boxOffice, onOpenChart, onOpenItem, onOpenProfile, onOpenSettings, wide)
+            else Grid(model, model.list(source), onOpenItem, onOpenProfile, onOpenSettings, poster)
+        }
     }
 }
 
 @Composable
-private fun Header(model: DiscoverModel, onOpenProfile: () -> Unit, onOpenSettings: () -> Unit, gutter: Dp = GUTTER) {
+private fun Header(model: DiscoverModel, onOpenProfile: () -> Unit, onOpenSettings: () -> Unit, gutter: Dp = GUTTER, hero: (@Composable () -> Unit)? = null) {
     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
         Row(Modifier.fillMaxWidth().padding(start = gutter, end = gutter, top = Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -102,6 +127,7 @@ private fun Header(model: DiscoverModel, onOpenProfile: () -> Unit, onOpenSettin
                 IconButton(onOpenSettings) { Icon(Icons.Outlined.Settings, stringResource(R.string.nav_settings), tint = Tokens.palette.fg) }
             }
         }
+        hero?.invoke()
         LazyRow(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), contentPadding = PaddingValues(horizontal = gutter)) {
             items(DiscoverChip.entries) { item ->
                 Chip(stringResource(item.title()), selected = model.chip == item, onClick = { model.chip = item })
@@ -122,12 +148,15 @@ private fun DiscoverChip.title(): Int = when (this) {
 @Composable
 private fun ForYou(
     model: DiscoverModel, boxOffice: BoxOfficeModel, onOpenChart: (BoxOfficeChart) -> Unit, onOpenItem: (MediaItem) -> Unit,
-    onOpenProfile: () -> Unit, onOpenSettings: () -> Unit,
+    onOpenProfile: () -> Unit, onOpenSettings: () -> Unit, wide: Boolean,
 ) {
     val home = model.home
     LaunchedEffect(home) { home.loadIfNeeded() }
+    // The hero is the top trending title; the Trending rail is not repeated, it is a chip of its own.
+    val trending = if (wide) model.list(MediaListModel.Source.Trending) else null
+    if (trending != null) LaunchedEffect(trending) { trending.loadIfNeeded() }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Tokens.Spacing.lg), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg)) {
-        item { Header(model, onOpenProfile, onOpenSettings) }
+        item { Header(model, onOpenProfile, onOpenSettings, hero = trending?.items?.firstOrNull()?.let { first -> { Hero(first) { onOpenItem(first) } } }) }
         when (val phase = home.phase) {
             // The box office does not wait for the suggestions (a new account has none yet).
             Phase.Idle, Phase.Loading -> {
@@ -144,7 +173,7 @@ private fun ForYou(
                     StateView(
                         if (home.generating) Icons.Outlined.HourglassTop else Icons.Outlined.AutoAwesome,
                         stringResource(if (home.generating) R.string.suggest_preparing else R.string.common_no_results),
-                        Modifier.height(360.dp),
+                        Modifier.heightIn(min = 360.dp),
                     )
                 }
             } else {
@@ -155,6 +184,39 @@ private fun ForYou(
                         if (index == 0) BoxOfficeRail(boxOffice, onOpenItem, onOpenChart)
                     }
                 }
+            }
+        }
+    }
+}
+
+/** Big banner of one title (landscape tablet "For you"): backdrop, title, short facts, overview and a button to its page. */
+@Composable
+private fun Hero(item: MediaItem, onOpen: () -> Unit) {
+    Box(
+        // At least 380 dp; large text makes it taller instead of cutting the title.
+        Modifier.padding(horizontal = GUTTER).fillMaxWidth().heightIn(min = 380.dp).clip(RoundedCornerShape(Tokens.Radius.xl))
+            .background(Tokens.palette.muted).clickable(onClick = onOpen),
+    ) {
+        RemoteImage(item.backdropPath ?: item.posterPath, TmdbSize.W1280, Modifier.matchParentSize())
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.1f), Color.Black.copy(alpha = 0.75f)))))
+        Column(Modifier.align(Alignment.BottomStart).padding(Tokens.Spacing.x3xl), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.md)) {
+            Text(
+                item.title, fontSize = 40.sp, lineHeight = 44.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(
+                listOfNotNull(item.releaseYear, stringResource(if (item.type == MediaType.Tv) R.string.type_tv else R.string.type_movie)).joinToString(" · "),
+                fontSize = Tokens.FontSize.subhead, fontWeight = FontWeight.Medium, color = Color.White.copy(alpha = 0.85f),
+            )
+            item.overview?.takeIf { it.isNotBlank() }?.let {
+                Text(it, fontSize = Tokens.FontSize.body, color = Color.White.copy(alpha = 0.9f), maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 560.dp))
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+                TipsarrButton(stringResource(R.string.media_view_details), onOpen) {
+                    Icon(Icons.Outlined.Info, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(Tokens.Spacing.sm))
+                }
+                item.state?.let { StatusBadge(it) }
             }
         }
     }
@@ -197,10 +259,10 @@ private fun RailSkeleton() {
 
 /** Grid chips (Trending, Upcoming, Movies, TV): adaptive grid with infinite scroll. */
 @Composable
-private fun Grid(model: DiscoverModel, list: MediaListModel, onOpenItem: (MediaItem) -> Unit, onOpenProfile: () -> Unit, onOpenSettings: () -> Unit) {
+private fun Grid(model: DiscoverModel, list: MediaListModel, onOpenItem: (MediaItem) -> Unit, onOpenProfile: () -> Unit, onOpenSettings: () -> Unit, poster: Dp) {
     LaunchedEffect(list) { list.loadIfNeeded() }
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(96.dp),
+        columns = GridCells.Adaptive(poster),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = GUTTER, end = GUTTER, bottom = Tokens.Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.lg),
@@ -228,7 +290,7 @@ private fun Grid(model: DiscoverModel, list: MediaListModel, onOpenItem: (MediaI
 private fun ErrorBlock(error: ApiError, retry: suspend () -> Unit) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    Box(Modifier.fillMaxWidth().height(360.dp)) {
+    Box(Modifier.fillMaxWidth().heightIn(min = 360.dp)) {
         if (error == ApiError.Unreachable) {
             OfflineState({ scope.launch { retry() } })
         } else {

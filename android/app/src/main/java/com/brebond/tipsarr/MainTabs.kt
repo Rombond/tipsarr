@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.outlined.ViewSidebar
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
@@ -268,11 +269,14 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                                     teasersOn = model.teasersOn,
                                     onOpenTeasersHistory = { model.open(tab, Screen.TeasersHistory) },
                                     onBack = { model.back(tab) },
+                                    server = account.host,
+                                    serverVersion = serverVersion,
+                                    onOpenSettings = { model.open(tab, Screen.Settings) },
                                 )
                             }
                             Screen.Settings -> SettingsScreen(
                                 account, profile, model.api, settings, session.accounts.accounts.size, serverVersion, session.serverStatus?.features?.push == true,
-                                onBack = { model.back(tab) },
+                                onBack = { model.close(tab, Screen.Settings) },
                                 onProfileChanged = { session.update(it) },
                                 onLanguageChanged = onLanguageChanged,
                                 onOpenAccounts = { model.open(tab, Screen.Accounts) },
@@ -378,11 +382,23 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                 val top = model.top(tab)
                 // Requests and Search split into list and detail on a wide window; every tab does next to a hinge.
                 val split = hinge != null || (maxWidth >= 700.dp && (tab == AppTab.Requests || tab == AppTab.Search))
+                // Settings on an expanded window or next to a hinge: its sections in the left pane, the page opened from it on the right.
+                val settingsSplit = Screen.Settings in model.stack(tab) && (hinge != null || maxWidth >= 840.dp)
+                val settingsDetail: @Composable () -> Unit = {
+                    if (top != null && top != Screen.Settings) renderScreen(top)
+                    else Box(Modifier.fillMaxSize().statusBarsPadding()) { StateView(Icons.Outlined.Settings, stringResource(R.string.m_settings_title)) }
+                }
                 val single: @Composable () -> Unit = {
                     if (top != null) renderScreen(top) else Box(Modifier.fillMaxSize().rootInsets(tab)) { renderRoot(tab) }
                 }
                 val body: @Composable () -> Unit = {
-                    if (!split) {
+                    if (settingsSplit) {
+                        Row(Modifier.fillMaxSize()) {
+                            Box(Modifier.width(400.dp).fillMaxHeight()) { renderScreen(Screen.Settings) }
+                            VerticalDivider(color = Tokens.palette.border)
+                            Box(Modifier.weight(1f).fillMaxHeight()) { settingsDetail() }
+                        }
+                    } else if (!split) {
                         single()
                     } else {
                         Row(Modifier.fillMaxSize()) {
@@ -402,11 +418,13 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
                             contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Start),
                             bottomBar = navigationBar,
                         ) { padding ->
-                            Box(Modifier.fillMaxSize().padding(padding).rootInsets(tab)) { renderRoot(tab) }
+                            if (settingsSplit) Box(Modifier.fillMaxSize().padding(padding)) { renderScreen(Screen.Settings) }
+                            else Box(Modifier.fillMaxSize().padding(padding).rootInsets(tab)) { renderRoot(tab) }
                         }
                         Spacer(Modifier.width(hinge.right - hinge.left).fillMaxHeight())
                         Box(Modifier.weight(1f).fillMaxHeight()) {
-                            if (top != null) renderScreen(top) else Box(Modifier.fillMaxSize().statusBarsPadding()) { renderEmpty(tab) }
+                            if (settingsSplit) settingsDetail()
+                            else if (top != null) renderScreen(top) else Box(Modifier.fillMaxSize().statusBarsPadding()) { renderEmpty(tab) }
                         }
                     }
                     rail -> Row(Modifier.fillMaxSize()) {

@@ -3,10 +3,11 @@ import SwiftUI
 extension View {
     /// Shared sheet look: token corner radius, grabber, card background.
     /// `detents` nil: the content sets its own (a sheet that fits its content).
-    func tipsarrSheet(detents: Set<PresentationDetent>? = [.medium, .large]) -> some View {
+    /// `sizing`: `.page` for a sheet that needs room for two columns on iPad (Settings); same bottom sheet on iPhone.
+    func tipsarrSheet(detents: Set<PresentationDetent>? = [.medium, .large], sizing: some PresentationSizing = .form) -> some View {
         self
             // A centred form sheet on iPad and the Duo inner display; bottom sheet with detents on iPhone.
-            .presentationSizing(.form)
+            .presentationSizing(sizing)
             .modifier(OptionalDetents(detents: detents))
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(Tokens.Radius.sheet)

@@ -55,6 +55,23 @@ components:
         rootFolder:
           type: string
       type: object
+    ArrLink:
+      additionalProperties: false
+      properties:
+        kind:
+          enum:
+            - radarr
+            - sonarr
+          type: string
+        name:
+          type: string
+        url:
+          type: string
+      required:
+        - kind
+        - name
+        - url
+      type: object
     AuthMethods:
       additionalProperties: false
       properties:
@@ -888,6 +905,9 @@ components:
           maxLength: 100
           minLength: 1
           type: string
+        publicUrl:
+          description: Omit to keep, empty string to clear. http(s)://host[:port]
+          type: string
         qualityProfileId:
           format: int64
           minimum: 1
@@ -930,6 +950,9 @@ components:
           type: string
         name:
           type: string
+        publicUrl:
+          description: Address people open the app at in their browser, used by links to it; empty = url
+          type: string
         qualityProfileId:
           format: int64
           type: integer
@@ -946,6 +969,7 @@ components:
         - qualityProfileId
         - rootFolder
         - isDefault
+        - publicUrl
         - animeRoot
         - genreRoots
       type: object
@@ -979,6 +1003,15 @@ components:
       required:
         - open
         - resolved
+      type: object
+    IssueServarrSearchResponse:
+      additionalProperties: false
+      properties:
+        dryRun:
+          description: "Dry-run is on: nothing was sent to Radarr/Sonarr"
+          type: boolean
+      required:
+        - dryRun
       type: object
     IssueThread:
       additionalProperties: false
@@ -5790,6 +5823,126 @@ paths:
         - session: []
         - bearer: []
       summary: Resolve an issue (reporter or admin)
+      tags:
+        - issues
+  /issues/{id}/servarr:
+    get:
+      description: The address of its page, built from the instance's public URL (or its URL when none is set). Read-only.
+      operationId: issueServarrLink
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            maxLength: 32
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArrLink"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: Where the title of an issue lives in Radarr/Sonarr (admin)
+      tags:
+        - issues
+  /issues/{id}/servarr/search:
+    post:
+      description: "Not an interactive search: Radarr/Sonarr picks the release itself and ignores one that is no upgrade. In dry-run mode nothing is sent and dryRun is true."
+      operationId: issueServarrSearch
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            maxLength: 32
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueServarrSearchResponse"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: Start an automatic Radarr/Sonarr search for the title of an issue (admin)
       tags:
         - issues
   /library:
