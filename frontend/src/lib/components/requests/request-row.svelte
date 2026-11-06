@@ -117,6 +117,9 @@
 			<span class="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-violet-700 uppercase dark:text-violet-300">
 				{request.type === 'tv' ? t('type.tv_short') : t('type.movie')}
 			</span>
+			{#if request.uhd}
+				<span class="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-amber-700 dark:text-amber-300">{t('req.uhd_badge')}</span>
+			{/if}
 		</div>
 		<div><StatusBadge status={request.stage as StatusKey}>{stageLabel}</StatusBadge></div>
 		<p class="text-xs text-muted-foreground">

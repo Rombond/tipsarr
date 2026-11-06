@@ -63,7 +63,7 @@
 		onsubmit(choice);
 	}
 
-	const profileOptions = $derived((options?.profiles ?? []).map((p) => ({ value: String(p.id), label: p.name })));
+	const profileOptions = $derived((options?.profiles ?? []).map((p) => ({ value: String(p.id), label: p.uhd ? t('req.profile_uhd', { name: p.name }) : p.name })));
 	const folderOptions = $derived((options?.rootFolders ?? []).map((f) => ({ value: f.path, label: f.path })));
 </script>
 
