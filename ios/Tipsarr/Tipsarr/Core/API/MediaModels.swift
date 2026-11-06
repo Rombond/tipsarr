@@ -96,6 +96,11 @@ struct RatingsSummary: Sendable, Equatable {
 struct QualityProfile: Sendable, Hashable, Identifiable {
     var id: Int
     var name: String
+    /// The profile allows 4K (2160p); false from a server without 4K requests.
+    var uhd = false
+
+    /// The menu label: 4K profiles say so.
+    var label: String { uhd ? L10n.string("req.profile_uhd", name) : name }
 }
 
 struct RootFolderOption: Sendable, Hashable, Identifiable {
@@ -140,6 +145,8 @@ struct RequestRecord: Sendable, Identifiable, Hashable {
     var rootFolder: String?
     /// Imported from what Radarr/Sonarr already monitor.
     var imported = false
+    /// The quality profile allows 4K (2160p).
+    var uhd = false
     var createdAt: Date
     /// What happened to the request and when, oldest first; empty from a server older than 0.11.
     var events: [RequestEvent] = []

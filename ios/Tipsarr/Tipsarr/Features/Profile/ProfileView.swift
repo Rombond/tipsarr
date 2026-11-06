@@ -135,7 +135,7 @@ struct ProfileView: View {
                                 .accessibilityHidden(true)
                                 VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
                                     Text(verbatim: record.title).font(.body.weight(.semibold)).lineLimit(1)
-                                    StatusBadge(state: record.state)
+                                    RequestBadges(record: record)
                                 }
                                 Spacer(minLength: 0)
                             }
