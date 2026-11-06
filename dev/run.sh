@@ -56,7 +56,7 @@ if [ "$FRESH" = 1 ]; then
   (cd backend && "$DEV/.bin/devenv" -seed http://127.0.0.1:$PORT) 2>&1 | tee "$DEV/.logs/seed.log" | grep -v '^20[0-9][0-9]/' || true
 else
   echo "keeping the data of the last run (dev/run.sh --reset starts fresh)"
-  echo "accounts: alice, bob, carol, dave, password test"
+  echo "accounts: alice, bob, carol, dave, erin, password test"
 fi
 
 cat <<TXT

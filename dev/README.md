@@ -18,6 +18,7 @@ Accounts (password `test` for all):
 | bob | default rights, 3 movies per 7 days (2 used), pending, failed and declined requests, watchlist and hidden titles |
 | carol | request manager (not an admin): approves requests, sees everyone's, no limit |
 | dave | movies only (no shows), 1 movie per day (unused), can report issues |
+| erin | default rights, no watch history at all: the account to map to another one (history sources) |
 
 Things to know:
 

@@ -20,6 +20,7 @@ func idOf(letter string) string { return strings.Repeat(letter, 31) }
 
 var jfUsers = []jfUser{
 	{idOf("a") + "1", "alice", true}, {idOf("b") + "2", "bob", false}, {idOf("c") + "3", "carol", false}, {idOf("d") + "4", "dave", false},
+	{idOf("e") + "5", "erin", false},
 }
 
 // the library: movies 1..30 without two holes, and shows 201..210

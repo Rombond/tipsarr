@@ -288,6 +288,27 @@ export interface paths {
         patch: operations["updateUser"];
         trace?: never;
     };
+    "/admin/users/{id}/history-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whose watch history a person's recommendations also use (admin only) */
+        get: operations["adminHistorySources"];
+        /**
+         * Set whose watch history a person's recommendations also use (admin only)
+         * @description Admins only, not even the manage-users right: it exposes what one account watched to another person. Replaces the list. An empty list goes back to the person's own history. The sources must be Tipsarr users (import the shared account from Jellyfin first); a person cannot be their own source; at most 5. Only one level is followed: a source's own sources are not used. The person's recommendations are rebuilt in the background.
+         */
+        put: operations["setHistorySources"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users/{id}/teasers/history": {
         parameters: {
             query?: never;
@@ -893,6 +914,26 @@ export interface paths {
         post?: never;
         /** Stop push notifications on this device */
         delete: operations["unregisterDevice"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/history-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whose watch history your recommendations also use
+         * @description Set by an admin (a shared TV account, say). Read-only here: it explains why titles that someone else watched appear in Discover.
+         */
+        get: operations["myHistorySources"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1887,6 +1928,14 @@ export interface components {
             /** Format: double */
             voteAverage: number;
         };
+        HistorySource: {
+            id: string;
+            name: string;
+        };
+        HistorySourcesBody: {
+            /** @description Accounts whose watch history this person's recommendations also use, with their own. Titles they watched are hidden from the recommendations too */
+            sources: components["schemas"]["HistorySource"][];
+        };
         ImportUsersResponse: {
             /** Format: int64 */
             created: number;
@@ -2486,6 +2535,10 @@ export interface components {
             title: string;
             /** Format: int64 */
             tmdbId: number;
+        };
+        SetHistorySourcesRequest: {
+            /** @description Jellyfin user ids */
+            sources: string[];
         };
         SettingsBody: {
             /** @description Read-only key for dashboards (Glance, Homepage...), sent as the X-Api-Key header; it reads everything an admin sees and never writes. Empty = off */
@@ -4154,6 +4207,144 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    adminHistorySources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistorySourcesBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    setHistorySources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetHistorySourcesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistorySourcesBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6599,6 +6790,44 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    myHistorySources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistorySourcesBody"];
+                };
             };
             /** @description Unauthorized */
             401: {
