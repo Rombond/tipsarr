@@ -74,6 +74,7 @@ import com.brebond.tipsarr.ui.ButtonKind
 import com.brebond.tipsarr.ui.ProgressBar
 import com.brebond.tipsarr.ui.RequestState
 import com.brebond.tipsarr.ui.StatusBadge
+import com.brebond.tipsarr.ui.UhdBadge
 import com.brebond.tipsarr.ui.TipsarrButton
 import com.brebond.tipsarr.ui.TopBarScaffold
 import kotlinx.coroutines.launch
@@ -197,7 +198,10 @@ private fun Header(record: RequestRecord, onOpenTitle: () -> Unit) {
         Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
             Text(record.title, fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.Bold, color = Tokens.palette.fg, modifier = Modifier.semantics { heading() })
             Text(stringResource(if (record.type == MediaType.Tv) R.string.type_tv else R.string.type_movie), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
-            StatusBadge(record.state)
+            Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                StatusBadge(record.state)
+                if (record.uhd) UhdBadge()
+            }
         }
     }
 }
@@ -226,7 +230,7 @@ private fun Facts(record: RequestRecord, currentUserName: String, canManage: Boo
         SectionTitle(stringResource(R.string.m_requests_details))
         val default = stringResource(R.string.m_requests_default_value)
         val profileId = record.qualityProfileId ?: options?.qualityProfileId
-        val profileName = options?.profiles?.firstOrNull { it.id == profileId }?.name ?: profileId?.toString() ?: default
+        val profileName = options?.profiles?.firstOrNull { it.id == profileId }?.let { com.brebond.tipsarr.features.detail.profileLabel(it) } ?: profileId?.toString() ?: default
         Column {
             record.requestedBy?.takeIf { it.isNotEmpty() }?.let { name ->
                 val me = name == currentUserName

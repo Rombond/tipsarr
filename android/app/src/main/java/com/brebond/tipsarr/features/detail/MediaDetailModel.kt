@@ -86,8 +86,8 @@ class MediaDetailModel(
     /** May approve, decline and retry requests. */
     val canManageRequests: Boolean get() = me().can(Permission.MANAGE_REQUESTS)
 
-    /** Requests for this title are approved right away. */
-    val autoApproves: Boolean get() = me().autoApproves(route.type)
+    /** A request for this title with the chosen profile (4K or not) is approved right away. */
+    fun autoApproves(uhd: Boolean): Boolean = me().autoApproves(route.type, uhd)
 
     /** May request this kind of title. */
     val mayRequest: Boolean get() = me().mayRequest(route.type)
