@@ -19,6 +19,12 @@ import (
 //go:embed all:dist
 var distFS embed.FS
 
+// Built reports whether a frontend build is embedded in this binary.
+func Built() bool {
+	_, err := distFS.ReadFile("dist/index.html")
+	return err == nil
+}
+
 func Handler() http.Handler {
 	sub, _ := fs.Sub(distFS, "dist")
 	files := http.FileServerFS(sub)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/Rombond/tipsarr/backend/internal/web"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -547,9 +548,14 @@ func TestHealthAndOpenAPI(t *testing.T) {
 	if resp, body := call(t, app, "GET", "/api/v1/openapi.json", ""); resp.StatusCode != 200 || !strings.Contains(body, `"/auth/login"`) {
 		t.Fatalf("openapi = %d %.200s", resp.StatusCode, body)
 	}
-	// unknown non-API path falls through to the SPA handler (404 hint when not built)
-	if resp, _ := call(t, app, "GET", "/some/page", ""); resp.StatusCode != http.StatusNotFound {
-		t.Fatalf("spa fallback = %d", resp.StatusCode)
+	// unknown non-API path falls through to the SPA handler: index.html when a frontend is
+	// embedded (make test builds one), a 404 hint otherwise (CI backend job)
+	want := http.StatusNotFound
+	if web.Built() {
+		want = http.StatusOK
+	}
+	if resp, _ := call(t, app, "GET", "/some/page", ""); resp.StatusCode != want {
+		t.Fatalf("spa fallback = %d, want %d", resp.StatusCode, want)
 	}
 }
 

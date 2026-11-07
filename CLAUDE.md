@@ -4,7 +4,7 @@ Self-hosted media discovery and requests for Jellyfin: Go backend, Svelte web ap
 
 - `backend/` Go (chi + huma + bun), see `backend/CLAUDE.md`. `frontend/` SvelteKit SPA, see `frontend/CLAUDE.md`. `ios/` SwiftUI, see `ios/CLAUDE.md`. `android/` Kotlin/Compose, see `android/CLAUDE.md`.
 - `api/openapi.yaml` is the generated spec the apps use. `design/` holds tokens, string build scripts, icons, Penpot scripts. `docs/` is the user documentation (update it with any user-visible change). `fastlane/metadata/` and `store/` hold store listings, review notes and `store/RELEASE-CHECKLIST.md`.
-- `make dev | test | generate | build`. `make test` is what CI runs (plus `gofmt`, `go vet`). `TestHealthAndOpenAPI` fails locally when `backend/internal/web/dist` holds a built frontend (the SPA answers 200 instead of 404); it passes in CI.
+- `make dev | test | generate | build`. `make test` is what CI runs (plus `gofmt`, `go vet`).
 - License MIT. Do not copy code from GPL projects (Boxarr); Seerr and SuggestArr are MIT and may be adapted with their notice kept.
 
 ## Product rules
