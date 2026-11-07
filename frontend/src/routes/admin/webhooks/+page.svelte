@@ -1,4 +1,5 @@
 <script lang="ts">
+	const DOCS_URL = 'https://github.com/Rombond/tipsarr/blob/master/docs/notifications.md';
 	import { t } from '$lib/i18n/index.svelte';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -243,7 +244,7 @@
 					<label class="grid gap-1.5 text-sm">
 						{t('webhooks.url_label')}
 						<Input bind:value={url} required placeholder={presetHint?.urlExample ?? 'https://'} class="font-mono" />
-						<span class="text-xs text-muted-foreground">{t('webhooks.url_hint')}</span>
+						<span class="text-xs text-muted-foreground">{t('webhooks.url_hint', { example: '{{ media.type }}' })}</span>
 					</label>
 
 					<div class="grid gap-1.5 text-sm">
@@ -255,7 +256,8 @@
 							class="w-full rounded-md border border-input bg-transparent p-2 font-mono text-xs"
 							placeholder={t('webhooks.template_placeholder')}
 						></textarea>
-						<span class="text-xs text-muted-foreground">{t('webhooks.template_hint')}</span>
+						<span class="text-xs text-muted-foreground">{t('webhooks.template_hint', { example: '{{ message | json }}' })}</span>
+						<a class="text-xs text-primary underline-offset-4 hover:underline" href={DOCS_URL} target="_blank" rel="noopener noreferrer">{t('webhooks.docs_link')} ↗</a>
 					</div>
 
 					<div class="grid gap-1.5 text-sm">
