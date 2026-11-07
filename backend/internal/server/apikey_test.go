@@ -45,7 +45,8 @@ func TestAPIKey(t *testing.T) {
 	// off by default: no key is saved and an invented one opens nothing
 	_, body := call(t, e.app, "GET", "/api/v1/admin/settings", "", admin)
 	var s struct {
-		APIKey string `json:"apiKey"`
+		APIKey     string `json:"apiKey"`
+		Configured bool   `json:"apiKeyConfigured"`
 	}
 	if err := json.Unmarshal([]byte(body), &s); err != nil || s.APIKey != "" {
 		t.Fatalf("key before turning on = %q (%v)", s.APIKey, err)
@@ -56,10 +57,17 @@ func TestAPIKey(t *testing.T) {
 
 	// turn it on
 	_, body = call(t, e.app, "PUT", "/api/v1/admin/settings", `{"apiKeyEnabled":true}`, admin)
-	if err := json.Unmarshal([]byte(body), &s); err != nil || len(s.APIKey) != 32 {
-		t.Fatalf("key after turning on = %q (%v)", s.APIKey, err)
+	if err := json.Unmarshal([]byte(body), &s); err != nil || !s.Configured || s.APIKey != "" {
+		t.Fatalf("settings after turning on = %s (%v)", body, err)
 	}
-	key := s.APIKey
+	key := revealSecret(t, e.app, admin, "api_key")
+	if len(key) != 32 || strings.Contains(body, key) {
+		t.Fatalf("key = %q", key)
+	}
+	// only the admin role reveals; the key itself cannot (POST)
+	if resp, _ := keyCall(t, base, "POST", "/api/v1/admin/secrets/api_key/reveal", "", key); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("reveal with the key = %d", resp.StatusCode)
+	}
 
 	// it reads what an admin reads, even the admin-only pages
 	for _, path := range []string{"/api/v1/requests/counts", "/api/v1/admin/users", "/api/v1/admin/settings"} {
@@ -78,13 +86,13 @@ func TestAPIKey(t *testing.T) {
 			t.Fatalf("%s with the key = %d: %s", m, resp.StatusCode, b)
 		}
 	}
-	if _, body = call(t, e.app, "GET", "/api/v1/admin/settings", "", admin); !strings.Contains(body, key) {
+	if revealSecret(t, e.app, admin, "api_key") != key {
 		t.Fatal("the key was changed by a refused write")
 	}
 
 	// a new key replaces the old one
-	_, body = call(t, e.app, "PUT", "/api/v1/admin/settings", `{"regenerateApiKey":true}`, admin)
-	if err := json.Unmarshal([]byte(body), &s); err != nil || s.APIKey == "" || s.APIKey == key {
+	_, body = call(t, e.app, "POST", "/api/v1/admin/secrets/api_key/regenerate", "", admin)
+	if err := json.Unmarshal([]byte(strings.Replace(body, `"value"`, `"apiKey"`, 1)), &s); err != nil || len(s.APIKey) != 32 || s.APIKey == key {
 		t.Fatalf("regenerated key = %q (%v)", s.APIKey, err)
 	}
 	if resp, _ := keyCall(t, base, "GET", "/api/v1/requests/counts", "", key); resp.StatusCode != http.StatusUnauthorized {
@@ -96,8 +104,8 @@ func TestAPIKey(t *testing.T) {
 
 	// off deletes it
 	_, body = call(t, e.app, "PUT", "/api/v1/admin/settings", `{"apiKeyEnabled":false}`, admin)
-	if err := json.Unmarshal([]byte(body), &s); err != nil || s.APIKey != "" {
-		t.Fatalf("key after turning off = %q (%v)", s.APIKey, err)
+	if revealSecret(t, e.app, admin, "api_key") != "" || strings.Contains(body, `"apiKeyConfigured":true`) {
+		t.Fatalf("key after turning off: %s", body)
 	}
 	if resp, _ := keyCall(t, base, "GET", "/api/v1/requests/counts", "", key); resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("deleted key = %d, want 401", resp.StatusCode)

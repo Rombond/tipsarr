@@ -21,6 +21,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/Rombond/tipsarr/backend/internal/media"
+	"github.com/Rombond/tipsarr/backend/internal/netguard"
 	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/push"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
@@ -34,8 +35,8 @@ type settingsBody struct {
 	TMDBConfigured           bool   `json:"tmdbConfigured" doc:"Secrets are write-only; this only says whether a key is saved"`
 	JellyfinAPIKeyConfigured bool   `json:"jellyfinApiKeyConfigured" doc:"Needed for library and history sync"`
 	BoxOfficeRegions         string `json:"boxofficeRegions" doc:"Comma-separated box-office region codes, e.g. US,GB,FR"`
-	WebhookPath              string `json:"webhookPath" doc:"Path (with the secret token in the query) for the Jellyfin webhook plugin to call. Kept for older set-ups: prefer the plain path /api/v1/hooks/jellyfin with the secret in the X-Tipsarr-Token header"`
-	WebhookToken             string `json:"webhookToken" doc:"The Jellyfin webhook secret, to send in the X-Tipsarr-Token header"`
+	WebhookPath              string `json:"webhookPath" doc:"Path for the Jellyfin webhook plugin to call, with the secret in the X-Tipsarr-Token header (read it with POST /admin/secrets/jellyfin_webhook/reveal)"`
+	WebhookTokenConfigured   bool   `json:"webhookTokenConfigured" doc:"The Jellyfin webhook secret exists; it is never returned here"`
 	DryRun                   bool   `json:"dryRun" doc:"When true nothing is ever sent to Radarr/Sonarr"`
 	OIDCIssuer               string `json:"oidcIssuer" doc:"OpenID Connect provider (Authelia), e.g. https://auth.example.org"`
 	OIDCClientID             string `json:"oidcClientId"`
@@ -62,7 +63,7 @@ type settingsBody struct {
 	TeasersFilesURL          string `json:"teasersFilesUrl" doc:"Address of the trailer resolver on the Docker network, e.g. http://trailer-resolver:8080"`
 	TeasersFilesKeySet       bool   `json:"teasersFilesKeyConfigured" doc:"The resolver key is write-only; this only says whether one is saved"`
 	TeasersFilesMaxHeight    int    `json:"teasersFilesMaxHeight" doc:"Largest video height the resolver downloads: 360, 480, 720 or 1080"`
-	APIKey                   string `json:"apiKey" doc:"Read-only key for dashboards (Glance, Homepage...), sent as the X-Api-Key header; it reads everything an admin sees and never writes. Empty = off"`
+	APIKeyConfigured         bool   `json:"apiKeyConfigured" doc:"The read-only dashboard key (X-Api-Key) is on; the key itself is read with POST /admin/secrets/api_key/reveal"`
 }
 
 type settingsOutput struct{ Body settingsBody }
@@ -145,12 +146,12 @@ func registerAdmin(api huma.API, d Deps) {
 			}
 		}
 		return settingsBody{
-			APIKey:              apiKey,
+			APIKeyConfigured:    apiKey != "",
 			TeasersFilesEnabled: tfOn == "true", TeasersFilesURL: tfURL, TeasersFilesKeySet: tfKey != "", TeasersFilesMaxHeight: tfHeight,
 			PushEnabled: pushOn == "true", PushText: pushText == "true", PushRelayURL: pushURL, PushRelayKeyConfigured: pushKey != "",
 			PushKeyPublic: pushPublic == "true" && pushKey != "", PushDailyQuota: quota, PushPausedUntil: paused, PushDefaultRelayURL: push.DefaultRelayURL,
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
-			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, WebhookToken: secret, ServarrAutoImport: autoImport != "false", DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage), AppPublicURL: ldapGet(ctx, d, notify.SettingPublicURL),
+			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin", WebhookTokenConfigured: secret != "", ServarrAutoImport: autoImport != "false", DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage), AppPublicURL: ldapGet(ctx, d, notify.SettingPublicURL),
 			LDAPURL: ldapGet(ctx, d, avatars.SettingLDAPURL), LDAPBindDN: ldapGet(ctx, d, avatars.SettingLDAPBindDN), LDAPBaseDN: ldapGet(ctx, d, avatars.SettingLDAPBaseDN), LDAPPasswordSet: ldapGet(ctx, d, avatars.SettingLDAPPassword) != "",
 			OIDCIssuer: oc.Issuer, OIDCClientID: oc.ClientID, OIDCClientSecretSet: oc.ClientSecret != "", OIDCAdminGroup: oc.AdminGroup, OIDCGroupsClaim: oc.GroupsClaim, OIDCUsernameClaim: oc.UsernameClaim,
 		}, nil
@@ -234,7 +235,8 @@ func registerAdmin(api huma.API, d Deps) {
 					return nil, fail(422, "url_invalid", "oidcIssuer must start with http:// or https://")
 				}
 				if err := d.Auth.CheckOIDC(ctx, val); err != nil {
-					return nil, fail(422, "oidc_unreachable", "cannot read the provider's configuration: "+err.Error())
+					slog.Info("OIDC discovery failed", "issuer", val, "err", err)
+					return nil, fail(422, "oidc_unreachable", "cannot read the provider's configuration ("+string(netguard.Classify(err))+")")
 				}
 			}
 			if err := d.Store.SetSetting(ctx, key, val); err != nil {
@@ -252,7 +254,8 @@ func registerAdmin(api huma.API, d Deps) {
 			}
 			if next[avatars.SettingLDAPURL] != "" {
 				if err := avatars.CheckLDAP(ctx, next[avatars.SettingLDAPURL], next[avatars.SettingLDAPBindDN], next[avatars.SettingLDAPPassword]); err != nil {
-					return nil, fail(422, "ldap_unreachable", "cannot sign in to LDAP: "+err.Error())
+					slog.Info("LDAP test failed", "err", err)
+					return nil, fail(422, "ldap_unreachable", "cannot sign in to LDAP: "+avatars.LDAPFailure(err))
 				}
 			}
 			for k, v := range next {

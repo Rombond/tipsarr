@@ -105,6 +105,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/secrets/{name}/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace a secret with a new one and show it (admin role only)
+         * @description The old value stops working at once: update the Jellyfin webhook plugin or the dashboards. For api_key this also turns the key on.
+         */
+        post: operations["regenerateSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/secrets/{name}/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Show a secret (admin role only)
+         * @description The Jellyfin webhook secret (X-Tipsarr-Token) or the dashboard key. POST so it is never cached nor read with the read-only key.
+         */
+        post: operations["revealSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/servarr": {
         parameters: {
             query?: never;
@@ -392,6 +432,27 @@ export interface paths {
         put?: never;
         /** Add an outgoing webhook (admin) */
         post: operations["createWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/webhooks/egress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Outbound policy of webhooks (admin)
+         * @description Webhooks may only reach public addresses, plus the private ones listed here. Loopback and link-local addresses are always refused.
+         */
+        get: operations["getWebhookEgress"];
+        /** Set the private hosts webhooks may reach (admin) */
+        put: operations["updateWebhookEgress"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2659,6 +2720,10 @@ export interface components {
             /** Format: int64 */
             season: number;
         };
+        SecretOutputBody: {
+            /** @description The secret; empty when it is not set (the dashboard key is off) */
+            value: string;
+        };
         Seed: {
             title: string;
             /** Format: int64 */
@@ -2676,8 +2741,8 @@ export interface components {
             sources: string[];
         };
         SettingsBody: {
-            /** @description Read-only key for dashboards (Glance, Homepage...), sent as the X-Api-Key header; it reads everything an admin sees and never writes. Empty = off */
-            apiKey: string;
+            /** @description The read-only dashboard key (X-Api-Key) is on; the key itself is read with POST /admin/secrets/api_key/reveal */
+            apiKeyConfigured: boolean;
             /** @description Address people open Tipsarr at, e.g. https://tipsarr.example.org; webhook links ({{ url }}) start with it. Empty = no links */
             appPublicUrl: string;
             /** @description Comma-separated box-office region codes, e.g. US,GB,FR */
@@ -2744,10 +2809,10 @@ export interface components {
             teasersFilesUrl: string;
             /** @description Secrets are write-only; this only says whether a key is saved */
             tmdbConfigured: boolean;
-            /** @description Path (with the secret token in the query) for the Jellyfin webhook plugin to call. Kept for older set-ups: prefer the plain path /api/v1/hooks/jellyfin with the secret in the X-Tipsarr-Token header */
+            /** @description Path for the Jellyfin webhook plugin to call, with the secret in the X-Tipsarr-Token header (read it with POST /admin/secrets/jellyfin_webhook/reveal) */
             webhookPath: string;
-            /** @description The Jellyfin webhook secret, to send in the X-Tipsarr-Token header */
-            webhookToken: string;
+            /** @description The Jellyfin webhook secret exists; it is never returned here */
+            webhookTokenConfigured: boolean;
         };
         SetupInputBody: {
             /**
@@ -3081,6 +3146,10 @@ export interface components {
             /** @description Telegram chat id, empty to clear */
             telegramChatId?: string;
         };
+        UpdateWebhookEgressRequest: {
+            /** @description host, host:port or CIDR, e.g. ntfy.lan, 192.168.1.20:8123, 10.0.0.0/24 */
+            allowedHosts: string[];
+        };
         User: {
             /** Format: int64 */
             createdAt: number;
@@ -3202,6 +3271,12 @@ export interface components {
             /** @description http(s) URL; may contain Liquid, rendered per delivery */
             url: string;
         };
+        WebhookEgress: {
+            /** @description Private targets webhooks may reach: host, host:port or CIDR */
+            allowedHosts: string[];
+            /** @description Saved webhooks whose URL the policy refuses now */
+            blocked: components["schemas"]["WebhookRef"][];
+        };
         WebhookInputBody: {
             ItemType?: string;
             /** @description Jellyfin webhook plugin event, e.g. PlaybackStop or ItemAdded */
@@ -3221,12 +3296,18 @@ export interface components {
             url: string;
             validJson: boolean;
         };
+        WebhookRef: {
+            id: string;
+            name: string;
+        };
         WebhookView: {
             /** @description A bearer token or basic password is saved (write-only) */
             authSecretConfigured: boolean;
             /** @enum {string} */
             authType: "none" | "bearer" | "basic";
             authUsername: string;
+            /** @description The URL points at a private or local address the outbound policy refuses (see /admin/webhooks/egress) */
+            blockedByPolicy: boolean;
             enabled: boolean;
             /** @description Subscribed events; empty means all */
             events: string[];
@@ -3655,6 +3736,122 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    regenerateSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: "jellyfin_webhook" | "api_key";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    revealSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: "jellyfin_webhook" | "api_key";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4955,6 +5152,113 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WebhookView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    getWebhookEgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEgress"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    updateWebhookEgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWebhookEgressRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEgress"];
                 };
             };
             /** @description Unauthorized */

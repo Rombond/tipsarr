@@ -2177,6 +2177,15 @@ components:
         - season
         - percent
       type: object
+    SecretOutputBody:
+      additionalProperties: false
+      properties:
+        value:
+          description: The secret; empty when it is not set (the dashboard key is off)
+          type: string
+      required:
+        - value
+      type: object
     Seed:
       additionalProperties: false
       properties:
@@ -2225,9 +2234,9 @@ components:
     SettingsBody:
       additionalProperties: false
       properties:
-        apiKey:
-          description: Read-only key for dashboards (Glance, Homepage...), sent as the X-Api-Key header; it reads everything an admin sees and never writes. Empty = off
-          type: string
+        apiKeyConfigured:
+          description: The read-only dashboard key (X-Api-Key) is on; the key itself is read with POST /admin/secrets/api_key/reveal
+          type: boolean
         appPublicUrl:
           description: Address people open Tipsarr at, e.g. https://tipsarr.example.org; webhook links ({{ url }}) start with it. Empty = no links
           type: string
@@ -2320,11 +2329,11 @@ components:
           description: Secrets are write-only; this only says whether a key is saved
           type: boolean
         webhookPath:
-          description: "Path (with the secret token in the query) for the Jellyfin webhook plugin to call. Kept for older set-ups: prefer the plain path /api/v1/hooks/jellyfin with the secret in the X-Tipsarr-Token header"
+          description: Path for the Jellyfin webhook plugin to call, with the secret in the X-Tipsarr-Token header (read it with POST /admin/secrets/jellyfin_webhook/reveal)
           type: string
-        webhookToken:
-          description: The Jellyfin webhook secret, to send in the X-Tipsarr-Token header
-          type: string
+        webhookTokenConfigured:
+          description: The Jellyfin webhook secret exists; it is never returned here
+          type: boolean
       required:
         - jellyfinUrl
         - jellyfinPublicUrl
@@ -2332,7 +2341,7 @@ components:
         - jellyfinApiKeyConfigured
         - boxofficeRegions
         - webhookPath
-        - webhookToken
+        - webhookTokenConfigured
         - dryRun
         - oidcIssuer
         - oidcClientId
@@ -2359,7 +2368,7 @@ components:
         - teasersFilesUrl
         - teasersFilesKeyConfigured
         - teasersFilesMaxHeight
-        - apiKey
+        - apiKeyConfigured
       type: object
     SetupInputBody:
       additionalProperties: false
@@ -3019,6 +3028,18 @@ components:
           pattern: ^-?[0-9]{0,20}$
           type: string
       type: object
+    UpdateWebhookEgressRequest:
+      additionalProperties: false
+      properties:
+        allowedHosts:
+          description: host, host:port or CIDR, e.g. ntfy.lan, 192.168.1.20:8123, 10.0.0.0/24
+          items:
+            type: string
+          maxItems: 50
+          type: array
+      required:
+        - allowedHosts
+      type: object
     User:
       additionalProperties: false
       properties:
@@ -3296,6 +3317,23 @@ components:
         - url
         - enabled
       type: object
+    WebhookEgress:
+      additionalProperties: false
+      properties:
+        allowedHosts:
+          description: "Private targets webhooks may reach: host, host:port or CIDR"
+          items:
+            type: string
+          type: array
+        blocked:
+          description: Saved webhooks whose URL the policy refuses now
+          items:
+            $ref: "#/components/schemas/WebhookRef"
+          type: array
+      required:
+        - allowedHosts
+        - blocked
+      type: object
     WebhookInputBody:
       additionalProperties: false
       properties:
@@ -3336,6 +3374,17 @@ components:
         - body
         - validJson
       type: object
+    WebhookRef:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
+      type: object
     WebhookView:
       additionalProperties: false
       properties:
@@ -3350,6 +3399,9 @@ components:
           type: string
         authUsername:
           type: string
+        blockedByPolicy:
+          description: The URL points at a private or local address the outbound policy refuses (see /admin/webhooks/egress)
+          type: boolean
         enabled:
           type: boolean
         events:
@@ -3394,6 +3446,7 @@ components:
         - authUsername
         - authSecretConfigured
         - perRecipient
+        - blockedByPolicy
       type: object
     WeekRef:
       additionalProperties: false
@@ -3726,6 +3779,106 @@ paths:
         - session: []
         - bearer: []
       summary: Turn mobile push on with the relay's open registration (admin)
+      tags:
+        - admin
+  /admin/secrets/{name}/regenerate:
+    post:
+      description: "The old value stops working at once: update the Jellyfin webhook plugin or the dashboards. For api_key this also turns the key on."
+      operationId: regenerateSecret
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            enum:
+              - jellyfin_webhook
+              - api_key
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: Replace a secret with a new one and show it (admin role only)
+      tags:
+        - admin
+  /admin/secrets/{name}/reveal:
+    post:
+      description: The Jellyfin webhook secret (X-Tipsarr-Token) or the dashboard key. POST so it is never cached nor read with the read-only key.
+      operationId: revealSecret
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            enum:
+              - jellyfin_webhook
+              - api_key
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: Show a secret (admin role only)
       tags:
         - admin
   /admin/servarr:
@@ -4776,6 +4929,86 @@ paths:
         - session: []
         - bearer: []
       summary: Add an outgoing webhook (admin)
+      tags:
+        - admin
+  /admin/webhooks/egress:
+    get:
+      description: Webhooks may only reach public addresses, plus the private ones listed here. Loopback and link-local addresses are always refused.
+      operationId: getWebhookEgress
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookEgress"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: Outbound policy of webhooks (admin)
+      tags:
+        - admin
+    put:
+      operationId: updateWebhookEgress
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWebhookEgressRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookEgress"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: Set the private hosts webhooks may reach (admin)
       tags:
         - admin
   /admin/webhooks/presets:

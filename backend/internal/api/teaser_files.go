@@ -38,6 +38,7 @@ func teaserVideoHandler(d Deps) http.HandlerFunc {
 			writeCodedError(w, http.StatusUnauthorized, "login_required", "login required")
 			return
 		}
+		_ = http.NewResponseController(w).SetWriteDeadline(time.Time{}) // video files outlast WriteTimeout
 		if !d.Trailers.Enabled(r.Context()) {
 			writeCodedError(w, http.StatusNotFound, "teasers_disabled", "trailer files are not set up on this server")
 			return

@@ -703,7 +703,7 @@ func TestLibrarySyncAndAvailability(t *testing.T) {
 	}
 	resp, body := call(t, app, "PUT", "/api/v1/admin/settings", `{"jellyfinApiKey":"jfkey"}`, admin)
 	if resp.StatusCode != 200 || !strings.Contains(body, `"jellyfinApiKeyConfigured":true`) || strings.Contains(body, "jfkey") ||
-		!strings.Contains(body, "/api/v1/hooks/jellyfin?token=") {
+		strings.Contains(body, "token=") || !strings.Contains(body, `"webhookTokenConfigured":true`) {
 		t.Fatalf("settings = %d %s", resp.StatusCode, body)
 	}
 
@@ -780,6 +780,11 @@ func TestHistorySyncAndWebhook(t *testing.T) {
 		WebhookToken string `json:"webhookToken"`
 	}
 	_ = json.Unmarshal([]byte(body), &settings)
+	if settings.WebhookToken != "" || settings.WebhookPath != "/api/v1/hooks/jellyfin" || strings.Contains(body, "token=") {
+		t.Fatalf("settings leak the webhook secret: %s", body)
+	}
+	settings.WebhookToken = revealSecret(t, app, admin, "jellyfin_webhook")
+	settings.WebhookPath += "?token=" + settings.WebhookToken // the legacy query form still works
 	const alice = "aaaaaaaabbbbccccddddeeeeeeeeeeee"
 	ctx := context.Background()
 
@@ -844,4 +849,15 @@ func testLimiter(st *store.Store) *auth.Limiter {
 	l := auth.NewLimiter(st)
 	l.FailWait = 0
 	return l
+}
+
+// revealSecret reads an admin secret through POST /admin/secrets/{name}/reveal.
+func revealSecret(t *testing.T, app *httptest.Server, admin *http.Cookie, name string) string {
+	t.Helper()
+	resp, body := call(t, app, "POST", "/api/v1/admin/secrets/"+name+"/reveal", "", admin)
+	var v struct{ Value string }
+	if err := json.Unmarshal([]byte(body), &v); resp.StatusCode != 200 || err != nil {
+		t.Fatalf("reveal %s = %d %s", name, resp.StatusCode, body)
+	}
+	return v.Value
 }

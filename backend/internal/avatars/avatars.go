@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Rombond/tipsarr/backend/internal/netguard"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/go-ldap/ldap/v3"
 	"golang.org/x/image/draw"
@@ -133,7 +134,27 @@ func (s *Service) HasUpload(id string) bool {
 	return idRe.MatchString(id) && err == nil
 }
 
+// Limits checked on the header before a picture is decoded (a small file can claim a huge canvas).
+const (
+	maxSide   = 4096
+	maxPixels = 16 << 20
+	maxBytes  = 5 << 20 // LDAP jpegPhoto and any other source
+)
+
+// ErrTooBig refuses a picture whose dimensions are too large to decode safely.
+var ErrTooBig = errors.New("the picture is larger than 4096x4096 pixels")
+
 func normalise(raw []byte) ([]byte, error) {
+	if len(raw) > maxBytes {
+		return nil, ErrTooLarge
+	}
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(raw))
+	if err != nil {
+		return nil, ErrNotImage
+	}
+	if cfg.Width <= 0 || cfg.Height <= 0 || cfg.Width > maxSide || cfg.Height > maxSide || cfg.Width*cfg.Height > maxPixels {
+		return nil, ErrTooBig
+	}
 	img, _, err := image.Decode(bytes.NewReader(raw))
 	if err != nil {
 		return nil, ErrNotImage
@@ -226,10 +247,29 @@ func CheckLDAP(ctx context.Context, rawURL, bindDN, password string) error {
 	return conn.Bind(bindDN, password)
 }
 
+// LDAPFailure is a safe description of a CheckLDAP error: bad address, wrong credentials, timeout
+// or unreachable, never the raw network error.
+func LDAPFailure(err error) string {
+	var le *ldap.Error
+	switch {
+	case errors.Is(err, errBadLDAPURL):
+		return errBadLDAPURL.Error()
+	case errors.As(err, &le) && le.ResultCode == ldap.LDAPResultInvalidCredentials:
+		return "wrong bind DN or password"
+	case errors.As(err, &le) && le.ResultCode != ldap.ErrorNetwork:
+		return "the server refused the sign-in"
+	case netguard.Classify(err) == netguard.ClassTimeout:
+		return "timeout"
+	}
+	return "the server could not be reached"
+}
+
+var errBadLDAPURL = errors.New("the LDAP address must look like ldap://host:3890")
+
 func dial(ctx context.Context, rawURL string) (*ldap.Conn, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil || (u.Scheme != "ldap" && u.Scheme != "ldaps") || u.Host == "" {
-		return nil, fmt.Errorf("the LDAP address must look like ldap://host:3890")
+		return nil, errBadLDAPURL
 	}
 	return ldap.DialURL(rawURL, ldap.DialWithDialer(&netDialer), ldap.DialWithTLSConfig(&tls.Config{MinVersion: tls.VersionTLS12}))
 }

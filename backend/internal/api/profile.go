@@ -162,6 +162,9 @@ func avatarUploadHandler(d Deps) http.HandlerFunc {
 			case errors.Is(err, avatars.ErrTooLarge):
 				http.Error(w, "picture_too_large", http.StatusRequestEntityTooLarge)
 				return
+			case errors.Is(err, avatars.ErrTooBig):
+				http.Error(w, "picture_too_big", http.StatusRequestEntityTooLarge)
+				return
 			case errors.Is(err, avatars.ErrNotImage):
 				http.Error(w, "picture_invalid", http.StatusUnprocessableEntity)
 				return

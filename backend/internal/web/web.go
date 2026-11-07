@@ -2,11 +2,15 @@
 package web
 
 import (
+	"crypto/sha256"
 	"embed"
+	"encoding/base64"
 	"io/fs"
 	"net/http"
 	"path"
+	"regexp"
 	"strings"
+	"sync"
 )
 
 // dist is filled by the Docker build (frontend/build copied here). Locally it only
@@ -33,4 +37,26 @@ func Handler() http.Handler {
 		}
 		files.ServeHTTP(w, r)
 	})
+}
+
+var inlineScript = regexp.MustCompile(`(?s)<script>(.*?)</script>`)
+
+// ScriptHashes returns the CSP sources ('sha256-…') of the inline scripts of the embedded
+// index.html (theme bootstrap, SvelteKit start-up), so the CSP needs no 'unsafe-inline' for
+// scripts. Empty when no frontend is built in.
+var ScriptHashes = sync.OnceValue(func() []string {
+	raw, err := distFS.ReadFile("dist/index.html")
+	if err != nil {
+		return nil
+	}
+	return scriptHashes(raw)
+})
+
+func scriptHashes(html []byte) []string {
+	var out []string
+	for _, m := range inlineScript.FindAllSubmatch(html, -1) {
+		sum := sha256.Sum256(m[1])
+		out = append(out, "'sha256-"+base64.StdEncoding.EncodeToString(sum[:])+"'")
+	}
+	return out
 }
