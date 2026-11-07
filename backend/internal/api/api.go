@@ -85,6 +85,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 	cfg.Servers = []*huma.Server{{URL: "/api/v1"}}
 	cfg.CreateHooks = nil // no "$schema" link fields in responses
 	cfg.DocsPath = ""     // spec only; no bundled docs UI
+	cfg.Transformers = append(cfg.Transformers, hideInternalErrors)
 	cfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
 		"session": {Type: "apiKey", In: "cookie", Name: auth.CookieName},
 		"bearer":  {Type: "http", Scheme: "bearer"}, // the same token, for apps (from POST /auth/token)

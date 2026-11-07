@@ -75,3 +75,20 @@ func TestServarrProbeAndKeyGuards(t *testing.T) {
 		t.Fatalf("host change with key = %d", resp.StatusCode)
 	}
 }
+
+func TestInternalErrorsHiddenFromUsers(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	arr := newFakeArr(t, "radarr")
+	addInstance(t, e, admin, "radarr", arr)
+	arr.srv.Close() // Radarr down: the options call fails with a 502
+
+	resp, body := call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", bob)
+	if resp.StatusCode != http.StatusBadGateway || !strings.Contains(body, "servarr_error") || !strings.Contains(body, "request id") ||
+		strings.Contains(body, "127.0.0.1") {
+		t.Fatalf("user sees = %d %s", resp.StatusCode, body)
+	}
+	if resp, body = call(t, e.app, "GET", "/api/v1/requests/options?type=movie", "", admin); resp.StatusCode != http.StatusBadGateway || strings.Contains(body, "request id") {
+		t.Fatalf("admin sees = %d %s", resp.StatusCode, body)
+	}
+}
