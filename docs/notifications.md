@@ -2,7 +2,7 @@
 
 Tipsarr sends notifications only as outgoing HTTP POSTs (Admin > Webhooks). Each webhook has a URL, the events it
 listens to, and optionally a Liquid template, authentication, extra headers, an HMAC secret and "send once per
-recipient". Templating is inspired by Seerr's Liquid webhooks (seerr-team/seerr#2039, MIT).
+recipient". For the mobile apps, see [push notifications](push-notifications.md). Templating is inspired by Seerr's Liquid webhooks (seerr-team/seerr#2039, MIT).
 
 ## Events
 
