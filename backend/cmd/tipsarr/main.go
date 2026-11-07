@@ -195,7 +195,9 @@ func run(cfg config.Config) error {
 	if cfg.DryRun {
 		slog.Warn("DRY-RUN is ON: nothing will be sent to Radarr/Sonarr (set TIPSARR_DRY_RUN=false to disable)")
 	}
-	srv := &http.Server{Addr: cfg.Addr, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
+	// WriteTimeout covers ordinary answers; the event stream and teaser videos clear it per request.
+	srv := &http.Server{Addr: cfg.Addr, Handler: handler, ReadHeaderTimeout: 10 * time.Second, ReadTimeout: time.Minute,
+		WriteTimeout: 2 * time.Minute, IdleTimeout: 2 * time.Minute}
 
 	go func() {
 		<-ctx.Done()
