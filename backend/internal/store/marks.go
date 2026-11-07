@@ -87,7 +87,7 @@ func (s *Store) DeleteUserSessions(ctx context.Context, userID string) error {
 // UpdateUser changes the editable fields of a user: role, region, language, permissions and quotas.
 func (s *Store) UpdateUser(ctx context.Context, u *User) error {
 	u.Permissions = int64(perms.Stored(perms.Mask(u.Permissions)))
-	_, err := s.DB.NewUpdate().Model(u).Column("role", "region", "language", "permissions", "movie_quota_limit", "movie_quota_days", "tv_quota_limit", "tv_quota_days", "discord_id", "telegram_chat_id").WherePK().Exec(ctx)
+	_, err := s.DB.NewUpdate().Model(u).Column("role", "admin_source", "region", "language", "permissions", "movie_quota_limit", "movie_quota_days", "tv_quota_limit", "tv_quota_days", "discord_id", "telegram_chat_id").WherePK().Exec(ctx)
 	u.Resolve()
 	return err
 }
@@ -101,10 +101,10 @@ func (s *Store) EnsureUser(ctx context.Context, id, name string, admin bool) (cr
 	} else if err != ErrNotFound {
 		return false, err
 	}
-	role := RoleUser
+	role, source := RoleUser, ""
 	if admin {
-		role = RoleAdmin
+		role, source = RoleAdmin, AdminFromJellyfin
 	}
-	_, err = s.DB.NewInsert().Model(&User{ID: id, Name: name, Role: role, CreatedAt: time.Now().Unix(), Permissions: int64(s.DefaultPermissions(ctx))}).Exec(ctx)
+	_, err = s.DB.NewInsert().Model(&User{ID: id, Name: name, Role: role, AdminSource: source, CreatedAt: time.Now().Unix(), Permissions: int64(s.DefaultPermissions(ctx))}).Exec(ctx)
 	return err == nil, err
 }

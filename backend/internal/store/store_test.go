@@ -65,7 +65,7 @@ func TestMigrateExternalEngines(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer s.Close()
-			u, err := s.UpsertUser(ctx, uid, "alice", true)
+			u, err := s.UpsertUser(ctx, uid, "alice", AdminGrant{Admin: true, Source: AdminFromJellyfin})
 			if err != nil || u.Role != RoleAdmin {
 				t.Fatalf("upsert: %v %+v", err, u)
 			}
@@ -185,7 +185,7 @@ func TestRequestQueriesAllEngines(t *testing.T) {
 			tag := fmt.Sprintf("%d", time.Now().UnixNano()) // external DBs persist between runs
 			uid := "user" + tag
 
-			if _, err := s.UpsertUser(ctx, uid, "carol", false); err != nil {
+			if _, err := s.UpsertUser(ctx, uid, "carol", AdminGrant{}); err != nil {
 				t.Fatal(err)
 			}
 			r := &Request{ID: "r" + tag, MediaType: "tv", TMDBID: 424242, Title: "Show", RequestedBy: uid, Status: StatusPending}

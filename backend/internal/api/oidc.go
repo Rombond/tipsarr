@@ -109,7 +109,7 @@ func oidcCallbackHandler(d Deps) http.HandlerFunc {
 		http.SetCookie(w, &http.Cookie{Name: oidcCookie, Value: "", Path: "/", MaxAge: -1})
 		http.SetCookie(w, &http.Cookie{
 			Name: auth.CookieName, Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode,
-			Secure: r.Header.Get("X-Forwarded-Proto") == "https" || r.TLS != nil, MaxAge: int(auth.SessionTTL.Seconds()),
+			Secure: cookieSecure(d.SecureCookies, r.Header.Get("X-Forwarded-Proto"), r.TLS != nil), MaxAge: int(d.Auth.SessionTTL().Seconds()),
 		})
 		http.Redirect(w, r, "/", http.StatusFound)
 	}

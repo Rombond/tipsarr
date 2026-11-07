@@ -35,6 +35,8 @@ type OIDCConfig struct {
 	ClientSecret string
 	AdminGroup   string
 	GroupsClaim  string
+	// UsernameClaim names the claim matched (exactly, case included) against Jellyfin usernames.
+	UsernameClaim string
 }
 
 // Enabled: single sign-on is offered once the provider, client and secret are all saved.
@@ -44,7 +46,7 @@ func (s *Service) OIDCConfig(ctx context.Context) (OIDCConfig, error) {
 	var c OIDCConfig
 	for key, dst := range map[string]*string{
 		SettingOIDCIssuer: &c.Issuer, SettingOIDCClientID: &c.ClientID, SettingOIDCClientSecret: &c.ClientSecret,
-		SettingOIDCAdminGroup: &c.AdminGroup, SettingOIDCGroupsClaim: &c.GroupsClaim,
+		SettingOIDCAdminGroup: &c.AdminGroup, SettingOIDCGroupsClaim: &c.GroupsClaim, SettingOIDCUsernameClaim: &c.UsernameClaim,
 	} {
 		v, err := s.store.GetSetting(ctx, key)
 		if err != nil {
@@ -55,6 +57,9 @@ func (s *Service) OIDCConfig(ctx context.Context) (OIDCConfig, error) {
 	c.Issuer = strings.TrimRight(c.Issuer, "/")
 	if c.GroupsClaim == "" {
 		c.GroupsClaim = "groups"
+	}
+	if c.UsernameClaim == "" {
+		c.UsernameClaim = DefaultUsernameClaim
 	}
 	return c, nil
 }
@@ -181,7 +186,7 @@ func (s *Service) CompleteOIDC(ctx context.Context, redirectURL, state, code, us
 	}
 	// Many providers (Authelia by default) keep profile and group claims out of the ID token and
 	// serve them from the userinfo endpoint: ask it for whatever the token lacks.
-	if firstString(claims, "preferred_username", "name", "nickname") == "" || claims[c.GroupsClaim] == nil {
+	if firstString(claims, c.UsernameClaim) == "" || claims[c.GroupsClaim] == nil {
 		if ui, err := p.UserInfo(ctx, oauth2.StaticTokenSource(tok)); err != nil {
 			slog.Warn("sso: userinfo request failed", "err", err)
 		} else {
@@ -195,9 +200,17 @@ func (s *Service) CompleteOIDC(ctx context.Context, redirectURL, state, code, us
 			}
 		}
 	}
-	username := firstString(claims, "preferred_username", "name", "nickname")
+	// Only the configured claim identifies the person: no fallback to display names (name, nickname),
+	// which people can often edit themselves at the provider.
+	username := firstString(claims, c.UsernameClaim)
 	if username == "" {
 		return "", nil, ErrSSOUnmatched
+	}
+	if c.UsernameClaim == "email" {
+		if v, sent := claims["email_verified"]; sent && v != true {
+			slog.Info("sso: refusing an unverified email address", "email", username)
+			return "", nil, ErrSSOUnmatched
+		}
 	}
 
 	jfURL, err := s.store.GetSetting(ctx, SettingJellyfinURL)
@@ -218,7 +231,7 @@ func (s *Service) CompleteOIDC(ctx context.Context, redirectURL, state, code, us
 	}
 	var match *jellyfin.User
 	for i := range users {
-		if strings.EqualFold(users[i].Name, username) {
+		if users[i].Name == username { // exact: Jellyfin names differing only by case are different people here
 			match = &users[i]
 			break
 		}
@@ -230,8 +243,15 @@ func (s *Service) CompleteOIDC(ctx context.Context, redirectURL, state, code, us
 	if match.Policy.IsDisabled {
 		return "", nil, ErrSSODisabled
 	}
-	admin := match.Policy.IsAdministrator || (c.AdminGroup != "" && inGroups(claims[c.GroupsClaim], c.AdminGroup))
-	user, err := s.store.UpsertUser(ctx, strings.ToLower(strings.ReplaceAll(match.ID, "-", "")), match.Name, admin)
+	// An SSO sign-in knows both Jellyfin's answer and the admin group: it can take back either.
+	grant := store.AdminGrant{Revokes: []string{store.AdminFromJellyfin, store.AdminFromOIDC}}
+	switch {
+	case match.Policy.IsAdministrator:
+		grant.Admin, grant.Source = true, store.AdminFromJellyfin
+	case c.AdminGroup != "" && inGroups(claims[c.GroupsClaim], c.AdminGroup):
+		grant.Admin, grant.Source = true, store.AdminFromOIDC
+	}
+	user, err := s.store.UpsertUser(ctx, strings.ToLower(strings.ReplaceAll(match.ID, "-", "")), match.Name, grant)
 	if err != nil {
 		return "", nil, err
 	}

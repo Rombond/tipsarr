@@ -18,6 +18,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/auth"
 	"github.com/Rombond/tipsarr/backend/internal/avatars"
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
+	"github.com/Rombond/tipsarr/backend/internal/clientip"
 	"github.com/Rombond/tipsarr/backend/internal/config"
 	"github.com/Rombond/tipsarr/backend/internal/demo"
 	"github.com/Rombond/tipsarr/backend/internal/events"
@@ -171,9 +172,9 @@ func run(cfg config.Config) error {
 	}})
 	jm.Start(ctx)
 
-	// Optional (TIPSARR_SETUP_TOKEN=true): a fresh install must be claimed with a one-time token
-	// that only appears in this log, so a stranger who reaches the port first cannot point Tipsarr
-	// at their own "Jellyfin". Off by default: on a private network it is just friction.
+	// A fresh install must be claimed with a one-time token that only appears in this log, so a stranger
+	// who reaches the port first cannot point Tipsarr at their own "Jellyfin". On by default unless
+	// TIPSARR_JELLYFIN_URL is set; TIPSARR_SETUP_TOKEN=false turns it off.
 	setupToken := ""
 	if cur, _ := st.GetSetting(ctx, auth.SettingJellyfinURL); cur == "" && cfg.RequireSetupToken {
 		raw := make([]byte, 12)
@@ -184,8 +185,15 @@ func run(cfg config.Config) error {
 		slog.Warn("first run: open Tipsarr in a browser and enter this setup token", "token", setupToken)
 	}
 
+	trusted, err := clientip.Parse(cfg.TrustedProxies)
+	if err != nil {
+		return fmt.Errorf("TIPSARR_TRUSTED_PROXIES: %w", err)
+	}
+	authSvc := auth.New(st)
+	authSvc.SetSessionTTL(cfg.SessionTTL)
+	authSvc.SetRecheckGrace(cfg.RecheckGrace)
 	handler, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issueSvc, Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier, Push: pusher,
+		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: authSvc, ClientIP: trusted, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issueSvc, Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(st), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier, Push: pusher,
 		DryRun: cfg.DryRun, Demo: dm.Enabled, ConfigDir: cfg.ConfigDir, ImageBaseURL: os.Getenv("TIPSARR_TMDB_IMAGE_URL"),
 	})
 	if cfg.DryRun {

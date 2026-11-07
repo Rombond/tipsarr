@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/subtle"
 	"errors"
+	"log/slog"
 	"net/http"
+	"sync"
 
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
 	"github.com/Rombond/tipsarr/backend/internal/library"
@@ -21,7 +23,7 @@ type syncStatusBody struct {
 
 type webhookInput struct {
 	Header string `header:"X-Tipsarr-Token" doc:"The shared secret (preferred: a header does not end up in proxy and access logs)"`
-	Token  string `query:"token" doc:"The same secret in the address: still accepted so existing set-ups keep working, but addresses are logged"`
+	Token  string `query:"token" doc:"Deprecated (will be removed in a future major version): the same secret in the address, still accepted so existing set-ups keep working, but addresses end up in logs"`
 	Body   struct {
 		NotificationType string `json:"NotificationType,omitempty" doc:"Jellyfin webhook plugin event, e.g. PlaybackStop or ItemAdded"`
 		UserID           string `json:"UserId,omitempty"`
@@ -93,6 +95,12 @@ func registerSync(api huma.API, d Deps) {
 		if subtle.ConstantTimeCompare([]byte(given), []byte(secret)) != 1 {
 			return nil, fail(401, "invalid_token", "invalid token")
 		}
+		if in.Header == "" {
+			webhookQueryWarning.Do(func() {
+				slog.Warn("Jellyfin webhook: the secret is sent in the address (?token=), which is deprecated and ends up in logs; " +
+					"send it in the X-Tipsarr-Token header instead (see Settings > Jellyfin). The address form will be removed in a future major version")
+			})
+		}
 		switch in.Body.NotificationType {
 		case "ItemAdded", "ItemDeleted":
 			d.Library.QueueLibrary()
@@ -102,3 +110,6 @@ func registerSync(api huma.API, d Deps) {
 		return &struct{}{}, nil
 	})
 }
+
+// webhookQueryWarning logs the ?token= deprecation once per process.
+var webhookQueryWarning sync.Once

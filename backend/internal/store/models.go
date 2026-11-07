@@ -12,16 +12,24 @@ import (
 const (
 	RoleAdmin = "admin"
 	RoleUser  = "user"
+
+	// Where an admin role came from (User.AdminSource). "" on rows older than the column.
+	AdminFromJellyfin = "jellyfin"
+	AdminFromOIDC     = "oidc"
+	AdminFromManual   = "manual"
 )
 
 type User struct {
 	bun.BaseModel `bun:"table:users"`
 
-	ID       string `bun:"id,pk" json:"id"` // Jellyfin user id
-	Name     string `bun:"name" json:"name"`
-	Role     string `bun:"role" json:"role"`
-	Region   string `bun:"region" json:"region"`
-	Language string `bun:"language" json:"language"`
+	ID   string `bun:"id,pk" json:"id"` // Jellyfin user id
+	Name string `bun:"name" json:"name"`
+	Role string `bun:"role" json:"role"`
+	// AdminSource says what made the person admin (AdminFrom* constants); only a sign-in can take back a
+	// role a sign-in gave. Not part of the API.
+	AdminSource string `bun:"admin_source" json:"-"`
+	Region      string `bun:"region" json:"region"`
+	Language    string `bun:"language" json:"language"`
 	// RatingSource is the score shown on posters: tmdb, imdb, metacritic or rottenTomatoes ("" = tmdb)
 	RatingSource string `bun:"rating_source" json:"ratingSource"`
 	// Chat ids webhook templates use to mention or message the person (notifyUser.discordId...)
@@ -371,3 +379,6 @@ type BoxOfficeAlias struct {
 	TMDBID    int64  `bun:"tmdb_id"`
 	CreatedAt int64  `bun:"created_at"`
 }
+
+// IsAdmin reports whether the person has the admin role (not just every permission).
+func (u *User) IsAdmin() bool { return u.Role == RoleAdmin }

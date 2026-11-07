@@ -111,6 +111,7 @@
 				{'{"NotificationType":"{{NotificationType}}","UserId":"{{UserId}}","ItemType":"{{ItemType}}"}'}
 			</code>
 			<p class="text-muted-foreground">{t('settings.hook_secret')}</p>
+			<p class="text-amber-600 dark:text-amber-400">{t('settings.hook_query_deprecated')}</p>
 		</CardContent>
 	</Card>
 

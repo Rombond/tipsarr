@@ -4,22 +4,37 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log/slog"
+	"slices"
 	"time"
 )
 
 var ErrNotFound = errors.New("not found")
 
-// UpsertUser creates the user or refreshes name / last login. Role is promoted to
-// admin when asAdmin is true but never demoted automatically.
-func (s *Store) UpsertUser(ctx context.Context, id, name string, asAdmin bool) (*User, error) {
+// AdminGrant is what a sign-in says about the admin role: Admin is whether the identity provider makes the
+// person admin now, Source which provider said it (AdminFromJellyfin or AdminFromOIDC), and Revokes the
+// sources this sign-in is authoritative for (a password sign-in only knows Jellyfin's answer, an SSO
+// sign-in knows both Jellyfin's and the admin group's).
+type AdminGrant struct {
+	Admin   bool
+	Source  string
+	Revokes []string
+}
+
+// UpsertUser creates the user or refreshes name, last login and role. A sign-in promotes to admin when the
+// grant says so, and demotes an admin whose role came from a source the sign-in is authoritative for and no
+// longer grants it. A role set by hand in Tipsarr (AdminFromManual) is never taken back by a sign-in.
+// Admins from before the admin_source column ("") are kept and marked manual when the sign-in does not
+// grant the role (logged, so the operator can review them), otherwise marked with the grant's source.
+func (s *Store) UpsertUser(ctx context.Context, id, name string, g AdminGrant) (*User, error) {
 	now := time.Now().Unix()
 	u := new(User)
 	err := s.DB.NewSelect().Model(u).Where("id = ?", id).Scan(ctx)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		u = &User{ID: id, Name: name, Role: RoleUser, CreatedAt: now, LastLoginAt: now, Permissions: int64(s.DefaultPermissions(ctx))}
-		if asAdmin {
-			u.Role = RoleAdmin
+		if g.Admin {
+			u.Role, u.AdminSource = RoleAdmin, g.Source
 		}
 		_, err = s.DB.NewInsert().Model(u).Exec(ctx)
 		return u.Resolve(), err
@@ -27,11 +42,38 @@ func (s *Store) UpsertUser(ctx context.Context, id, name string, asAdmin bool) (
 		return nil, err
 	}
 	u.Name, u.LastLoginAt = name, now
-	if asAdmin {
-		u.Role = RoleAdmin
-	}
-	_, err = s.DB.NewUpdate().Model(u).Column("name", "role", "last_login_at").WherePK().Exec(ctx)
+	applyGrant(u, g)
+	_, err = s.DB.NewUpdate().Model(u).Column("name", "role", "admin_source", "last_login_at").WherePK().Exec(ctx)
 	return u, err
+}
+
+// applyGrant moves u's role as a sign-in's grant says (see UpsertUser).
+func applyGrant(u *User, g AdminGrant) {
+	switch {
+	case g.Admin && u.Role != RoleAdmin:
+		u.Role, u.AdminSource = RoleAdmin, g.Source
+	case g.Admin && (u.AdminSource == "" || slices.Contains(g.Revokes, u.AdminSource)):
+		u.AdminSource = g.Source // still admin, now for the reason this sign-in gives
+	case !g.Admin && u.Role == RoleAdmin && u.AdminSource == "":
+		slog.Warn("sign-in: kept the admin role of an account from before role tracking although the identity provider no longer grants it; review it in Users",
+			"user", u.Name)
+		u.AdminSource = AdminFromManual
+	case !g.Admin && u.Role == RoleAdmin && slices.Contains(g.Revokes, u.AdminSource):
+		slog.Warn("sign-in: admin role removed, the identity provider no longer grants it", "user", u.Name, "source", u.AdminSource)
+		u.Role, u.AdminSource = RoleUser, ""
+	}
+}
+
+// DemoteJellyfinAdmin takes back an admin role that came from Jellyfin (the session re-check found the account
+// is no longer a Jellyfin administrator). Reports whether the role changed.
+func (s *Store) DemoteJellyfinAdmin(ctx context.Context, id string) (bool, error) {
+	res, err := s.DB.NewUpdate().Model((*User)(nil)).Set("role = ?", RoleUser).Set("admin_source = ?", "").
+		Where("id = ?", id).Where("role = ?", RoleAdmin).Where("admin_source = ?", AdminFromJellyfin).Exec(ctx)
+	if err != nil {
+		return false, err
+	}
+	n, _ := res.RowsAffected()
+	return n > 0, nil
 }
 
 func (s *Store) GetUser(ctx context.Context, id string) (*User, error) {

@@ -226,7 +226,15 @@ func TestLoginRateLimit(t *testing.T) {
 	if resp, _ := call(t, e.app, "POST", "/api/v1/auth/login", `{"username":"mallory","password":"guess"}`); resp.StatusCode != http.StatusTooManyRequests {
 		t.Fatalf("expected 429, got %d", resp.StatusCode)
 	}
+	// another account from the same address still works (the address limit is higher)
+	if resp, _ := call(t, e.app, "POST", "/api/v1/auth/login", `{"username":"alice","password":"secret"}`); resp.StatusCode != 200 {
+		t.Fatalf("other account = %d", resp.StatusCode)
+	}
+	// spraying many usernames from one address locks the address
+	for i := 0; i < 30; i++ {
+		call(t, e.app, "POST", "/api/v1/auth/login", `{"username":"spray`+itoa(i)+`","password":"x"}`)
+	}
 	if resp, _ := call(t, e.app, "POST", "/api/v1/auth/login", `{"username":"alice","password":"secret"}`); resp.StatusCode != http.StatusTooManyRequests {
-		t.Fatalf("the address is blocked too: %d", resp.StatusCode)
+		t.Fatalf("the address is blocked: %d", resp.StatusCode)
 	}
 }

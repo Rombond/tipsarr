@@ -20,7 +20,8 @@ The proxy must send `X-Forwarded-Proto` and `X-Forwarded-Host`. If Tipsarr is se
 `TIPSARR_COOKIE_SECURE=true`.
 
 **Single sign-on says no account matches.**
-The provider's `preferred_username` must equal a Jellyfin username (case is ignored) and a Jellyfin API key must be
+The provider's `preferred_username` (or the configured username claim) must equal a Jellyfin username exactly, case
+included, and a Jellyfin API key must be
 saved. Use `/login?password=1` to sign in with a password meanwhile. See [authentication](authentication.md).
 
 **Single sign-on fails with a connection error.**

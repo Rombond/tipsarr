@@ -2705,6 +2705,8 @@ export interface components {
             oidcGroupsClaim: string;
             /** @description OpenID Connect provider (Authelia), e.g. https://auth.example.org */
             oidcIssuer: string;
+            /** @description Claim matched exactly (case included) to the Jellyfin username, default preferred_username */
+            oidcUsernameClaim: string;
             /**
              * Format: int64
              * @description Pushes per day the relay allows a public key; 0 = unlimited or unknown
@@ -3038,6 +3040,8 @@ export interface components {
             oidcGroupsClaim?: string;
             /** @description Empty string turns single sign-on off. The provider is contacted when saving */
             oidcIssuer?: string;
+            /** @description Empty string = preferred_username */
+            oidcUsernameClaim?: string;
             /** @description Needs the relay address and key; turning it on with either missing is refused */
             pushEnabled?: boolean;
             /** @description Write-only; empty string clears it (and turns push off) */
@@ -6378,7 +6382,7 @@ export interface operations {
     jellyfinWebhook: {
         parameters: {
             query?: {
-                /** @description The same secret in the address: still accepted so existing set-ups keep working, but addresses are logged */
+                /** @description Deprecated (will be removed in a future major version): the same secret in the address, still accepted so existing set-ups keep working, but addresses end up in logs */
                 token?: string;
             };
             header?: {

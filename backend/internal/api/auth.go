@@ -69,15 +69,18 @@ type meOutput struct {
 // signIn runs the shared part of both logins: rate limit, Jellyfin check, error mapping.
 func signIn(ctx context.Context, d Deps, username, password, userAgent string, dev auth.Device) (string, *store.User, error) {
 	ukey, ikey := auth.UserKey(username), auth.IPKey(clientIP(ctx))
-	if d.LoginLimiter != nil && d.LoginLimiter.Blocked(ukey, ikey) {
-		return "", nil, fail(429, "too_many_attempts", "too many failed sign-in attempts, try again in a few minutes")
+	if d.LoginLimiter != nil {
+		if wait := d.LoginLimiter.Blocked(ctx, ukey, ikey); wait > 0 {
+			slog.Info("sign-in refused: locked after repeated failures", "user", username, "ip", clientIP(ctx), "for", wait.Round(time.Second).String())
+			return "", nil, fail(429, "too_many_attempts", "too many failed sign-in attempts, try again in a few minutes")
+		}
 	}
 	token, user, err := d.Auth.Login(ctx, username, password, userAgent, dev)
 	if d.LoginLimiter != nil {
 		if errors.Is(err, jellyfin.ErrInvalidCredentials) {
-			d.LoginLimiter.Fail(ukey, ikey)
+			d.LoginLimiter.Fail(ctx, ukey, ikey)
 		} else if err == nil {
-			d.LoginLimiter.Reset(ukey)
+			d.LoginLimiter.Reset(ctx, ukey)
 		}
 	}
 	switch {
@@ -106,8 +109,8 @@ func registerAuth(api huma.API, d Deps) {
 			SetCookie: http.Cookie{
 				Name: auth.CookieName, Value: token, Path: "/",
 				HttpOnly: true, SameSite: http.SameSiteLaxMode,
-				Secure: in.Proto == "https",
-				MaxAge: int(auth.SessionTTL.Seconds()),
+				Secure: cookieSecure(d.SecureCookies, in.Proto, false),
+				MaxAge: int(d.Auth.SessionTTL().Seconds()),
 			},
 			Body: user,
 		}, nil
@@ -131,7 +134,7 @@ func registerAuth(api huma.API, d Deps) {
 		}
 		return &loginOutput{
 			SetCookie: http.Cookie{Name: auth.CookieName, Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode,
-				Secure: in.Proto == "https", MaxAge: int(auth.SessionTTL.Seconds())},
+				Secure: cookieSecure(d.SecureCookies, in.Proto, false), MaxAge: int(d.Auth.SessionTTL().Seconds())},
 			Body: user,
 		}, nil
 	})
@@ -145,7 +148,7 @@ func registerAuth(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
-		return &tokenOutput{Body: tokenBody{Token: token, ExpiresAt: time.Now().Add(auth.SessionTTL).Unix(), User: *user}}, nil
+		return &tokenOutput{Body: tokenBody{Token: token, ExpiresAt: time.Now().Add(d.Auth.SessionTTL()).Unix(), User: *user}}, nil
 	})
 
 	huma.Register(api, huma.Operation{

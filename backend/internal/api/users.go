@@ -235,7 +235,10 @@ func registerUsers(api huma.API, d Deps) {
 					return nil, fail(409, "last_admin", "at least one admin is required")
 				}
 			}
-			u.Role = *in.Body.Role
+			u.Role, u.AdminSource = *in.Body.Role, ""
+			if u.Role == store.RoleAdmin {
+				u.AdminSource = store.AdminFromManual // a sign-in never takes back a role given here
+			}
 			roleChanged = true
 		}
 		prefs.apply(u)
