@@ -1,0 +1,1 @@
+jellyfin,radarr,sonarr,auto-hébergé,homelab,serveur média,demande,films,séries,bandes-annonces

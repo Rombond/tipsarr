@@ -1,0 +1,1 @@
+jellyfin,radarr,sonarr,selfhosted,homelab,media server,request,movies,tv shows,trailers,watchlist

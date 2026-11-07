@@ -1,0 +1,1 @@
+First release of the Tipsarr app: discover, request and follow movies and shows on your own Tipsarr server, with push notifications, Face ID sign-in on iOS and full iPad and tablet layouts.

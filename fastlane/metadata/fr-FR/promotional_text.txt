@@ -1,0 +1,1 @@
+Trouve ton prochain film ou ta prochaine série, vois ce que ton serveur Jellyfin a déjà et demande le reste. Il te faut ton propre serveur Tipsarr : essaie la démo.

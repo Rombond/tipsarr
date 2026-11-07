@@ -1,0 +1,29 @@
+Tipsarr est l'app compagnon de Tipsarr, un serveur libre et gratuit que tu héberges toi-même à côté de Jellyfin. Parcours ce qui est populaire, vois d'un coup d'œil ce que ton serveur a déjà, et demande ce qui manque.
+
+IMPORTANT : Tipsarr a besoin d'un serveur Tipsarr (auto-hébergé, licence MIT) relié à un serveur Jellyfin. Il n'y a ni compte Tipsarr ni service cloud : tu te connectes à ton propre serveur avec ton compte Jellyfin. Pas encore de serveur ? Essaie la démo publique : https://tipsarr-demo.brebond.com
+
+DÉCOUVRIR
+- Films et séries tendance, populaires et à venir, genres, personnes, collections et bandes-annonces
+- Suggestions personnelles tirées de ton historique Jellyfin (« Parce que tu as regardé… »)
+- Box-office du week-end et de la semaine
+- Badges de disponibilité : tu vois tout de suite ce qui est déjà sur ton serveur
+
+DEMANDER ET SUIVRE
+- Demande un film ou une série (choisis les saisons), avec profil de qualité et dossier si tu y as droit
+- Suis l'avancement en direct : demandé, approuvé, en téléchargement, disponible
+- Les admins et gestionnaires de demandes approuvent ou refusent depuis l'app
+- Signale un problème de vidéo, d'audio ou de sous-titres et suis la discussion
+
+TON ESPACE
+- Liste « À voir » et liste « Pas intéressé »
+- Profil avec tes statistiques de visionnage
+- Plusieurs serveurs et comptes sur un même appareil
+- Notifications push quand une demande est approuvée ou disponible (si l'admin du serveur les active)
+- Teasers : un fil vertical de bandes-annonces (expérimental, si activé sur le serveur)
+- Français et anglais, thèmes clair et sombre, téléphones et tablettes
+
+VIE PRIVÉE
+Pas d'analytics, pas de pub, pas de pistage. L'app ne parle qu'à ton serveur. Rien n'est jamais demandé ni téléchargé automatiquement : les demandes passent par l'admin de ton serveur.
+
+Tipsarr est un logiciel libre : https://github.com/Rombond/tipsarr
+Tipsarr n'est pas affilié à Jellyfin, TMDB, Radarr ou Sonarr. Les données et images des films et séries viennent de TMDB.

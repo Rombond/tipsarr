@@ -1,0 +1,1 @@
+Find your next movie or show, see what your Jellyfin server already has, and request the rest. Needs your own Tipsarr server: try the public demo first.
