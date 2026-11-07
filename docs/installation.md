@@ -126,8 +126,8 @@ able to sign in: let `/api/` through and use Tipsarr's own [OpenID Connect](auth
 2. **Public address** (Settings): the address people use to open Jellyfin, for the "Play" buttons.
 3. **Webhook (optional)**: makes availability and watch history update within seconds instead of at the next sync.
    Install the *Webhook* plugin from Jellyfin's plugin catalogue, add a *Generic* destination with the URL and template
-   shown under Settings → Jellyfin webhook. The URL carries a secret token (it can also be sent as the
-   `X-Tipsarr-Token` header); keep it private.
+   shown under Settings → Jellyfin webhook (**Show the secret**; **New secret** replaces it, then update the plugin). Send the secret in the
+   `X-Tipsarr-Token` header (the older `?token=` URL still works); keep it private.
 4. **Playback Reporting (optional)**: with Jellyfin's Playback Reporting plugin installed, the Stats page shows exact
    watch time instead of estimates.
 

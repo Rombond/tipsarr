@@ -18,7 +18,9 @@ There is no bundled documentation UI; load the spec in any OpenAPI viewer.
 ## Read-only API key
 
 Settings → API key for dashboards → turn it on. The key reads everything an admin can see and can never change
-anything. Send it as the `X-Api-Key` header, never in the URL (URLs end up in proxy logs). Example:
+anything. Send it as the `X-Api-Key` header, never in the URL (URLs end up in proxy logs). The settings never
+return the key itself: the eye button reads it (`POST /api/v1/admin/secrets/api_key/reveal`, admin role only), and
+**New key** (`POST /api/v1/admin/secrets/api_key/regenerate`) replaces it and shows the new one. Example:
 
 ```bash
 curl -H "X-Api-Key: $KEY" https://tipsarr.example.org/api/v1/requests/counts
