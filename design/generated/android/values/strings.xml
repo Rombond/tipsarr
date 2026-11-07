@@ -125,6 +125,7 @@
     <string name="error_no_instance">No Radarr or Sonarr instance is configured for this type of title.</string>
     <string name="error_not_an_app">Push is only available in the iOS and Android apps.</string>
     <string name="error_not_found">Not found.</string>
+    <string name="error_not_in_library">This title is not in the library yet, there is nothing to report.</string>
     <string name="error_not_in_servarr">Radarr or Sonarr does not track this title.</string>
     <string name="error_not_set_up">Tipsarr is not set up yet.</string>
     <string name="error_oidc_unreachable">Cannot read the provider’s configuration. Check the address.</string>

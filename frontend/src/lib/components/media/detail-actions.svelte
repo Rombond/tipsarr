@@ -89,7 +89,7 @@
 		{#if watchlisted}<BookmarkCheckIcon class="size-4" /> {t('actions.on_watchlist')}{:else}<BookmarkIcon class="size-4" /> {t('actions.watchlist')}{/if}
 	</Button>
 
-	{#if auth.canCreateIssues}
+	{#if auth.canCreateIssues && details.availability !== 'none'}
 		<Button variant="outline" onclick={() => (reporting = true)}>
 			<FlagIcon class="size-4" />
 			{t('actions.report_short')}

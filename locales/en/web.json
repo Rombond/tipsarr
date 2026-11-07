@@ -232,6 +232,7 @@
   "error.url_invalid": "The address must start with http:// or https://.",
   "error.public_url_invalid": "The public address must start with http:// or https://.",
   "error.not_in_servarr": "Radarr or Sonarr does not track this title.",
+  "error.not_in_library": "This title is not in the library yet, there is nothing to report.",
   "error.api_key_required": "An API key is required.",
   "error.retype_key": "Enter the API key again when you change the address.",
   "error.bad_genre_roots": "Genre folders must map genre ids to folders.",

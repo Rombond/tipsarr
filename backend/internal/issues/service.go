@@ -19,6 +19,8 @@ import (
 var (
 	ErrInvalid   = errors.New("invalid issue")
 	ErrForbidden = errors.New("not allowed")
+	// ErrNotInLibrary: a problem can only be reported on a title Jellyfin has (fully or partly).
+	ErrNotInLibrary = errors.New("media is not in the library")
 )
 
 var Kinds = []string{"video", "audio", "subtitles", "other"}
@@ -114,6 +116,9 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*I
 	d, err := s.media.Detail(ctx, media.Opts{Language: u.Language, Region: u.Region}, p.Type, p.TMDBID)
 	if err != nil {
 		return nil, err
+	}
+	if d.Availability == media.AvailabilityNone || d.Availability == "" {
+		return nil, ErrNotInLibrary
 	}
 	i := &store.Issue{
 		ID: store.NewID(), MediaType: p.Type, TMDBID: int64(p.TMDBID), Title: d.Title, PosterPath: d.PosterPath,
@@ -296,6 +301,7 @@ func (s *Service) SetResolved(ctx context.Context, u *store.User, id string, res
 	if !canAct(u, i) {
 		return nil, ErrForbidden
 	}
+	wasOpen := i.Status == store.IssueOpen
 	if resolved {
 		i.Status, i.ResolvedBy = store.IssueResolved, u.ID
 	} else {
@@ -312,7 +318,7 @@ func (s *Service) SetResolved(ctx context.Context, u *store.User, id string, res
 	if resolved {
 		s.notify.Send(issueEvent(notify.IssueResolved, d, map[string]any{"issue": d.IssueView}, u.ID))
 		s.notify.Push(notify.PushEvent{Name: "issue.resolved", ID: i.ID, Subject: i.Title, Users: []string{i.CreatedBy}, Skip: u.ID})
-	} else {
+	} else if !wasOpen {
 		s.notify.Send(issueEvent(notify.IssueReopened, d, map[string]any{"issue": d.IssueView}, u.ID))
 	}
 	return d, nil

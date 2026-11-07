@@ -660,8 +660,13 @@ func TestIssues(t *testing.T) {
 		hook <- r.Header.Get("X-Tipsarr-Event") + " " + string(b)
 	}))
 	defer sink.Close()
-	call(t, e.app, "POST", "/api/v1/admin/webhooks", `{"name":"h","url":"`+sink.URL+`","events":["issue.created","issue.resolved"],"enabled":true}`, admin)
+	call(t, e.app, "POST", "/api/v1/admin/webhooks", `{"name":"h","url":"`+sink.URL+`","events":["issue.created","issue.resolved","issue.reopened"],"enabled":true}`, admin)
 
+	// a title Jellyfin does not have cannot be reported: nobody could fix anything
+	if resp, body := call(t, e.app, "POST", "/api/v1/issues", `{"type":"movie","tmdbId":5,"kind":"video","message":"broken"}`, bob); resp.StatusCode != http.StatusConflict || !strings.Contains(body, "not_in_library") {
+		t.Fatalf("issue outside the library = %d %s", resp.StatusCode, body)
+	}
+	putInLibrary(t, e, "movie", 5)
 	if resp, _ := call(t, e.app, "POST", "/api/v1/issues", `{"type":"movie","tmdbId":5,"kind":"video","message":""}`, bob); resp.StatusCode != 422 {
 		t.Fatalf("empty message = %d", resp.StatusCode)
 	}
@@ -703,6 +708,18 @@ func TestIssues(t *testing.T) {
 	}
 	if resp, _ := call(t, e.app, "POST", "/api/v1/issues/"+iss.ID+"/reopen", ``, bob); resp.StatusCode != 200 {
 		t.Fatalf("reporter reopen = %d", resp.StatusCode)
+	}
+	if got := <-hook; !strings.HasPrefix(got, "issue.reopened ") {
+		t.Fatalf("webhook = %s", got)
+	}
+	// reopening an issue that is already open changes nothing and must not fire issue.reopened again
+	if resp, _ := call(t, e.app, "POST", "/api/v1/issues/"+iss.ID+"/reopen", ``, bob); resp.StatusCode != 200 {
+		t.Fatalf("second reopen = %d", resp.StatusCode)
+	}
+	select {
+	case got := <-hook:
+		t.Fatalf("reopening an open issue fired %s", got)
+	case <-time.After(150 * time.Millisecond):
 	}
 	if resp, _ := call(t, e.app, "DELETE", "/api/v1/issues/"+iss.ID, "", bob); resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("user delete = %d", resp.StatusCode)
@@ -905,6 +922,7 @@ func TestIssueServarrActions(t *testing.T) {
 		_, admin, bob := setupUsers(t, e)
 		arr := newFakeArr(t, "radarr")
 		arr.movieByTMDB.Store(`[{"id":42,"tmdbId":5,"hasFile":true}]`)
+		putInLibrary(t, e, "movie", 5)
 
 		_, body := call(t, e.app, "POST", "/api/v1/issues", `{"type":"movie","tmdbId":5,"kind":"video","message":"bad"}`, bob)
 		var iss struct{ ID string }
@@ -953,5 +971,13 @@ func TestIssueServarrActions(t *testing.T) {
 				t.Fatalf("live writes = %v posted = %v %v", w, name, ids)
 			}
 		}
+	}
+}
+
+// putInLibrary stores a library snapshot holding one title, as a Jellyfin sync would.
+func putInLibrary(t *testing.T, e *env, mediaType string, tmdbID int64) {
+	t.Helper()
+	if err := e.st.ReplaceLibrary(context.Background(), []store.LibraryItem{{MediaType: mediaType, TMDBID: tmdbID, JellyfinID: "lib" + mediaType}}, nil); err != nil {
+		t.Fatal(err)
 	}
 }

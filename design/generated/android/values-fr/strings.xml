@@ -125,6 +125,7 @@
     <string name="error_no_instance">Aucune instance Radarr ou Sonarr n’est configurée pour ce type de titre.</string>
     <string name="error_not_an_app">Les notifications push ne sont disponibles que dans les apps iOS et Android.</string>
     <string name="error_not_found">Introuvable.</string>
+    <string name="error_not_in_library">Ce titre n’est pas encore dans la bibliothèque, il n’y a rien à signaler.</string>
     <string name="error_not_in_servarr">Radarr ou Sonarr ne suit pas ce titre.</string>
     <string name="error_not_set_up">Tipsarr n’est pas encore configuré.</string>
     <string name="error_oidc_unreachable">Impossible de lire la configuration du fournisseur. Vérifie l’adresse.</string>

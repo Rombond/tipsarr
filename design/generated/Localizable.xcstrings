@@ -1989,6 +1989,22 @@
         }
       }
     },
+    "error.not_in_library": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This title is not in the library yet, there is nothing to report."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce titre n’est pas encore dans la bibliothèque, il n’y a rien à signaler."
+          }
+        }
+      }
+    },
     "error.not_in_servarr": {
       "localizations": {
         "en": {

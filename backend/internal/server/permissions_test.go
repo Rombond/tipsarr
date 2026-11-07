@@ -272,6 +272,7 @@ func TestIssueRights(t *testing.T) {
 		t.Fatalf("issue without the right = %d", resp.StatusCode)
 	}
 	grantPermissions(t, e, admin, bob, perms.Default)
+	putInLibrary(t, e, "movie", 5)
 	resp, body := call(t, e.app, "POST", "/api/v1/issues", `{"type":"movie","tmdbId":5,"kind":"video","message":"broken"}`, bob)
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("issue = %d %s", resp.StatusCode, body)

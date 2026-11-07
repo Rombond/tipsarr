@@ -92,8 +92,9 @@ class MediaDetailModel(
     /** May request this kind of title. */
     val mayRequest: Boolean get() = me().mayRequest(route.type)
 
-    /** May report a problem with the title. */
-    val canReport: Boolean get() = me().can(Permission.CREATE_ISSUES)
+    /** May report a problem with the title: only when Jellyfin has it (fully or partly), nothing can be fixed otherwise. */
+    val canReport: Boolean
+        get() = detail.let { it != null && it.availability != Availability.None } && me().can(Permission.CREATE_ISSUES)
 
     suspend fun load() {
         if (detail == null) phase = Phase.Loading
