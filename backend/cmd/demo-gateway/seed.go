@@ -94,8 +94,22 @@ func ensureTemplate(p *procSpawner, dir string) error {
 	if err := os.WriteFile(filepath.Join(keep, ".stamp"), []byte(want), 0o600); err != nil {
 		return err
 	}
-	os.RemoveAll(dir)
-	return os.Rename(keep, dir)
+	// Move the old template aside first: RemoveAll can leave a partial tree behind (and the rename
+	// then fails with "file exists"), while a rename of the whole directory is atomic.
+	old := dir + ".old"
+	if err := os.RemoveAll(old); err != nil {
+		return err
+	}
+	if err := os.Rename(dir, old); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if err := os.Rename(keep, dir); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(old); err != nil {
+		slog.Warn("remove old demo template", "err", err)
+	}
+	return nil
 }
 
 // seed fills a fresh sandbox through its API: accounts and rights, Radarr/Sonarr, the library and history,
