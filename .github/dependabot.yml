@@ -1,25 +1,32 @@
+# Monthly; security updates still arrive as soon as an advisory exists.
 # Keeps the pinned versions current: GitHub Actions are pinned by commit SHA and base images by digest, so these
 # updates are the only way they move.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
     groups:
       actions: { patterns: ['*'] }
   - package-ecosystem: docker
     directories: [/, /trailer-resolver]
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
   - package-ecosystem: gomod
     directories: [/backend, /trailer-resolver]
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
     groups:
       go: { patterns: ['*'], update-types: [minor, patch] }
   - package-ecosystem: npm
     directory: /frontend
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
     groups:
       npm: { patterns: ['*'], update-types: [minor, patch] }
+    # Major versions (TypeScript, SvelteKit adapters, Tailwind…) are upgraded by hand.
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: gradle
     directory: /android
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
+    groups:
+      android: { patterns: ['*'] }
