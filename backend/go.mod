@@ -16,7 +16,7 @@ require (
 	github.com/uptrace/bun/dialect/pgdialect v1.3.0
 	github.com/uptrace/bun/dialect/sqlitedialect v1.3.0
 	golang.org/x/image v0.47.0
-	golang.org/x/net v0.61.0
+	golang.org/x/net v0.62.0
 	golang.org/x/oauth2 v0.37.0
 	modernc.org/sqlite v1.61.1
 )
