@@ -13,6 +13,10 @@ before a major version.
   just `tipsarr.db` while stopped.
 - **PostgreSQL / MySQL**: `pg_dump` / `mysqldump` the database.
 
+Back up `secret.key` (in the config folder) together with the database: the stored secrets are encrypted with it,
+and a database restored without it needs every API key and password entered again. See
+[Secrets encryption key](installation.md#secrets-encryption-key).
+
 Migrations only go forward. To go back to an older version, restore the backup made before upgrading; an older Tipsarr
 does not check the schema version and may misbehave on a database migrated by a newer one.
 

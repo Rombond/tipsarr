@@ -72,7 +72,11 @@ func run(cfg config.Config) error {
 	if err := dropPrivileges(cfg.ConfigDir); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(cfg.ConfigDir, 0o755); err != nil {
+	if err := os.MkdirAll(cfg.ConfigDir, 0o700); err != nil {
+		return err
+	}
+	secretKey, err := store.LoadSecretKey(cfg.ConfigDir)
+	if err != nil {
 		return err
 	}
 	st, err := store.Open(ctx, cfg.DBURL)
@@ -80,6 +84,9 @@ func run(cfg config.Config) error {
 		return err
 	}
 	defer st.Close()
+	if err := st.EnableSecrets(ctx, secretKey); err != nil {
+		return fmt.Errorf("secrets: %w", err)
+	}
 	slog.Info("database ready", "engine", st.Dialect)
 
 	if cfg.JellyfinURL != "" {

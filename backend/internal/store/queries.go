@@ -131,10 +131,17 @@ func (s *Store) GetSetting(ctx context.Context, key string) (string, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil
 	}
-	return v, err
+	if err != nil || !secretSettings[key] {
+		return v, err
+	}
+	return s.secrets.open(v)
 }
 
 func (s *Store) SetSetting(ctx context.Context, key, value string) error {
+	value, err := s.sealSetting(key, value)
+	if err != nil {
+		return err
+	}
 	res, err := s.DB.NewUpdate().Model((*Setting)(nil)).Set("svalue = ?", value).Where("skey = ?", key).Exec(ctx)
 	if err != nil {
 		return err
@@ -202,6 +209,10 @@ func (s *Store) SetSettingIfAbsent(ctx context.Context, key, value string) (bool
 	if cur, err := s.GetSetting(ctx, key); err != nil || cur != "" {
 		return false, err
 	}
+	value, err := s.sealSetting(key, value)
+	if err != nil {
+		return false, err
+	}
 	if _, err := s.DB.NewInsert().Model(&Setting{Key: key, Value: value}).Exec(ctx); err != nil {
 		if cur, gerr := s.GetSetting(ctx, key); gerr == nil && cur != "" {
 			return false, nil // lost the race
@@ -209,4 +220,11 @@ func (s *Store) SetSettingIfAbsent(ctx context.Context, key, value string) (bool
 		return false, err
 	}
 	return true, nil
+}
+
+func (s *Store) sealSetting(key, value string) (string, error) {
+	if !secretSettings[key] {
+		return value, nil
+	}
+	return s.secrets.seal(value)
 }
