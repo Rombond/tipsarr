@@ -361,3 +361,33 @@ func TestRequest4K(t *testing.T) {
 		t.Fatalf("request while Radarr is down = %d %s", resp.StatusCode, body)
 	}
 }
+
+// Seeing everyone's requests does not mean deleting them: only the requester or a request manager may.
+func TestDeleteOthersRequest(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	addInstance(t, e, admin, "radarr", newFakeArr(t, "radarr"))
+	resp, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5}`, admin)
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("create = %d %s", resp.StatusCode, body)
+	}
+	v := decodeReq(t, body)
+	r, err := e.st.GetRequest(t.Context(), v.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.Status = "pending" // a state the requester may still withdraw
+	if err := e.st.UpdateRequest(t.Context(), r); err != nil {
+		t.Fatal(err)
+	}
+	grantPermissions(t, e, admin, bob, perms.Default|perms.RequestView)
+	if resp, _ := call(t, e.app, "DELETE", "/api/v1/requests/"+v.ID, "", bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("delete someone else's request = %d", resp.StatusCode)
+	}
+	if _, err := e.st.GetRequest(t.Context(), v.ID); err != nil {
+		t.Fatalf("request is gone: %v", err)
+	}
+	if resp, _ := call(t, e.app, "DELETE", "/api/v1/requests/"+v.ID, "", admin); resp.StatusCode >= 300 {
+		t.Fatalf("manager delete = %d", resp.StatusCode)
+	}
+}

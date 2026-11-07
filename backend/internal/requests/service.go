@@ -667,6 +667,9 @@ func (s *Service) Delete(ctx context.Context, u *store.User, id string) error {
 	if !canSee(u, r) {
 		return store.ErrNotFound
 	}
+	if !u.Can(perms.ManageRequests) && r.RequestedBy != u.ID { // seeing everyone's requests is not deleting them
+		return ErrForbidden
+	}
 	if !u.Can(perms.ManageRequests) && r.Status != store.StatusPending && r.Status != store.StatusDeclined && r.Status != store.StatusFailed {
 		return ErrForbidden
 	}
