@@ -51,7 +51,9 @@ type Service struct {
 	store  *store.Store
 	http   *http.Client
 	dryRun bool
-	delays []time.Duration // waits before retry 2, 3, ...
+	// Offline (demo mode) refuses every delivery: nothing ever leaves the process.
+	Offline bool
+	delays  []time.Duration // waits before retry 2, 3, ...
 }
 
 func New(s *store.Store, dryRun bool) *Service {
