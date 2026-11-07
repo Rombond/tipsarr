@@ -54,8 +54,8 @@ func TestHistorySources(t *testing.T) {
 	if resp, _ := call(t, e.app, "PUT", path, `{"sources":["`+alice+`"]}`, bob); resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("user sets sources = %d, want 403", resp.StatusCode)
 	}
-	_, body := call(t, e.app, "PUT", "/api/v1/admin/settings", `{"apiKeyEnabled":true}`, admin)
-	key := body[strings.Index(body, `"apiKey":"`)+len(`"apiKey":"`):][:32]
+	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"apiKeyEnabled":true}`, admin)
+	key := revealSecret(t, e.app, admin, "api_key")
 	if resp, _ := keyCall(t, e.app.URL, "PUT", path, `{"sources":["`+alice+`"]}`, key); resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("read-only key sets sources = %d, want 403", resp.StatusCode)
 	}

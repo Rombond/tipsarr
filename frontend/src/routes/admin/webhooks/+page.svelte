@@ -74,6 +74,7 @@
 			return;
 		}
 		load();
+		loadEgress();
 		unwrap(api.GET('/admin/webhooks/presets'))
 			.then((r) => {
 				presets = r.presets;
@@ -179,6 +180,33 @@
 		}
 	}
 
+	// outbound policy: private targets the admin allows (one per line)
+	let allowedHosts = $state('');
+	let blocked = $state<Schemas['WebhookRef'][]>([]);
+	async function loadEgress() {
+		if (!auth.isAdmin) return;
+		try {
+			const r = await unwrap(api.GET('/admin/webhooks/egress'));
+			allowedHosts = r.allowedHosts.join('\n');
+			blocked = r.blocked;
+		} catch (e) {
+			error = errorText(e);
+		}
+	}
+	async function saveEgress(e: SubmitEvent) {
+		e.preventDefault();
+		try {
+			const list = allowedHosts.split(/[\n,]/).map((x) => x.trim()).filter(Boolean);
+			const r = await unwrap(api.PUT('/admin/webhooks/egress', { body: { allowedHosts: list } }));
+			allowedHosts = r.allowedHosts.join('\n');
+			blocked = r.blocked;
+			toast.success(t('common.saved'));
+			load();
+		} catch (err) {
+			toast.error(errorText(err));
+		}
+	}
+
 	async function savePublicUrl(e: SubmitEvent) {
 		e.preventDefault();
 		try {
@@ -217,6 +245,24 @@
 		</CardContent>
 	</Card>
 
+	{#if auth.isAdmin}
+		<Card>
+			<CardHeader>
+				<CardTitle>{t('webhooks.egress_title')}</CardTitle>
+				<CardDescription>{t('webhooks.egress_desc')}</CardDescription>
+			</CardHeader>
+			<CardContent class="grid gap-2">
+				{#if blocked.length}
+					<p class="text-sm text-destructive">{t('webhooks.egress_blocked', { names: blocked.map((b) => b.name).join(', ') })}</p>
+				{/if}
+				<form class="grid gap-2" onsubmit={saveEgress}>
+					<textarea bind:value={allowedHosts} rows="3" class="rounded-md border border-input bg-transparent p-2 font-mono text-sm" placeholder={'ntfy.lan\n192.168.1.20:8123\n10.0.0.0/24'} aria-label={t('webhooks.egress_title')}></textarea>
+					<div><Button type="submit" variant="outline">{t('common.save')}</Button></div>
+				</form>
+			</CardContent>
+		</Card>
+	{/if}
+
 	<Card>
 		<CardHeader>
 			<CardTitle>{t('webhooks.card_title')}</CardTitle>
@@ -230,6 +276,7 @@
 							{h.name}
 							{#if h.preset && h.preset !== 'raw'}<Badge variant="secondary">{presets.find((p) => p.id === h.preset)?.name ?? h.preset}</Badge>{/if}
 							{#if !h.enabled}<Badge variant="outline">{t('webhooks.disabled')}</Badge>{/if}
+							{#if h.blockedByPolicy}<Badge variant="destructive">{t('webhooks.blocked_badge')}</Badge>{/if}
 							{#if h.secretConfigured}<Badge variant="secondary">{t('webhooks.signed')}</Badge>{/if}
 							{#if h.perRecipient}<Badge variant="secondary">{t('webhooks.per_recipient_badge')}</Badge>{/if}
 						</span>

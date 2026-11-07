@@ -99,6 +99,7 @@
     <string name="discover_upcoming_desc">Coming soon to cinemas</string>
     <string name="discover_upcoming_hint">Movies that are about to be released.</string>
     <string name="error_4k_not_allowed">You may not request in 4K. Pick another quality profile.</string>
+    <string name="error_address_refused">This address is not allowed (loopback or link-local).</string>
     <string name="error_admin_only">Only administrators can do this.</string>
     <string name="error_already_available">This title is already available in the library.</string>
     <string name="error_already_monitored">Radarr/Sonarr already monitors this title and will fetch what is missing.</string>
@@ -636,6 +637,7 @@
     <string name="profile_nothing_hidden">Nothing hidden.</string>
     <string name="profile_picture_invalid">Please choose a JPEG, PNG or GIF picture.</string>
     <string name="profile_picture_saved">Picture updated.</string>
+    <string name="profile_picture_too_big">That picture is too large: at most 4096 × 4096 pixels.</string>
     <string name="profile_picture_too_large">That picture is larger than 4 MB.</string>
     <string name="profile_preferences">Preferences</string>
     <string name="profile_rating_source">Score on posters</string>

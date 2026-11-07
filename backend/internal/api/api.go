@@ -117,6 +117,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerServarr(api, d)
 		registerWebhooks(api, d)
 		registerLDAPImport(api, d)
+		registerSecrets(api, d)
 		registerLibrary(api, d)
 		registerStats(api, d)
 		r.Get("/events", eventsHandler(d))

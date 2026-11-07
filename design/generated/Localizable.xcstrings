@@ -1574,6 +1574,22 @@
         }
       }
     },
+    "error.address_refused": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This address is not allowed (loopback or link-local)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette adresse n’est pas autorisée (loopback ou link-local)."
+          }
+        }
+      }
+    },
     "error.admin_only": {
       "localizations": {
         "en": {
@@ -10193,6 +10209,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Photo mise à jour."
+          }
+        }
+      }
+    },
+    "profile.picture_too_big": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That picture is too large: at most 4096 × 4096 pixels."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette image est trop grande : 4096 × 4096 pixels au maximum."
           }
         }
       }
