@@ -9584,6 +9584,38 @@
         }
       }
     },
+    "profile.chat_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional: lets webhooks mention or message you directly."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Facultatif : permet aux webhooks de te mentionner ou de t’écrire directement."
+          }
+        }
+      }
+    },
+    "profile.chat_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chat notifications"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications par messagerie"
+          }
+        }
+      }
+    },
     "profile.device_current": {
       "localizations": {
         "en": {
@@ -9725,6 +9757,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Appareils connectés"
+          }
+        }
+      }
+    },
+    "profile.discord_id": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discord user id"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant utilisateur Discord"
           }
         }
       }
@@ -10160,6 +10208,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Réglages"
+          }
+        }
+      }
+    },
+    "profile.telegram_chat_id": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telegram chat id"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant de conversation Telegram"
           }
         }
       }
@@ -14960,6 +15024,379 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ma liste"
+          }
+        }
+      }
+    },
+    "webhook.issue.commented.message": {
+      "comment": "placeholders: user, comment",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ : %2$@"
+          }
+        }
+      }
+    },
+    "webhook.issue.commented.subject": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New comment on an issue: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveau commentaire sur un signalement : %@"
+          }
+        }
+      }
+    },
+    "webhook.issue.created.message": {
+      "comment": "placeholders: user, title, comment",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ reported a problem with %2$@: %3$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ a signalé un problème sur %2$@ : %3$@"
+          }
+        }
+      }
+    },
+    "webhook.issue.created.subject": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New issue: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveau signalement : %@"
+          }
+        }
+      }
+    },
+    "webhook.issue.reopened.message": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The problem with %@ was reopened."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le problème sur %@ a été rouvert."
+          }
+        }
+      }
+    },
+    "webhook.issue.reopened.subject": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Issue reopened: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signalement rouvert : %@"
+          }
+        }
+      }
+    },
+    "webhook.issue.resolved.message": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The problem with %@ was marked as resolved."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le problème sur %@ a été marqué comme résolu."
+          }
+        }
+      }
+    },
+    "webhook.issue.resolved.subject": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Issue resolved: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signalement résolu : %@"
+          }
+        }
+      }
+    },
+    "webhook.media.available.message": {
+      "comment": "placeholders: title, user",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, requested by %2$@, is ready to watch."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, demandé par %2$@, est prêt à être regardé."
+          }
+        }
+      }
+    },
+    "webhook.media.available.subject": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now available: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disponible : %@"
+          }
+        }
+      }
+    },
+    "webhook.request.approved.message": {
+      "comment": "placeholders: title, user",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The request for %1$@ by %2$@ was approved."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La demande de %1$@ par %2$@ a été approuvée."
+          }
+        }
+      }
+    },
+    "webhook.request.approved.subject": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request approved: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande approuvée : %@"
+          }
+        }
+      }
+    },
+    "webhook.request.auto_approved.message": {
+      "comment": "placeholders: user, title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ requested %2$@; it was approved automatically."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ a demandé %2$@ ; la demande a été approuvée automatiquement."
+          }
+        }
+      }
+    },
+    "webhook.request.auto_approved.subject": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request auto-approved: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande approuvée automatiquement : %@"
+          }
+        }
+      }
+    },
+    "webhook.request.created.message": {
+      "comment": "placeholders: user, title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ requested %2$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ a demandé %2$@."
+          }
+        }
+      }
+    },
+    "webhook.request.created.subject": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New request: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvelle demande : %@"
+          }
+        }
+      }
+    },
+    "webhook.request.declined.message": {
+      "comment": "placeholders: title, user",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The request for %1$@ by %2$@ was declined."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La demande de %1$@ par %2$@ a été refusée."
+          }
+        }
+      }
+    },
+    "webhook.request.declined.subject": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request declined: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande refusée : %@"
+          }
+        }
+      }
+    },
+    "webhook.request.failed.message": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The request for %@ could not be sent to Radarr/Sonarr."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La demande de %@ n’a pas pu être envoyée à Radarr/Sonarr."
+          }
+        }
+      }
+    },
+    "webhook.request.failed.subject": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request failed: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Échec de la demande : %@"
+          }
+        }
+      }
+    },
+    "webhook.test.message": {
+      "comment": "placeholders: title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If you can read this, the webhook works. Sample title: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si tu lis ceci, le webhook fonctionne. Titre d’exemple : %@"
+          }
+        }
+      }
+    },
+    "webhook.test.subject": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipsarr test notification"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notification de test Tipsarr"
           }
         }
       }

@@ -69,9 +69,9 @@ func (s *Store) CountAdmins(ctx context.Context) (int, error) {
 	return int(n), err
 }
 
-// UpdatePrefs changes only region, language and the rating source (never the role, which a stale copy could revert).
+// UpdatePrefs changes only region, language, the rating source and the chat ids (never the role, which a stale copy could revert).
 func (s *Store) UpdatePrefs(ctx context.Context, u *User) error {
-	_, err := s.DB.NewUpdate().Model(u).Column("region", "language", "rating_source").WherePK().Exec(ctx)
+	_, err := s.DB.NewUpdate().Model(u).Column("region", "language", "rating_source", "discord_id", "telegram_chat_id").WherePK().Exec(ctx)
 	return err
 }
 
@@ -87,7 +87,7 @@ func (s *Store) DeleteUserSessions(ctx context.Context, userID string) error {
 // UpdateUser changes the editable fields of a user: role, region, language, permissions and quotas.
 func (s *Store) UpdateUser(ctx context.Context, u *User) error {
 	u.Permissions = int64(perms.Stored(perms.Mask(u.Permissions)))
-	_, err := s.DB.NewUpdate().Model(u).Column("role", "region", "language", "permissions", "movie_quota_limit", "movie_quota_days", "tv_quota_limit", "tv_quota_days").WherePK().Exec(ctx)
+	_, err := s.DB.NewUpdate().Model(u).Column("role", "region", "language", "permissions", "movie_quota_limit", "movie_quota_days", "tv_quota_limit", "tv_quota_days", "discord_id", "telegram_chat_id").WherePK().Exec(ctx)
 	u.Resolve()
 	return err
 }

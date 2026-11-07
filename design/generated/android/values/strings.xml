@@ -598,6 +598,8 @@
     <string name="profile_all_requests">All requests</string>
     <string name="profile_card_desc">The language is used for the whole interface and for titles and descriptions from TMDB. The region sets release dates and the default box-office chart.</string>
     <string name="profile_change_picture">Change picture</string>
+    <string name="profile_chat_hint">Optional: lets webhooks mention or message you directly.</string>
+    <string name="profile_chat_title">Chat notifications</string>
     <string name="profile_device_current">This device</string>
     <string name="profile_device_last_used">Last used %1$s</string>
     <string name="profile_device_sign_out">Sign out</string>
@@ -607,6 +609,7 @@
     <string name="profile_devices_sign_out_others">Sign out everywhere else</string>
     <string name="profile_devices_signed_out_others">Signed out everywhere else.</string>
     <string name="profile_devices_title">Signed-in devices</string>
+    <string name="profile_discord_id">Discord user id</string>
     <string name="profile_hidden_desc">Titles you marked “not interested”.</string>
     <string name="profile_hidden_title">Hidden from my suggestions</string>
     <string name="profile_history_sources">Your recommendations also use the watch history of %1$s (set by an admin). That is why Discover can show titles you have not watched yourself.</string>
@@ -634,6 +637,7 @@
     <string name="profile_stats">Statistics</string>
     <string name="profile_tab_overview">Overview</string>
     <string name="profile_tab_settings">Settings</string>
+    <string name="profile_telegram_chat_id">Telegram chat id</string>
     <string name="profile_title">Profile</string>
     <string name="profile_unhide">Unhide</string>
     <string name="push_issue_comment">New comment on an issue</string>
@@ -929,4 +933,26 @@
     <string name="watchlist_empty">Nothing here yet. Open a movie or show and press “Watchlist”.</string>
     <string name="watchlist_hint">Hover a poster and press ✕ to remove it from the list.</string>
     <string name="watchlist_title">Watchlist</string>
+    <string name="webhook_issue_commented_message">%1$s: %2$s</string>
+    <string name="webhook_issue_commented_subject">New comment on an issue: %1$s</string>
+    <string name="webhook_issue_created_message">%1$s reported a problem with %2$s: %3$s</string>
+    <string name="webhook_issue_created_subject">New issue: %1$s</string>
+    <string name="webhook_issue_reopened_message">The problem with %1$s was reopened.</string>
+    <string name="webhook_issue_reopened_subject">Issue reopened: %1$s</string>
+    <string name="webhook_issue_resolved_message">The problem with %1$s was marked as resolved.</string>
+    <string name="webhook_issue_resolved_subject">Issue resolved: %1$s</string>
+    <string name="webhook_media_available_message">%1$s, requested by %2$s, is ready to watch.</string>
+    <string name="webhook_media_available_subject">Now available: %1$s</string>
+    <string name="webhook_request_approved_message">The request for %1$s by %2$s was approved.</string>
+    <string name="webhook_request_approved_subject">Request approved: %1$s</string>
+    <string name="webhook_request_auto_approved_message">%1$s requested %2$s; it was approved automatically.</string>
+    <string name="webhook_request_auto_approved_subject">Request auto-approved: %1$s</string>
+    <string name="webhook_request_created_message">%1$s requested %2$s.</string>
+    <string name="webhook_request_created_subject">New request: %1$s</string>
+    <string name="webhook_request_declined_message">The request for %1$s by %2$s was declined.</string>
+    <string name="webhook_request_declined_subject">Request declined: %1$s</string>
+    <string name="webhook_request_failed_message">The request for %1$s could not be sent to Radarr/Sonarr.</string>
+    <string name="webhook_request_failed_subject">Request failed: %1$s</string>
+    <string name="webhook_test_message">If you can read this, the webhook works. Sample title: %1$s</string>
+    <string name="webhook_test_subject">Tipsarr test notification</string>
 </resources>

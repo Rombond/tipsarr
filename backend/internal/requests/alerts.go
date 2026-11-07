@@ -99,7 +99,7 @@ func (s *Service) SendDueAlerts(ctx context.Context) error {
 		if skip {
 			continue
 		}
-		s.notify.Dispatch(notify.MediaAvailable, s.payload(ctx, r))
+		s.notify.Send(s.event(ctx, notify.MediaAvailable, r, ""))
 		s.notify.Push(notify.PushEvent{Name: "request.available", ID: r.ID, Subject: r.Title, Users: []string{r.RequestedBy}})
 	}
 

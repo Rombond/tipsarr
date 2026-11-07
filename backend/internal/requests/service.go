@@ -456,11 +456,13 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 	}
 	s.record(ctx, r.ID, "requested", u.ID, "")
 	s.changed(ctx, r)
-	s.notify.Dispatch(notify.RequestCreated, s.payload(ctx, r))
+	ev := s.event(ctx, notify.RequestCreated, r, u.ID)
+	ev.Users, ev.Admins, ev.Needs = nil, true, int64(perms.ManageRequests)
+	s.notify.Send(ev)
 	s.notify.Push(notify.PushEvent{Name: "request.created", ID: r.ID, Subject: r.Title, Admins: true, Needs: int64(perms.ManageRequests), Skip: u.ID})
 
 	if mask.AutoApproves(p.Type, uhd) {
-		v, err := s.approve(ctx, u, r.ID, p.Overrides)
+		v, err := s.approve(ctx, u, r.ID, p.Overrides, true)
 		if errors.Is(err, ErrNoInstance) {
 			return s.view(ctx, r) // stays pending until a Radarr/Sonarr instance is configured
 		}
@@ -481,11 +483,12 @@ func (s *Service) Approve(ctx context.Context, by *store.User, id string, ov *Ov
 	if !by.Can(perms.ManageRequests) {
 		return nil, ErrForbidden
 	}
-	return s.approve(ctx, by, id, ov)
+	return s.approve(ctx, by, id, ov, false)
 }
 
 // approve does the work of Approve without checking the right: Create uses it for people who auto-approve.
-func (s *Service) approve(ctx context.Context, by *store.User, id string, ov *Overrides) (*View, error) {
+// auto is true when the requester's own rights approve the request as it is made.
+func (s *Service) approve(ctx context.Context, by *store.User, id string, ov *Overrides, auto bool) (*View, error) {
 	r, err := s.store.GetRequest(ctx, id)
 	if err != nil {
 		return nil, err
@@ -580,10 +583,16 @@ func (s *Service) approve(ctx context.Context, by *store.User, id string, ov *Ov
 	}
 	s.changed(ctx, r)
 	if r.Status == store.StatusFailed {
-		s.notify.Dispatch(notify.RequestFailed, s.payload(ctx, r))
+		s.notify.Send(s.event(ctx, notify.RequestFailed, r, by.ID))
 		s.notify.Push(notify.PushEvent{Name: "request.failed", ID: r.ID, Subject: r.Title, Users: []string{r.RequestedBy}, Skip: by.ID})
 	} else {
-		s.notify.Dispatch(notify.RequestApproved, s.payload(ctx, r))
+		if auto { // the requester approved it themselves: tell them and the admins
+			ev := s.event(ctx, notify.RequestAutoApproved, r, "")
+			ev.Admins, ev.Needs = true, int64(perms.ManageRequests)
+			s.notify.Send(ev)
+		} else {
+			s.notify.Send(s.event(ctx, notify.RequestApproved, r, by.ID))
+		}
 		s.notify.Push(notify.PushEvent{Name: "request.approved", ID: r.ID, Subject: r.Title, Users: []string{r.RequestedBy}, Skip: by.ID})
 	}
 	return s.view(ctx, r)
@@ -653,7 +662,7 @@ func (s *Service) Decline(ctx context.Context, by *store.User, id, reason string
 	}
 	s.record(ctx, r.ID, "declined", by.ID, r.DeclineReason)
 	s.changed(ctx, r)
-	s.notify.Dispatch(notify.RequestDeclined, s.payload(ctx, r))
+	s.notify.Send(s.event(ctx, notify.RequestDeclined, r, by.ID))
 	s.notify.Push(notify.PushEvent{Name: "request.declined", ID: r.ID, Subject: r.Title, Users: []string{r.RequestedBy}, Skip: by.ID})
 	return s.view(ctx, r)
 }
@@ -697,6 +706,23 @@ func (s *Service) changed(ctx context.Context, r *store.Request) {
 
 type payload struct {
 	Request View `json:"request"`
+}
+
+// event builds the webhook event of a request; skip is who caused it.
+func (s *Service) event(ctx context.Context, name string, r *store.Request, skip string) notify.Event {
+	ev := notify.Event{Name: name, RequestedBy: r.RequestedBy, Users: []string{r.RequestedBy}, Skip: skip,
+		Media: &notify.Media{TMDBID: int(r.TMDBID), Type: r.MediaType, Title: r.Title, Status: r.Status, Is4K: r.UHD == 1, PosterPath: r.PosterPath}}
+	if len(r.ReleaseDate) >= 4 {
+		ev.Media.Year = r.ReleaseDate[:4]
+	}
+	if r.Status == store.StatusDeclined {
+		ev.Reason = r.DeclineReason
+	}
+	ev.Data = s.payload(ctx, r)
+	if p, ok := ev.Data.(payload); ok {
+		ev.Request = p.Request
+	}
+	return ev
 }
 
 func (s *Service) payload(ctx context.Context, r *store.Request) any {

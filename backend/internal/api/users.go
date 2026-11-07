@@ -30,6 +30,9 @@ type prefsBody struct {
 	Language *string `json:"language,omitempty" doc:"TMDB language, e.g. fr-FR or fr (empty = English)"`
 	// RatingSource is the score shown on posters. Only movies have IMDb, Metacritic and Rotten Tomatoes scores (through Radarr); anything else shows TMDB.
 	RatingSource *string `json:"ratingSource,omitempty" enum:"tmdb,imdb,metacritic,rottenTomatoes," doc:"Score shown on posters (empty = tmdb)"`
+	// Chat ids for webhooks sent once per recipient (notifyUser.discordId, notifyUser.telegramChatId).
+	DiscordID      *string `json:"discordId,omitempty" pattern:"^[0-9]{0,20}$" doc:"Discord user id (digits, empty clears it), used to mention the person"`
+	TelegramChatID *string `json:"telegramChatId,omitempty" pattern:"^-?[0-9]{0,20}$" doc:"Telegram chat id (empty clears it)"`
 }
 
 func (b prefsBody) check() error {
@@ -63,6 +66,12 @@ func (b prefsBody) apply(u *store.User) {
 	if b.RatingSource != nil {
 		u.RatingSource = *b.RatingSource
 	}
+	if b.DiscordID != nil {
+		u.DiscordID = *b.DiscordID
+	}
+	if b.TelegramChatID != nil {
+		u.TelegramChatID = *b.TelegramChatID
+	}
 }
 
 func registerUsers(api huma.API, d Deps) {
@@ -71,7 +80,7 @@ func registerUsers(api huma.API, d Deps) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "updateMe", Method: http.MethodPatch, Path: "/me",
-		Summary: "Change my region and language", Tags: []string{"auth"}, Security: sec,
+		Summary: "Change my region, language, rating source and chat ids", Tags: []string{"auth"}, Security: sec,
 		Errors: []int{http.StatusUnauthorized, http.StatusUnprocessableEntity},
 	}, func(ctx context.Context, in *struct{ Body prefsBody }) (*meOutput, error) {
 		u, err := requireUser(ctx)
@@ -188,9 +197,11 @@ func registerUsers(api huma.API, d Deps) {
 	}, func(ctx context.Context, in *struct {
 		ID   string `path:"id" maxLength:"64"`
 		Body struct {
-			Role     *string `json:"role,omitempty" enum:"admin,user"`
-			Region   *string `json:"region,omitempty" doc:"2-letter country code, empty to clear"`
-			Language *string `json:"language,omitempty" doc:"e.g. fr or fr-FR, empty to clear"`
+			Role           *string `json:"role,omitempty" enum:"admin,user"`
+			Region         *string `json:"region,omitempty" doc:"2-letter country code, empty to clear"`
+			Language       *string `json:"language,omitempty" doc:"e.g. fr or fr-FR, empty to clear"`
+			DiscordID      *string `json:"discordId,omitempty" pattern:"^[0-9]{0,20}$" doc:"Discord user id, empty to clear"`
+			TelegramChatID *string `json:"telegramChatId,omitempty" pattern:"^-?[0-9]{0,20}$" doc:"Telegram chat id, empty to clear"`
 			// Permissions replaces the person's mask (see GET /admin/permissions). Nobody can change their own.
 			Permissions *int64 `json:"permissions,omitempty"`
 			// Quota replaces the person's request limits; a missing field means the default applies.
@@ -201,7 +212,7 @@ func registerUsers(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
-		prefs := prefsBody{Region: in.Body.Region, Language: in.Body.Language}
+		prefs := prefsBody{Region: in.Body.Region, Language: in.Body.Language, DiscordID: in.Body.DiscordID, TelegramChatID: in.Body.TelegramChatID}
 		if err := prefs.check(); err != nil {
 			return nil, err
 		}

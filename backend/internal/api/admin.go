@@ -1,9 +1,12 @@
 package api
 
 import (
+	neturl "net/url"
+
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -40,6 +43,7 @@ type settingsBody struct {
 	LDAPBindDN               string `json:"ldapBindDn"`
 	LDAPPasswordSet          bool   `json:"ldapBindPasswordConfigured"`
 	LDAPBaseDN               string `json:"ldapBaseDn" doc:"Where users live, e.g. ou=people,dc=example,dc=com"`
+	AppPublicURL             string `json:"appPublicUrl" doc:"Address people open Tipsarr at, e.g. https://tipsarr.example.org; webhook links ({{ url }}) start with it. Empty = no links"`
 	DefaultLanguage          string `json:"defaultLanguage" doc:"App-wide default language, e.g. fr-FR; empty = the browser decides. A person's own language wins"`
 	PushEnabled              bool   `json:"pushEnabled" doc:"Mobile push notifications through the relay (off by default)"`
 	PushRelayURL             string `json:"pushRelayUrl" doc:"Address of the push relay, e.g. https://push.example.org"`
@@ -67,6 +71,7 @@ type updateSettingsInput struct {
 		PushRelayURL          *string `json:"pushRelayUrl,omitempty" doc:"Empty string clears it (and turns push off)"`
 		PushRelayKey          *string `json:"pushRelayKey,omitempty" doc:"Write-only; empty string clears it (and turns push off)"`
 		DefaultLanguage       *string `json:"defaultLanguage,omitempty" doc:"e.g. fr-FR; empty clears it"`
+		AppPublicURL          *string `json:"appPublicUrl,omitempty" doc:"http(s)://host[/path]; empty clears it"`
 		LDAPURL               *string `json:"ldapUrl,omitempty" doc:"Empty string turns LDAP pictures off; the connection is tested when saving"`
 		LDAPBindDN            *string `json:"ldapBindDn,omitempty"`
 		LDAPPassword          *string `json:"ldapBindPassword,omitempty" doc:"Write-only"`
@@ -128,7 +133,7 @@ func registerAdmin(api huma.API, d Deps) {
 			TeasersFilesEnabled: tfOn == "true", TeasersFilesURL: tfURL, TeasersFilesKeySet: tfKey != "", TeasersFilesMaxHeight: tfHeight,
 			PushEnabled: pushOn == "true", PushText: pushText == "true", PushRelayURL: pushURL, PushRelayKeyConfigured: pushKey != "",
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
-			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, WebhookToken: secret, ServarrAutoImport: autoImport != "false", DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage),
+			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, WebhookToken: secret, ServarrAutoImport: autoImport != "false", DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage), AppPublicURL: ldapGet(ctx, d, notify.SettingPublicURL),
 			LDAPURL: ldapGet(ctx, d, avatars.SettingLDAPURL), LDAPBindDN: ldapGet(ctx, d, avatars.SettingLDAPBindDN), LDAPBaseDN: ldapGet(ctx, d, avatars.SettingLDAPBaseDN), LDAPPasswordSet: ldapGet(ctx, d, avatars.SettingLDAPPassword) != "",
 			OIDCIssuer: oc.Issuer, OIDCClientID: oc.ClientID, OIDCClientSecretSet: oc.ClientSecret != "", OIDCAdminGroup: oc.AdminGroup, OIDCGroupsClaim: oc.GroupsClaim,
 		}, nil
@@ -225,6 +230,17 @@ func registerAdmin(api huma.API, d Deps) {
 				if err := d.Store.SetSetting(ctx, k, v); err != nil {
 					return nil, err
 				}
+			}
+		}
+		if in.Body.AppPublicURL != nil {
+			v := strings.TrimRight(strings.TrimSpace(*in.Body.AppPublicURL), "/")
+			if v != "" {
+				if pu, err := neturl.Parse(v); err != nil || (pu.Scheme != "http" && pu.Scheme != "https") || pu.Host == "" {
+					return nil, fail(422, "public_url_invalid", "appPublicUrl must be http(s)://host[/path]")
+				}
+			}
+			if err := d.Store.SetSetting(ctx, notify.SettingPublicURL, v); err != nil {
+				return nil, err
 			}
 		}
 		if in.Body.DefaultLanguage != nil {
