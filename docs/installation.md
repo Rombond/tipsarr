@@ -90,8 +90,11 @@ stored in the database.
 | `TIPSARR_DB_URL` | `sqlite:<config>/tipsarr.db` | Or `postgres://user:pass@host:5432/db?sslmode=disable`, or `mysql://user:pass@host:3306/db` |
 | `TIPSARR_JELLYFIN_URL` | – | Pre-fills the Jellyfin step of the first-run page |
 | `TIPSARR_DRY_RUN` | `true` | `false` (or `0`) lets approved requests reach Radarr/Sonarr and push notifications leave |
-| `TIPSARR_COOKIE_SECURE` | `false` | `true` always marks the session cookie `Secure`; otherwise only behind a proxy sending `X-Forwarded-Proto: https` |
-| `TIPSARR_SETUP_TOKEN` | `false` | `true`: the first-run page asks for a one-time token printed in the log. Use it if a fresh install is reachable by strangers |
+| `TIPSARR_COOKIE_SECURE` | unset | `true` always marks the session cookie `Secure`; otherwise it is `Secure` over HTTPS or behind a proxy sending `X-Forwarded-Proto: https` |
+| `TIPSARR_SETUP_TOKEN` | `true` (`false` when `TIPSARR_JELLYFIN_URL` is set) | The first-run page asks for a one-time token printed in the log. `false` turns it off |
+| `TIPSARR_TRUSTED_PROXIES` | `10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,::1/128,fc00::/7` | Proxies (CIDRs or addresses) whose `X-Forwarded-For` / `X-Real-IP` is believed; set but empty = none. See [authentication](authentication.md#client-address) |
+| `TIPSARR_SESSION_TTL` | `10d` | How long a session lasts after its last use (`36h`, `7d`...) |
+| `TIPSARR_SESSION_RECHECK_GRACE` | `24h` | How long sessions keep working while Jellyfin is unreachable; then they are refused until it answers |
 | `TIPSARR_SECRET_KEY` | `<config>/secret.key` | Key encrypting the stored secrets: 32 bytes in base64 (`openssl rand -base64 32`). See [Secrets encryption key](#secrets-encryption-key) |
 | `TIPSARR_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 | `TIPSARR_TRAILERS_DIR` | `<config>/trailers` | Folder shared with the optional `trailer-resolver` sidecar (Teasers), mounted read-only |
@@ -158,8 +161,9 @@ able to sign in: let `/api/` through and use Tipsarr's own [OpenID Connect](auth
 2. **Public address** (Settings): the address people use to open Jellyfin, for the "Play" buttons.
 3. **Webhook (optional)**: makes availability and watch history update within seconds instead of at the next sync.
    Install the *Webhook* plugin from Jellyfin's plugin catalogue, add a *Generic* destination with the URL and template
-   shown under Settings → Jellyfin webhook. The URL carries a secret token (it can also be sent as the
-   `X-Tipsarr-Token` header); keep it private.
+   shown under Settings → Jellyfin webhook, and add the request header `X-Tipsarr-Token` with the secret shown there;
+   keep it private. The older form with the secret in the address (`?token=…`) still works but is deprecated (it ends
+   up in proxy logs; Tipsarr logs a warning once) and will be removed in a future major version.
 4. **Playback Reporting (optional)**: with Jellyfin's Playback Reporting plugin installed, the Stats page shows exact
    watch time instead of estimates.
 

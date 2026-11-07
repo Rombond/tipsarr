@@ -22,7 +22,7 @@ func TestDefaultPermissionsAndNewUsers(t *testing.T) {
 	if got := s.DefaultPermissions(ctx); got != perms.Default {
 		t.Fatalf("default = %d", got)
 	}
-	u, err := s.UpsertUser(ctx, "u1", "ann", false)
+	u, err := s.UpsertUser(ctx, "u1", "ann", AdminGrant{})
 	if err != nil || perms.Mask(u.Permissions) != perms.Default || u.EffectivePermissions != int64(perms.Default) {
 		t.Fatalf("new user = %+v %v", u, err)
 	}
@@ -33,12 +33,12 @@ func TestDefaultPermissionsAndNewUsers(t *testing.T) {
 	if got := s.DefaultPermissions(ctx); got&perms.Admin != 0 || got&perms.AutoApprove == 0 {
 		t.Fatalf("stored default = %d", got)
 	}
-	u2, _ := s.UpsertUser(ctx, "u2", "bob", false)
+	u2, _ := s.UpsertUser(ctx, "u2", "bob", AdminGrant{})
 	if perms.Mask(u2.Permissions)&perms.ManageRequests == 0 {
 		t.Fatalf("second user = %d", u2.Permissions)
 	}
 	// an admin gets every flag whatever is stored; reading a user computes it
-	a, _ := s.UpsertUser(ctx, "a1", "root", true)
+	a, _ := s.UpsertUser(ctx, "a1", "root", AdminGrant{Admin: true, Source: AdminFromJellyfin})
 	got, err := s.GetUser(ctx, a.ID)
 	if err != nil || got.EffectivePermissions != int64(perms.All) || !got.Can(perms.ManageUsers) {
 		t.Fatalf("admin = %+v %v", got, err)
@@ -91,7 +91,7 @@ func TestMigrationKeepsTheFolderChoice(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
-	if _, err := s.UpsertUser(ctx, "u1", "ann", false); err != nil {
+	if _, err := s.UpsertUser(ctx, "u1", "ann", AdminGrant{}); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.SetSetting(ctx, "requests.user_folder", "true"); err != nil {
@@ -132,9 +132,9 @@ func TestMigration4KKeepsEveryoneAsBefore(t *testing.T) {
 	}
 	defer s.Close()
 	old := perms.Request | perms.RequestMovie | perms.RequestTV | perms.CreateIssues // 4980768, the default before 4K
-	plain, _ := s.UpsertUser(ctx, "u1", "ann", false)
-	movies, _ := s.UpsertUser(ctx, "u2", "bob", false)
-	all, _ := s.UpsertUser(ctx, "u3", "cid", false)
+	plain, _ := s.UpsertUser(ctx, "u1", "ann", AdminGrant{})
+	movies, _ := s.UpsertUser(ctx, "u2", "bob", AdminGrant{})
+	all, _ := s.UpsertUser(ctx, "u3", "cid", AdminGrant{})
 	set := func(id string, m perms.Mask) {
 		if _, err := s.DB.NewUpdate().Model((*User)(nil)).Set("permissions = ?", int64(m)).Where("id = ?", id).Exec(ctx); err != nil {
 			t.Fatal(err)

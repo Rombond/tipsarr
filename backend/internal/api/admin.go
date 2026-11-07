@@ -42,6 +42,7 @@ type settingsBody struct {
 	OIDCClientSecretSet      bool   `json:"oidcClientSecretConfigured"`
 	OIDCAdminGroup           string `json:"oidcAdminGroup" doc:"Members of this group become admins (optional)"`
 	OIDCGroupsClaim          string `json:"oidcGroupsClaim" doc:"Claim that lists the groups, default groups"`
+	OIDCUsernameClaim        string `json:"oidcUsernameClaim" doc:"Claim matched exactly (case included) to the Jellyfin username, default preferred_username"`
 	LDAPURL                  string `json:"ldapUrl" doc:"LLDAP/LDAP address for profile pictures, e.g. ldap://lldap:3890"`
 	LDAPBindDN               string `json:"ldapBindDn"`
 	LDAPPasswordSet          bool   `json:"ldapBindPasswordConfigured"`
@@ -88,6 +89,7 @@ type updateSettingsInput struct {
 		OIDCClientSecret      *string `json:"oidcClientSecret,omitempty" doc:"Write-only; empty string clears it"`
 		OIDCAdminGroup        *string `json:"oidcAdminGroup,omitempty"`
 		OIDCGroupsClaim       *string `json:"oidcGroupsClaim,omitempty"`
+		OIDCUsernameClaim     *string `json:"oidcUsernameClaim,omitempty" doc:"Empty string = preferred_username"`
 		TeasersFilesEnabled   *bool   `json:"teasersFilesEnabled,omitempty" doc:"Needs the resolver address and key; turning it on with either missing is refused"`
 		TeasersFilesURL       *string `json:"teasersFilesUrl,omitempty" doc:"Empty string clears it (and turns trailer files off)"`
 		TeasersFilesKey       *string `json:"teasersFilesKey,omitempty" doc:"Write-only; empty string clears it (and turns trailer files off)"`
@@ -150,7 +152,7 @@ func registerAdmin(api huma.API, d Deps) {
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
 			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, WebhookToken: secret, ServarrAutoImport: autoImport != "false", DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage), AppPublicURL: ldapGet(ctx, d, notify.SettingPublicURL),
 			LDAPURL: ldapGet(ctx, d, avatars.SettingLDAPURL), LDAPBindDN: ldapGet(ctx, d, avatars.SettingLDAPBindDN), LDAPBaseDN: ldapGet(ctx, d, avatars.SettingLDAPBaseDN), LDAPPasswordSet: ldapGet(ctx, d, avatars.SettingLDAPPassword) != "",
-			OIDCIssuer: oc.Issuer, OIDCClientID: oc.ClientID, OIDCClientSecretSet: oc.ClientSecret != "", OIDCAdminGroup: oc.AdminGroup, OIDCGroupsClaim: oc.GroupsClaim,
+			OIDCIssuer: oc.Issuer, OIDCClientID: oc.ClientID, OIDCClientSecretSet: oc.ClientSecret != "", OIDCAdminGroup: oc.AdminGroup, OIDCGroupsClaim: oc.GroupsClaim, OIDCUsernameClaim: oc.UsernameClaim,
 		}, nil
 	}
 
@@ -171,8 +173,15 @@ func registerAdmin(api huma.API, d Deps) {
 		Summary: "Update settings (admin)", Tags: []string{"admin"}, Security: sec,
 		Errors: []int{http.StatusUnauthorized, http.StatusForbidden},
 	}, func(ctx context.Context, in *updateSettingsInput) (*settingsOutput, error) {
-		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
+		me, err := requireCan(ctx, perms.ManageSettings)
+		if err != nil {
 			return nil, err
+		}
+		// Fields that decide who signs in and as what, or hold credentials into Jellyfin / the directory /
+		// Tipsarr itself, need the admin role: ManageSettings can be delegated, and with these a delegate
+		// could make themself admin (an SSO admin group, their own provider) or read everything.
+		if !me.IsAdmin() && in.touchesIdentity() {
+			return nil, fail(403, "admin_only", "only an admin can change sign-in, directory and API key settings")
 		}
 		if d.Demo {
 			if err := demoSettings(in); err != nil {
@@ -214,7 +223,7 @@ func registerAdmin(api huma.API, d Deps) {
 		for key, v := range map[string]*string{
 			auth.SettingOIDCIssuer: in.Body.OIDCIssuer, auth.SettingOIDCClientID: in.Body.OIDCClientID,
 			auth.SettingOIDCClientSecret: in.Body.OIDCClientSecret, auth.SettingOIDCAdminGroup: in.Body.OIDCAdminGroup,
-			auth.SettingOIDCGroupsClaim: in.Body.OIDCGroupsClaim,
+			auth.SettingOIDCGroupsClaim: in.Body.OIDCGroupsClaim, auth.SettingOIDCUsernameClaim: in.Body.OIDCUsernameClaim,
 		} {
 			if v == nil {
 				continue
@@ -441,4 +450,16 @@ func demoSettings(in *updateSettingsInput) error {
 		return fail(http.StatusForbidden, demo.ErrorCode, demo.RefusalDetail)
 	}
 	return nil
+}
+
+// touchesIdentity reports whether the update changes a sign-in, identity or credential setting (admin role only).
+func (in *updateSettingsInput) touchesIdentity() bool {
+	b := &in.Body
+	for _, p := range []*string{b.OIDCIssuer, b.OIDCClientID, b.OIDCClientSecret, b.OIDCAdminGroup, b.OIDCGroupsClaim, b.OIDCUsernameClaim,
+		b.LDAPURL, b.LDAPBindDN, b.LDAPPassword, b.LDAPBaseDN, b.JellyfinAPIKey, b.AppPublicURL} {
+		if p != nil {
+			return true
+		}
+	}
+	return b.APIKeyEnabled != nil || b.RegenerateAPIKey != nil
 }

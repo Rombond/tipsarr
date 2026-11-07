@@ -12,4 +12,7 @@ const (
 	SettingOIDCClientSecret = "oidc.client_secret"
 	SettingOIDCAdminGroup   = "oidc.admin_group"
 	SettingOIDCGroupsClaim  = "oidc.groups_claim"
+	// SettingOIDCUsernameClaim is the ID token / userinfo claim matched to the Jellyfin username.
+	SettingOIDCUsernameClaim = "oidc.username_claim"
+	DefaultUsernameClaim     = "preferred_username"
 )

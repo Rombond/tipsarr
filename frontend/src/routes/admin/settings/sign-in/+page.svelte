@@ -17,6 +17,9 @@
 	let ssoSecret = $state('');
 	let ssoGroup = $state('');
 	let ssoClaim = $state('');
+	let ssoUserClaim = $state('');
+	// sign-in, directory and credential settings need the admin role, not just the settings permission
+	const locked = $derived(!auth.isAdmin);
 	let ssoBusy = $state(false);
 	const callbackUrl = $derived(`${location.origin}/api/v1/auth/oidc/callback`);
 
@@ -26,6 +29,7 @@
 		ssoClientId = settings.oidcClientId;
 		ssoGroup = settings.oidcAdminGroup;
 		ssoClaim = settings.oidcGroupsClaim;
+		ssoUserClaim = settings.oidcUsernameClaim;
 	});
 
 	async function saveSso(e: SubmitEvent) {
@@ -39,6 +43,7 @@
 						oidcClientId: ssoClientId.trim(),
 						oidcAdminGroup: ssoGroup.trim(),
 						oidcGroupsClaim: ssoClaim.trim(),
+						oidcUsernameClaim: ssoUserClaim.trim(),
 						...(ssoSecret.trim() ? { oidcClientSecret: ssoSecret.trim() } : {}),
 					},
 				}),
@@ -107,6 +112,9 @@
 </script>
 
 {#if settings}
+	{#if locked}
+		<p class="text-sm text-muted-foreground">{t('settings.signin_admin_only')}</p>
+	{/if}
 	<Card>
 		<CardHeader>
 			<CardTitle>{t('settings.sso_title')}</CardTitle>
@@ -118,15 +126,18 @@
 				<code class="break-all rounded bg-muted p-2">{callbackUrl}</code>
 			</div>
 			<form class="grid gap-3 sm:grid-cols-2" onsubmit={saveSso}>
+				<fieldset class="contents" disabled={locked}>
 				<label class="grid gap-1 text-sm sm:col-span-2">{t('settings.sso_issuer')}<Input bind:value={ssoIssuer} placeholder="https://auth.example.org" type="url" autocomplete="off" /></label>
 				<label class="grid gap-1 text-sm">{t('settings.sso_client_id')}<Input bind:value={ssoClientId} placeholder="tipsarr" autocomplete="off" /></label>
 				<label class="grid gap-1 text-sm">{t('settings.sso_secret')}<Input bind:value={ssoSecret} type="password" autocomplete="off" placeholder={settings.oidcClientSecretConfigured ? t('settings.sso_secret_saved') : ''} /></label>
 				<label class="grid gap-1 text-sm">{t('settings.sso_group')}<Input bind:value={ssoGroup} placeholder="tipsarr-admins" autocomplete="off" /></label>
 				<label class="grid gap-1 text-sm">{t('settings.sso_claim')}<Input bind:value={ssoClaim} placeholder="groups" autocomplete="off" /></label>
+				<label class="grid gap-1 text-sm sm:col-span-2">{t('settings.sso_username_claim')}<Input bind:value={ssoUserClaim} placeholder="preferred_username" autocomplete="off" /><span class="text-xs text-muted-foreground">{t('settings.sso_username_claim_hint')}</span></label>
 				<div class="flex items-center gap-3 sm:col-span-2">
 					<Button type="submit" disabled={ssoBusy}>{ssoBusy ? t('common.saving') : t('common.save')}</Button>
 					<span class="text-xs text-muted-foreground">{t('settings.sso_fallback')} <code>/login?password=1</code></span>
 				</div>
+				</fieldset>
 			</form>
 		</CardContent>
 	</Card>
@@ -138,6 +149,7 @@
 		</CardHeader>
 		<CardContent>
 			<form class="grid gap-3 sm:grid-cols-2" onsubmit={saveLdap}>
+				<fieldset class="contents" disabled={locked}>
 				<label class="grid gap-1 text-sm sm:col-span-2">{t('settings.ldap_url')}<Input bind:value={ldapUrl} placeholder="ldap://192.168.2.247:3890" autocomplete="off" /></label>
 				<label class="grid gap-1 text-sm">{t('settings.ldap_bind')}<Input bind:value={ldapBindDn} placeholder="uid=svc_ldap,ou=people,dc=example,dc=com" autocomplete="off" /></label>
 				<label class="grid gap-1 text-sm">{t('settings.ldap_password')}<Input bind:value={ldapPassword} type="password" autocomplete="off" placeholder={settings.ldapBindPasswordConfigured ? t('settings.sso_secret_saved') : ''} /></label>
@@ -148,6 +160,7 @@
 						<Button type="button" variant="outline" disabled={ldapBusy} onclick={importLdap}><DownloadIcon /> {t('settings.ldap_import')}</Button>
 					{/if}
 				</div>
+				</fieldset>
 			</form>
 		</CardContent>
 	</Card>

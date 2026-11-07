@@ -2182,6 +2182,9 @@ components:
         oidcIssuer:
           description: OpenID Connect provider (Authelia), e.g. https://auth.example.org
           type: string
+        oidcUsernameClaim:
+          description: Claim matched exactly (case included) to the Jellyfin username, default preferred_username
+          type: string
         pushDailyQuota:
           description: Pushes per day the relay allows a public key; 0 = unlimited or unknown
           format: int64
@@ -2247,6 +2250,7 @@ components:
         - oidcClientSecretConfigured
         - oidcAdminGroup
         - oidcGroupsClaim
+        - oidcUsernameClaim
         - ldapUrl
         - ldapBindDn
         - ldapBindPasswordConfigured
@@ -2838,6 +2842,9 @@ components:
           type: string
         oidcIssuer:
           description: Empty string turns single sign-on off. The provider is contacted when saving
+          type: string
+        oidcUsernameClaim:
+          description: Empty string = preferred_username
           type: string
         pushEnabled:
           description: Needs the relay address and key; turning it on with either missing is refused
@@ -5828,12 +5835,12 @@ paths:
           schema:
             description: "The shared secret (preferred: a header does not end up in proxy and access logs)"
             type: string
-        - description: "The same secret in the address: still accepted so existing set-ups keep working, but addresses are logged"
+        - description: "Deprecated (will be removed in a future major version): the same secret in the address, still accepted so existing set-ups keep working, but addresses end up in logs"
           explode: false
           in: query
           name: token
           schema:
-            description: "The same secret in the address: still accepted so existing set-ups keep working, but addresses are logged"
+            description: "Deprecated (will be removed in a future major version): the same secret in the address, still accepted so existing set-ups keep working, but addresses end up in logs"
             type: string
       requestBody:
         content:

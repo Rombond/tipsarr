@@ -51,7 +51,7 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 		_ = json.NewDecoder(r.Body).Decode(&in)
 		switch {
 		case in.Username == "alice" && in.Pw == "secret":
-			_, _ = w.Write([]byte(`{"AccessToken":"t","User":{"Id":"aaaaaaaabbbbccccddddeeeeeeeeeeee","Name":"alice","Policy":{"IsAdministrator":true}}}`))
+			_, _ = w.Write([]byte(`{"AccessToken":"t","User":{"Id":"aaaaaaaabbbbccccddddeeeeeeeeeeee","Name":"alice","Policy":{"IsAdministrator":` + strconv.FormatBool(!jfAliceDemoted.Load()) + `}}}`))
 		case in.Username == "bob" && in.Pw == "hunter2":
 			_, _ = w.Write([]byte(`{"AccessToken":"t","User":{"Id":"bbbbbbbbbbbbccccddddeeeeeeeeeeee","Name":"bob","Policy":{"IsAdministrator":false}}}`))
 		default:
@@ -98,7 +98,7 @@ func fakeJellyfin(t *testing.T) *httptest.Server {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		_, _ = w.Write([]byte(`{"Id":"` + id + `","Name":"` + name + `","Policy":{"IsAdministrator":` + strconv.FormatBool(id == aliceID) + `,"IsDisabled":` + strconv.FormatBool(jfDisabled.Load() == id) + `}}`))
+		_, _ = w.Write([]byte(`{"Id":"` + id + `","Name":"` + name + `","Policy":{"IsAdministrator":` + strconv.FormatBool(id == aliceID && !jfAliceDemoted.Load()) + `,"IsDisabled":` + strconv.FormatBool(jfDisabled.Load() == id) + `}}`))
 	}))
 	// Playback Reporting plugin: a few plays, newest rowid 4; only fixed queries are expected
 	mux.HandleFunc("POST /user_usage_stats/submit_custom_query", keyed(func(w http.ResponseWriter, r *http.Request) {
@@ -195,6 +195,9 @@ var jfBoxed atomic.Bool
 
 // jfDisabled is the id of the one fake Jellyfin user currently reported as disabled.
 var jfDisabled atomic.Value
+
+// jfAliceDemoted: Jellyfin no longer makes alice an administrator.
+var jfAliceDemoted atomic.Bool
 
 func init() { jfDisabled.Store("") }
 
@@ -433,7 +436,7 @@ func newEnvOpts(t *testing.T, dryRun bool, setupToken string, demoMode bool) *en
 	issueSvc.SetArr(reqs)
 	authSvc.SetRecheckEvery(0) // tests: ask the fake Jellyfin about the account on every request
 	h, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issueSvc, Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, Hub: hub, Notify: notifier, Push: pusher,
+		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issueSvc, Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: testLimiter(st), SetupToken: setupToken, SecureCookies: envSecureCookies, Hub: hub, Notify: notifier, Push: pusher,
 		DryRun: dryRun, Demo: demoMode, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)
@@ -834,4 +837,11 @@ func TestHistorySyncAndWebhook(t *testing.T) {
 	if resp, _ := call(t, app, "POST", settings.WebhookPath, `{"NotificationType":"ItemAdded"}`); resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("webhook = %d", resp.StatusCode)
 	}
+}
+
+// testLimiter is the production limiter without the 1 s pause after a failure.
+func testLimiter(st *store.Store) *auth.Limiter {
+	l := auth.NewLimiter(st)
+	l.FailWait = 0
+	return l
 }
