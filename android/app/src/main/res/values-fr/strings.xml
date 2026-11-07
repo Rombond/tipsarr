@@ -343,7 +343,7 @@
     <string name="m_library_genres_pick">Choisir les genres</string>
     <string name="m_library_genres_search">Rechercher un genre</string>
     <string name="m_library_grid">Vue grille</string>
-    <string name="m_library_hidden_hint">Les titres marqués « pas intéressé ».</string>
+    <string name="m_library_hidden_hint">Les titres marqués « pas intéressé(e) ».</string>
     <string name="m_library_hidden_title">Masqués des suggestions</string>
     <string name="m_library_list">Vue liste</string>
     <string name="m_library_remove">Retirer</string>
@@ -413,7 +413,7 @@
     <string name="m_search_sort_relevance">Pertinence</string>
     <string name="m_search_start">Cherche un film, une série ou une personne</string>
     <string name="m_session_expired_body">Ta session a expiré. Reconnecte-toi pour reprendre là où tu en étais.</string>
-    <string name="m_session_expired_title">Tu as été déconnecté</string>
+    <string name="m_session_expired_title">Tu as été déconnecté(e)</string>
     <string name="m_session_faceid_signin">Se connecter par biométrie</string>
     <string name="m_session_sign_in">Se connecter</string>
     <string name="m_session_signing_in_faceid">Connexion…</string>
@@ -510,8 +510,8 @@
     <string name="media_dry_run_nothing_sent">simulation : rien n’est envoyé</string>
     <string name="media_in_radarr">Dans Radarr</string>
     <string name="media_no_image_title">%1$s</string>
-    <string name="media_not_interested">Pas intéressé</string>
-    <string name="media_not_interested_hint">Pas intéressé : masquer de mes suggestions</string>
+    <string name="media_not_interested">Pas intéressé(e)</string>
+    <string name="media_not_interested_hint">Pas intéressé(e) : masquer de mes suggestions</string>
     <string name="media_partial">Partiel</string>
     <string name="media_partially_available">Partiellement disponible</string>
     <string name="media_request">Demander</string>
@@ -603,11 +603,11 @@
     <string name="profile_device_sign_out">Déconnecter</string>
     <string name="profile_device_signed_out">Appareil déconnecté.</string>
     <string name="profile_device_web">Navigateur web</string>
-    <string name="profile_devices_desc">Navigateurs et apps où tu es connecté. Déconnecter un appareil termine sa session : il devra se reconnecter.</string>
+    <string name="profile_devices_desc">Navigateurs et apps où tu es connecté(e). Déconnecter un appareil termine sa session : il devra se reconnecter.</string>
     <string name="profile_devices_sign_out_others">Déconnecter partout ailleurs</string>
-    <string name="profile_devices_signed_out_others">Déconnecté partout ailleurs.</string>
+    <string name="profile_devices_signed_out_others">Déconnecté(e) partout ailleurs.</string>
     <string name="profile_devices_title">Appareils connectés</string>
-    <string name="profile_hidden_desc">Les titres que tu as marqués « pas intéressé ».</string>
+    <string name="profile_hidden_desc">Les titres que tu as marqués « pas intéressé(e) ».</string>
     <string name="profile_hidden_title">Masqués de mes suggestions</string>
     <string name="profile_history_sources">Tes recommandations utilisent aussi l’historique de visionnage de %1$s (réglé par un administrateur). C’est pour ça que Découvrir peut montrer des titres que tu n’as pas vus toi-même.</string>
     <string name="profile_language">Langue</string>

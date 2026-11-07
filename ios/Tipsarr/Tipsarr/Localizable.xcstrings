@@ -5507,7 +5507,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les titres marqués « pas intéressé »."
+            "value": "Les titres marqués « pas intéressé(e) »."
           }
         }
       }
@@ -6631,7 +6631,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu as été déconnecté"
+            "value": "Tu as été déconnecté(e)"
           }
         }
       }
@@ -8184,7 +8184,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pas intéressé"
+            "value": "Pas intéressé(e)"
           }
         }
       }
@@ -8200,7 +8200,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pas intéressé : masquer de mes suggestions"
+            "value": "Pas intéressé(e) : masquer de mes suggestions"
           }
         }
       }
@@ -9676,7 +9676,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Navigateurs et apps où tu es connecté. Déconnecter un appareil termine sa session : il devra se reconnecter."
+            "value": "Navigateurs et apps où tu es connecté(e). Déconnecter un appareil termine sa session : il devra se reconnecter."
           }
         }
       }
@@ -9708,7 +9708,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Déconnecté partout ailleurs."
+            "value": "Déconnecté(e) partout ailleurs."
           }
         }
       }
@@ -9740,7 +9740,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les titres que tu as marqués « pas intéressé »."
+            "value": "Les titres que tu as marqués « pas intéressé(e) »."
           }
         }
       }
