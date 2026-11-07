@@ -104,9 +104,6 @@ var blocked = []struct {
 	{http.MethodPost, regexp.MustCompile(`^/api/v1/admin/ldap/import-jellyfin$`)},
 	{http.MethodPost, regexp.MustCompile(`^/api/v1/admin/teasers/files/test$`)},
 	{http.MethodPost, regexp.MustCompile(`^/api/v1/admin/sync/(teaser-pool|ytdlp-update|trailer-files-sync)$`)},
-	{http.MethodPost, regexp.MustCompile(`^/api/v1/admin/users/import$`)},
-	{http.MethodPost, regexp.MustCompile(`^/api/v1/me/avatar$`)},
-	{http.MethodPut, regexp.MustCompile(`^/api/v1/me/devices/current$`)},
 	{http.MethodGet, regexp.MustCompile(`^/api/v1/auth/oidc/`)},
 }
 
