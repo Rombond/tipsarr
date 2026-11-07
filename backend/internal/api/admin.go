@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/Rombond/tipsarr/backend/internal/demo"
 	neturl "net/url"
 
 	"context"
@@ -172,6 +173,11 @@ func registerAdmin(api huma.API, d Deps) {
 	}, func(ctx context.Context, in *updateSettingsInput) (*settingsOutput, error) {
 		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
 			return nil, err
+		}
+		if d.Demo {
+			if err := demoSettings(in); err != nil {
+				return nil, err
+			}
 		}
 		if in.Body.TMDBKey != nil {
 			if err := d.Store.SetSetting(ctx, auth.SettingTMDBKey, strings.TrimSpace(*in.Body.TMDBKey)); err != nil {
@@ -422,4 +428,17 @@ func webhookSecret(ctx context.Context, d Deps) (string, error) {
 	}
 	secret = hex.EncodeToString(raw)
 	return secret, d.Store.SetSetting(ctx, settingWebhookSecret, secret)
+}
+
+// demoSettings applies the demo rules to a settings update: the TMDB key, the public address and the Jellyfin key
+// are locked (silently kept), and turning on anything that would contact another service is refused.
+func demoSettings(in *updateSettingsInput) error {
+	b := &in.Body
+	b.TMDBKey, b.AppPublicURL, b.JellyfinAPIKey = nil, nil, nil
+	on := func(p *bool) bool { return p != nil && *p }
+	set := func(p *string) bool { return p != nil && strings.TrimSpace(*p) != "" }
+	if on(b.PushEnabled) || on(b.TeasersFilesEnabled) || set(b.LDAPURL) || set(b.OIDCIssuer) {
+		return fail(http.StatusForbidden, demo.ErrorCode, demo.RefusalDetail)
+	}
+	return nil
 }

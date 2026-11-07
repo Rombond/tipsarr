@@ -1,0 +1,32 @@
+# Public Tipsarr demo: one throwaway Tipsarr per visitor, deleted when the session ends. See README.md next to this file.
+#
+#   docker build -f Dockerfile.demo -t tipsarr-demo .
+#   TMDB_API_KEY=... docker compose -f deployments/demo/docker-compose.yml up -d
+services:
+  tipsarr-demo:
+    image: tipsarr-demo:latest
+    container_name: tipsarr-demo
+    restart: unless-stopped
+    ports:
+      - '8080:8080'            # public: put a reverse proxy (TLS) in front
+      - '127.0.0.1:9090:9090'  # /healthz and /metrics: keep private
+    environment:
+      TMDB_API_KEY: ${TMDB_API_KEY:?set TMDB_API_KEY}   # never written into a sandbox; only the gateway's proxy holds it
+      DEMO_PUBLIC_URL: ${DEMO_PUBLIC_URL:-}               # e.g. https://demo.example.org (shown in links)
+      DEMO_TRUSTED_PROXIES: ${DEMO_TRUSTED_PROXIES:-172.16.0.0/12}  # proxies whose X-Forwarded-For is believed
+      DEMO_COOKIE_SECURE: 'true'
+      DEMO_WARM: 3
+      DEMO_MAX_SESSIONS: 20
+      DEMO_IDLE_TIMEOUT: 30m
+      DEMO_MAX_LIFETIME: 60m
+      DEMO_SESSIONS_PER_IP: 5
+      DEMO_IP_WINDOW: 1h
+      DEMO_TMDB_RATE: 5            # TMDB calls per second, for the whole demo
+      DEMO_CHILD_MEMORY: 160MiB    # GOMEMLIMIT of each sandbox
+    volumes:
+      - tipsarr-demo-data:/data    # template DB + shared TMDB cache; sandboxes are wiped at start
+    mem_limit: 4g
+    pids_limit: 2048
+
+volumes:
+  tipsarr-demo-data:

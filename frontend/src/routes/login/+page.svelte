@@ -2,16 +2,21 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import LoginForm from '$lib/components/auth/login-form.svelte';
 	import SetupForm from '$lib/components/auth/setup-form.svelte';
+	import DemoLogin from '$lib/components/auth/demo-login.svelte';
+	import DemoBanner from '$lib/components/layout/demo-banner.svelte';
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 	import { t, i18n, LOCALES, type Locale } from '$lib/i18n/index.svelte';
 </script>
 
+<DemoBanner />
 <div class="flex min-h-svh flex-col items-center justify-center gap-6 bg-[radial-gradient(ellipse_at_top,var(--accent),transparent_60%)] px-4">
 	<div class="flex items-center gap-2 font-bold text-2xl">
 		<span class="inline-flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">T</span>
 		Tipsarr
 	</div>
-	{#if auth.configured === false}
+	{#if auth.demo}
+		<DemoLogin />
+	{:else if auth.configured === false}
 		<SetupForm />
 	{:else}
 		<LoginForm />

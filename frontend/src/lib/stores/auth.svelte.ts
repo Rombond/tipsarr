@@ -9,6 +9,8 @@ class AuthState {
 	/** false until setup has been completed (Jellyfin URL saved). */
 	configured: boolean | null = $state(null);
 	dryRun = $state(false);
+	/** a throwaway public demo sandbox: one-click sign-in, banner */
+	demo = $state(false);
 	/** bumped when a picture changes so browsers refetch it */
 	avatarV = $state(0);
 	/** the setup call needs the token from the server log (opt-in on the server) */
@@ -75,6 +77,7 @@ class AuthState {
 			this.configured = setup.configured;
 			this.setupTokenRequired = setup.tokenRequired;
 			this.dryRun = st.dryRun;
+			this.demo = st.demo;
 			i18n.setAppDefault(st.defaultLanguage);
 		} catch {
 			this.configured = null;
@@ -90,6 +93,12 @@ class AuthState {
 
 	async login(username: string, password: string) {
 		this.user = await unwrap(api.POST('/auth/login', { body: { username, password } }));
+		this.status = 'authenticated';
+	}
+
+	/** demo only: sign in as the seeded admin or plain user */
+	async demoLogin(role: 'admin' | 'user') {
+		this.user = await unwrap(api.POST('/auth/demo', { body: { role } }));
 		this.status = 'authenticated';
 	}
 

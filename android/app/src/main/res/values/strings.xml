@@ -24,6 +24,8 @@
     <string name="apikey_title">API key for dashboards</string>
     <string name="apikey_toggle">Turn the key on</string>
     <string name="apikey_usage">Send it as the X-Api-Key header, never in the address (addresses end up in proxy logs). Example: GET /api/v1/requests/counts</string>
+    <string name="banner_demo">Demo: your changes disappear when your session ends</string>
+    <string name="banner_demo_left">%1$s min left</string>
     <string name="banner_dry_run">Dry-run</string>
     <string name="banner_dry_run_hint">Requests are recorded and move through approval, but nothing is sent to Radarr or Sonarr. Set TIPSARR_DRY_RUN=false to go live.</string>
     <string name="banner_dry_run_long">nothing is sent to Radarr or Sonarr</string>
@@ -108,6 +110,8 @@
     <string name="error_bad_state">The request is not in a state that allows this.</string>
     <string name="error_bad_title">A title is required.</string>
     <string name="error_chart_not_found">No chart is stored for that weekend.</string>
+    <string name="error_demo_disabled">Disabled in the demo: this would contact another service.</string>
+    <string name="error_demo_expired">Your demo session has ended. Reload the page to start a new one.</string>
     <string name="error_duplicate_request">This title already has an active request.</string>
     <string name="error_forbidden">You are not allowed to do this.</string>
     <string name="error_invalid_credentials">Invalid username or password.</string>
@@ -253,6 +257,10 @@
     <string name="library_year_from">From year</string>
     <string name="library_year_to">To year</string>
     <string name="loading_redirect">Redirecting to login…</string>
+    <string name="login_demo_admin">Sign in as admin</string>
+    <string name="login_demo_desc">Pick a role, no password needed. Everything you do stays in your own sandbox.</string>
+    <string name="login_demo_title">Try the demo</string>
+    <string name="login_demo_user">Sign in as user</string>
     <string name="login_desc">Use your Jellyfin account.</string>
     <string name="login_or_password">or use your Jellyfin password</string>
     <string name="login_other_method">Sign in with a Jellyfin account</string>

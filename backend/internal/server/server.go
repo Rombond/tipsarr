@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Rombond/tipsarr/backend/internal/api"
+	"github.com/Rombond/tipsarr/backend/internal/demo"
 	"github.com/Rombond/tipsarr/backend/internal/web"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/go-chi/chi/v5"
@@ -17,6 +18,9 @@ func New(d api.Deps) (http.Handler, huma.API) {
 	r.Use(middleware.RequestID, middleware.RealIP, middleware.Recoverer, securityHeaders)
 	a := api.NewHuma(r, d)
 	r.NotFound(web.Handler().ServeHTTP)
+	if d.Demo {
+		return demo.Guard(r), a
+	}
 	return r, a
 }
 

@@ -24,6 +24,8 @@
     <string name="apikey_title">Clé API pour les tableaux de bord</string>
     <string name="apikey_toggle">Activer la clé</string>
     <string name="apikey_usage">Envoie-la dans l’en-tête X-Api-Key, jamais dans l’adresse (les adresses finissent dans les journaux du proxy). Exemple : GET /api/v1/requests/counts</string>
+    <string name="banner_demo">Démo : tes changements disparaissent à la fin de ta session</string>
+    <string name="banner_demo_left">encore %1$s min</string>
     <string name="banner_dry_run">Simulation</string>
     <string name="banner_dry_run_hint">Les demandes sont enregistrées et suivent l’approbation, mais rien n’est envoyé à Radarr ni Sonarr. Définis TIPSARR_DRY_RUN=false pour passer en réel.</string>
     <string name="banner_dry_run_long">rien n’est envoyé à Radarr ni Sonarr</string>
@@ -108,6 +110,8 @@
     <string name="error_bad_state">La demande n’est pas dans un état qui le permet.</string>
     <string name="error_bad_title">Un titre est requis.</string>
     <string name="error_chart_not_found">Aucun classement n’est enregistré pour ce week-end.</string>
+    <string name="error_demo_disabled">Désactivé dans la démo : cette action contacterait un autre service.</string>
+    <string name="error_demo_expired">Ta session de démo est terminée. Recharge la page pour en commencer une nouvelle.</string>
     <string name="error_duplicate_request">Ce titre a déjà une demande en cours.</string>
     <string name="error_forbidden">Tu n’as pas le droit de faire ça.</string>
     <string name="error_invalid_credentials">Nom d’utilisateur ou mot de passe incorrect.</string>
@@ -253,6 +257,10 @@
     <string name="library_year_from">Depuis l’année</string>
     <string name="library_year_to">Jusqu’à l’année</string>
     <string name="loading_redirect">Redirection vers la connexion…</string>
+    <string name="login_demo_admin">Entrer comme admin</string>
+    <string name="login_demo_desc">Choisis un rôle, pas besoin de mot de passe. Tout ce que tu fais reste dans ton propre bac à sable.</string>
+    <string name="login_demo_title">Essaie la démo</string>
+    <string name="login_demo_user">Entrer comme utilisateur</string>
     <string name="login_desc">Utilise ton compte Jellyfin.</string>
     <string name="login_or_password">ou utilise ton mot de passe Jellyfin</string>
     <string name="login_other_method">Se connecter avec un compte Jellyfin</string>

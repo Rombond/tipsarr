@@ -19,6 +19,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/avatars"
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/config"
+	"github.com/Rombond/tipsarr/backend/internal/demo"
 	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/i18n"
 	"github.com/Rombond/tipsarr/backend/internal/issues"
@@ -60,6 +61,14 @@ func run(cfg config.Config) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	dm := demo.FromEnv()
+	if dm.Enabled {
+		// a public throwaway sandbox: nothing may leave the process but calls to the demo gateway
+		cfg.DryRun = true
+		demo.Restrict(dm.AllowDial)
+		avatars.RestrictDial(demo.DialControl(dm.AllowDial))
+		slog.Warn("DEMO MODE: dry-run forced, outbound connections limited", "allowed", dm.AllowDial)
+	}
 	if err := dropPrivileges(cfg.ConfigDir); err != nil {
 		return err
 	}
@@ -82,6 +91,11 @@ func run(cfg config.Config) error {
 		}
 	}
 
+	if dm.Enabled {
+		if err := demoLocks(ctx, st, dm, cfg.JellyfinURL); err != nil {
+			return err
+		}
+	}
 	lib := library.New(st)
 	jm := jobs.New(st)
 	jm.Register(jobs.Job{Name: "library-sync", Every: 6 * time.Hour, InitialDelay: 10 * time.Second, Run: func(ctx context.Context) (i18n.Msg, error) {
@@ -106,7 +120,11 @@ func run(cfg config.Config) error {
 	mediaSvc := media.New(st, os.Getenv("TIPSARR_TMDB_URL"))
 	notifier := notify.New(st, cfg.DryRun)
 	pusher := push.New(st, cfg.DryRun)
-	notifier.SetPusher(pusher)
+	if dm.Enabled {
+		notifier.Offline = true // webhooks can be written and previewed, never sent; no push either
+	} else {
+		notifier.SetPusher(pusher)
+	}
 	sugg := suggestions.New(st, mediaSvc, hub)
 	// Trailer files come from the optional trailer-resolver sidecar, which writes them into a shared folder that is mounted
 	// read-only here (TIPSARR_TRAILERS_DIR, default <config>/trailers). The feature is off until an admin turns it on.
@@ -115,10 +133,12 @@ func run(cfg config.Config) error {
 		trailerDir = filepath.Join(cfg.ConfigDir, "trailers")
 	}
 	trailerFiles := trailers.New(st, trailerDir)
-	jm.Register(jobs.Job{Name: "ytdlp-update", Every: 12 * time.Hour, InitialDelay: 10 * time.Minute, Run: trailerFiles.UpdateTools})
 	teaserSvc := teasers.New(st, mediaSvc, sugg, trailerFiles)
-	jm.Register(jobs.Job{Name: "teaser-pool", Every: 2 * time.Hour, InitialDelay: 2 * time.Minute, Run: teaserSvc.RefreshPool})
-	jm.Register(jobs.Job{Name: "trailer-files-sync", Every: time.Minute, InitialDelay: 45 * time.Second, Quiet: true, Run: trailerFiles.Sync})
+	if !dm.Enabled { // heavy or outbound-only jobs: never in a demo sandbox
+		jm.Register(jobs.Job{Name: "ytdlp-update", Every: 12 * time.Hour, InitialDelay: 10 * time.Minute, Run: trailerFiles.UpdateTools})
+		jm.Register(jobs.Job{Name: "teaser-pool", Every: 2 * time.Hour, InitialDelay: 2 * time.Minute, Run: teaserSvc.RefreshPool})
+		jm.Register(jobs.Job{Name: "trailer-files-sync", Every: time.Minute, InitialDelay: 45 * time.Second, Quiet: true, Run: trailerFiles.Sync})
+	}
 	lib.OnHistoryChanged = sugg.QueueRefresh
 	box := boxoffice.New(st, mediaSvc, os.Getenv("TIPSARR_BOXOFFICE_URL"))
 	jm.Register(jobs.Job{Name: "boxoffice-refresh", Every: 12 * time.Hour, InitialDelay: time.Minute, Run: box.Refresh})
@@ -166,7 +186,7 @@ func run(cfg config.Config) error {
 
 	handler, _ := server.New(api.Deps{
 		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issueSvc, Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier, Push: pusher,
-		DryRun: cfg.DryRun, ConfigDir: cfg.ConfigDir, ImageBaseURL: os.Getenv("TIPSARR_TMDB_IMAGE_URL"),
+		DryRun: cfg.DryRun, Demo: dm.Enabled, ConfigDir: cfg.ConfigDir, ImageBaseURL: os.Getenv("TIPSARR_TMDB_IMAGE_URL"),
 	})
 	if cfg.DryRun {
 		slog.Warn("DRY-RUN is ON: nothing will be sent to Radarr/Sonarr (set TIPSARR_DRY_RUN=false to disable)")
@@ -210,4 +230,19 @@ func setupLogging(level string) {
 	var l slog.Level
 	_ = l.UnmarshalText([]byte(level))
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: l})))
+}
+
+// demoLocks pins the settings a demo visitor may not change: the TMDB key (the gateway's proxy holds the real one),
+// the Jellyfin key and the public address.
+func demoLocks(ctx context.Context, st *store.Store, dm demo.Config, jellyfinURL string) error {
+	locked := map[string]string{auth.SettingTMDBKey: "via-demo-gateway", auth.SettingJellyfinAPIKey: demo.JellyfinAPIKey, notify.SettingPublicURL: dm.PublicURL}
+	if jellyfinURL != "" {
+		locked[auth.SettingJellyfinURL] = jellyfinURL
+	}
+	for k, v := range locked {
+		if err := st.SetSetting(ctx, k, v); err != nil {
+			return err
+		}
+	}
+	return nil
 }

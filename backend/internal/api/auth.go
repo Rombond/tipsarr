@@ -9,6 +9,7 @@ import (
 
 	"github.com/Rombond/tipsarr/backend/internal/auth"
 	"github.com/Rombond/tipsarr/backend/internal/clients/jellyfin"
+	"github.com/Rombond/tipsarr/backend/internal/demo"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -47,6 +48,14 @@ type tokenBody struct {
 
 type tokenOutput struct {
 	Body tokenBody
+}
+
+type demoLoginInput struct {
+	UserAgent string `header:"User-Agent" hidden:"true"`
+	Proto     string `header:"X-Forwarded-Proto" hidden:"true"`
+	Body      struct {
+		Role string `json:"role" enum:"admin,user" doc:"admin: every right; user: a plain account"`
+	}
 }
 
 type logoutOutput struct {
@@ -100,6 +109,29 @@ func registerAuth(api huma.API, d Deps) {
 				Secure: in.Proto == "https",
 				MaxAge: int(auth.SessionTTL.Seconds()),
 			},
+			Body: user,
+		}, nil
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "demoLogin", Method: http.MethodPost, Path: "/auth/demo",
+		Summary: "One-click sign-in of the public demo", Tags: []string{"auth"}, Errors: append(loginErrors, http.StatusNotFound),
+		Description: "Only on a demo sandbox (status.demo): signs in as the seeded admin or as a plain user, without a password.",
+	}, func(ctx context.Context, in *demoLoginInput) (*loginOutput, error) {
+		if !d.Demo {
+			return nil, fail(404, "not_found", "not a demo server")
+		}
+		name := demo.PlainUser
+		if in.Body.Role == "admin" {
+			name = demo.AdminUser
+		}
+		token, user, err := signIn(ctx, d, name, demo.Password, in.UserAgent, auth.Device{Platform: "web"})
+		if err != nil {
+			return nil, err
+		}
+		return &loginOutput{
+			SetCookie: http.Cookie{Name: auth.CookieName, Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode,
+				Secure: in.Proto == "https", MaxAge: int(auth.SessionTTL.Seconds())},
 			Body: user,
 		}, nil
 	})

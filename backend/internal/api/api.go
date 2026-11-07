@@ -68,6 +68,8 @@ type Deps struct {
 	Jobs          *jobs.Manager
 	DryRun        bool   // global: nothing is ever sent to Radarr/Sonarr
 	ConfigDir     string // image cache lives under here
+	// Demo: a throwaway public sandbox (TIPSARR_DEMO_MODE): see internal/demo.
+	Demo bool
 	// ImageBaseURL overrides the TMDB image host (tests).
 	ImageBaseURL string
 }

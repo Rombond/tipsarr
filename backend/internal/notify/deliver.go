@@ -24,6 +24,9 @@ import (
 )
 
 // SettingPublicURL is the address people open Tipsarr at; webhook links ({{ url }}) start with it.
+// ErrOffline is returned by Post in demo mode.
+var ErrOffline = errors.New("webhooks are offline in the demo")
+
 const SettingPublicURL = "app.public_url"
 
 // settingLanguage mirrors media.SettingDefaultLanguage (importing media here would make a cycle).
@@ -281,6 +284,9 @@ func ParseHeaders(raw string) []Header {
 
 // Post performs one POST. It returns an error for transport failures and non-2xx answers.
 func (s *Service) Post(ctx context.Context, m *Message) error {
+	if s.Offline {
+		return ErrOffline
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, m.URL, bytes.NewReader(m.Body))
 	if err != nil {
 		return err

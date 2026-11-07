@@ -1,0 +1,33 @@
+# Public demo: the demo gateway plus the Tipsarr binary it starts once per visitor. See deployments/demo/README.md.
+#   docker build -f Dockerfile.demo -t tipsarr-demo .
+FROM --platform=$BUILDPLATFORM node:25-alpine AS frontend
+WORKDIR /app/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+COPY locales/ /app/locales/
+RUN npm run build
+
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS backend
+ARG TARGETOS
+ARG TARGETARCH
+ARG VERSION=demo
+WORKDIR /app/backend
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+COPY backend/ ./
+COPY --from=frontend /app/frontend/build ./internal/web/dist
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w -X github.com/Rombond/tipsarr/backend/internal/api.Version=${VERSION}" -o /tipsarr ./cmd/tipsarr \
+ && CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /demo-gateway ./cmd/demo-gateway
+RUN mkdir /data-empty
+
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=backend /tipsarr /usr/local/bin/tipsarr
+COPY --from=backend /demo-gateway /usr/local/bin/demo-gateway
+COPY --from=backend --chown=65532:65532 /data-empty /data
+# The template database is built at the first start (it needs TMDB_API_KEY) and kept in /data with the shared TMDB cache.
+ENV DEMO_DATA_DIR=/data DEMO_TIPSARR_BIN=/usr/local/bin/tipsarr DEMO_LISTEN=:8080 DEMO_ADMIN_LISTEN=:9090
+VOLUME /data
+EXPOSE 8080 9090
+USER 65532:65532
+ENTRYPOINT ["/usr/local/bin/demo-gateway"]
