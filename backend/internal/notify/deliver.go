@@ -13,12 +13,14 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/Rombond/tipsarr/backend/internal/i18n"
+	"github.com/Rombond/tipsarr/backend/internal/netguard"
 	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
@@ -184,19 +186,40 @@ func (s *Service) deliverWithRetry(ctx context.Context, h store.Webhook, ev Even
 	slog.Warn("webhook delivery failed", "webhook", h.Name, "event", ev.Name, "err", err)
 }
 
-// targetsServarr reports whether rawURL's host:port is one of the configured Radarr/Sonarr instances.
+// targetsServarr reports whether rawURL reaches one of the configured Radarr/Sonarr instances: same
+// host name and port, or any common resolved address on the same port (default ports filled in), so
+// an alias, a literal IP or another name of the same box is refused too. Fails closed.
 func (s *Service) targetsServarr(ctx context.Context, rawURL string) bool {
-	target, err := url.Parse(rawURL)
-	if err != nil {
+	host, port, ok := netguard.HostPort(rawURL)
+	if !ok {
 		return true
 	}
 	instances, err := s.store.ListServarr(ctx)
 	if err != nil {
 		return true // fail closed
 	}
+	var targetIPs []netip.Addr
+	resolved := false
 	for _, in := range instances {
-		if u, err := url.Parse(in.URL); err == nil && strings.EqualFold(u.Host, target.Host) {
+		ih, ip, ok := netguard.HostPort(in.URL)
+		if !ok {
+			continue
+		}
+		if ip != port {
+			continue
+		}
+		if ih == host {
 			return true
+		}
+		if !resolved {
+			targetIPs, resolved = netguard.Resolve(ctx, host), true
+		}
+		for _, a := range netguard.Resolve(ctx, ih) {
+			for _, b := range targetIPs {
+				if a == b || (a.IsLoopback() && b.IsLoopback()) {
+					return true
+				}
+			}
 		}
 	}
 	return false
@@ -299,9 +322,51 @@ func (s *Service) Post(ctx context.Context, m *Message) error {
 	defer resp.Body.Close()
 	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
 	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("webhook answered HTTP %d", resp.StatusCode)
+		return &StatusError{Code: resp.StatusCode}
 	}
 	return nil
+}
+
+// StatusError is a non-2xx answer of the receiver.
+type StatusError struct{ Code int }
+
+func (e *StatusError) Error() string { return fmt.Sprintf("webhook answered HTTP %d", e.Code) }
+
+// FailureText is a safe description of a failed delivery for the admin UI: refused by the
+// outbound policy, timeout, unreachable or the HTTP status. Never the raw transport error, so the
+// test button cannot be used to map the network.
+func FailureText(err error) string {
+	var se *StatusError
+	switch {
+	case errors.As(err, &se):
+		return se.Error()
+	case errors.Is(err, ErrOffline):
+		return err.Error()
+	case errors.Is(err, ErrServarrTarget):
+		return err.Error()
+	}
+	switch netguard.Classify(err) {
+	case netguard.ClassRefused:
+		return "refused by the outbound policy (private or local address; an admin can allow it in the webhook settings)"
+	case netguard.ClassTimeout:
+		return "the receiver did not answer in time"
+	}
+	return "the receiver could not be reached"
+}
+
+// BlockedWebhooks lists saved webhooks whose (fixed) URL the outbound policy refuses now.
+func (s *Service) BlockedWebhooks(ctx context.Context) []store.Webhook {
+	hooks, err := s.store.ListWebhooks(ctx)
+	if err != nil {
+		return nil
+	}
+	var out []store.Webhook
+	for _, h := range hooks {
+		if !isTemplate(h.URL) && !s.Policy().Allowed(ctx, h.URL) {
+			out = append(out, h)
+		}
+	}
+	return out
 }
 
 // Deliver renders and performs one delivery (no retry).

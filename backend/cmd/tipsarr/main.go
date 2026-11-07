@@ -119,6 +119,10 @@ func run(cfg config.Config) error {
 	// TIPSARR_TMDB_URL, TIPSARR_TMDB_IMAGE_URL and TIPSARR_BOXOFFICE_URL point the server at fakes (see dev/README.md); unset = the real services.
 	mediaSvc := media.New(st, os.Getenv("TIPSARR_TMDB_URL"))
 	notifier := notify.New(st, cfg.DryRun)
+	for _, h := range notifier.BlockedWebhooks(ctx) {
+		slog.Warn("webhook points at a private or local address and will be refused: allow the host in Settings > Webhooks > Allowed internal hosts",
+			"webhook", h.Name, "url", h.URL)
+	}
 	pusher := push.New(st, cfg.DryRun)
 	if dm.Enabled {
 		notifier.Offline = true // webhooks can be written and previewed, never sent; no push either
