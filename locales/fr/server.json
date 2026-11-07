@@ -7,7 +7,7 @@
   "push.issue.created": "Nouveau signalement",
   "push.issue.comment": "Nouveau commentaire sur un signalement",
   "push.issue.resolved": "Signalement résolu",
-  "srv.job.skip.no_jellyfin_key": "aucune clé d’API Jellyfin enregistrée",
+  "srv.job.skip.no_jellyfin_key": "aucune clé API Jellyfin enregistrée",
   "srv.job.skip.playback_missing": "Playback Reporting n’est pas installé dans Jellyfin",
   "srv.job.skip.import_off": "l’import automatique est désactivé",
   "srv.job.interrupted": "interrompu par un redémarrage",

@@ -93,7 +93,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remontrer dans mes suggestions"
+            "value": "Réafficher dans mes suggestions"
           }
         }
       }
@@ -125,7 +125,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Masqué de vos suggestions"
+            "value": "Masqué de tes suggestions"
           }
         }
       }
@@ -141,7 +141,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "De retour dans vos suggestions"
+            "value": "De retour dans tes suggestions"
           }
         }
       }
@@ -157,7 +157,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ajouté à votre liste"
+            "value": "Ajouté à ta liste"
           }
         }
       }
@@ -173,7 +173,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Retiré de votre liste"
+            "value": "Retiré de ta liste"
           }
         }
       }
@@ -205,7 +205,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "À voir"
+            "value": "Ma liste"
           }
         }
       }
@@ -301,7 +301,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remplacer la clé ? L’ancienne cesse de fonctionner immédiatement : mettez à jour chaque tableau de bord qui l’utilise."
+            "value": "Remplacer la clé ? L’ancienne cesse de fonctionner immédiatement : mets à jour chaque tableau de bord qui l’utilise."
           }
         }
       }
@@ -333,7 +333,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Clé d’API pour les tableaux de bord"
+            "value": "Clé API pour les tableaux de bord"
           }
         }
       }
@@ -365,7 +365,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Envoyez-la dans l’en-tête X-Api-Key, jamais dans l’adresse (les adresses finissent dans les journaux du proxy). Exemple : GET /api/v1/requests/counts"
+            "value": "Envoie-la dans l’en-tête X-Api-Key, jamais dans l’adresse (les adresses finissent dans les journaux du proxy). Exemple : GET /api/v1/requests/counts"
           }
         }
       }
@@ -397,7 +397,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les demandes sont enregistrées et suivent l’approbation, mais rien n’est envoyé à Radarr ni Sonarr. Définissez TIPSARR_DRY_RUN=false pour passer en réel."
+            "value": "Les demandes sont enregistrées et suivent l’approbation, mais rien n’est envoyé à Radarr ni Sonarr. Définis TIPSARR_DRY_RUN=false pour passer en réel."
           }
         }
       }
@@ -445,7 +445,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choisissez un genre ou un mot-clé depuis la page d’un film ou d’une série."
+            "value": "Choisis un genre ou un mot-clé depuis la page d’un film ou d’une série."
           }
         }
       }
@@ -687,7 +687,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erreur : %@"
+            "value": "Erreur : %@"
           }
         }
       }
@@ -975,7 +975,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "(vous)"
+            "value": "(toi)"
           }
         }
       }
@@ -1376,7 +1376,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les titres les plus populaires de TMDB en ce moment, un score qui mêle vues, votes, listes de suivi et date de sortie. Bouge lentement : les mêmes titres restent un moment."
+            "value": "Les titres les plus populaires de TMDB en ce moment, un score qui mêle vues, votes, listes de suivi et date de sortie. Bouge lentement : les mêmes titres restent un moment."
           }
         }
       }
@@ -1536,7 +1536,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous ne pouvez pas demander en 4K. Choisissez un autre profil de qualité."
+            "value": "Tu ne peux pas demander en 4K. Choisis un autre profil de qualité."
           }
         }
       }
@@ -1744,7 +1744,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous n’avez pas le droit de faire cela."
+            "value": "Tu n’as pas le droit de faire ça."
           }
         }
       }
@@ -1776,7 +1776,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ce n'est pas un jeton push valide."
+            "value": "Ce n’est pas un jeton push valide."
           }
         }
       }
@@ -1792,7 +1792,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "L'adresse du relais doit commencer par http:// ou https://."
+            "value": "L’adresse du relais doit commencer par http:// ou https://."
           }
         }
       }
@@ -1856,7 +1856,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enregistrez d’abord une clé API Jellyfin dans les réglages."
+            "value": "Enregistre d’abord une clé API Jellyfin dans les Réglages."
           }
         }
       }
@@ -1936,7 +1936,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Veuillez vous connecter."
+            "value": "Connecte-toi."
           }
         }
       }
@@ -1952,7 +1952,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aucune instance Radarr ou Sonarr n'est configurée pour ce type de titre."
+            "value": "Aucune instance Radarr ou Sonarr n’est configurée pour ce type de titre."
           }
         }
       }
@@ -1968,7 +1968,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le push n'est disponible que dans les applications iOS et Android."
+            "value": "Les notifications push ne sont disponibles que dans les apps iOS et Android."
           }
         }
       }
@@ -2032,7 +2032,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Impossible de lire la configuration du fournisseur. Vérifiez l’adresse."
+            "value": "Impossible de lire la configuration du fournisseur. Vérifie l’adresse."
           }
         }
       }
@@ -2048,7 +2048,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous ne pouvez pas modifier vos propres permissions."
+            "value": "Tu ne peux pas modifier tes propres permissions."
           }
         }
       }
@@ -2064,7 +2064,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous ne pouvez pas changer votre propre rôle."
+            "value": "Tu ne peux pas changer ton propre rôle."
           }
         }
       }
@@ -2080,7 +2080,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous n’avez pas la permission de faire ça."
+            "value": "Tu n’as pas la permission de faire ça."
           }
         }
       }
@@ -2096,7 +2096,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "L'adresse publique doit commencer par http:// ou https://."
+            "value": "L’adresse publique doit commencer par http:// ou https://."
           }
         }
       }
@@ -2112,7 +2112,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Renseignez l'adresse et la clé du relais avant d'activer le push."
+            "value": "Renseigne l’adresse et la clé du relais avant d’activer les notifications push."
           }
         }
       }
@@ -2128,7 +2128,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous avez atteint votre limite de demandes pour le moment."
+            "value": "Tu as atteint ta limite de demandes pour le moment."
           }
         }
       }
@@ -2144,7 +2144,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Actualisé à l’instant, réessayez dans une minute."
+            "value": "Actualisé à l’instant, réessaie dans une minute."
           }
         }
       }
@@ -2160,7 +2160,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Saisissez à nouveau la clé API quand vous changez l’adresse."
+            "value": "Saisis à nouveau la clé API quand tu changes l’adresse."
           }
         }
       }
@@ -2192,7 +2192,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jeton d’installation requis : consultez le journal du serveur Tipsarr."
+            "value": "Jeton d’installation requis : consulte le journal du serveur Tipsarr."
           }
         }
       }
@@ -2240,7 +2240,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Veuillez vous reconnecter."
+            "value": "Reconnecte-toi."
           }
         }
       }
@@ -2256,7 +2256,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous n’avez pas le droit de faire cela."
+            "value": "Tu n’as pas le droit de faire ça."
           }
         }
       }
@@ -2304,7 +2304,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trop de requêtes. Réessayez dans un instant."
+            "value": "Trop de requêtes. Réessaie dans un instant."
           }
         }
       }
@@ -2368,7 +2368,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "TMDB n’a pas répondu. Réessayez dans un instant."
+            "value": "TMDB n’a pas répondu. Réessaie dans un instant."
           }
         }
       }
@@ -2384,7 +2384,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "La clé TMDB n’est pas configurée. Un administrateur peut l’ajouter dans les réglages."
+            "value": "La clé TMDB n’est pas configurée. Un administrateur peut l’ajouter dans les Réglages."
           }
         }
       }
@@ -2400,7 +2400,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trop de tentatives de connexion échouées. Réessayez dans quelques minutes."
+            "value": "Trop de tentatives de connexion échouées. Réessaie dans quelques minutes."
           }
         }
       }
@@ -2658,7 +2658,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le mode test est actif : rien n'a été envoyé à %@."
+            "value": "La simulation est active : rien n’a été envoyé à %@."
           }
         }
       }
@@ -2708,7 +2708,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recherche automatique, pas interactive : %1$@ ne prend qu'une version qu'il juge meilleure. Pour la même qualité, ouvre la fiche dans %1$@ et utilise la recherche interactive."
+            "value": "Recherche automatique, pas interactive : %1$@ ne prend qu’une version qu’il juge meilleure. Pour la même qualité, ouvre la fiche dans %1$@ et utilise la recherche interactive."
           }
         }
       }
@@ -2741,7 +2741,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tous les problèmes"
+            "value": "Tous les signalements"
           }
         }
       }
@@ -2773,7 +2773,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Supprimer ce problème et ses commentaires ?"
+            "value": "Supprimer ce signalement et ses commentaires ?"
           }
         }
       }
@@ -2789,7 +2789,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Décrivez le problème"
+            "value": "Décris le problème"
           }
         }
       }
@@ -2805,7 +2805,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Par exemple : les sous-titres français sont décalés après 30 minutes."
+            "value": "Par exemple : les sous-titres français sont décalés après 30 minutes."
           }
         }
       }
@@ -2821,7 +2821,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aucun problème ici. Signalez-en un depuis la page d’un film ou d’une série (menu ···)."
+            "value": "Aucun signalement ici. Signale un problème depuis la page d’un film ou d’une série (menu ···)."
           }
         }
       }
@@ -3029,7 +3029,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dites-nous ce qui ne va pas pour qu’on puisse le corriger. Les administrateurs sont prévenus."
+            "value": "Dis-nous ce qui ne va pas pour qu’on puisse le corriger. Les administrateurs sont prévenus."
           }
         }
       }
@@ -3161,7 +3161,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Signaler"
+            "value": "Envoyer le signalement"
           }
         }
       }
@@ -3177,7 +3177,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les problèmes que vous avez signalés sur des films et des séries."
+            "value": "Les problèmes que tu as signalés sur des films et des séries."
           }
         }
       }
@@ -3193,7 +3193,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les problèmes signalés par tout le monde. Les webhooks peuvent vous prévenir des nouveaux."
+            "value": "Les problèmes signalés par tout le monde. Les webhooks peuvent te prévenir des nouveaux."
           }
         }
       }
@@ -3225,7 +3225,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Problèmes"
+            "value": "Signalements"
           }
         }
       }
@@ -3241,7 +3241,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Problème signalé. Merci !"
+            "value": "Signalement envoyé. Merci !"
           }
         }
       }
@@ -3258,7 +3258,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ problème | %1$@ problèmes"
+            "value": "%1$@ signalement | %1$@ signalements"
           }
         }
       }
@@ -3274,7 +3274,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quel est le problème ?"
+            "value": "Quel est le problème ?"
           }
         }
       }
@@ -3452,7 +3452,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "La bibliothèque est vide. Lancez la synchro de la bibliothèque dans les Réglages."
+            "value": "La bibliothèque est vide. Lance la synchro de la bibliothèque dans les Réglages."
           }
         }
       }
@@ -3597,7 +3597,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Réservé aux admins, pour faire le ménage : les titres que personne n’a jamais lus, les plus anciens d’abord."
+            "value": "Réservé aux admins, pour faire le ménage : les titres que personne n’a jamais lus, les plus anciens d’abord."
           }
         }
       }
@@ -3855,7 +3855,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous l’avez vu"
+            "value": "Tu l’as vu"
           }
         }
       }
@@ -3903,7 +3903,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "De l’année"
+            "value": "Depuis l’année"
           }
         }
       }
@@ -3919,7 +3919,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "À l’année"
+            "value": "Jusqu’à l’année"
           }
         }
       }
@@ -3951,7 +3951,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Utilisez votre compte Jellyfin."
+            "value": "Utilise ton compte Jellyfin."
           }
         }
       }
@@ -3967,7 +3967,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "ou utilisez votre mot de passe Jellyfin"
+            "value": "ou utilise ton mot de passe Jellyfin"
           }
         }
       }
@@ -4031,7 +4031,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Utilisez votre compte d’organisation."
+            "value": "Utilise ton compte d’organisation."
           }
         }
       }
@@ -4047,7 +4047,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "L’authentification unique a été annulée ou refusée. Vous pouvez utiliser votre mot de passe Jellyfin."
+            "value": "L’authentification unique a été annulée ou refusée. Tu peux utiliser ton mot de passe Jellyfin."
           }
         }
       }
@@ -4063,7 +4063,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Votre compte Jellyfin est désactivé."
+            "value": "Ton compte Jellyfin est désactivé."
           }
         }
       }
@@ -4079,7 +4079,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "L’authentification unique a fonctionné, mais aucun compte Jellyfin ne porte votre nom d’utilisateur. Connectez-vous avec votre mot de passe Jellyfin ou contactez un administrateur."
+            "value": "L’authentification unique a fonctionné, mais aucun compte Jellyfin ne porte ton nom d’utilisateur. Connecte-toi avec ton mot de passe Jellyfin ou contacte un administrateur."
           }
         }
       }
@@ -4095,7 +4095,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le fournisseur n’a pas envoyé de nom d’utilisateur. Utilisez votre mot de passe Jellyfin."
+            "value": "Le fournisseur n’a pas envoyé de nom d’utilisateur. Utilise ton mot de passe Jellyfin."
           }
         }
       }
@@ -4111,7 +4111,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "L’authentification unique est indisponible pour le moment. Utilisez votre mot de passe Jellyfin."
+            "value": "L’authentification unique est indisponible pour le moment. Utilise ton mot de passe Jellyfin."
           }
         }
       }
@@ -4127,7 +4127,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cette tentative a expiré. Réessayez ou utilisez votre mot de passe Jellyfin."
+            "value": "Cette tentative de connexion a expiré. Réessaie ou utilise ton mot de passe Jellyfin."
           }
         }
       }
@@ -4143,7 +4143,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "L’authentification unique n’est pas entièrement configurée (un administrateur doit enregistrer la clé API Jellyfin). Utilisez votre mot de passe Jellyfin."
+            "value": "L’authentification unique n’est pas entièrement configurée (un administrateur doit enregistrer la clé API Jellyfin). Utilise ton mot de passe Jellyfin."
           }
         }
       }
@@ -4432,7 +4432,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pas encore de commentaire."
+            "value": "Aucun commentaire pour l’instant."
           }
         }
       }
@@ -4674,7 +4674,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tipsarr est auto-hébergé. Demandez l’adresse à la personne qui gère votre serveur."
+            "value": "Tipsarr est auto-hébergé. Demande l’adresse à la personne qui gère ton serveur."
           }
         }
       }
@@ -4722,7 +4722,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Saisissez l’adresse de votre serveur Tipsarr."
+            "value": "Saisis l’adresse de ton serveur Tipsarr."
           }
         }
       }
@@ -4738,7 +4738,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connectez-vous à votre serveur"
+            "value": "Connecte-toi à ton serveur"
           }
         }
       }
@@ -4754,7 +4754,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Impossible de joindre ce serveur. Vérifiez l’adresse et votre connexion."
+            "value": "Impossible de joindre ce serveur. Vérifie l’adresse et ta connexion."
           }
         }
       }
@@ -4882,7 +4882,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour vous"
+            "value": "Pour toi"
           }
         }
       }
@@ -5074,7 +5074,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Automatique suit les modes clair, sombre et teinté de votre écran d’accueil."
+            "value": "Automatique suit les modes clair, sombre et teinté de ton écran d’accueil."
           }
         }
       }
@@ -5138,7 +5138,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mise à jour du box-office"
+            "value": "Actualisation du box-office"
           }
         }
       }
@@ -5186,7 +5186,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lit ce que chaque utilisateur a regardé, pour les suggestions « parce que vous avez regardé »."
+            "value": "Lit ce que chaque utilisateur a regardé, pour les suggestions « Parce que tu as regardé »."
           }
         }
       }
@@ -5218,7 +5218,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lit vos films et séries Jellyfin pour afficher ce qui est disponible."
+            "value": "Lit tes films et séries Jellyfin pour afficher ce qui est disponible."
           }
         }
       }
@@ -5314,7 +5314,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reconstruit la liste d'environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue), demande les fichiers manquants au resolver et les protège du nettoyage. Ne s'exécute que lorsque les fichiers de bandes-annonces sont activés."
+            "value": "Reconstruit la liste d’environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue), demande les fichiers manquants au résolveur et les protège du nettoyage. Ne tourne que lorsque les fichiers de bandes-annonces sont activés."
           }
         }
       }
@@ -5507,7 +5507,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les titres marqués « pas intéressé »."
+            "value": "Les titres marqués « pas intéressé »."
           }
         }
       }
@@ -5652,7 +5652,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connectez-vous avec votre compte Jellyfin"
+            "value": "Connecte-toi avec ton compte Jellyfin"
           }
         }
       }
@@ -5668,7 +5668,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Masqué de vos suggestions"
+            "value": "Masqué de tes suggestions"
           }
         }
       }
@@ -5700,7 +5700,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ajouté à votre liste"
+            "value": "Ajouté à ta liste"
           }
         }
       }
@@ -5716,7 +5716,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tipsarr ne peut pas joindre votre serveur. Vérifiez votre connexion internet et réessayez."
+            "value": "Tipsarr ne peut pas joindre ton serveur. Vérifie ta connexion internet et réessaie."
           }
         }
       }
@@ -5764,7 +5764,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choisissez un titre pour le voir ici"
+            "value": "Choisis un titre pour l’afficher ici"
           }
         }
       }
@@ -6004,7 +6004,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vos demandes sont approuvées automatiquement."
+            "value": "Tes demandes sont approuvées automatiquement."
           }
         }
       }
@@ -6054,7 +6054,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Annuler votre demande pour %@ ?"
+            "value": "Annuler ta demande pour %@ ?"
           }
         }
       }
@@ -6119,7 +6119,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quelqu’un approuvera votre demande."
+            "value": "Quelqu’un va approuver ta demande."
           }
         }
       }
@@ -6407,7 +6407,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choisissez une demande"
+            "value": "Choisis une demande"
           }
         }
       }
@@ -6455,7 +6455,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Présents"
+            "value": "Dans la bibliothèque"
           }
         }
       }
@@ -6471,7 +6471,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Absents"
+            "value": "Hors bibliothèque"
           }
         }
       }
@@ -6567,7 +6567,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choisissez un résultat"
+            "value": "Choisis un résultat"
           }
         }
       }
@@ -6599,7 +6599,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cherchez un film, une série ou une personne"
+            "value": "Cherche un film, une série ou une personne"
           }
         }
       }
@@ -6615,7 +6615,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Votre session a expiré. Reconnectez-vous pour reprendre là où vous étiez."
+            "value": "Ta session a expiré. Reconnecte-toi pour reprendre là où tu en étais."
           }
         }
       }
@@ -6631,7 +6631,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous avez été déconnecté"
+            "value": "Tu as été déconnecté"
           }
         }
       }
@@ -6775,7 +6775,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Impossible d’enregistrer la connexion. Vérifiez le mot de passe et qu’un code est défini."
+            "value": "Impossible d’enregistrer la connexion. Vérifie le mot de passe et qu’un code est défini."
           }
         }
       }
@@ -6807,7 +6807,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Saisissez votre mot de passe une fois. Il est conservé dans le trousseau, protégé par Face ID."
+            "value": "Saisis ton mot de passe une seule fois. Il est conservé dans le trousseau, protégé par Face ID."
           }
         }
       }
@@ -6839,7 +6839,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connexion avec Face ID"
+            "value": "Se connecter avec Face ID"
           }
         }
       }
@@ -6855,7 +6855,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Votre mot de passe est conservé dans le trousseau de l’iPhone, protégé par Face ID ou votre code. Il sert uniquement à vous reconnecter quand votre session se termine."
+            "value": "Ton mot de passe est conservé dans le trousseau de l’iPhone, protégé par Face ID ou ton code. Il sert uniquement à te reconnecter quand ta session se termine."
           }
         }
       }
@@ -6935,7 +6935,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les notifications sont désactivées pour Tipsarr dans les Réglages d'iOS."
+            "value": "Les notifications sont désactivées pour Tipsarr dans les Réglages d’iOS."
           }
         }
       }
@@ -6951,7 +6951,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les alertes indiquent seulement qu'il s'est passé quelque chose. Tipsarr récupère les détails à l'ouverture."
+            "value": "Les alertes indiquent seulement qu’il s’est passé quelque chose. Tipsarr récupère les détails quand tu l’ouvres."
           }
         }
       }
@@ -6967,7 +6967,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Problèmes"
+            "value": "Signalements"
           }
         }
       }
@@ -7191,7 +7191,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se déconnecter de Tipsarr sur cet iPhone ?"
+            "value": "Se déconnecter de Tipsarr sur cet iPhone ?"
           }
         }
       }
@@ -7207,7 +7207,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choisissez l’apparence de Tipsarr. Système suit l’apparence réglée dans iOS."
+            "value": "Choisis l’apparence de Tipsarr. Système suit l’apparence réglée dans iOS."
           }
         }
       }
@@ -7239,7 +7239,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Suit votre iPhone"
+            "value": "Suit ton iPhone"
           }
         }
       }
@@ -7335,7 +7335,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enregistrez une clé API Jellyfin dans les Réglages web pour activer la synchro de la bibliothèque."
+            "value": "Enregistre une clé API Jellyfin dans les Réglages web pour activer la synchro de la bibliothèque."
           }
         }
       }
@@ -7511,7 +7511,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous avez tout vu pour le moment. Revenez plus tard pour de nouvelles bandes-annonces."
+            "value": "Tu as tout vu pour le moment. Reviens plus tard pour de nouvelles bandes-annonces."
           }
         }
       }
@@ -7543,7 +7543,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Effacer tout votre historique Teasers ? Chaque titre pourra revenir dans le fil."
+            "value": "Effacer tout ton historique des Teasers ? Chaque titre pourra revenir dans le fil."
           }
         }
       }
@@ -7559,7 +7559,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rien pour l'instant. Les titres que vous passez dans Teasers apparaîtront ici."
+            "value": "Rien pour l’instant. Les titres que tu passes dans Teasers apparaîtront ici."
           }
         }
       }
@@ -7623,7 +7623,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les titres que vous avez passés dans Teasers. Ils restent hors du fil tant que vous ne les oubliez pas."
+            "value": "Les titres que tu as passés dans Teasers. Ils restent hors du fil tant que tu ne les oublies pas."
           }
         }
       }
@@ -7655,7 +7655,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Historique Teasers"
+            "value": "Historique des Teasers"
           }
         }
       }
@@ -7671,7 +7671,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Historique Teasers effacé"
+            "value": "Historique des Teasers effacé"
           }
         }
       }
@@ -7703,7 +7703,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Préparation de vos bandes-annonces. Cela peut prendre une minute la première fois."
+            "value": "Préparation de tes bandes-annonces. Ça peut prendre une minute la première fois."
           }
         }
       }
@@ -7735,7 +7735,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Glissez vers le haut pour la bande-annonce suivante"
+            "value": "Glisse vers le haut pour la bande-annonce suivante"
           }
         }
       }
@@ -7767,7 +7767,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Votre serveur nécessite une version plus récente de l’app Tipsarr. Mettez à jour depuis l’App Store pour continuer."
+            "value": "Ton serveur nécessite une version plus récente de l’app Tipsarr. Mets-la à jour depuis l’App Store pour continuer."
           }
         }
       }
@@ -7911,7 +7911,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous ne pouvez pas changer votre propre rôle."
+            "value": "Tu ne peux pas changer ton propre rôle."
           }
         }
       }
@@ -8007,7 +8007,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Historique Teasers"
+            "value": "Historique des Teasers"
           }
         }
       }
@@ -8023,7 +8023,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Effacer tout l'historique Teasers de %@ ? Chaque titre pourra revenir dans son fil."
+            "value": "Effacer tout l’historique des Teasers de %@ ? Chaque titre pourra revenir dans son fil."
           }
         }
       }
@@ -8039,7 +8039,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Historique Teasers de %@"
+            "value": "Historique des Teasers de %@"
           }
         }
       }
@@ -8055,7 +8055,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Historique Teasers de %@ effacé"
+            "value": "Historique des Teasers de %@ effacé"
           }
         }
       }
@@ -8087,7 +8087,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Liste de suivi"
+            "value": "Liste"
           }
         }
       }
@@ -8135,7 +8135,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "simulation : rien n’est envoyé"
+            "value": "simulation : rien n’est envoyé"
           }
         }
       }
@@ -8200,7 +8200,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pas intéressé : masquer de mes suggestions"
+            "value": "Pas intéressé : masquer de mes suggestions"
           }
         }
       }
@@ -8297,7 +8297,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "« %@ » approuvé"
+            "value": "« %@ » approuvé"
           }
         }
       }
@@ -8314,7 +8314,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "« %@ » approuvé (simulation : rien n’est envoyé)"
+            "value": "« %@ » approuvé (simulation : rien n’est envoyé)"
           }
         }
       }
@@ -8331,7 +8331,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "« %@ » demandé"
+            "value": "« %@ » demandé"
           }
         }
       }
@@ -8459,7 +8459,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Problèmes"
+            "value": "Signalements"
           }
         }
       }
@@ -8651,7 +8651,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "À voir"
+            "value": "Ma liste"
           }
         }
       }
@@ -9676,7 +9676,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Navigateurs et applications où vous êtes connecté. Déconnecter un appareil termine sa session : il devra se reconnecter."
+            "value": "Navigateurs et apps où tu es connecté. Déconnecter un appareil termine sa session : il devra se reconnecter."
           }
         }
       }
@@ -9740,7 +9740,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les titres que vous avez marqués « pas intéressé »."
+            "value": "Les titres que tu as marqués « pas intéressé »."
           }
         }
       }
@@ -9773,7 +9773,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vos recommandations utilisent aussi l’historique de visionnage de %@ (réglé par un administrateur). C’est pourquoi Découvrir peut montrer des titres que vous n’avez pas vus vous-même."
+            "value": "Tes recommandations utilisent aussi l’historique de visionnage de %@ (réglé par un administrateur). C’est pour ça que Découvrir peut montrer des titres que tu n’as pas vus toi-même."
           }
         }
       }
@@ -9806,7 +9806,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "dernière visite : %@"
+            "value": "dernière visite : %@"
           }
         }
       }
@@ -9887,7 +9887,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choisissez une image JPEG, PNG ou GIF."
+            "value": "Choisis une image JPEG, PNG ou GIF."
           }
         }
       }
@@ -9967,7 +9967,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "La note affichée sur les affiches. IMDb, Metacritic et Rotten Tomatoes n’existent que pour les films (un admin doit avoir configuré Radarr) ; le reste affiche TMDB."
+            "value": "La note affichée sur les affiches. IMDb, Metacritic et Rotten Tomatoes n’existent que pour les films (un admin doit avoir configuré Radarr) ; le reste affiche TMDB."
           }
         }
       }
@@ -10111,7 +10111,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "À regarder"
+            "value": "Ma liste"
           }
         }
       }
@@ -10159,7 +10159,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Paramètres"
+            "value": "Réglages"
           }
         }
       }
@@ -10564,7 +10564,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "L’envoi au gestionnaire de téléchargement a échoué ; un administrateur peut voir les détails."
+            "value": "L’envoi au gestionnaire de téléchargement a échoué ; un administrateur peut voir les détails."
           }
         }
       }
@@ -10596,7 +10596,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "≈ Dates approximatives : cette demande est antérieure à l’historique, ses étapes sont datées par le dernier changement."
+            "value": "≈ Dates approximatives : cette demande est antérieure à l’historique, ses étapes sont datées par le dernier changement."
           }
         }
       }
@@ -10663,7 +10663,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Facultatif : choisissez comment %@ l’ajoute. Les valeurs par défaut sont présélectionnées."
+            "value": "Facultatif : choisis comment %@ l’ajoute. Les valeurs par défaut sont présélectionnées."
           }
         }
       }
@@ -10730,7 +10730,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous avez utilisé toutes vos demandes pour le moment. Vous pourrez de nouveau demander à partir du %@."
+            "value": "Tu as utilisé toutes tes demandes pour le moment. Tu pourras de nouveau demander à partir du %@."
           }
         }
       }
@@ -10764,7 +10764,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Motif : %@"
+            "value": "Motif : %@"
           }
         }
       }
@@ -10944,7 +10944,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Approuvée (simulation : non envoyée)"
+            "value": "Approuvée (simulation : non envoyée)"
           }
         }
       }
@@ -11009,7 +11009,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Téléchargement %1$@ %% · %2$@ restant"
+            "value": "Téléchargement %1$@ %% · %2$@ restant"
           }
         }
       }
@@ -11026,7 +11026,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Téléchargement %@ %%"
+            "value": "Téléchargement %@ %%"
           }
         }
       }
@@ -11154,7 +11154,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quelles saisons ?"
+            "value": "Quelles saisons ?"
           }
         }
       }
@@ -11221,7 +11221,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Approuver %1$@ demande en attente ? | Approuver %1$@ demandes en attente ?"
+            "value": "Approuver %1$@ demande en attente ? | Approuver %1$@ demandes en attente ?"
           }
         }
       }
@@ -11238,7 +11238,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Supprimer la demande pour « %@ » ?"
+            "value": "Supprimer la demande pour « %@ » ?"
           }
         }
       }
@@ -11255,7 +11255,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Supprimer la demande pour « %@ » ? Elle sera aussi retirée de Radarr/Sonarr (les fichiers déjà présents sont conservés)."
+            "value": "Supprimer la demande pour « %@ » ? Elle sera aussi retirée de Radarr/Sonarr (les fichiers déjà présents sont conservés)."
           }
         }
       }
@@ -11271,7 +11271,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "La simulation est active : rien ne sera envoyé à Radarr/Sonarr."
+            "value": "La simulation est active : rien ne sera envoyé à Radarr/Sonarr."
           }
         }
       }
@@ -11320,7 +11320,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Refuser « %@ » ?"
+            "value": "Refuser « %@ » ?"
           }
         }
       }
@@ -11352,7 +11352,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trouvez quelque chose à regarder et appuyez sur Demander."
+            "value": "Trouve quelque chose à regarder et appuie sur Demander."
           }
         }
       }
@@ -11369,7 +11369,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rien dans « %@ »"
+            "value": "Rien dans « %@ »"
           }
         }
       }
@@ -11578,7 +11578,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pas dans la bibliothèque"
+            "value": "Hors bibliothèque"
           }
         }
       }
@@ -11659,7 +11659,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aucun résultat rapide. Appuyez sur Entrée pour rechercher."
+            "value": "Aucun résultat rapide. Appuie sur Entrée pour rechercher."
           }
         }
       }
@@ -11676,7 +11676,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rien trouvé pour « %@ »"
+            "value": "Rien trouvé pour « %@ »"
           }
         }
       }
@@ -11692,7 +11692,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vérifiez l’orthographe, ou essayez le titre original ou moins de mots."
+            "value": "Vérifie l’orthographe, ou essaie le titre original ou moins de mots."
           }
         }
       }
@@ -11741,7 +11741,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Résultats pour « %@ »"
+            "value": "Résultats pour « %@ »"
           }
         }
       }
@@ -11854,7 +11854,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Avec le mot-clé « %@ »"
+            "value": "Avec le mot-clé « %@ »"
           }
         }
       }
@@ -11870,7 +11870,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mots-clés :"
+            "value": "Mots-clés :"
           }
         }
       }
@@ -12203,7 +12203,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "aucune clé d’API Jellyfin enregistrée"
+            "value": "aucune clé API Jellyfin enregistrée"
           }
         }
       }
@@ -12771,7 +12771,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dans Jellyfin : Tableau de bord → Plugins → Catalogue → Playback Reporting → Installer, puis redémarrez Jellyfin."
+            "value": "Dans Jellyfin : Tableau de bord → Plugins → Catalogue → Playback Reporting → Installer, puis redémarre Jellyfin."
           }
         }
       }
@@ -12787,7 +12787,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Regardez quelque chose (le plugin enregistre les lectures à partir de là)."
+            "value": "Regarde quelque chose (le plugin enregistre les lectures à partir de là)."
           }
         }
       }
@@ -12803,7 +12803,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tipsarr trouve le plugin tout seul dans l’heure. Ou lancez « Synchro des lectures » dans Réglages → Tâches & hooks."
+            "value": "Tipsarr trouve le plugin tout seul dans l’heure. Ou lance « Synchro des lectures » dans Réglages → Tâches et webhooks."
           }
         }
       }
@@ -12819,7 +12819,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seuls les admins voient ce message. Tipsarr peut importer le plugin Playback Reporting de Jellyfin : temps réel regardé, par mois, jour de la semaine et heure, au lieu d’estimations."
+            "value": "Seuls les admins voient ce message. Tipsarr peut importer le plugin Playback Reporting de Jellyfin : vrai temps de visionnage, par mois, jour de la semaine et heure, au lieu d’estimations."
           }
         }
       }
@@ -12835,7 +12835,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Envie du temps de visionnage exact et de graphiques dans le temps ?"
+            "value": "Envie du temps de visionnage exact et de graphiques dans le temps ?"
           }
         }
       }
@@ -12851,7 +12851,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Estimé à partir de l’historique (lectures × durée). Installez Playback Reporting dans Jellyfin pour des chiffres exacts."
+            "value": "Estimé à partir de l’historique (lectures × durée). Installe Playback Reporting dans Jellyfin pour des chiffres exacts."
           }
         }
       }
@@ -12932,7 +12932,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Genre le plus regardé : %@"
+            "value": "Genre le plus regardé : %@"
           }
         }
       }
@@ -13110,7 +13110,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vos demandes disponibles que vous n’avez pas regardées."
+            "value": "Tes demandes disponibles que tu n’as pas regardées."
           }
         }
       }
@@ -13143,7 +13143,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rien ici : tout ce qui a été demandé a été regardé."
+            "value": "Rien ici : tout ce qui a été demandé a été regardé."
           }
         }
       }
@@ -13369,7 +13369,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Parce que vous avez regardé %@"
+            "value": "Parce que tu as regardé %@"
           }
         }
       }
@@ -13385,7 +13385,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recommandé pour vous"
+            "value": "Recommandé pour toi"
           }
         }
       }
@@ -13401,7 +13401,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Préparation de vos recommandations…"
+            "value": "Préparation de tes recommandations…"
           }
         }
       }
@@ -13482,7 +13482,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recommandations indisponibles : %@"
+            "value": "Recommandations indisponibles : %@"
           }
         }
       }
@@ -13629,7 +13629,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "En pause jusqu’à %@ : YouTube bloque peut-être cette adresse."
+            "value": "En pause jusqu’à %@ : YouTube bloque peut-être cette adresse."
           }
         }
       }
@@ -13694,7 +13694,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Supprimer toutes les bandes-annonces téléchargées ? Elles seront récupérées à nouveau au besoin."
+            "value": "Supprimer toutes les bandes-annonces téléchargées ? Elles seront récupérées à nouveau au besoin."
           }
         }
       }
@@ -13726,7 +13726,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Permet à l’onglet Teasers des applications de lire les bandes-annonces comme des fichiers vidéo au lieu du lecteur YouTube. Demande le conteneur séparé trailer-resolver, que vous construisez vous-même (voir trailer-resolver/README.md). Sans lui, l’onglet Teasers reste caché dans les applications."
+            "value": "Permet à l’onglet Teasers des apps de lire les bandes-annonces comme des fichiers vidéo au lieu du lecteur YouTube. Nécessite le conteneur séparé trailer-resolver, que tu construis toi-même (voir trailer-resolver/README.md). Sans lui, l’onglet Teasers reste masqué dans les apps."
           }
         }
       }
@@ -13807,7 +13807,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Clé d’API du résolveur"
+            "value": "Clé API du résolveur"
           }
         }
       }
@@ -13823,7 +13823,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Une clé est enregistrée (saisissez-en une nouvelle pour la remplacer)"
+            "value": "Une clé est enregistrée (saisis-en une nouvelle pour la remplacer)"
           }
         }
       }
@@ -13855,7 +13855,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enregistrez d’abord l’adresse et la clé."
+            "value": "Enregistre d’abord l’adresse et la clé."
           }
         }
       }
@@ -14000,7 +14000,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le test a échoué : %@"
+            "value": "Le test a échoué : %@"
           }
         }
       }
@@ -14017,7 +14017,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ça marche : %1$@p, %2$@, %3$@ s."
+            "value": "Ça marche : %1$@p, %2$@, %3$@ s."
           }
         }
       }
@@ -14034,7 +14034,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pas encore prête (%@). Réessayez dans un instant."
+            "value": "Pas encore prête (%@). Réessaie dans un instant."
           }
         }
       }
@@ -14130,7 +14130,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les conditions de YouTube interdisent de télécharger son contenu et l’accès automatisé. L’activer est votre décision et votre risque : votre adresse peut être limitée ou bloquée. Les fichiers ne sont servis qu’aux personnes connectées."
+            "value": "Les conditions de YouTube interdisent de télécharger son contenu et l’accès automatisé. L’activer, c’est ta décision et ton risque : ton adresse peut être limitée ou bloquée. Les fichiers ne sont servis qu’aux personnes connectées."
           }
         }
       }
@@ -14307,7 +14307,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ nouvel(le)s utilisateur(s) importé(s) (%2$@ dans Jellyfin)."
+            "value": "Nouveaux utilisateurs importés : %1$@ (%2$@ dans Jellyfin)."
           }
         }
       }
@@ -14340,7 +14340,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "dernière connexion : %@"
+            "value": "dernière connexion : %@"
           }
         }
       }
@@ -14372,7 +14372,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les administrateurs peuvent tout faire. Changez le rôle pour modifier les permissions."
+            "value": "Les administrateurs peuvent tout faire. Change le rôle pour modifier les permissions."
           }
         }
       }
@@ -14404,7 +14404,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous ne pouvez pas modifier vos propres permissions."
+            "value": "Tu ne peux pas modifier tes propres permissions."
           }
         }
       }
@@ -14469,7 +14469,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Laissez un champ vide pour utiliser la valeur par défaut. 0 veut dire aucune limite."
+            "value": "Laisse un champ vide pour utiliser la valeur par défaut. 0 veut dire aucune limite."
           }
         }
       }
@@ -14647,7 +14647,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seuls les utilisateurs de Tipsarr peuvent être choisis : utilisez d’abord « Importer depuis Jellyfin » pour un compte qui ne s’est jamais connecté (un compte TV partagé). Jusqu’à %@ comptes."
+            "value": "Seuls les utilisateurs de Tipsarr peuvent être choisis : utilise d’abord « Importer depuis Jellyfin » pour un compte qui ne s’est jamais connecté (un compte TV partagé). Jusqu’à %@ comptes."
           }
         }
       }
@@ -14697,7 +14697,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ verra des titres de l’historique de %2$@ dans les rangées « Parce que vous avez regardé… », et les titres déjà vus par ces comptes seront masqués dans les recommandations de %1$@. Seul leur historique de visionnage est utilisé, jamais leur liste de blocage."
+            "value": "%1$@ verra des titres de l’historique de %2$@ dans les rangées « Parce que tu as regardé… », et les titres déjà vus par ces comptes seront masqués dans les recommandations de %1$@. Seul leur historique de visionnage est utilisé, jamais leur liste de blocage."
           }
         }
       }
@@ -14714,7 +14714,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aucun autre compte n’est utilisé : les recommandations de %1$@ viennent de son propre historique. Si vous choisissez un compte, %1$@ verra des titres de son historique dans les rangées « Parce que vous avez regardé… »."
+            "value": "Aucun autre compte n’est utilisé : les recommandations de %1$@ viennent de son propre historique. Si tu choisis un compte, %1$@ verra des titres de son historique dans les rangées « Parce que tu as regardé… »."
           }
         }
       }
@@ -14730,7 +14730,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Historique Teasers"
+            "value": "Historique des Teasers"
           }
         }
       }
@@ -14747,7 +14747,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Effacer tout l'historique Teasers de %@ ? Chaque titre pourra revenir dans son fil."
+            "value": "Effacer tout l’historique des Teasers de %@ ? Chaque titre pourra revenir dans son fil."
           }
         }
       }
@@ -14763,7 +14763,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rien pour l'instant."
+            "value": "Rien pour l’instant."
           }
         }
       }
@@ -14829,7 +14829,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les titres que %@ a passés dans Teasers. Ils restent hors du fil tant qu'ils ne sont pas oubliés."
+            "value": "Les titres que %@ a passés dans Teasers. Ils restent hors du fil tant qu’ils ne sont pas oubliés."
           }
         }
       }
@@ -14879,7 +14879,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Historique Teasers de %@"
+            "value": "Historique des Teasers de %@"
           }
         }
       }
@@ -14895,7 +14895,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Historique Teasers effacé"
+            "value": "Historique des Teasers effacé"
           }
         }
       }
@@ -14927,7 +14927,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rien ici pour l’instant. Ouvrez un film ou une série et appuyez sur « À voir »."
+            "value": "Rien ici pour l’instant. Ouvre un film ou une série et appuie sur « Ma liste »."
           }
         }
       }
@@ -14943,7 +14943,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Survolez une affiche et appuyez sur ✕ pour la retirer de la liste."
+            "value": "Survole une affiche et appuie sur ✕ pour la retirer de la liste."
           }
         }
       }
@@ -14959,7 +14959,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "À voir"
+            "value": "Ma liste"
           }
         }
       }
