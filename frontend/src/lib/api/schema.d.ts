@@ -435,6 +435,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/webhooks/variables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Template variables of an event, with sample values (admin)
+         * @description Built from the same variables as real deliveries, with the sample data of the preview. empty marks what the event does not fill; perRecipient what only one delivery per recipient fills.
+         */
+        get: operations["listWebhookVariables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/webhooks/{id}": {
         parameters: {
             query?: never;
@@ -3068,6 +3088,23 @@ export interface components {
             id: string;
             name: string;
         };
+        Variable: {
+            /** @description Localized description */
+            description: string;
+            /** @description Not filled for this event */
+            empty: boolean;
+            /** @description Value with the sample data (empty when Empty) */
+            example: string;
+            /** @description Liquid path, e.g. media.title */
+            path: string;
+            /** @description Only filled with one delivery per recipient */
+            perRecipient: boolean;
+            /**
+             * @description Value type
+             * @enum {string}
+             */
+            type: "string" | "number" | "boolean";
+        };
         View: {
             /** Format: int64 */
             createdAt: number;
@@ -4997,6 +5034,67 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WebhookPreview"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    listWebhookVariables: {
+        parameters: {
+            query?: {
+                /** @description Event (default test) */
+                event?: string;
+                /** @description Language of the descriptions (default: the caller's) */
+                lang?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Variable"][];
                 };
             };
             /** @description Unauthorized */

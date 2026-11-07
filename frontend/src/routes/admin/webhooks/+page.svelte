@@ -1,5 +1,4 @@
 <script lang="ts">
-	const DOCS_URL = 'https://github.com/Rombond/tipsarr/blob/master/docs/notifications.md';
 	import { t } from '$lib/i18n/index.svelte';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -11,6 +10,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
+	import TemplateHelp from './TemplateHelp.svelte';
+	import { tick } from 'svelte';
 
 	type Hook = Schemas['WebhookView'];
 	type Preset = Schemas['Preset'];
@@ -43,6 +44,19 @@
 	// preview
 	let previewEvent = $state('request.created');
 	let preview = $state<Schemas['WebhookPreview'] | null>(null);
+
+	let templateArea = $state<HTMLTextAreaElement | null>(null);
+
+	// inserts a snippet at the cursor of the template (replacing the selection)
+	async function insertSnippet(snippet: string) {
+		const el = templateArea;
+		const start = el?.selectionStart ?? template.length;
+		const end = el?.selectionEnd ?? start;
+		template = template.slice(0, start) + snippet + template.slice(end);
+		await tick();
+		el?.focus();
+		el?.setSelectionRange(start + snippet.length, start + snippet.length);
+	}
 
 	const presetHint = $derived(presets.find((p) => p.id === preset));
 
@@ -250,6 +264,7 @@
 					<div class="grid gap-1.5 text-sm">
 						{t('webhooks.template')}
 						<textarea
+							bind:this={templateArea}
 							bind:value={template}
 							rows="12"
 							spellcheck="false"
@@ -257,7 +272,7 @@
 							placeholder={t('webhooks.template_placeholder')}
 						></textarea>
 						<span class="text-xs text-muted-foreground">{t('webhooks.template_hint', { example: '{{ message | json }}' })}</span>
-						<a class="text-xs text-primary underline-offset-4 hover:underline" href={DOCS_URL} target="_blank" rel="noopener noreferrer">{t('webhooks.docs_link')} ↗</a>
+						<TemplateHelp bind:event={previewEvent} events={allEvents} oninsert={insertSnippet} />
 					</div>
 
 					<div class="grid gap-1.5 text-sm">

@@ -10,7 +10,8 @@ import (
 	"github.com/osteele/liquid"
 )
 
-// Templates are Liquid (https://shopify.github.io/liquid/). Variables are documented in docs/notifications.md.
+// Templates are Liquid (https://shopify.github.io/liquid/). The variables are listed by Variables (editor help)
+// and in docs/notifications.md.
 // Values are printed as they are: wrap free text in the json filter ({{ message | json }}) to get a safe,
 // quoted JSON string.
 

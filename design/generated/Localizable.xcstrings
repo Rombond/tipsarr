@@ -15512,6 +15512,694 @@
           }
         }
       }
+    },
+    "webhook.var.comment.message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comment text (free text: use json)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Texte du commentaire (texte libre : utilise json)"
+          }
+        }
+      }
+    },
+    "webhook.var.comment.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name of the comment author"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom de l’auteur du commentaire"
+          }
+        }
+      }
+    },
+    "webhook.var.comment.userId": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Id of the comment author"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant de l’auteur du commentaire"
+          }
+        }
+      }
+    },
+    "webhook.var.data.message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raw event data (the data of the JSON envelope)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Données brutes de l’événement (le data de l’enveloppe JSON)"
+          }
+        }
+      }
+    },
+    "webhook.var.dryRun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "true while Tipsarr is in dry-run mode"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "true quand Tipsarr est en mode simulation"
+          }
+        }
+      }
+    },
+    "webhook.var.event": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Event name, e.g. request.approved"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom de l’événement, p. ex. request.approved"
+          }
+        }
+      }
+    },
+    "webhook.var.image": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poster URL (TMDB)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "URL de l’affiche (TMDB)"
+          }
+        }
+      }
+    },
+    "webhook.var.issue.id": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Issue id"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant du signalement"
+          }
+        }
+      }
+    },
+    "webhook.var.issue.kind": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kind of problem (audio, video, subtitles…)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type de problème (audio, vidéo, sous-titres…)"
+          }
+        }
+      }
+    },
+    "webhook.var.issue.status": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "open or resolved"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "open ou resolved"
+          }
+        }
+      }
+    },
+    "webhook.var.issue.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title concerned"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titre concerné"
+          }
+        }
+      }
+    },
+    "webhook.var.issue.tmdbId": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TMDB id of the title"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant TMDB du titre"
+          }
+        }
+      }
+    },
+    "webhook.var.issue.type": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "movie or tv"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "movie ou tv"
+          }
+        }
+      }
+    },
+    "webhook.var.media.imdbId": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IMDb id"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant IMDb"
+          }
+        }
+      }
+    },
+    "webhook.var.media.is4k": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "true for a 4K request"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "true pour une demande 4K"
+          }
+        }
+      }
+    },
+    "webhook.var.media.status": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status of the title"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statut du titre"
+          }
+        }
+      }
+    },
+    "webhook.var.media.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titre"
+          }
+        }
+      }
+    },
+    "webhook.var.media.tmdbId": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TMDB id"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant TMDB"
+          }
+        }
+      }
+    },
+    "webhook.var.media.tvdbId": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TVDB id (shows)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant TVDB (séries)"
+          }
+        }
+      }
+    },
+    "webhook.var.media.type": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "movie or tv"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "movie ou tv"
+          }
+        }
+      }
+    },
+    "webhook.var.media.year": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Release year"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Année de sortie"
+          }
+        }
+      }
+    },
+    "webhook.var.message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready-made sentence, in the recipient's language (plus the reason when there is one)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phrase toute prête, dans la langue du destinataire (plus le motif s’il y en a un)"
+          }
+        }
+      }
+    },
+    "webhook.var.nl": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A line break, to build multi-line text"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un saut de ligne, pour écrire sur plusieurs lignes"
+          }
+        }
+      }
+    },
+    "webhook.var.notifyUser.discordId": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipient's Discord id"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant Discord du destinataire"
+          }
+        }
+      }
+    },
+    "webhook.var.notifyUser.id": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipient's id"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant du destinataire"
+          }
+        }
+      }
+    },
+    "webhook.var.notifyUser.language": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipient's language"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langue du destinataire"
+          }
+        }
+      }
+    },
+    "webhook.var.notifyUser.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipient's name"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom du destinataire"
+          }
+        }
+      }
+    },
+    "webhook.var.notifyUser.telegramChatId": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipient's Telegram chat id (to send them a private message)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant de chat Telegram du destinataire (pour lui écrire en privé)"
+          }
+        }
+      }
+    },
+    "webhook.var.request.id": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request id"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant de la demande"
+          }
+        }
+      }
+    },
+    "webhook.var.request.requestedBy.id": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Id of the requester"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant du demandeur"
+          }
+        }
+      }
+    },
+    "webhook.var.request.requestedBy.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name of the requester"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom du demandeur"
+          }
+        }
+      }
+    },
+    "webhook.var.request.status": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request status"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statut de la demande"
+          }
+        }
+      }
+    },
+    "webhook.var.request.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requested title"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titre demandé"
+          }
+        }
+      }
+    },
+    "webhook.var.request.tmdbId": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TMDB id of the requested title"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant TMDB du titre demandé"
+          }
+        }
+      }
+    },
+    "webhook.var.request.type": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "movie or tv"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "movie ou tv"
+          }
+        }
+      }
+    },
+    "webhook.var.requestedBy.discordId": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requester's Discord id (for <@id> mentions)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant Discord du demandeur (pour les mentions <@id>)"
+          }
+        }
+      }
+    },
+    "webhook.var.requestedBy.id": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requester's id"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant du demandeur"
+          }
+        }
+      }
+    },
+    "webhook.var.requestedBy.language": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requester's language"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langue du demandeur"
+          }
+        }
+      }
+    },
+    "webhook.var.requestedBy.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requester's name"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom du demandeur"
+          }
+        }
+      }
+    },
+    "webhook.var.requestedBy.telegramChatId": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requester's Telegram chat id"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant de chat Telegram du demandeur"
+          }
+        }
+      }
+    },
+    "webhook.var.subject": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready-made title, in the recipient's language"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titre tout prêt, dans la langue du destinataire"
+          }
+        }
+      }
+    },
+    "webhook.var.timestamp": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time of the event (UTC, RFC 3339)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heure de l’événement (UTC, RFC 3339)"
+          }
+        }
+      }
+    },
+    "webhook.var.url": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link to the title or the issue in Tipsarr (needs the public URL setting)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lien vers le titre ou le signalement dans Tipsarr (demande l’URL publique dans les réglages)"
+          }
+        }
+      }
     }
   }
 }

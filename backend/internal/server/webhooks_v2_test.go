@@ -50,6 +50,53 @@ func TestWebhookTemplatesAPI(t *testing.T) {
 		t.Fatalf("preview error = %s", body)
 	}
 
+	// the variables help lists what deliveries fill, with sample values and descriptions
+	type variable struct {
+		Path, Type, Example, Description string
+		Empty, PerRecipient              bool
+	}
+	vars := func(q string) map[string]variable {
+		resp, body := call(t, e.app, "GET", "/api/v1/admin/webhooks/variables"+q, "", admin)
+		if resp.StatusCode != 200 {
+			t.Fatalf("variables%s = %d %s", q, resp.StatusCode, body)
+		}
+		var list []variable
+		_ = json.Unmarshal([]byte(body), &list)
+		out := map[string]variable{}
+		for _, v := range list {
+			if v.Description == "" {
+				t.Errorf("variable %s has no description", v.Path)
+			}
+			out[v.Path] = v
+		}
+		return out
+	}
+	rv := vars("?event=request.created&lang=fr")
+	if v := rv["media.title"]; v.Example != "Dune" || v.Empty || v.Type != "string" {
+		t.Fatalf("media.title = %+v", v)
+	}
+	if v := rv["media.tmdbId"]; v.Type != "number" || v.Example != "438631" {
+		t.Fatalf("media.tmdbId = %+v", v)
+	}
+	if v := rv["issue.kind"]; !v.Empty {
+		t.Fatalf("issue.kind on a request event = %+v", v)
+	}
+	if v := rv["notifyUser.name"]; !v.PerRecipient || v.Empty {
+		t.Fatalf("notifyUser.name = %+v", v)
+	}
+	if v := rv["requestedBy.discordId"]; v.Path == "" || !strings.Contains(v.Description, "Discord") || !strings.Contains(v.Description, "demandeur") {
+		t.Fatalf("requestedBy.discordId = %+v", v)
+	}
+	if v := vars("?event=issue.created")["issue.kind"]; v.Empty || v.Example != "audio" {
+		t.Fatalf("issue.kind on an issue event = %+v", v)
+	}
+	if resp, _ := call(t, e.app, "GET", "/api/v1/admin/webhooks/variables?event=nope", "", admin); resp.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("unknown event = %d", resp.StatusCode)
+	}
+	if resp, _ := call(t, e.app, "GET", "/api/v1/admin/webhooks/variables", "", bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("variables as a user = %d", resp.StatusCode)
+	}
+
 	// a templated webhook gets the rendered body and the auth header
 	var mu sync.Mutex
 	var bodies []string

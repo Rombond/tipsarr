@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strings"
 
@@ -275,6 +276,31 @@ func registerWebhooks(api huma.API, d Deps) {
 			return nil, err
 		}
 		return &struct{}{}, d.Store.DeleteWebhook(ctx, in.ID)
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "listWebhookVariables", Method: http.MethodGet, Path: "/admin/webhooks/variables",
+		Summary:     "Template variables of an event, with sample values (admin)",
+		Description: "Built from the same variables as real deliveries, with the sample data of the preview. empty marks what the event does not fill; perRecipient what only one delivery per recipient fills.",
+		Tags:        []string{"admin"}, Security: sec, Errors: append(adminErrs, http.StatusUnprocessableEntity),
+	}, func(ctx context.Context, in *struct {
+		Event string `query:"event" maxLength:"40" doc:"Event (default test)"`
+		Lang  string `query:"lang" maxLength:"16" doc:"Language of the descriptions (default: the caller's)"`
+	}) (*struct{ Body []notify.Variable }, error) {
+		me, err := requireCan(ctx, perms.ManageSettings)
+		if err != nil {
+			return nil, err
+		}
+		if in.Event != "" && in.Event != notify.Test && !slices.Contains(notify.AllEvents, in.Event) {
+			return nil, fail(422, "unknown_event", "unknown event "+in.Event)
+		}
+		lang := in.Lang
+		if lang == "" {
+			lang = me.Language
+		}
+		all := d.Notify.Vars(ctx, sampleEvent(notify.IssueCreated, me), me)
+		vars := d.Notify.Vars(ctx, sampleEvent(in.Event, me), me) // notifyUser filled, flagged perRecipient
+		return &struct{ Body []notify.Variable }{notify.Variables(all, vars, lang)}, nil
 	})
 
 	huma.Register(api, huma.Operation{
