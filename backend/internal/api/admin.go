@@ -21,6 +21,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/Rombond/tipsarr/backend/internal/media"
+	"github.com/Rombond/tipsarr/backend/internal/netguard"
 	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/push"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
@@ -225,7 +226,8 @@ func registerAdmin(api huma.API, d Deps) {
 					return nil, fail(422, "url_invalid", "oidcIssuer must start with http:// or https://")
 				}
 				if err := d.Auth.CheckOIDC(ctx, val); err != nil {
-					return nil, fail(422, "oidc_unreachable", "cannot read the provider's configuration: "+err.Error())
+					slog.Info("OIDC discovery failed", "issuer", val, "err", err)
+					return nil, fail(422, "oidc_unreachable", "cannot read the provider's configuration ("+string(netguard.Classify(err))+")")
 				}
 			}
 			if err := d.Store.SetSetting(ctx, key, val); err != nil {
@@ -243,7 +245,8 @@ func registerAdmin(api huma.API, d Deps) {
 			}
 			if next[avatars.SettingLDAPURL] != "" {
 				if err := avatars.CheckLDAP(ctx, next[avatars.SettingLDAPURL], next[avatars.SettingLDAPBindDN], next[avatars.SettingLDAPPassword]); err != nil {
-					return nil, fail(422, "ldap_unreachable", "cannot sign in to LDAP: "+err.Error())
+					slog.Info("LDAP test failed", "err", err)
+					return nil, fail(422, "ldap_unreachable", "cannot sign in to LDAP: "+avatars.LDAPFailure(err))
 				}
 			}
 			for k, v := range next {

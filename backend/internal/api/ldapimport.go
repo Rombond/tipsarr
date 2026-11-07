@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/Rombond/tipsarr/backend/internal/auth"
@@ -30,7 +31,8 @@ func importLDAPFromJellyfin(ctx context.Context, d Deps) (*ldapImportBody, error
 	}
 	cfg, err := jellyfin.New(jfURL).WithToken(key).LDAPPlugin(ctx)
 	if err != nil {
-		return nil, fail(502, "jellyfin_unreachable", "cannot read Jellyfin's plugins: "+err.Error())
+		slog.Info("reading Jellyfin's LDAP plugin failed", "err", err)
+		return nil, fail(502, "jellyfin_unreachable", "cannot read Jellyfin's plugins")
 	}
 	if cfg == nil {
 		return nil, nil
@@ -45,7 +47,8 @@ func importLDAPFromJellyfin(ctx context.Context, d Deps) (*ldapImportBody, error
 		}
 	}
 	if err := avatars.CheckLDAP(ctx, out.URL, cfg.BindUser, cfg.BindPassword); err != nil {
-		out.Error = err.Error()
+		slog.Info("LDAP test failed", "err", err)
+		out.Error = avatars.LDAPFailure(err)
 	} else {
 		out.Connected = true
 	}

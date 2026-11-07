@@ -46,10 +46,17 @@ func New(kind, baseURL, apiKey string, dryRun bool) *Client {
 	}
 }
 
+// WithHTTPClient replaces the HTTP client (e.g. one dialing through an egress policy). Redirects
+// should stay off: the API key header must not travel to another host.
+func (c *Client) WithHTTPClient(h *http.Client) *Client { c.http = h; return c }
+
 type statusError struct {
 	code int
 	body string
 }
+
+// StatusCode is the HTTP status the server answered.
+func (e *statusError) StatusCode() int { return e.code }
 
 func (e *statusError) Error() string {
 	if e.body != "" {

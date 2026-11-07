@@ -56,7 +56,7 @@
 		uploading = true;
 		try {
 			const res = await fetch('/api/v1/me/avatar', { method: 'POST', body: file, credentials: 'include' });
-			if (res.status === 413) throw new Error(t('profile.picture_too_large'));
+			if (res.status === 413) throw new Error((await res.text()).includes('picture_too_big') ? t('profile.picture_too_big') : t('profile.picture_too_large'));
 			if (res.status === 422) throw new Error(t('profile.picture_invalid'));
 			if (!res.ok) throw new Error(t('error.status_500'));
 			auth.avatarV++;

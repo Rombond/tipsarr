@@ -724,6 +724,7 @@
   "profile.picture_saved": "Photo mise à jour.",
   "profile.picture_too_large": "Cette image dépasse 4 Mo.",
   "profile.picture_invalid": "Choisis une image JPEG, PNG ou GIF.",
+  "profile.picture_too_big": "Cette image est trop grande : 4096 × 4096 pixels au maximum.",
   "settings.ldap_title": "Photos de profil depuis LDAP (LLDAP)",
   "settings.ldap_desc": "Facultatif. Tipsarr lit l’attribut jpegPhoto de chaque utilisateur de ton annuaire LDAP (LLDAP) et l’affiche comme photo. Une photo envoyée depuis le profil est prioritaire, et celle de Jellyfin sert de repli. Utilise un compte en lecture seule. Laisse l’adresse vide pour désactiver.",
   "settings.ldap_url": "Adresse LDAP",
