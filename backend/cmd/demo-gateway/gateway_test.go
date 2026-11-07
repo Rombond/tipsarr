@@ -40,6 +40,19 @@ func (f *fakeSpawner) Spawn() (*Child, error) {
 			fmt.Fprint(w, "data: bye\n\n")
 			return
 		}
+		if r.URL.Path == "/api/v1/status" {
+			fmt.Fprintf(w, `{"demo":true,"from":%q}`, id)
+			return
+		}
+		if r.URL.Path == "/api/v1/auth/token" {
+			b, _ := io.ReadAll(r.Body)
+			if !strings.Contains(string(b), `"password":"demo"`) {
+				http.Error(w, `{"status":401}`, http.StatusUnauthorized)
+				return
+			}
+			fmt.Fprintf(w, `{"token":"tok-%s","expiresAt":0,"user":{}}`, id)
+			return
+		}
 		if r.Method == http.MethodPost {
 			if _, err := io.ReadAll(r.Body); err != nil {
 				http.Error(w, "too big", http.StatusRequestEntityTooLarge)
@@ -326,5 +339,143 @@ func TestRequestBodyLimit(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode == 200 {
 		t.Fatalf("a body over the limit went through")
+	}
+}
+
+// app is a mobile client: no cookie, a Bearer token after sign-in.
+type app struct {
+	srv   *httptest.Server
+	ip    string
+	token string
+}
+
+func (a *app) do(t *testing.T, method, path, body string) (int, string) {
+	t.Helper()
+	var rd io.Reader
+	if body != "" {
+		rd = strings.NewReader(body)
+	}
+	req, _ := http.NewRequest(method, a.srv.URL+path, rd)
+	if a.ip != "" {
+		req.Header.Set("X-Forwarded-For", a.ip)
+	}
+	if a.token != "" {
+		req.Header.Set("Authorization", "Bearer "+a.token)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	b, _ := io.ReadAll(resp.Body)
+	return resp.StatusCode, string(b)
+}
+
+func (a *app) signIn(t *testing.T, password string) (int, string) {
+	t.Helper()
+	code, body := a.do(t, "POST", "/api/v1/auth/token", `{"username":"admin","password":"`+password+`","platform":"ios"}`)
+	if code == 200 {
+		a.token = strings.Split(strings.Split(body, `"token":"`)[1], `"`)[0]
+	}
+	return code, body
+}
+
+func TestAppStatusWithoutSession(t *testing.T) {
+	g, _, _, srv := newTestGateway(t, Config{Warm: 1, MaxSessions: 2})
+	a := &app{srv: srv}
+	// nothing running yet: a clear refusal, no sandbox
+	if code, body := a.do(t, "GET", "/api/v1/status", ""); code != 503 || !strings.Contains(body, "demo_starting") {
+		t.Fatalf("status with empty pool = %d %s", code, body)
+	}
+	g.Refill()
+	waitUntil(t, "warm pool", func() bool { _, w := g.counts(); return w == 1 })
+	for i := 0; i < 3; i++ {
+		if code, body := a.do(t, "GET", "/api/v1/status", ""); code != 200 || !strings.Contains(body, `"demo":true`) {
+			t.Fatalf("status = %d %s", code, body)
+		}
+	}
+	if s, w := g.counts(); s != 0 || w != 1 {
+		t.Fatalf("status allocated: sessions=%d warm=%d", s, w)
+	}
+}
+
+func TestAppSignInAndBearerRouting(t *testing.T) {
+	g, _, ck, srv := newTestGateway(t, Config{Warm: 1, MaxSessions: 3})
+	g.Refill()
+	waitUntil(t, "warm pool", func() bool { _, w := g.counts(); return w == 1 })
+	a := &app{srv: srv}
+	// a wrong password does not keep a sandbox
+	if code, _ := a.signIn(t, "nope"); code != 401 {
+		t.Fatalf("bad sign-in = %d", code)
+	}
+	if s, _ := g.counts(); s != 0 {
+		t.Fatalf("failed sign-in kept %d sessions", s)
+	}
+	code, body := a.signIn(t, "demo")
+	if code != 200 || a.token == "" {
+		t.Fatalf("sign-in = %d %s", code, body)
+	}
+	sb := strings.TrimPrefix(a.token, "tok-")
+	if s, _ := g.counts(); s != 1 {
+		t.Fatalf("sessions = %d", s)
+	}
+	// later calls with the token reach the same sandbox
+	if code, body := a.do(t, "GET", "/api/v1/me", ""); code != 200 || !strings.HasPrefix(body, sb+" ") {
+		t.Fatalf("bearer call = %d %s, want %s", code, body, sb)
+	}
+	if code, body := a.do(t, "PUT", "/api/v1/me/devices/current", `{"pushToken":"x"}`); code != 200 || !strings.HasPrefix(body, sb+" ") {
+		t.Fatalf("device registration = %d %s", code, body)
+	}
+	// an unknown token gets no sandbox
+	other := &app{srv: srv, token: "forged"}
+	if code, body := other.do(t, "GET", "/api/v1/me", ""); code != 401 || !strings.Contains(body, "demo_expired") {
+		t.Fatalf("unknown token = %d %s", code, body)
+	}
+	// the event stream goes through with the token
+	req, _ := http.NewRequest("GET", srv.URL+"/api/v1/events", nil)
+	req.Header.Set("Authorization", "Bearer "+a.token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	line, _ := bufio.NewReader(resp.Body).ReadString('\n')
+	resp.Body.Close()
+	if strings.TrimSpace(line) != "data: hello" {
+		t.Fatalf("event stream = %q", line)
+	}
+	// once the session ends, the token gets demo_expired so the app shows its sign-in screen
+	ck.add(31 * time.Minute)
+	g.Reap()
+	if code, body := a.do(t, "GET", "/api/v1/me", ""); code != 401 || !strings.Contains(body, "demo_expired") {
+		t.Fatalf("expired token = %d %s", code, body)
+	}
+	g.mu.Lock()
+	left := len(g.tokens)
+	g.mu.Unlock()
+	if left != 0 {
+		t.Fatalf("tokens kept after the session ended: %d", left)
+	}
+	// signing in again gets a new sandbox
+	a.token = ""
+	if code, _ := a.signIn(t, "demo"); code != 200 || strings.TrimPrefix(a.token, "tok-") == sb {
+		t.Fatalf("second sign-in = %d token %s", code, a.token)
+	}
+}
+
+func TestAppSignInPerIPLimit(t *testing.T) {
+	_, trusted, _ := net.ParseCIDR("127.0.0.0/8")
+	g, _, _, srv := newTestGateway(t, Config{MaxSessions: 5, SessionsPerIP: 2, TrustedProxies: []*net.IPNet{trusted}})
+	for i := 0; i < 2; i++ {
+		a := &app{srv: srv, ip: "203.0.113.7"}
+		if code, _ := a.signIn(t, "demo"); code != 200 {
+			t.Fatalf("sign-in %d = %d", i, code)
+		}
+	}
+	a := &app{srv: srv, ip: "203.0.113.7"}
+	if code, body := a.signIn(t, "demo"); code != http.StatusTooManyRequests || !strings.Contains(body, "demo_ip_limit") {
+		t.Fatalf("third sign-in = %d %s", code, body)
+	}
+	if g.rejectedIP.Load() != 1 {
+		t.Fatalf("ip rejections = %d", g.rejectedIP.Load())
 	}
 }

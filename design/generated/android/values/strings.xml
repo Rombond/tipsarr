@@ -258,6 +258,7 @@
     <string name="library_year_to">To year</string>
     <string name="loading_redirect">Redirecting to login…</string>
     <string name="login_demo_admin">Sign in as admin</string>
+    <string name="login_demo_apps">Using the mobile apps? Server %1$s, user %2$s (admin) or %3$s, password %4$s.</string>
     <string name="login_demo_desc">Pick a role, no password needed. Everything you do stays in your own sandbox.</string>
     <string name="login_demo_title">Try the demo</string>
     <string name="login_demo_user">Sign in as user</string>

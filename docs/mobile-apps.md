@@ -14,8 +14,9 @@ Enter your server's address (for example `https://tipsarr.example.org`) and sign
 password. Several servers or accounts can be added. The server must be reachable from the phone: on the home network,
 over a VPN, or through a reverse proxy with HTTPS.
 
-To try the apps without a server, use the [demo](demo.md) address `https://tipsarr-demo.brebond.com`.
-<!-- TODO: confirm the apps accept the demo gateway (one-click sign-in exists on the web login page only). -->
+To try the apps without a server, use the [demo](demo.md) address `https://tipsarr-demo.brebond.com` and sign in
+as `admin` / `demo` (admin rights) or `user` / `demo` (plain user). Signing in starts your own sandbox; when it ends
+(30 minutes idle, 60 minutes at most) the app returns to its sign-in screen. Push notifications are off in the demo.
 
 ## Notifications
 

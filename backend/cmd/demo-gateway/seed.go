@@ -16,7 +16,7 @@ import (
 )
 
 // The template is rebuilt when this changes (or the internal address, which is saved in it).
-const seedVersion = "1"
+const seedVersion = "2"
 
 type seedClient struct {
 	base string
@@ -107,13 +107,13 @@ func seed(addr, internal string) {
 		slog.Error("seed: admin sign-in failed", "status", code, "body", body)
 		return
 	}
-	users := map[string]*seedClient{"alice": admin}
-	for _, n := range []string{"bob", "carol", "dave"} {
+	users := map[string]*seedClient{demo.AdminUser: admin}
+	for _, n := range []string{demo.PlainUser, "carol", "dave"} {
 		u := newSeedClient(base)
 		u.do("POST", "/auth/login", obj{"username": n, "password": demo.Password})
 		users[n] = u
 	}
-	bob, carol, dave := users["bob"], users["carol"], users["dave"]
+	bob, carol, dave := users[demo.PlainUser], users["carol"], users["dave"]
 
 	admin.do("PUT", "/admin/settings", obj{"boxofficeRegions": "US,FR", "defaultLanguage": ""})
 	in := "http://" + internal
@@ -139,7 +139,7 @@ func seed(addr, internal string) {
 	access := func(name string, perms int, quota obj) {
 		admin.do("PATCH", "/admin/users/"+ids[name], obj{"permissions": perms, "quota": quota})
 	}
-	access("bob", defaults, obj{"movieLimit": 5, "movieDays": 7})
+	access(demo.PlainUser, defaults, obj{"movieLimit": 5, "movieDays": 7})
 	access("carol", defaults|manageRequests, obj{})
 	access("dave", requestMovie|createIssues, obj{"movieLimit": 1, "movieDays": 1})
 

@@ -258,6 +258,7 @@
     <string name="library_year_to">Jusqu’à l’année</string>
     <string name="loading_redirect">Redirection vers la connexion…</string>
     <string name="login_demo_admin">Entrer comme admin</string>
+    <string name="login_demo_apps">Tu utilises les applis mobiles ? Serveur : %1$s, identifiant %2$s (admin) ou %3$s, mot de passe %4$s.</string>
     <string name="login_demo_desc">Choisis un rôle, pas besoin de mot de passe. Tout ce que tu fais reste dans ton propre bac à sable.</string>
     <string name="login_demo_title">Essaie la démo</string>
     <string name="login_demo_user">Entrer comme utilisateur</string>

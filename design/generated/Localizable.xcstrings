@@ -4133,6 +4133,23 @@
         }
       }
     },
+    "login.demo_apps": {
+      "comment": "placeholders: server, admin, user, password",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Using the mobile apps? Server %1$@, user %2$@ (admin) or %3$@, password %4$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu utilises les applis mobiles ? Serveur : %1$@, identifiant %2$@ (admin) ou %3$@, mot de passe %4$@."
+          }
+        }
+      }
+    },
     "login.demo_desc": {
       "localizations": {
         "en": {
