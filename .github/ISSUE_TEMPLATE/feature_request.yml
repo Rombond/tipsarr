@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest an idea or an improvement
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tipsarr never requests or adds anything automatically and uses Jellyfin as its only identity; ideas that change
+        these rules are unlikely to be accepted. Search existing issues first.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do, and what gets in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Web interface
+        - iOS app
+        - Android app
+        - Server / API
+        - Notifications (webhooks, push)
+        - Documentation
+        - Translations
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds you considered

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation and FAQ
+    url: https://github.com/Rombond/tipsarr/tree/master/docs
+    about: Installation, configuration, push notifications, troubleshooting.
+  - name: Try the demo
+    url: https://tipsarr-demo.brebond.com
+    about: A private throwaway Tipsarr with sample data, to check a behaviour before reporting it.
+  - name: Report a security vulnerability
+    url: https://github.com/Rombond/tipsarr/security/advisories/new
+    about: Please report security problems privately, not as an issue.

@@ -1,0 +1,73 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Check the [FAQ](https://github.com/Rombond/tipsarr/blob/master/docs/faq.md) and existing issues first.
+        Security problems: use a [private advisory](https://github.com/Rombond/tipsarr/security/advisories/new) instead.
+        Remove API keys, tokens, passwords and addresses you do not want public from everything you paste.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to ...
+        2. Press ...
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Tipsarr server version
+      description: Settings shows it, or the image tag / `docker inspect`.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Where does it happen?
+      multiple: true
+      options:
+        - Web interface
+        - iOS / iPadOS app
+        - Android app
+        - Server only (jobs, webhooks, push, API)
+        - Public demo
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: App version and device (for the mobile apps)
+      placeholder: "iOS app 1.0 (12), iPhone 15, iOS 26.1"
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Database, reverse proxy, Jellyfin / Radarr / Sonarr versions, architecture.
+      placeholder: "SQLite, Caddy, Jellyfin 10.11, Radarr 6, Sonarr 4, arm64"
+  - type: dropdown
+    id: dryrun
+    attributes:
+      label: Dry-run
+      options:
+        - "On (TIPSARR_DRY_RUN=true, default)"
+        - "Off"
+        - "Not sure"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant lines from `docker logs tipsarr` (with `TIPSARR_LOG_LEVEL=debug` if possible). Remove secrets.
+      render: text
