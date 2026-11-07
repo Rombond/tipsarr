@@ -34,8 +34,8 @@ when the session ends.
 - **No analytics, no advertising, no crash reporting SDK.** The Android app includes Firebase Cloud Messaging only to
   receive push notifications (no Firebase Analytics); the iOS app has no third-party SDK.
 - **Push token**: sent to your Tipsarr server with the platform, language, the notification categories you chose and
-  the app version, so it can address notifications to you. It is deleted when you sign out.
-  <!-- TODO: confirm the server deletes the device on sign-out (session cascade) and what the apps keep in "search" prefs. -->
+  the app version, so it can address notifications to you. It is tied to your sign-in session and deleted from the
+  server when you sign out or the session is revoked.
 
 ## The push relay (`push.brebond.com`)
 
@@ -50,8 +50,8 @@ Run by the app publisher, only used when your server's administrator turns push 
   a keyed hash (HMAC) of the client IP address. These are kept for abuse handling; the IP hash is deleted after 30 days,
   and a key unused for 90 days is deleted with its data.
 - Usage counters per key (for the daily quota).
-- The relay's reverse proxy may keep standard access logs (IP address, time, path).
-  <!-- TODO: state the access-log retention of push.brebond.com. -->
+- The relay's reverse proxy keeps standard access logs (IP address, time, path), rotated and deleted after at most
+  90 days.
 
 Apple and Google receive the notification text and the device token, as for any push notification.
 
