@@ -929,4 +929,26 @@
     <string name="watchlist_empty">Nothing here yet. Open a movie or show and press “Watchlist”.</string>
     <string name="watchlist_hint">Hover a poster and press ✕ to remove it from the list.</string>
     <string name="watchlist_title">Watchlist</string>
+    <string name="webhook_issue_commented_message">%1$s: %2$s</string>
+    <string name="webhook_issue_commented_subject">New comment on an issue: %1$s</string>
+    <string name="webhook_issue_created_message">%1$s reported a problem with %2$s: %3$s</string>
+    <string name="webhook_issue_created_subject">New issue: %1$s</string>
+    <string name="webhook_issue_reopened_message">The problem with %1$s was reopened.</string>
+    <string name="webhook_issue_reopened_subject">Issue reopened: %1$s</string>
+    <string name="webhook_issue_resolved_message">The problem with %1$s was marked as resolved.</string>
+    <string name="webhook_issue_resolved_subject">Issue resolved: %1$s</string>
+    <string name="webhook_media_available_message">%1$s, requested by %2$s, is ready to watch.</string>
+    <string name="webhook_media_available_subject">Now available: %1$s</string>
+    <string name="webhook_request_approved_message">The request for %1$s by %2$s was approved.</string>
+    <string name="webhook_request_approved_subject">Request approved: %1$s</string>
+    <string name="webhook_request_auto_approved_message">%1$s requested %2$s; it was approved automatically.</string>
+    <string name="webhook_request_auto_approved_subject">Request auto-approved: %1$s</string>
+    <string name="webhook_request_created_message">%1$s requested %2$s.</string>
+    <string name="webhook_request_created_subject">New request: %1$s</string>
+    <string name="webhook_request_declined_message">The request for %1$s by %2$s was declined.</string>
+    <string name="webhook_request_declined_subject">Request declined: %1$s</string>
+    <string name="webhook_request_failed_message">The request for %1$s could not be sent to Radarr/Sonarr.</string>
+    <string name="webhook_request_failed_subject">Request failed: %1$s</string>
+    <string name="webhook_test_message">If you can read this, the webhook works. Sample title: %1$s</string>
+    <string name="webhook_test_subject">Tipsarr test notification</string>
 </resources>
