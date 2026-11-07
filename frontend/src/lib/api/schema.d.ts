@@ -85,6 +85,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/push/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Turn mobile push on with the relay's open registration (admin)
+         * @description Asks the relay for a key of its own (POST /v1/register with this server's install id), saves it with the address and turns push on. Registering again replaces the key.
+         */
+        post: operations["registerPush"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/servarr": {
         parameters: {
             query?: never;
@@ -2474,6 +2494,10 @@ export interface components {
             /** @description Host (and port) the app uses to reach this server; sent back in every alert so a phone with several accounts opens the right one */
             server?: string;
         };
+        RegisterPushRequest: {
+            /** @description Relay address; empty = the publisher's relay (pushDefaultRelayUrl) */
+            relayUrl?: string;
+        };
         RequestCountsResponse: {
             /** Format: int64 */
             approved: number;
@@ -2634,8 +2658,22 @@ export interface components {
             oidcGroupsClaim: string;
             /** @description OpenID Connect provider (Authelia), e.g. https://auth.example.org */
             oidcIssuer: string;
+            /**
+             * Format: int64
+             * @description Pushes per day the relay allows a public key; 0 = unlimited or unknown
+             */
+            pushDailyQuota: number;
+            /** @description The relay run by the app publisher, offered for registration */
+            pushDefaultRelayUrl: string;
             /** @description Mobile push notifications through the relay (off by default) */
             pushEnabled: boolean;
+            /** @description The key came from the relay's open registration: generic alerts only (pushText has no effect) and a daily quota */
+            pushKeyPublic: boolean;
+            /**
+             * Format: int64
+             * @description Unix time when sending resumes after the relay's daily quota was reached; 0 = not paused
+             */
+            pushPausedUntil: number;
             /** @description The relay key is write-only; this only says whether one is saved */
             pushRelayKeyConfigured: boolean;
             /** @description Address of the push relay, e.g. https://push.example.org */
@@ -3451,6 +3489,102 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    registerPush: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterPushRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

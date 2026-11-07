@@ -2133,6 +2133,102 @@
         }
       }
     },
+    "error.push_register_busy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The relay is busy. Try again in a few minutes."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le relais est très sollicité. Réessaie dans quelques minutes."
+          }
+        }
+      }
+    },
+    "error.push_register_closed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The relay has paused new registrations. Try again in a few hours."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le relais a suspendu les nouvelles inscriptions. Réessaie dans quelques heures."
+          }
+        }
+      }
+    },
+    "error.push_register_not_allowed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This relay does not offer registration for Tipsarr. Paste a key from its operator instead."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce relais ne propose pas l’inscription pour Tipsarr. Colle plutôt une clé fournie par son gestionnaire."
+          }
+        }
+      }
+    },
+    "error.push_register_refused": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The relay refused the registration."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le relais a refusé l’inscription."
+          }
+        }
+      }
+    },
+    "error.push_relay_unreachable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The push relay could not be reached. Check the address and try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de joindre le relais push. Vérifie l’adresse et réessaie."
+          }
+        }
+      }
+    },
+    "error.push_unavailable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Push notifications are not available on this server."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les notifications push ne sont pas disponibles sur ce serveur."
+          }
+        }
+      }
+    },
     "error.quota_reached": {
       "localizations": {
         "en": {

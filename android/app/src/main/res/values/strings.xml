@@ -134,6 +134,12 @@
     <string name="error_permission_required">You do not have permission to do this.</string>
     <string name="error_public_url_invalid">The public address must start with http:// or https://.</string>
     <string name="error_push_not_configured">Set the relay address and key before turning push on.</string>
+    <string name="error_push_register_busy">The relay is busy. Try again in a few minutes.</string>
+    <string name="error_push_register_closed">The relay has paused new registrations. Try again in a few hours.</string>
+    <string name="error_push_register_not_allowed">This relay does not offer registration for Tipsarr. Paste a key from its operator instead.</string>
+    <string name="error_push_register_refused">The relay refused the registration.</string>
+    <string name="error_push_relay_unreachable">The push relay could not be reached. Check the address and try again.</string>
+    <string name="error_push_unavailable">Push notifications are not available on this server.</string>
     <string name="error_quota_reached">You have reached your request limit for now.</string>
     <string name="error_refresh_too_soon">Refreshed a moment ago, try again in a minute.</string>
     <string name="error_retype_key">Enter the API key again when you change the address.</string>

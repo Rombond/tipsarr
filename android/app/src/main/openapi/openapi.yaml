@@ -1913,6 +1913,13 @@ components:
       required:
         - pushToken
       type: object
+    RegisterPushRequest:
+      additionalProperties: false
+      properties:
+        relayUrl:
+          description: Relay address; empty = the publisher's relay (pushDefaultRelayUrl)
+          type: string
+      type: object
     RequestCountsResponse:
       additionalProperties: false
       properties:
@@ -2252,9 +2259,23 @@ components:
         oidcIssuer:
           description: OpenID Connect provider (Authelia), e.g. https://auth.example.org
           type: string
+        pushDailyQuota:
+          description: Pushes per day the relay allows a public key; 0 = unlimited or unknown
+          format: int64
+          type: integer
+        pushDefaultRelayUrl:
+          description: The relay run by the app publisher, offered for registration
+          type: string
         pushEnabled:
           description: Mobile push notifications through the relay (off by default)
           type: boolean
+        pushKeyPublic:
+          description: "The key came from the relay's open registration: generic alerts only (pushText has no effect) and a daily quota"
+          type: boolean
+        pushPausedUntil:
+          description: Unix time when sending resumes after the relay's daily quota was reached; 0 = not paused
+          format: int64
+          type: integer
         pushRelayKeyConfigured:
           description: The relay key is write-only; this only says whether one is saved
           type: boolean
@@ -2313,6 +2334,10 @@ components:
         - pushRelayUrl
         - pushText
         - pushRelayKeyConfigured
+        - pushKeyPublic
+        - pushDailyQuota
+        - pushPausedUntil
+        - pushDefaultRelayUrl
         - servarrAutoImport
         - teasersFilesEnabled
         - teasersFilesUrl
@@ -3574,6 +3599,77 @@ paths:
         - session: []
         - bearer: []
       summary: Set the permissions and quotas new people start with (admin)
+      tags:
+        - admin
+  /admin/push/register:
+    post:
+      description: Asks the relay for a key of its own (POST /v1/register with this server's install id), saves it with the address and turns push on. Registering again replaces the key.
+      operationId: registerPush
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterPushRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SettingsBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Too Many Requests
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+        "502":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Bad Gateway
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Service Unavailable
+      security:
+        - session: []
+        - bearer: []
+      summary: Turn mobile push on with the relay's open registration (admin)
       tags:
         - admin
   /admin/servarr:

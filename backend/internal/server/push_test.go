@@ -224,3 +224,72 @@ func TestPushRelayEndToEnd(t *testing.T) {
 		t.Fatalf("clear key = %d %s", resp.StatusCode, body)
 	}
 }
+
+func TestPushOpenRegistration(t *testing.T) {
+	e := newEnv(t, true)
+	_, admin, bob := setupUsers(t, e)
+	var mu sync.Mutex
+	var bodies []map[string]any
+	refuse := ""
+	relay := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		var b map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&b)
+		bodies = append(bodies, b)
+		if refuse != "" {
+			w.Header().Set("Retry-After", "60")
+			code := map[string]int{"registration_closed": 403, "registration_cap": 429, "invalid_install_id": 400}[refuse]
+			w.WriteHeader(code)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": refuse})
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{"key": "pr_public", "keyId": 3, "app": "tipsarr", "rotated": false, "dailyQuota": 200})
+	}))
+	defer relay.Close()
+
+	if resp, _ := call(t, e.app, "POST", "/api/v1/admin/push/register", `{"relayUrl":"`+relay.URL+`"}`, bob); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("non-admin register = %d", resp.StatusCode)
+	}
+	if _, body := call(t, e.app, "GET", "/api/v1/admin/settings", "", admin); !strings.Contains(body, `"pushDefaultRelayUrl":"https://push.brebond.com"`) {
+		t.Fatalf("default relay missing: %s", body)
+	}
+	resp, body := call(t, e.app, "POST", "/api/v1/admin/push/register", `{"relayUrl":"`+relay.URL+`/"}`, admin)
+	if resp.StatusCode != 200 || strings.Contains(body, "pr_public") || !strings.Contains(body, `"pushEnabled":true`) ||
+		!strings.Contains(body, `"pushKeyPublic":true`) || !strings.Contains(body, `"pushDailyQuota":200`) {
+		t.Fatalf("register = %d %s", resp.StatusCode, body)
+	}
+	mu.Lock()
+	if bodies[0]["app"] != "tipsarr" || bodies[0]["installId"] == "" {
+		t.Fatalf("register body %v", bodies[0])
+	}
+	id := bodies[0]["installId"]
+	mu.Unlock()
+
+	for code, want := range map[string]string{"registration_closed": "push_register_closed", "registration_cap": "push_register_busy", "invalid_install_id": "push_register_refused"} {
+		mu.Lock()
+		refuse = code
+		mu.Unlock()
+		if _, body := call(t, e.app, "POST", "/api/v1/admin/push/register", `{"relayUrl":"`+relay.URL+`"}`, admin); !strings.Contains(body, want) {
+			t.Fatalf("%s: %s", code, body)
+		}
+	}
+	mu.Lock()
+	if bodies[len(bodies)-1]["installId"] != id {
+		t.Fatal("install id changed between registrations")
+	}
+	mu.Unlock()
+	// a refused registration keeps the working key
+	if _, body := call(t, e.app, "GET", "/api/v1/admin/settings", "", admin); !strings.Contains(body, `"pushKeyPublic":true`) {
+		t.Fatalf("after refusals: %s", body)
+	}
+	// a key pasted by hand is no longer public
+	if _, body := call(t, e.app, "PUT", "/api/v1/admin/settings", `{"pushRelayKey":"pr_manual"}`, admin); !strings.Contains(body, `"pushKeyPublic":false`) {
+		t.Fatalf("manual key: %s", body)
+	}
+	relay.Close()
+	if resp, body := call(t, e.app, "POST", "/api/v1/admin/push/register", `{"relayUrl":"`+relay.URL+`"}`, admin); resp.StatusCode != 502 || !strings.Contains(body, "push_relay_unreachable") {
+		t.Fatalf("unreachable = %d %s", resp.StatusCode, body)
+	}
+}

@@ -134,6 +134,12 @@
     <string name="error_permission_required">Tu n’as pas la permission de faire ça.</string>
     <string name="error_public_url_invalid">L’adresse publique doit commencer par http:// ou https://.</string>
     <string name="error_push_not_configured">Renseigne l’adresse et la clé du relais avant d’activer les notifications push.</string>
+    <string name="error_push_register_busy">Le relais est très sollicité. Réessaie dans quelques minutes.</string>
+    <string name="error_push_register_closed">Le relais a suspendu les nouvelles inscriptions. Réessaie dans quelques heures.</string>
+    <string name="error_push_register_not_allowed">Ce relais ne propose pas l’inscription pour Tipsarr. Colle plutôt une clé fournie par son gestionnaire.</string>
+    <string name="error_push_register_refused">Le relais a refusé l’inscription.</string>
+    <string name="error_push_relay_unreachable">Impossible de joindre le relais push. Vérifie l’adresse et réessaie.</string>
+    <string name="error_push_unavailable">Les notifications push ne sont pas disponibles sur ce serveur.</string>
     <string name="error_quota_reached">Tu as atteint ta limite de demandes pour le moment.</string>
     <string name="error_refresh_too_soon">Actualisé à l’instant, réessaie dans une minute.</string>
     <string name="error_retype_key">Saisis à nouveau la clé API quand tu changes l’adresse.</string>
