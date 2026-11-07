@@ -4,6 +4,7 @@
 	import { counts } from '$lib/stores/counts.svelte';
 	import AppSidebar from './app-sidebar.svelte';
 	import DryRunBanner from './dry-run-banner.svelte';
+	import DemoBanner from './demo-banner.svelte';
 	import SearchBox from './search-box.svelte';
 	import MobileNav from './mobile-nav.svelte';
 
@@ -20,6 +21,7 @@
 <Sidebar.Provider style="--sidebar-width: 17rem">
 	<AppSidebar />
 	<Sidebar.Inset>
+		<DemoBanner />
 		<DryRunBanner />
 		<!-- Full-width search bar that floats over the page: on detail pages the backdrop shows
 		     behind it, elsewhere it turns solid once you scroll. -->

@@ -329,6 +329,17 @@ components:
           maxLength: 500
           type: string
       type: object
+    DemoLoginInputBody:
+      properties:
+        role:
+          description: "admin: every right; user: a plain account"
+          enum:
+            - admin
+            - user
+          type: string
+      required:
+        - role
+      type: object
     Detail:
       properties:
         availability:
@@ -2555,6 +2566,9 @@ components:
           type: string
         defaultLanguage:
           type: string
+        demo:
+          description: "This server is a throwaway public demo sandbox: one-click sign-in, actions that reach other services are refused (demo_disabled)"
+          type: boolean
         dryRun:
           description: When true nothing is ever sent to Radarr/Sonarr
           type: boolean
@@ -2568,6 +2582,7 @@ components:
         - version
         - db
         - dryRun
+        - demo
         - defaultLanguage
         - apiVersion
         - minAppVersion
@@ -4948,6 +4963,66 @@ paths:
       summary: Send a test event to a webhook (admin)
       tags:
         - admin
+  /auth/demo:
+    post:
+      description: "Only on a demo sandbox (status.demo): signs in as the seeded admin or as a plain user, without a password."
+      operationId: demoLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DemoLoginInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: OK
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Too Many Requests
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Service Unavailable
+      summary: One-click sign-in of the public demo
+      tags:
+        - auth
   /auth/login:
     post:
       operationId: login
