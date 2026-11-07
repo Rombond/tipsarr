@@ -598,6 +598,8 @@
     <string name="profile_all_requests">All requests</string>
     <string name="profile_card_desc">The language is used for the whole interface and for titles and descriptions from TMDB. The region sets release dates and the default box-office chart.</string>
     <string name="profile_change_picture">Change picture</string>
+    <string name="profile_chat_hint">Optional: lets webhooks mention or message you directly.</string>
+    <string name="profile_chat_title">Chat notifications</string>
     <string name="profile_device_current">This device</string>
     <string name="profile_device_last_used">Last used %1$s</string>
     <string name="profile_device_sign_out">Sign out</string>
@@ -607,6 +609,7 @@
     <string name="profile_devices_sign_out_others">Sign out everywhere else</string>
     <string name="profile_devices_signed_out_others">Signed out everywhere else.</string>
     <string name="profile_devices_title">Signed-in devices</string>
+    <string name="profile_discord_id">Discord user id</string>
     <string name="profile_hidden_desc">Titles you marked “not interested”.</string>
     <string name="profile_hidden_title">Hidden from my suggestions</string>
     <string name="profile_history_sources">Your recommendations also use the watch history of %1$s (set by an admin). That is why Discover can show titles you have not watched yourself.</string>
@@ -634,6 +637,7 @@
     <string name="profile_stats">Statistics</string>
     <string name="profile_tab_overview">Overview</string>
     <string name="profile_tab_settings">Settings</string>
+    <string name="profile_telegram_chat_id">Telegram chat id</string>
     <string name="profile_title">Profile</string>
     <string name="profile_unhide">Unhide</string>
     <string name="push_issue_comment">New comment on an issue</string>

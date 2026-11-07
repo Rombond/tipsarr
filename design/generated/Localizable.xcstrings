@@ -9584,6 +9584,38 @@
         }
       }
     },
+    "profile.chat_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional: lets webhooks mention or message you directly."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Facultatif : permet aux webhooks de te mentionner ou de t’écrire directement."
+          }
+        }
+      }
+    },
+    "profile.chat_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chat notifications"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications par messagerie"
+          }
+        }
+      }
+    },
     "profile.device_current": {
       "localizations": {
         "en": {
@@ -9725,6 +9757,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Appareils connectés"
+          }
+        }
+      }
+    },
+    "profile.discord_id": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discord user id"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant utilisateur Discord"
           }
         }
       }
@@ -10160,6 +10208,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Paramètres"
+          }
+        }
+      }
+    },
+    "profile.telegram_chat_id": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telegram chat id"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identifiant de conversation Telegram"
           }
         }
       }
