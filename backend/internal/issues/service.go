@@ -19,6 +19,8 @@ import (
 var (
 	ErrInvalid   = errors.New("invalid issue")
 	ErrForbidden = errors.New("not allowed")
+	// ErrNotInLibrary: a problem can only be reported on a title Jellyfin has (fully or partly).
+	ErrNotInLibrary = errors.New("media is not in the library")
 )
 
 var Kinds = []string{"video", "audio", "subtitles", "other"}
@@ -115,6 +117,9 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*I
 	if err != nil {
 		return nil, err
 	}
+	if d.Availability == media.AvailabilityNone || d.Availability == "" {
+		return nil, ErrNotInLibrary
+	}
 	i := &store.Issue{
 		ID: store.NewID(), MediaType: p.Type, TMDBID: int64(p.TMDBID), Title: d.Title, PosterPath: d.PosterPath,
 		Kind: p.Kind, SeasonNumber: p.Season, EpisodeNumber: p.Episode, Status: store.IssueOpen, CreatedBy: u.ID,
@@ -127,7 +132,10 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*I
 		return nil, err
 	}
 	s.changed(i)
-	s.notify.Dispatch(notify.IssueCreated, map[string]any{"issue": v.IssueView, "message": msg})
+	ev := issueEvent(notify.IssueCreated, v, map[string]any{"issue": v.IssueView, "message": msg}, u.ID)
+	ev.Users, ev.Comment = nil, &notify.Comment{Message: msg, UserID: u.ID, Name: u.Name}
+	ev.Admins, ev.Needs = true, int64(perms.ManageIssues)
+	s.notify.Send(ev)
 	s.notify.Push(notify.PushEvent{Name: "issue.created", ID: i.ID, Subject: i.Title, Admins: true, Needs: int64(perms.ManageIssues), Skip: u.ID})
 	return v, nil
 }
@@ -273,7 +281,10 @@ func (s *Service) Comment(ctx context.Context, u *store.User, id, message string
 		return nil, err
 	}
 	s.changed(i)
-	s.notify.Dispatch(notify.IssueCommented, map[string]any{"issue": d.IssueView, "comment": msg, "by": IssueUser{ID: u.ID, Name: u.Name}})
+	ev := issueEvent(notify.IssueCommented, d, map[string]any{"issue": d.IssueView, "comment": msg, "by": IssueUser{ID: u.ID, Name: u.Name}}, u.ID)
+	ev.Comment = &notify.Comment{Message: msg, UserID: u.ID, Name: u.Name}
+	ev.Admins, ev.Needs = true, int64(perms.ManageIssues)
+	s.notify.Send(ev)
 	s.notify.Push(notify.PushEvent{Name: "issue.comment", ID: i.ID, Subject: i.Title, Users: []string{i.CreatedBy}, Admins: true, Needs: int64(perms.ManageIssues), Skip: u.ID})
 	return d, nil
 }
@@ -290,6 +301,7 @@ func (s *Service) SetResolved(ctx context.Context, u *store.User, id string, res
 	if !canAct(u, i) {
 		return nil, ErrForbidden
 	}
+	wasOpen := i.Status == store.IssueOpen
 	if resolved {
 		i.Status, i.ResolvedBy = store.IssueResolved, u.ID
 	} else {
@@ -304,8 +316,10 @@ func (s *Service) SetResolved(ctx context.Context, u *store.User, id string, res
 	}
 	s.changed(i)
 	if resolved {
-		s.notify.Dispatch(notify.IssueResolved, map[string]any{"issue": d.IssueView})
+		s.notify.Send(issueEvent(notify.IssueResolved, d, map[string]any{"issue": d.IssueView}, u.ID))
 		s.notify.Push(notify.PushEvent{Name: "issue.resolved", ID: i.ID, Subject: i.Title, Users: []string{i.CreatedBy}, Skip: u.ID})
+	} else if !wasOpen {
+		s.notify.Send(issueEvent(notify.IssueReopened, d, map[string]any{"issue": d.IssueView}, u.ID))
 	}
 	return d, nil
 }
@@ -360,4 +374,14 @@ func (s *Service) Search(ctx context.Context, u *store.User, id string) error {
 		return err
 	}
 	return s.arr.ArrSearch(ctx, media.Opts{Language: u.Language, Region: u.Region}, i.MediaType, int(i.TMDBID), i.SeasonNumber, i.EpisodeNumber)
+}
+
+// issueEvent builds the webhook event of an issue: it concerns the reporter and everyone who commented.
+func issueEvent(name string, d *IssueThread, data map[string]any, skip string) notify.Event {
+	users := []string{d.CreatedBy.ID}
+	for _, c := range d.Comments {
+		users = append(users, c.User.ID)
+	}
+	return notify.Event{Name: name, Data: data, Issue: d, IssueID: d.ID, Users: users, Skip: skip,
+		Media: &notify.Media{TMDBID: d.TMDBID, Type: d.Type, Title: d.Title, Status: d.Status, PosterPath: d.PosterPath}}
 }

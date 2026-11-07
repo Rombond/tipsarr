@@ -249,7 +249,7 @@ func (s *Store) GetWebhook(ctx context.Context, id string) (*Webhook, error) {
 }
 
 func (s *Store) SaveWebhook(ctx context.Context, w *Webhook) error {
-	res, err := s.DB.NewUpdate().Model(w).Column("name", "url", "secret", "events", "enabled").WherePK().Exec(ctx)
+	res, err := s.DB.NewUpdate().Model(w).Column("name", "url", "secret", "events", "enabled", "preset", "template", "headers", "auth_type", "auth_username", "auth_secret", "per_recipient").WherePK().Exec(ctx)
 	if err != nil {
 		return err
 	}

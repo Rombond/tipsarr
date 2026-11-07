@@ -1,9 +1,14 @@
 package api
 
 import (
+	neturl "net/url"
+
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
+	"fmt"
+	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -40,11 +45,16 @@ type settingsBody struct {
 	LDAPBindDN               string `json:"ldapBindDn"`
 	LDAPPasswordSet          bool   `json:"ldapBindPasswordConfigured"`
 	LDAPBaseDN               string `json:"ldapBaseDn" doc:"Where users live, e.g. ou=people,dc=example,dc=com"`
+	AppPublicURL             string `json:"appPublicUrl" doc:"Address people open Tipsarr at, e.g. https://tipsarr.example.org; webhook links ({{ url }}) start with it. Empty = no links"`
 	DefaultLanguage          string `json:"defaultLanguage" doc:"App-wide default language, e.g. fr-FR; empty = the browser decides. A person's own language wins"`
 	PushEnabled              bool   `json:"pushEnabled" doc:"Mobile push notifications through the relay (off by default)"`
 	PushRelayURL             string `json:"pushRelayUrl" doc:"Address of the push relay, e.g. https://push.example.org"`
 	PushText                 bool   `json:"pushText" doc:"Alerts name the media (needs a relay that allows free text for this app); off: generic alerts"`
 	PushRelayKeyConfigured   bool   `json:"pushRelayKeyConfigured" doc:"The relay key is write-only; this only says whether one is saved"`
+	PushKeyPublic            bool   `json:"pushKeyPublic" doc:"The key came from the relay's open registration: generic alerts only (pushText has no effect) and a daily quota"`
+	PushDailyQuota           int    `json:"pushDailyQuota" doc:"Pushes per day the relay allows a public key; 0 = unlimited or unknown"`
+	PushPausedUntil          int64  `json:"pushPausedUntil" doc:"Unix time when sending resumes after the relay's daily quota was reached; 0 = not paused"`
+	PushDefaultRelayURL      string `json:"pushDefaultRelayUrl" doc:"The relay run by the app publisher, offered for registration"`
 	ServarrAutoImport        bool   `json:"servarrAutoImport" doc:"Mirror what Radarr/Sonarr monitor but have not downloaded as approved requests (reads only)"`
 	TeasersFilesEnabled      bool   `json:"teasersFilesEnabled" doc:"Teasers feed with trailer files from the optional trailer-resolver sidecar (off by default)"`
 	TeasersFilesURL          string `json:"teasersFilesUrl" doc:"Address of the trailer resolver on the Docker network, e.g. http://trailer-resolver:8080"`
@@ -67,6 +77,7 @@ type updateSettingsInput struct {
 		PushRelayURL          *string `json:"pushRelayUrl,omitempty" doc:"Empty string clears it (and turns push off)"`
 		PushRelayKey          *string `json:"pushRelayKey,omitempty" doc:"Write-only; empty string clears it (and turns push off)"`
 		DefaultLanguage       *string `json:"defaultLanguage,omitempty" doc:"e.g. fr-FR; empty clears it"`
+		AppPublicURL          *string `json:"appPublicUrl,omitempty" doc:"http(s)://host[/path]; empty clears it"`
 		LDAPURL               *string `json:"ldapUrl,omitempty" doc:"Empty string turns LDAP pictures off; the connection is tested when saving"`
 		LDAPBindDN            *string `json:"ldapBindDn,omitempty"`
 		LDAPPassword          *string `json:"ldapBindPassword,omitempty" doc:"Write-only"`
@@ -113,6 +124,13 @@ func registerAdmin(api huma.API, d Deps) {
 		pushURL, _ := d.Store.GetSetting(ctx, push.SettingURL)
 		pushKey, _ := d.Store.GetSetting(ctx, push.SettingKey)
 		pushText, _ := d.Store.GetSetting(ctx, push.SettingText)
+		pushPublic, _ := d.Store.GetSetting(ctx, push.SettingKeyPublic)
+		pushQuota, _ := d.Store.GetSetting(ctx, push.SettingDailyQuota)
+		quota, _ := strconv.Atoi(pushQuota)
+		var paused int64
+		if d.Push != nil {
+			paused = d.Push.PausedUntil(ctx)
+		}
 		tfOn, _ := d.Store.GetSetting(ctx, trailers.SettingEnabled)
 		tfURL, _ := d.Store.GetSetting(ctx, trailers.SettingURL)
 		tfKey, _ := d.Store.GetSetting(ctx, trailers.SettingKey)
@@ -127,8 +145,9 @@ func registerAdmin(api huma.API, d Deps) {
 			APIKey:              apiKey,
 			TeasersFilesEnabled: tfOn == "true", TeasersFilesURL: tfURL, TeasersFilesKeySet: tfKey != "", TeasersFilesMaxHeight: tfHeight,
 			PushEnabled: pushOn == "true", PushText: pushText == "true", PushRelayURL: pushURL, PushRelayKeyConfigured: pushKey != "",
+			PushKeyPublic: pushPublic == "true" && pushKey != "", PushDailyQuota: quota, PushPausedUntil: paused, PushDefaultRelayURL: push.DefaultRelayURL,
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
-			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, WebhookToken: secret, ServarrAutoImport: autoImport != "false", DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage),
+			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, WebhookToken: secret, ServarrAutoImport: autoImport != "false", DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage), AppPublicURL: ldapGet(ctx, d, notify.SettingPublicURL),
 			LDAPURL: ldapGet(ctx, d, avatars.SettingLDAPURL), LDAPBindDN: ldapGet(ctx, d, avatars.SettingLDAPBindDN), LDAPBaseDN: ldapGet(ctx, d, avatars.SettingLDAPBaseDN), LDAPPasswordSet: ldapGet(ctx, d, avatars.SettingLDAPPassword) != "",
 			OIDCIssuer: oc.Issuer, OIDCClientID: oc.ClientID, OIDCClientSecretSet: oc.ClientSecret != "", OIDCAdminGroup: oc.AdminGroup, OIDCGroupsClaim: oc.GroupsClaim,
 		}, nil
@@ -227,6 +246,17 @@ func registerAdmin(api huma.API, d Deps) {
 				}
 			}
 		}
+		if in.Body.AppPublicURL != nil {
+			v := strings.TrimRight(strings.TrimSpace(*in.Body.AppPublicURL), "/")
+			if v != "" {
+				if pu, err := neturl.Parse(v); err != nil || (pu.Scheme != "http" && pu.Scheme != "https") || pu.Host == "" {
+					return nil, fail(422, "public_url_invalid", "appPublicUrl must be http(s)://host[/path]")
+				}
+			}
+			if err := d.Store.SetSetting(ctx, notify.SettingPublicURL, v); err != nil {
+				return nil, err
+			}
+		}
 		if in.Body.DefaultLanguage != nil {
 			v := strings.TrimSpace(*in.Body.DefaultLanguage)
 			if v != "" && !languageRe.MatchString(v) {
@@ -266,6 +296,60 @@ func registerAdmin(api huma.API, d Deps) {
 		b, err := read(ctx)
 		return &settingsOutput{Body: b}, err
 	})
+
+	if d.Push != nil {
+		d.Push.Version = strings.TrimPrefix(Version, "v")
+		d.Push.ServerURL = func(ctx context.Context) string { return ldapGet(ctx, d, notify.SettingPublicURL) }
+	}
+	huma.Register(api, huma.Operation{
+		OperationID: "registerPush", Method: http.MethodPost, Path: "/admin/push/register",
+		Summary:     "Turn mobile push on with the relay's open registration (admin)",
+		Description: "Asks the relay for a key of its own (POST /v1/register with this server's install id), saves it with the address and turns push on. Registering again replaces the key.",
+		Tags:        []string{"admin"}, Security: sec,
+		Errors: []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusConflict, http.StatusUnprocessableEntity, http.StatusTooManyRequests, http.StatusBadGateway, http.StatusServiceUnavailable},
+	}, func(ctx context.Context, in *struct {
+		Body struct {
+			RelayURL string `json:"relayUrl,omitempty" doc:"Relay address; empty = the publisher's relay (pushDefaultRelayUrl)"`
+		}
+	}) (*settingsOutput, error) {
+		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
+			return nil, err
+		}
+		if d.Push == nil {
+			return nil, fail(503, "push_unavailable", "push is not available on this server")
+		}
+		u := strings.TrimSpace(in.Body.RelayURL)
+		if u == "" {
+			u = push.DefaultRelayURL
+		}
+		if err := push.ValidURL(strings.TrimRight(u, "/")); err != nil {
+			return nil, fail(422, "invalid_push_url", err.Error())
+		}
+		if _, err := d.Push.Register(ctx, u); err != nil {
+			return nil, pushRegisterErr(err)
+		}
+		b, err := read(ctx)
+		return &settingsOutput{Body: b}, err
+	})
+}
+
+// pushRegisterErr turns a relay refusal into an error code the apps translate.
+func pushRegisterErr(err error) error {
+	var re *push.RegisterError
+	if !errors.As(err, &re) {
+		return err
+	}
+	switch {
+	case re.Status == 0 || re.Code == "unreachable":
+		return fail(502, "push_relay_unreachable", err.Error())
+	case re.Code == "registration_not_allowed":
+		return fail(409, "push_register_not_allowed", err.Error())
+	case re.Code == "registration_closed":
+		return fail(503, "push_register_closed", err.Error())
+	case re.Status == http.StatusTooManyRequests:
+		return fail(429, "push_register_busy", fmt.Sprintf("%s, retry in %d s", err.Error(), re.RetryAfter))
+	}
+	return fail(502, "push_register_refused", err.Error())
 }
 
 // updatePush saves the relay settings. Push cannot be on without an address and a key.
@@ -289,6 +373,12 @@ func updatePush(ctx context.Context, d Deps, enabled *bool, relayURL, relayKey *
 		v := strings.TrimSpace(*relayKey)
 		if err := set(push.SettingKey, v); err != nil {
 			return err
+		}
+		// a key pasted by hand is a manual key: no quota known, free text as the relay allows
+		for _, k := range []string{push.SettingKeyPublic, push.SettingDailyQuota, push.SettingPausedUntil} {
+			if err := set(k, ""); err != nil {
+				return err
+			}
 		}
 		if v == "" {
 			enabled = ptr(false)

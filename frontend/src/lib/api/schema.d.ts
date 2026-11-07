@@ -85,6 +85,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/push/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Turn mobile push on with the relay's open registration (admin)
+         * @description Asks the relay for a key of its own (POST /v1/register with this server's install id), saves it with the address and turns push on. Registering again replaces the key.
+         */
+        post: operations["registerPush"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/servarr": {
         parameters: {
             query?: never;
@@ -378,6 +398,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/webhooks/presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ready-made webhook templates and the events (admin) */
+        get: operations["listWebhookPresets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/webhooks/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Render a webhook form with sample values, without sending (admin)
+         * @description Renders the URL, headers and body for a made-up event. With id, saved secrets are used for what the form leaves out.
+         */
+        post: operations["previewWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/webhooks/variables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Template variables of an event, with sample values (admin)
+         * @description Built from the same variables as real deliveries, with the sample data of the preview. empty marks what the event does not fill; perRecipient what only one delivery per recipient fills.
+         */
+        get: operations["listWebhookVariables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/webhooks/{id}": {
         parameters: {
             query?: never;
@@ -405,7 +482,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Send a test event to a webhook (admin) */
+        /**
+         * Send a test event to a webhook (admin)
+         * @description 204 when delivered. 422 template_error when the template does not render (the message says where), 502 when the receiver fails.
+         */
         post: operations["testWebhook"];
         delete?: never;
         options?: never;
@@ -893,7 +973,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Change my region and language */
+        /** Change my region, language, rating source and chat ids */
         patch: operations["updateMe"];
         trace?: never;
     };
@@ -1879,6 +1959,10 @@ export interface components {
             defaults: components["schemas"]["PermissionDefaults"];
             flags: components["schemas"]["Flag"][];
         };
+        Header: {
+            name: string;
+            value: string;
+        };
         Health: {
             breaker: components["schemas"]["Breaker"];
             /** Format: int64 */
@@ -2173,6 +2257,11 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        ListWebhookPresetsResponse: {
+            /** @description Events a webhook may subscribe to */
+            events: string[];
+            presets: components["schemas"]["Preset"][];
+        };
         LoginInputBody: {
             password: string;
             username: string;
@@ -2255,6 +2344,8 @@ export interface components {
             profilePath?: string;
         };
         PrefsBody: {
+            /** @description Discord user id (digits, empty clears it), used to mention the person */
+            discordId?: string;
             /** @description TMDB language, e.g. fr-FR or fr (empty = English) */
             language?: string;
             /**
@@ -2264,6 +2355,19 @@ export interface components {
             ratingSource?: "tmdb" | "imdb" | "metacritic" | "rottenTomatoes" | "";
             /** @description ISO 3166 country, e.g. FR (empty = none). Used for release dates and the box-office region */
             region?: string;
+            /** @description Telegram chat id (empty clears it) */
+            telegramChatId?: string;
+        };
+        Preset: {
+            /** @enum {string} */
+            authType: "none" | "bearer" | "basic";
+            headers: components["schemas"]["Header"][];
+            id: string;
+            name: string;
+            notes: string;
+            /** @description Liquid body; empty = the raw JSON envelope */
+            template: string;
+            urlExample: string;
         };
         ProbeBody: {
             /** @description Leave empty to use the saved key of the instance given by id */
@@ -2410,6 +2514,10 @@ export interface components {
             /** @description Host (and port) the app uses to reach this server; sent back in every alert so a phone with several accounts opens the right one */
             server?: string;
         };
+        RegisterPushRequest: {
+            /** @description Relay address; empty = the publisher's relay (pushDefaultRelayUrl) */
+            relayUrl?: string;
+        };
         RequestCountsResponse: {
             /** Format: int64 */
             approved: number;
@@ -2543,6 +2651,8 @@ export interface components {
         SettingsBody: {
             /** @description Read-only key for dashboards (Glance, Homepage...), sent as the X-Api-Key header; it reads everything an admin sees and never writes. Empty = off */
             apiKey: string;
+            /** @description Address people open Tipsarr at, e.g. https://tipsarr.example.org; webhook links ({{ url }}) start with it. Empty = no links */
+            appPublicUrl: string;
             /** @description Comma-separated box-office region codes, e.g. US,GB,FR */
             boxofficeRegions: string;
             /** @description App-wide default language, e.g. fr-FR; empty = the browser decides. A person's own language wins */
@@ -2568,8 +2678,22 @@ export interface components {
             oidcGroupsClaim: string;
             /** @description OpenID Connect provider (Authelia), e.g. https://auth.example.org */
             oidcIssuer: string;
+            /**
+             * Format: int64
+             * @description Pushes per day the relay allows a public key; 0 = unlimited or unknown
+             */
+            pushDailyQuota: number;
+            /** @description The relay run by the app publisher, offered for registration */
+            pushDefaultRelayUrl: string;
             /** @description Mobile push notifications through the relay (off by default) */
             pushEnabled: boolean;
+            /** @description The key came from the relay's open registration: generic alerts only (pushText has no effect) and a daily quota */
+            pushKeyPublic: boolean;
+            /**
+             * Format: int64
+             * @description Unix time when sending resumes after the relay's daily quota was reached; 0 = not paused
+             */
+            pushPausedUntil: number;
             /** @description The relay key is write-only; this only says whether one is saved */
             pushRelayKeyConfigured: boolean;
             /** @description Address of the push relay, e.g. https://push.example.org */
@@ -2862,6 +2986,8 @@ export interface components {
         UpdateSettingsInputBody: {
             /** @description Turn the read-only dashboard key on (a key is created if there is none) or off (the key is deleted) */
             apiKeyEnabled?: boolean;
+            /** @description http(s)://host[/path]; empty clears it */
+            appPublicUrl?: string;
             /** @description Comma-separated region codes; empty resets to US */
             boxofficeRegions?: string;
             /** @description e.g. fr-FR; empty clears it */
@@ -2908,6 +3034,8 @@ export interface components {
             tmdbApiKey?: string;
         };
         UpdateUserRequest: {
+            /** @description Discord user id, empty to clear */
+            discordId?: string;
             /** @description e.g. fr or fr-FR, empty to clear */
             language?: string;
             /** Format: int64 */
@@ -2917,10 +3045,13 @@ export interface components {
             region?: string;
             /** @enum {string} */
             role?: "admin" | "user";
+            /** @description Telegram chat id, empty to clear */
+            telegramChatId?: string;
         };
         User: {
             /** Format: int64 */
             createdAt: number;
+            discordId: string;
             /** Format: int64 */
             effectivePermissions: number;
             id: string;
@@ -2937,6 +3068,7 @@ export interface components {
             ratingSource: string;
             region: string;
             role: string;
+            telegramChatId: string;
             /** Format: int64 */
             tvQuotaDays?: number;
             /** Format: int64 */
@@ -2955,6 +3087,23 @@ export interface components {
         UserRef: {
             id: string;
             name: string;
+        };
+        Variable: {
+            /** @description Localized description */
+            description: string;
+            /** @description Not filled for this event */
+            empty: boolean;
+            /** @description Value with the sample data (empty when Empty) */
+            example: string;
+            /** @description Liquid path, e.g. media.title */
+            path: string;
+            /** @description Only filled with one delivery per recipient */
+            perRecipient: boolean;
+            /**
+             * @description Value type
+             * @enum {string}
+             */
+            type: "string" | "number" | "boolean";
         };
         View: {
             /** Format: int64 */
@@ -3001,13 +3150,23 @@ export interface components {
             updatedAt: number;
         };
         WebhookBody: {
+            /** @description Bearer token or basic password (write-only). Empty string clears it; omit to keep it */
+            authSecret?: string;
+            /** @enum {string} */
+            authType?: "none" | "bearer" | "basic" | "";
+            authUsername?: string;
             enabled: boolean;
-            /** @description Any of request.created, request.approved, request.declined, request.failed, media.available; empty means all */
+            /** @description Any of request.created, request.approved, request.auto_approved, request.declined, request.failed, media.available, issue.created, issue.commented, issue.resolved, issue.reopened; empty means all. request.approved also receives request.auto_approved */
             events?: string[];
+            headers?: components["schemas"]["Header"][];
             name: string;
+            perRecipient?: boolean;
+            preset?: string;
             /** @description Signing secret (write-only). Empty string clears it; omit to keep it */
             secret?: string;
-            /** Format: uri */
+            /** @description Liquid body template; empty = the raw JSON envelope */
+            template?: string;
+            /** @description http(s) URL; may contain Liquid, rendered per delivery */
             url: string;
         };
         WebhookInputBody: {
@@ -3016,14 +3175,40 @@ export interface components {
             NotificationType?: string;
             UserId?: string;
         };
+        WebhookPreview: {
+            body: string;
+            /** @description Test only: whether the receiver accepted it */
+            delivered?: boolean;
+            /** @description Test only: why the delivery failed */
+            deliveryError?: string;
+            /** @description Template or URL problem; nothing else is set then */
+            error?: string;
+            /** @description Secrets are masked */
+            headers: components["schemas"]["Header"][];
+            url: string;
+            validJson: boolean;
+        };
         WebhookView: {
+            /** @description A bearer token or basic password is saved (write-only) */
+            authSecretConfigured: boolean;
+            /** @enum {string} */
+            authType: "none" | "bearer" | "basic";
+            authUsername: string;
             enabled: boolean;
             /** @description Subscribed events; empty means all */
             events: string[];
+            headers: components["schemas"]["Header"][];
             id: string;
             name: string;
+            /** @description One delivery per concerned person, with notifyUser filled */
+            perRecipient: boolean;
+            /** @description Preset the webhook was made from (informative) */
+            preset: string;
             /** @description A signing secret is saved (HMAC-SHA256 in X-Tipsarr-Signature) */
             secretConfigured: boolean;
+            /** @description Liquid body template; empty = the raw JSON envelope */
+            template: string;
+            /** @description May contain Liquid ({{ ... }}) */
             url: string;
         };
         WeekRef: {
@@ -3341,6 +3526,102 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    registerPush: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterPushRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4641,6 +4922,179 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WebhookView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    listWebhookPresets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListWebhookPresetsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    previewWebhook: {
+        parameters: {
+            query?: {
+                /** @description Saved webhook whose secrets fill what the form omits */
+                id?: string;
+                /** @description Event to simulate (default test) */
+                event?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookPreview"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    listWebhookVariables: {
+        parameters: {
+            query?: {
+                /** @description Event (default test) */
+                event?: string;
+                /** @description Language of the descriptions (default: the caller's) */
+                lang?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Variable"][];
                 };
             };
             /** @description Unauthorized */

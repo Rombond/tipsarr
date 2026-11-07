@@ -14,6 +14,8 @@
 	let language = $state(auth.user?.language ? (LOCALES.find((l) => l.code === supported(auth.user!.language))?.tag ?? '') : '');
 	let region = $state(auth.user?.region ?? '');
 	let ratingSource = $state(auth.user?.ratingSource || 'tmdb');
+	let discordId = $state(auth.user?.discordId ?? '');
+	let telegramChatId = $state(auth.user?.telegramChatId ?? '');
 	let error = $state<string | null>(null);
 	let saving = $state(false);
 	let hidden = $state<Schemas['Item'][]>([]);
@@ -65,7 +67,7 @@
 		saving = true;
 		error = null;
 		try {
-			auth.user = await unwrap(api.PATCH('/me', { body: { region: region.trim().toUpperCase(), language, ratingSource: ratingSource === 'tmdb' ? '' : (ratingSource as 'imdb' | 'metacritic' | 'rottenTomatoes') } }));
+			auth.user = await unwrap(api.PATCH('/me', { body: { region: region.trim().toUpperCase(), language, ratingSource: ratingSource === 'tmdb' ? '' : (ratingSource as 'imdb' | 'metacritic' | 'rottenTomatoes'), discordId: discordId.trim(), telegramChatId: telegramChatId.trim() } }));
 			// the interface follows immediately
 			if (language) i18n.set(LOCALES.find((l) => l.tag === language)!.code as Locale);
 			else i18n.useBrowser();
@@ -107,6 +109,18 @@
 				<label class="grid gap-1.5 text-sm">
 					{t('profile.region')}
 					<Input placeholder={t('profile.region_placeholder')} bind:value={region} maxlength={2} />
+				</label>
+				<div class="grid gap-1.5 text-sm">
+					<span class="font-medium">{t('profile.chat_title')}</span>
+					<span class="text-xs text-muted-foreground">{t('profile.chat_hint')}</span>
+				</div>
+				<label class="grid gap-1.5 text-sm">
+					{t('profile.discord_id')}
+					<Input bind:value={discordId} inputmode="numeric" pattern="[0-9]*" maxlength={20} autocomplete="off" />
+				</label>
+				<label class="grid gap-1.5 text-sm">
+					{t('profile.telegram_chat_id')}
+					<Input bind:value={telegramChatId} pattern="-?[0-9]*" maxlength={21} autocomplete="off" />
 				</label>
 				{#if error}<p class="text-sm text-destructive">{error}</p>{/if}
 				<Button type="submit" disabled={saving}>{saving ? t('common.saving') : t('common.save')}</Button>

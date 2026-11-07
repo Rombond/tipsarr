@@ -7,12 +7,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Rombond/tipsarr/backend/internal/i18n"
@@ -26,7 +28,21 @@ const (
 	SettingURL     = "push.relay_url"
 	SettingKey     = "push.relay_key" // secret, never returned by the API
 	SettingText    = "push.text"      // "true": alerts carry the title of the media (the relay must allow free text)
+	// SettingInstallID is this server's random id towards the relay's open registration, generated once and kept.
+	SettingInstallID = "push.install_id"
+	// SettingKeyPublic is "true" when the key came from POST /v1/register (templates only, daily quota).
+	SettingKeyPublic = "push.key_public"
+	// SettingDailyQuota is the daily quota the relay announced for a public key (0 = unlimited).
+	SettingDailyQuota = "push.daily_quota"
+	// SettingPausedUntil (unix seconds) stops sending until then, after the relay answered quota_exceeded.
+	SettingPausedUntil = "push.paused_until"
 )
+
+// DefaultRelayURL is the relay run by the app publisher.
+const DefaultRelayURL = "https://push.brebond.com"
+
+// AppName is the app id at the relay.
+const AppName = "tipsarr"
 
 const batchSize = 100
 
@@ -47,11 +63,19 @@ type Service struct {
 	http   *http.Client
 	dryRun bool
 	delays []time.Duration // waits before attempt 2, 3, ...
+
+	// Version and ServerURL are sent with a registration (abuse investigation at the relay). Optional.
+	Version   string
+	ServerURL func(ctx context.Context) string
+
+	regMu      sync.Mutex
+	regFailed  time.Time     // last automatic re-registration that failed
+	regBackoff time.Duration // no automatic re-registration again before this has passed
 }
 
 func New(s *store.Store, dryRun bool) *Service {
 	return &Service{store: s, http: &http.Client{Timeout: 15 * time.Second}, dryRun: dryRun,
-		delays: []time.Duration{2 * time.Second, 10 * time.Second}}
+		delays: []time.Duration{2 * time.Second, 10 * time.Second}, regBackoff: time.Hour}
 }
 
 // SetRetryDelays overrides the retry schedule (tests).
@@ -60,6 +84,7 @@ func (s *Service) SetRetryDelays(d ...time.Duration) { s.delays = d }
 type config struct {
 	url, key string
 	text     bool // alerts carry the media title
+	public   bool // key from open registration
 }
 
 // load returns the relay settings, ok=false when push is off or incomplete.
@@ -71,7 +96,9 @@ func (s *Service) load(ctx context.Context) (config, bool) {
 		return config{}, false
 	}
 	text, _ := s.store.GetSetting(ctx, SettingText)
-	return config{url: strings.TrimRight(u, "/"), key: k, text: text == "true"}, true
+	public, _ := s.store.GetSetting(ctx, SettingKeyPublic)
+	// a public key never carries free text: the relay ignores it, so do not send the title through it at all
+	return config{url: strings.TrimRight(u, "/"), key: k, text: text == "true" && public != "true", public: public == "true"}, true
 }
 
 // Configured reports whether push is switched on with a relay address and key (/status features.push).
@@ -151,6 +178,10 @@ func (s *Service) send(ctx context.Context, ev notify.PushEvent) error {
 		slog.Info("dry-run: push not sent", "event", ev.Name, "devices", len(devs))
 		return nil
 	}
+	if until := s.PausedUntil(ctx); until > 0 {
+		slog.Info("push: daily quota reached, not sent", "event", ev.Name, "until", time.Unix(until, 0).UTC())
+		return nil
+	}
 	for start := 0; start < len(devs); start += batchSize {
 		end := min(start+batchSize, len(devs))
 		s.deliver(ctx, cfg, ev, devs[start:end])
@@ -161,9 +192,30 @@ func (s *Service) send(ctx context.Context, ev notify.PushEvent) error {
 // deliver sends one batch, retrying what the relay could not deliver (network, 5xx, per item errors).
 func (s *Service) deliver(ctx context.Context, cfg config, ev notify.PushEvent, devs []store.Device) {
 	pending := devs
+	reregistered := false
 	for attempt := 0; len(pending) > 0; attempt++ {
 		results, err := s.post(ctx, cfg, ev, pending)
+		if errors.Is(err, errUnauthorized) && cfg.public && !reregistered {
+			// key revoked or expired at the relay: register again once with the same installId, never in a loop
+			reregistered = true
+			if key, rerr := s.reregister(ctx, cfg.url, cfg.key); rerr == nil {
+				cfg.key = key
+				results, err = s.post(ctx, cfg, ev, pending)
+			} else {
+				slog.Warn("push: re-registration failed", "err", rerr)
+			}
+		}
+		var q *quotaError
+		if errors.As(err, &q) {
+			s.pause(ctx, q.retryAfter)
+			return
+		}
+		if errors.Is(err, errUnauthorized) {
+			slog.Warn("push: the relay refused the key", "event", ev.Name)
+			return
+		}
 		var retry []store.Device
+		quota := 0
 		for i, d := range pending {
 			switch {
 			case err != nil:
@@ -174,9 +226,16 @@ func (s *Service) deliver(ctx context.Context, cfg config, ev notify.PushEvent, 
 				if err := s.store.DeleteDevice(ctx, d.ID); err != nil {
 					slog.Warn("push: drop device", "err", err)
 				}
+			case results[i].Status == "quota_exceeded":
+				quota = max(quota, results[i].RetryAfter, 1)
 			case results[i].Status == "rate_limited", results[i].Status == "error":
 				retry = append(retry, d)
 			}
+		}
+		if quota > 0 {
+			// daily quota spent: stop here, no retry, nothing more is sent until the relay's next day
+			s.pause(ctx, quota)
+			return
 		}
 		pending = retry
 		if len(pending) == 0 || attempt >= len(s.delays) {
@@ -217,7 +276,19 @@ func (s *Service) post(ctx context.Context, cfg config, ev notify.PushEvent, dev
 		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
+	switch resp.StatusCode {
+	case http.StatusOK:
+	case http.StatusUnauthorized:
+		io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+		return nil, errUnauthorized
+	case http.StatusTooManyRequests:
+		var r result
+		_ = json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&r)
+		if r.Status == "quota_exceeded" || r.Error == "quota_exceeded" {
+			return nil, &quotaError{retryAfter: max(r.RetryAfter, retryAfter(resp), 1)}
+		}
+		return nil, fmt.Errorf("relay answered HTTP %d", resp.StatusCode)
+	default:
 		io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
 		return nil, fmt.Errorf("relay answered HTTP %d", resp.StatusCode)
 	}

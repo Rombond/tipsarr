@@ -748,6 +748,19 @@ components:
         - flags
         - defaults
       type: object
+    Header:
+      additionalProperties: false
+      properties:
+        name:
+          maxLength: 100
+          type: string
+        value:
+          maxLength: 2000
+          type: string
+      required:
+        - name
+        - value
+      type: object
     Health:
       additionalProperties: false
       properties:
@@ -1377,6 +1390,22 @@ components:
         - total
         - items
       type: object
+    ListWebhookPresetsResponse:
+      additionalProperties: false
+      properties:
+        events:
+          description: Events a webhook may subscribe to
+          items:
+            type: string
+          type: array
+        presets:
+          items:
+            $ref: "#/components/schemas/Preset"
+          type: array
+      required:
+        - presets
+        - events
+      type: object
     LoginInputBody:
       additionalProperties: false
       properties:
@@ -1549,6 +1578,10 @@ components:
     PrefsBody:
       additionalProperties: false
       properties:
+        discordId:
+          description: Discord user id (digits, empty clears it), used to mention the person
+          pattern: ^[0-9]{0,20}$
+          type: string
         language:
           description: TMDB language, e.g. fr-FR or fr (empty = English)
           type: string
@@ -1564,6 +1597,43 @@ components:
         region:
           description: ISO 3166 country, e.g. FR (empty = none). Used for release dates and the box-office region
           type: string
+        telegramChatId:
+          description: Telegram chat id (empty clears it)
+          pattern: ^-?[0-9]{0,20}$
+          type: string
+      type: object
+    Preset:
+      additionalProperties: false
+      properties:
+        authType:
+          enum:
+            - none
+            - bearer
+            - basic
+          type: string
+        headers:
+          items:
+            $ref: "#/components/schemas/Header"
+          type: array
+        id:
+          type: string
+        name:
+          type: string
+        notes:
+          type: string
+        template:
+          description: Liquid body; empty = the raw JSON envelope
+          type: string
+        urlExample:
+          type: string
+      required:
+        - id
+        - name
+        - urlExample
+        - template
+        - headers
+        - authType
+        - notes
       type: object
     ProbeBody:
       additionalProperties: false
@@ -1842,6 +1912,13 @@ components:
           type: string
       required:
         - pushToken
+      type: object
+    RegisterPushRequest:
+      additionalProperties: false
+      properties:
+        relayUrl:
+          description: Relay address; empty = the publisher's relay (pushDefaultRelayUrl)
+          type: string
       type: object
     RequestCountsResponse:
       additionalProperties: false
@@ -2139,6 +2216,9 @@ components:
         apiKey:
           description: Read-only key for dashboards (Glance, Homepage...), sent as the X-Api-Key header; it reads everything an admin sees and never writes. Empty = off
           type: string
+        appPublicUrl:
+          description: Address people open Tipsarr at, e.g. https://tipsarr.example.org; webhook links ({{ url }}) start with it. Empty = no links
+          type: string
         boxofficeRegions:
           description: Comma-separated box-office region codes, e.g. US,GB,FR
           type: string
@@ -2179,9 +2259,23 @@ components:
         oidcIssuer:
           description: OpenID Connect provider (Authelia), e.g. https://auth.example.org
           type: string
+        pushDailyQuota:
+          description: Pushes per day the relay allows a public key; 0 = unlimited or unknown
+          format: int64
+          type: integer
+        pushDefaultRelayUrl:
+          description: The relay run by the app publisher, offered for registration
+          type: string
         pushEnabled:
           description: Mobile push notifications through the relay (off by default)
           type: boolean
+        pushKeyPublic:
+          description: "The key came from the relay's open registration: generic alerts only (pushText has no effect) and a daily quota"
+          type: boolean
+        pushPausedUntil:
+          description: Unix time when sending resumes after the relay's daily quota was reached; 0 = not paused
+          format: int64
+          type: integer
         pushRelayKeyConfigured:
           description: The relay key is write-only; this only says whether one is saved
           type: boolean
@@ -2234,11 +2328,16 @@ components:
         - ldapBindDn
         - ldapBindPasswordConfigured
         - ldapBaseDn
+        - appPublicUrl
         - defaultLanguage
         - pushEnabled
         - pushRelayUrl
         - pushText
         - pushRelayKeyConfigured
+        - pushKeyPublic
+        - pushDailyQuota
+        - pushPausedUntil
+        - pushDefaultRelayUrl
         - servarrAutoImport
         - teasersFilesEnabled
         - teasersFilesUrl
@@ -2799,6 +2898,9 @@ components:
         apiKeyEnabled:
           description: Turn the read-only dashboard key on (a key is created if there is none) or off (the key is deleted)
           type: boolean
+        appPublicUrl:
+          description: http(s)://host[/path]; empty clears it
+          type: string
         boxofficeRegions:
           description: Comma-separated region codes; empty resets to US
           type: string
@@ -2869,6 +2971,10 @@ components:
     UpdateUserRequest:
       additionalProperties: false
       properties:
+        discordId:
+          description: Discord user id, empty to clear
+          pattern: ^[0-9]{0,20}$
+          type: string
         language:
           description: e.g. fr or fr-FR, empty to clear
           type: string
@@ -2885,6 +2991,10 @@ components:
             - admin
             - user
           type: string
+        telegramChatId:
+          description: Telegram chat id, empty to clear
+          pattern: ^-?[0-9]{0,20}$
+          type: string
       type: object
     User:
       additionalProperties: false
@@ -2892,6 +3002,8 @@ components:
         createdAt:
           format: int64
           type: integer
+        discordId:
+          type: string
         effectivePermissions:
           format: int64
           type: integer
@@ -2919,6 +3031,8 @@ components:
           type: string
         role:
           type: string
+        telegramChatId:
+          type: string
         tvQuotaDays:
           format: int64
           type: integer
@@ -2932,6 +3046,8 @@ components:
         - region
         - language
         - ratingSource
+        - discordId
+        - telegramChatId
         - createdAt
         - lastLoginAt
         - permissions
@@ -2971,6 +3087,39 @@ components:
       required:
         - id
         - name
+      type: object
+    Variable:
+      additionalProperties: false
+      properties:
+        description:
+          description: Localized description
+          type: string
+        empty:
+          description: Not filled for this event
+          type: boolean
+        example:
+          description: Value with the sample data (empty when Empty)
+          type: string
+        path:
+          description: Liquid path, e.g. media.title
+          type: string
+        perRecipient:
+          description: Only filled with one delivery per recipient
+          type: boolean
+        type:
+          description: Value type
+          enum:
+            - string
+            - number
+            - boolean
+          type: string
+      required:
+        - path
+        - type
+        - example
+        - description
+        - empty
+        - perRecipient
       type: object
     View:
       additionalProperties: false
@@ -3072,22 +3221,52 @@ components:
     WebhookBody:
       additionalProperties: false
       properties:
+        authSecret:
+          description: Bearer token or basic password (write-only). Empty string clears it; omit to keep it
+          maxLength: 512
+          type: string
+        authType:
+          enum:
+            - none
+            - bearer
+            - basic
+            - ""
+          type: string
+        authUsername:
+          maxLength: 191
+          type: string
         enabled:
           type: boolean
         events:
-          description: Any of request.created, request.approved, request.declined, request.failed, media.available; empty means all
+          description: Any of request.created, request.approved, request.auto_approved, request.declined, request.failed, media.available, issue.created, issue.commented, issue.resolved, issue.reopened; empty means all. request.approved also receives request.auto_approved
           items:
             type: string
+          type: array
+        headers:
+          items:
+            $ref: "#/components/schemas/Header"
+          maxItems: 20
           type: array
         name:
           maxLength: 100
           minLength: 1
           type: string
+        perRecipient:
+          type: boolean
+        preset:
+          maxLength: 32
+          type: string
         secret:
           description: Signing secret (write-only). Empty string clears it; omit to keep it
           type: string
+        template:
+          description: Liquid body template; empty = the raw JSON envelope
+          maxLength: 20000
+          type: string
         url:
-          format: uri
+          description: http(s) URL; may contain Liquid, rendered per delivery
+          maxLength: 512
+          minLength: 1
           type: string
       required:
         - name
@@ -3105,9 +3284,49 @@ components:
         UserId:
           type: string
       type: object
+    WebhookPreview:
+      additionalProperties: false
+      properties:
+        body:
+          type: string
+        delivered:
+          description: "Test only: whether the receiver accepted it"
+          type: boolean
+        deliveryError:
+          description: "Test only: why the delivery failed"
+          type: string
+        error:
+          description: Template or URL problem; nothing else is set then
+          type: string
+        headers:
+          description: Secrets are masked
+          items:
+            $ref: "#/components/schemas/Header"
+          type: array
+        url:
+          type: string
+        validJson:
+          type: boolean
+      required:
+        - url
+        - headers
+        - body
+        - validJson
+      type: object
     WebhookView:
       additionalProperties: false
       properties:
+        authSecretConfigured:
+          description: A bearer token or basic password is saved (write-only)
+          type: boolean
+        authType:
+          enum:
+            - none
+            - bearer
+            - basic
+          type: string
+        authUsername:
+          type: string
         enabled:
           type: boolean
         events:
@@ -3115,14 +3334,28 @@ components:
           items:
             type: string
           type: array
+        headers:
+          items:
+            $ref: "#/components/schemas/Header"
+          type: array
         id:
           type: string
         name:
           type: string
+        perRecipient:
+          description: One delivery per concerned person, with notifyUser filled
+          type: boolean
+        preset:
+          description: Preset the webhook was made from (informative)
+          type: string
         secretConfigured:
           description: A signing secret is saved (HMAC-SHA256 in X-Tipsarr-Signature)
           type: boolean
+        template:
+          description: Liquid body template; empty = the raw JSON envelope
+          type: string
         url:
+          description: May contain Liquid ({{ ... }})
           type: string
       required:
         - id
@@ -3131,6 +3364,13 @@ components:
         - events
         - enabled
         - secretConfigured
+        - preset
+        - template
+        - headers
+        - authType
+        - authUsername
+        - authSecretConfigured
+        - perRecipient
       type: object
     WeekRef:
       additionalProperties: false
@@ -3392,6 +3632,77 @@ paths:
         - session: []
         - bearer: []
       summary: Set the permissions and quotas new people start with (admin)
+      tags:
+        - admin
+  /admin/push/register:
+    post:
+      description: Asks the relay for a key of its own (POST /v1/register with this server's install id), saves it with the address and turns push on. Registering again replaces the key.
+      operationId: registerPush
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterPushRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SettingsBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Too Many Requests
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+        "502":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Bad Gateway
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Service Unavailable
+      security:
+        - session: []
+        - bearer: []
+      summary: Turn mobile push on with the relay's open registration (admin)
       tags:
         - admin
   /admin/servarr:
@@ -4444,6 +4755,164 @@ paths:
       summary: Add an outgoing webhook (admin)
       tags:
         - admin
+  /admin/webhooks/presets:
+    get:
+      operationId: listWebhookPresets
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListWebhookPresetsResponse"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: Ready-made webhook templates and the events (admin)
+      tags:
+        - admin
+  /admin/webhooks/preview:
+    post:
+      description: Renders the URL, headers and body for a made-up event. With id, saved secrets are used for what the form leaves out.
+      operationId: previewWebhook
+      parameters:
+        - description: Saved webhook whose secrets fill what the form omits
+          explode: false
+          in: query
+          name: id
+          schema:
+            description: Saved webhook whose secrets fill what the form omits
+            maxLength: 32
+            type: string
+        - description: Event to simulate (default test)
+          explode: false
+          in: query
+          name: event
+          schema:
+            description: Event to simulate (default test)
+            maxLength: 40
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookPreview"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: Render a webhook form with sample values, without sending (admin)
+      tags:
+        - admin
+  /admin/webhooks/variables:
+    get:
+      description: Built from the same variables as real deliveries, with the sample data of the preview. empty marks what the event does not fill; perRecipient what only one delivery per recipient fills.
+      operationId: listWebhookVariables
+      parameters:
+        - description: Event (default test)
+          explode: false
+          in: query
+          name: event
+          schema:
+            description: Event (default test)
+            maxLength: 40
+            type: string
+        - description: "Language of the descriptions (default: the caller's)"
+          explode: false
+          in: query
+          name: lang
+          schema:
+            description: "Language of the descriptions (default: the caller's)"
+            maxLength: 16
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Variable"
+                type: array
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      security:
+        - session: []
+        - bearer: []
+      summary: Template variables of an event, with sample values (admin)
+      tags:
+        - admin
   /admin/webhooks/{id}:
     delete:
       operationId: deleteWebhook
@@ -4547,6 +5016,7 @@ paths:
         - admin
   /admin/webhooks/{id}/test:
     post:
+      description: 204 when delivered. 422 template_error when the template does not render (the message says where), 502 when the receiver fails.
       operationId: testWebhook
       parameters:
         - in: path
@@ -6220,7 +6690,7 @@ paths:
       security:
         - session: []
         - bearer: []
-      summary: Change my region and language
+      summary: Change my region, language, rating source and chat ids
       tags:
         - auth
   /me/devices/current:

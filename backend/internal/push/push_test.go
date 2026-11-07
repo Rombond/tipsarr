@@ -3,9 +3,13 @@ package push
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -21,16 +25,48 @@ type relay struct {
 	items []item
 	fail  int               // answer 503 this many times first
 	reply map[string]string // token -> status, default sent
+
+	regs     []map[string]string // bodies of POST /v1/register
+	regFail  int                 // answer regStatus/regError to this many registrations first
+	regCode  int
+	regError string
+	revoked  map[string]bool // keys answered 401
+	keys     int
 }
 
 func newRelay(t *testing.T) *relay {
 	t.Helper()
-	r := &relay{reply: map[string]string{}}
+	r := &relay{reply: map[string]string{}, revoked: map[string]bool{}}
 	r.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		r.mu.Lock()
 		defer r.mu.Unlock()
+		if req.URL.Path == "/v1/register" {
+			var body map[string]string
+			json.NewDecoder(req.Body).Decode(&body)
+			r.regs = append(r.regs, body)
+			w.Header().Set("Content-Type", "application/json")
+			if r.regFail > 0 {
+				r.regFail--
+				w.Header().Set("Retry-After", "120")
+				w.WriteHeader(r.regCode)
+				json.NewEncoder(w).Encode(map[string]string{"error": r.regError})
+				return
+			}
+			r.keys++
+			code := http.StatusCreated
+			if len(r.regs) > 1 {
+				code = http.StatusOK
+			}
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(map[string]any{"key": fmt.Sprintf("pr_pub%d", r.keys), "keyId": r.keys, "app": "tipsarr", "rotated": code == 200, "dailyQuota": 200})
+			return
+		}
 		if req.URL.Path != "/v1/push/batch" {
 			t.Errorf("path %s", req.URL.Path)
+		}
+		if r.revoked[strings.TrimPrefix(req.Header.Get("Authorization"), "Bearer ")] {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
 		}
 		if r.fail > 0 {
 			r.fail--
@@ -46,6 +82,9 @@ func newRelay(t *testing.T) *relay {
 			out[i] = result{Status: "sent"}
 			if s := r.reply[it.Token]; s != "" {
 				out[i].Status = s
+				if s == "quota_exceeded" {
+					out[i].RetryAfter = 3600
+				}
 			}
 		}
 		json.NewEncoder(w).Encode(map[string]any{"items": out})
@@ -341,5 +380,147 @@ func TestAlertTextFollowsTheLanguage(t *testing.T) {
 	}
 	if title, _ := alertText("no.such.event", "fr", "x"); title != "" {
 		t.Errorf("unknown event got title %q", title)
+	}
+}
+
+func (r *relay) registrations() []map[string]string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]map[string]string(nil), r.regs...)
+}
+
+func TestRegisterStoresPublicKeyAndKeepsInstallID(t *testing.T) {
+	f := setup(t, false)
+	ctx := context.Background()
+	f.st.SetSetting(ctx, SettingEnabled, "false")
+	f.st.SetSetting(ctx, SettingText, "true")
+	f.svc.Version = "0.14.0"
+	f.svc.ServerURL = func(context.Context) string { return "https://tipsarr.example.org" }
+
+	reg, err := f.svc.Register(ctx, f.rel.srv.URL+"/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reg.Rotated || reg.DailyQuota != 200 {
+		t.Fatalf("%+v", reg)
+	}
+	regs := f.rel.registrations()
+	id := regs[0]["installId"]
+	if !regexp.MustCompile(`^[A-Za-z0-9_-]{16,128}$`).MatchString(id) || regs[0]["app"] != "tipsarr" ||
+		regs[0]["serverUrl"] != "https://tipsarr.example.org" || regs[0]["version"] != "0.14.0" {
+		t.Fatalf("register body %+v", regs[0])
+	}
+	key, _ := f.st.GetSetting(ctx, SettingKey)
+	public, _ := f.st.GetSetting(ctx, SettingKeyPublic)
+	if key != "pr_pub1" || public != "true" || !f.svc.Configured(ctx) {
+		t.Fatalf("key %q public %q configured %v", key, public, f.svc.Configured(ctx))
+	}
+	// registering again rotates with the same install id
+	reg, err = f.svc.Register(ctx, f.rel.srv.URL)
+	if err != nil || !reg.Rotated {
+		t.Fatalf("%+v %v", reg, err)
+	}
+	if regs := f.rel.registrations(); regs[1]["installId"] != id {
+		t.Fatal("install id changed")
+	}
+	if key, _ := f.st.GetSetting(ctx, SettingKey); key != "pr_pub2" {
+		t.Fatalf("rotated key not stored: %q", key)
+	}
+	// a public key never sends the title, even with push.text on
+	f.device(t, "bob", "s1", "ios", "tok", "fr", store.PushAll)
+	f.svc.send(ctx, notify.PushEvent{Name: "request.approved", ID: "1", Users: []string{"bob"}, Subject: "Inception"})
+	if it := f.rel.got()[0]; it.Title != "" || it.Body != "" {
+		t.Fatalf("free text with a public key: %+v", it)
+	}
+}
+
+func TestRegisterErrors(t *testing.T) {
+	for _, c := range []struct {
+		code int
+		err  string
+	}{{400, "invalid_install_id"}, {403, "registration_closed"}, {429, "registration_cap"}} {
+		f := setup(t, false)
+		f.rel.regFail, f.rel.regCode, f.rel.regError = 1, c.code, c.err
+		_, err := f.svc.Register(context.Background(), f.rel.srv.URL)
+		var re *RegisterError
+		if !errors.As(err, &re) || re.Status != c.code || re.Code != c.err || re.RetryAfter != 120 {
+			t.Fatalf("%d: %#v", c.code, err)
+		}
+		if k, _ := f.st.GetSetting(context.Background(), SettingKey); k != "pr_secret" {
+			t.Fatalf("a refused registration replaced the key: %q", k)
+		}
+	}
+	f := setup(t, false)
+	f.rel.srv.Close()
+	var re *RegisterError
+	if _, err := f.svc.Register(context.Background(), f.rel.srv.URL); !errors.As(err, &re) || re.Status != 0 {
+		t.Fatalf("unreachable: %v", err)
+	}
+}
+
+func TestUnauthorizedReRegistersOnce(t *testing.T) {
+	f := setup(t, false)
+	ctx := context.Background()
+	f.st.SetSetting(ctx, SettingKeyPublic, "true")
+	f.device(t, "bob", "s1", "ios", "tok", "en", store.PushAll)
+	f.rel.revoked["pr_secret"] = true
+
+	f.svc.send(ctx, notify.PushEvent{Name: "request.approved", ID: "1", Users: []string{"bob"}})
+	if n := len(f.rel.registrations()); n != 1 {
+		t.Fatalf("registrations %d", n)
+	}
+	if got := f.rel.got(); len(got) != 1 || f.rel.auth[len(f.rel.auth)-1] != "Bearer pr_pub1" {
+		t.Fatalf("not resent with the new key: %v %v", got, f.rel.auth)
+	}
+
+	// the new key is refused too: one more registration at most, then nothing until the back-off is over
+	f.rel.revoked["pr_pub1"] = true
+	f.rel.revoked["pr_pub2"] = true
+	f.svc.send(ctx, notify.PushEvent{Name: "request.approved", ID: "2", Users: []string{"bob"}})
+	if n := len(f.rel.registrations()); n != 2 {
+		t.Fatalf("registrations after a second 401: %d", n)
+	}
+	f.rel.regFail, f.rel.regCode, f.rel.regError = 100, 403, "registration_closed"
+	f.rel.revoked["pr_pub2"] = true
+	f.svc.send(ctx, notify.PushEvent{Name: "request.approved", ID: "3", Users: []string{"bob"}})
+	f.svc.send(ctx, notify.PushEvent{Name: "request.approved", ID: "4", Users: []string{"bob"}})
+	if n := len(f.rel.registrations()); n != 3 {
+		t.Fatalf("a refusing relay was asked again: %d registrations", n)
+	}
+}
+
+func TestManualKeyIsNotReRegistered(t *testing.T) {
+	f := setup(t, false)
+	f.device(t, "bob", "s1", "ios", "tok", "en", store.PushAll)
+	f.rel.revoked["pr_secret"] = true
+	f.svc.send(context.Background(), notify.PushEvent{Name: "request.approved", ID: "1", Users: []string{"bob"}})
+	if n := len(f.rel.registrations()); n != 0 {
+		t.Fatalf("manual key re-registered: %d", n)
+	}
+}
+
+func TestQuotaExceededPausesSending(t *testing.T) {
+	f := setup(t, false)
+	ctx := context.Background()
+	f.device(t, "bob", "s1", "ios", "tok", "en", store.PushAll)
+	f.rel.reply["tok"] = "quota_exceeded"
+	f.svc.send(ctx, notify.PushEvent{Name: "request.approved", ID: "1", Users: []string{"bob"}})
+	if n := len(f.rel.got()); n != 1 {
+		t.Fatalf("quota_exceeded was retried: %d attempts", n)
+	}
+	until := f.svc.PausedUntil(ctx)
+	if until < time.Now().Add(59*time.Minute).Unix() {
+		t.Fatalf("not paused: %d", until)
+	}
+	f.svc.send(ctx, notify.PushEvent{Name: "request.approved", ID: "2", Users: []string{"bob"}})
+	if n := len(f.rel.got()); n != 1 {
+		t.Fatalf("sent while paused: %d", n)
+	}
+	// once the pause is over it sends again
+	f.st.SetSetting(ctx, SettingPausedUntil, fmt.Sprint(time.Now().Add(-time.Second).Unix()))
+	delete(f.rel.reply, "tok")
+	f.svc.send(ctx, notify.PushEvent{Name: "request.approved", ID: "3", Users: []string{"bob"}})
+	if n := len(f.rel.got()); n != 2 {
+		t.Fatalf("not resumed: %d", n)
 	}
 }

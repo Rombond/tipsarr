@@ -24,8 +24,11 @@ type User struct {
 	Language string `bun:"language" json:"language"`
 	// RatingSource is the score shown on posters: tmdb, imdb, metacritic or rottenTomatoes ("" = tmdb)
 	RatingSource string `bun:"rating_source" json:"ratingSource"`
-	CreatedAt    int64  `bun:"created_at" json:"createdAt"`
-	LastLoginAt  int64  `bun:"last_login_at" json:"lastLoginAt"`
+	// Chat ids webhook templates use to mention or message the person (notifyUser.discordId...)
+	DiscordID      string `bun:"discord_id" json:"discordId"`
+	TelegramChatID string `bun:"telegram_chat_id" json:"telegramChatId"`
+	CreatedAt      int64  `bun:"created_at" json:"createdAt"`
+	LastLoginAt    int64  `bun:"last_login_at" json:"lastLoginAt"`
 
 	// Permissions is the mask stored for the person (see package perms); EffectivePermissions is what they may
 	// really do (everything for an admin) and is what the apps check.
@@ -275,6 +278,14 @@ type Webhook struct {
 	Events    string `bun:"events" json:"-"` // comma separated
 	Enabled   int    `bun:"enabled" json:"-"`
 	CreatedAt int64  `bun:"created_at" json:"-"`
+	// Webhooks v2 (see docs/notifications.md)
+	Preset       string `bun:"preset" json:"-"`
+	Template     string `bun:"template" json:"-"`      // Liquid body; empty = the raw JSON envelope
+	Headers      string `bun:"headers" json:"-"`       // JSON list of {name, value}
+	AuthType     string `bun:"auth_type" json:"-"`     // "", bearer, basic
+	AuthUsername string `bun:"auth_username" json:"-"` // basic only
+	AuthSecret   string `bun:"auth_secret" json:"-"`   // bearer token or basic password, write-only
+	PerRecipient int    `bun:"per_recipient" json:"-"` // 1 = one delivery per concerned person
 }
 
 type SuggestionRow struct {

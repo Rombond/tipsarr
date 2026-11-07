@@ -91,7 +91,7 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 			}
 			s.record(ctx, r.ID, "failed", "", r.Error)
 			s.changed(ctx, r)
-			s.notify.Dispatch(notify.RequestFailed, s.payload(ctx, r))
+			s.notify.Send(s.event(ctx, notify.RequestFailed, r, ""))
 			s.notify.Push(notify.PushEvent{Name: "request.failed", ID: r.ID, Subject: r.Title, Users: []string{r.RequestedBy}})
 			return nil
 		}

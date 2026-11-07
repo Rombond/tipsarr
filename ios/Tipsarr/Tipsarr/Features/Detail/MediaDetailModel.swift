@@ -47,7 +47,11 @@ final class MediaDetailModel {
         return p.can(.autoApprove) || p.can(route.type == .movie ? .autoApproveMovie : .autoApproveTV)
     }
     var mayRequest: Bool { context.profile.mayRequest(route.type) }
-    var canReport: Bool { context.profile.can(.createIssues) }
+    /// May report a problem: only on a title Jellyfin has (fully or partly), since nothing can be fixed otherwise.
+    var canReport: Bool {
+        guard let detail, detail.availability != .none else { return false }
+        return context.profile.can(.createIssues)
+    }
     /// What is left of the request limit, read when the request sheet is prepared.
     private(set) var quota: QuotaWindow?
     var canChooseFolder: Bool { context.canChooseFolder }

@@ -28,6 +28,8 @@ func issueErr(err error) error {
 		return fail(409, "not_in_servarr", err.Error())
 	case errors.Is(err, issues.ErrForbidden):
 		return fail(403, "forbidden", err.Error())
+	case errors.Is(err, issues.ErrNotInLibrary):
+		return fail(409, "not_in_library", err.Error())
 	case errors.Is(err, issues.ErrInvalid):
 		return fail(422, "invalid_request", err.Error())
 	}
