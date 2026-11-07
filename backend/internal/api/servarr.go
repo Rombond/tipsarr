@@ -4,12 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/servarr"
+	"github.com/Rombond/tipsarr/backend/internal/netguard"
 	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 	"github.com/danielgtaylor/huma/v2"
@@ -173,10 +177,15 @@ func registerServarr(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
+		newKey := strings.TrimSpace(in.Body.APIKey)
+		if newKey == "" && !sameHost(cur.URL, in.Body.URL) {
+			// the saved key may only go to the host it was saved for
+			return nil, fail(422, "retype_key", "enter the API key again when you change the URL's host")
+		}
 		cur.Kind, cur.Name, cur.URL = in.Body.Kind, in.Body.Name, strings.TrimRight(in.Body.URL, "/")
 		cur.QualityProfileID, cur.RootFolder = in.Body.QualityProfileID, in.Body.RootFolder
-		if k := strings.TrimSpace(in.Body.APIKey); k != "" {
-			cur.APIKey = k
+		if newKey != "" {
+			cur.APIKey = newKey
 		}
 		if in.Body.IsDefault {
 			cur.IsDefault = 1
@@ -236,26 +245,50 @@ func registerServarr(api huma.API, d Deps) {
 		if key == "" {
 			return nil, fail(422, "api_key_required", "apiKey is required")
 		}
-		c := servarr.New(in.Body.Kind, in.Body.URL, key, true) // reads only
+		if _, _, ok := netguard.HostPort(in.Body.URL); !ok {
+			return nil, fail(422, "url_invalid", "url must be http(s)://host[:port]")
+		}
+		// reads only; LAN addresses are fine (Radarr usually lives there) but never loopback or
+		// link-local (cloud metadata), and the answer is never echoed raw
+		c := servarr.New(in.Body.Kind, in.Body.URL, key, true).WithHTTPClient(probePolicy.Client(20*time.Second, -1))
 		st, err := c.Status(ctx)
 		if err != nil {
-			return nil, fail(422, "unreachable", "cannot reach "+in.Body.Kind+": "+err.Error())
+			return nil, probeFail(in.Body.Kind, err)
 		}
 		profiles, err := c.QualityProfiles(ctx)
 		if err != nil {
-			return nil, fail(422, "servarr_error", err.Error())
+			return nil, probeFail(in.Body.Kind, err)
 		}
 		folders, err := c.RootFolders(ctx)
 		if err != nil {
-			return nil, fail(422, "servarr_error", err.Error())
+			return nil, probeFail(in.Body.Kind, err)
 		}
 		return &struct{ Body probeResult }{probeResult{AppName: st.AppName, Version: st.Version, Profiles: profiles, RootFolders: folders}}, nil
 	})
+}
+
+// probePolicy is the egress policy of the connection test: private networks allowed, loopback and
+// link-local refused.
+var probePolicy = netguard.Policy{AllowPrivate: true}
+
+// probeFail turns a probe failure into a generic message; the details go to the log only.
+func probeFail(kind string, err error) error {
+	slog.Info("servarr probe failed", "kind", kind, "err", err)
+	var se interface{ StatusCode() int }
+	switch {
+	case errors.As(err, &se):
+		return fail(422, "servarr_error", fmt.Sprintf("%s answered HTTP %d", kind, se.StatusCode()))
+	case netguard.Classify(err) == netguard.ClassRefused:
+		return fail(422, "address_refused", "this address is not allowed (loopback or link-local)")
+	case netguard.Classify(err) == netguard.ClassTimeout:
+		return fail(422, "unreachable", "cannot reach "+kind+": timeout")
+	}
+	return fail(422, "unreachable", "cannot reach "+kind)
 }
 
 // sameHost reports whether two URLs point at the same host:port.
 func sameHost(a, b string) bool {
 	ua, errA := url.Parse(a)
 	ub, errB := url.Parse(b)
-	return errA == nil && errB == nil && strings.EqualFold(ua.Host, ub.Host)
+	return errA == nil && errB == nil && ua.Host != "" && strings.EqualFold(ua.Host, ub.Host)
 }

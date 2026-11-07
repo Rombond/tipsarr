@@ -30,6 +30,8 @@ func eventsHandler(d Deps) http.HandlerFunc {
 			return
 		}
 		defer releaseStream(u.ID)
+		// a stream lives longer than the server's WriteTimeout: no write deadline for it
+		_ = http.NewResponseController(w).SetWriteDeadline(time.Time{})
 		var last int64
 		if v := r.Header.Get("Last-Event-ID"); v != "" {
 			last, _ = strconv.ParseInt(v, 10, 64)

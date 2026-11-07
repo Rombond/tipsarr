@@ -1,0 +1,29 @@
+Tipsarr is the companion app of Tipsarr, a free and open-source server you host yourself next to Jellyfin. Browse what is popular, see at a glance what your server already has, and ask for what it lacks.
+
+IMPORTANT: Tipsarr needs a Tipsarr server (self-hosted, MIT licence) connected to a Jellyfin server. There is no Tipsarr account or cloud service: you sign in to your own server with your Jellyfin account. No server yet? Try the public demo at https://tipsarr-demo.brebond.com.
+
+DISCOVER
+- Trending, popular and upcoming movies and shows, genres, people, collections and trailers
+- Personal suggestions built from your Jellyfin watch history ("Because you watched…")
+- Weekend and weekly box-office charts
+- Availability badges: see instantly what is already on your server
+
+REQUEST AND FOLLOW
+- Request a movie or a show (choose the seasons), with quality profile and folder when allowed
+- Follow progress live: requested, approved, downloading, available
+- Admins and request managers approve or decline from the app
+- Report a problem with a video, audio or subtitles and follow the discussion
+
+YOUR SPACE
+- Watchlist and "not interested" list
+- Profile with your viewing statistics
+- Several servers and accounts on one device
+- Push notifications when a request is approved or available (when the server admin enables them)
+- Teasers: a vertical feed of trailers (experimental, when enabled on the server)
+- English and French, light and dark themes, phones and tablets
+
+PRIVACY
+No analytics, no advertising, no tracking. The app only talks to your own server. Nothing is ever requested or downloaded automatically: requests go through your server admin.
+
+Tipsarr is free software: https://github.com/Rombond/tipsarr
+Tipsarr is not affiliated with Jellyfin, TMDB, Radarr or Sonarr. Movie and show data and images come from TMDB.

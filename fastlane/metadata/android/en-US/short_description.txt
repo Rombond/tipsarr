@@ -1,0 +1,1 @@
+Discover movies and shows, request them for your self-hosted Jellyfin server.

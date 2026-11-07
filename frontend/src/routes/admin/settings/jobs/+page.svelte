@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t, tMsg, hasKey } from '$lib/i18n/index.svelte';
-	import { api, expectOk, errorText } from '$lib/api/client';
+	import { api, expectOk, unwrap, errorText } from '$lib/api/client';
 	import { admin } from '$lib/stores/admin-settings.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { fmtDateTime } from '$lib/i18n/format';
@@ -36,7 +36,19 @@
 	const every = (s: number) => (s >= 3600 ? t('settings.job_every', { hours: Math.round(s / 3600) }) : t('settings.job_every_min', { minutes: Math.max(1, Math.round(s / 60)) }));
 	const when = (unix: number) => (unix ? fmtDateTime(unix) : t('common.never'));
 	const statusLabel = (s: string) => (hasKey(`job.${s}`) ? t(`job.${s}` as 'job.ok') : s);
-	const webhookUrl = $derived(settings ? `${location.origin}${settings.webhookPath.split('?')[0]}` : '');
+	const webhookUrl = $derived(settings ? `${location.origin}${settings.webhookPath}` : '');
+	// the secret is not part of the settings: shown on demand (admin role only)
+	let hookToken = $state('');
+	async function hookSecret(action: 'reveal' | 'regenerate') {
+		if (action === 'regenerate' && !confirm(t('settings.hook_regenerate_confirm'))) return;
+		const params = { path: { name: 'jellyfin_webhook' as const } };
+		try {
+			const res = await unwrap(action === 'reveal' ? api.POST('/admin/secrets/{name}/reveal', { params }) : api.POST('/admin/secrets/{name}/regenerate', { params }));
+			hookToken = res.value;
+		} catch (e) {
+			toast.error(errorText(e));
+		}
+	}
 </script>
 
 {#if sync}
@@ -106,11 +118,16 @@
 		</CardHeader>
 		<CardContent class="grid gap-2 text-xs">
 			<code class="break-all rounded bg-muted p-2">{webhookUrl}</code>
-			<code class="break-all rounded bg-muted p-2">X-Tipsarr-Token: {settings.webhookToken}</code>
+			<div class="flex flex-wrap items-center gap-2">
+				<code class="break-all rounded bg-muted p-2">X-Tipsarr-Token: {hookToken || '••••••••'}</code>
+				{#if !hookToken}<Button variant="outline" size="sm" onclick={() => hookSecret('reveal')}>{t('settings.hook_reveal')}</Button>{/if}
+				<Button variant="outline" size="sm" onclick={() => hookSecret('regenerate')}>{t('settings.hook_regenerate')}</Button>
+			</div>
 			<code class="break-all rounded bg-muted p-2">
 				{'{"NotificationType":"{{NotificationType}}","UserId":"{{UserId}}","ItemType":"{{ItemType}}"}'}
 			</code>
 			<p class="text-muted-foreground">{t('settings.hook_secret')}</p>
+			<p class="text-amber-600 dark:text-amber-400">{t('settings.hook_query_deprecated')}</p>
 		</CardContent>
 	</Card>
 

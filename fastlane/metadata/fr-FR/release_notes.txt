@@ -1,0 +1,1 @@
+Première version de l'app Tipsarr : découvre, demande et suis films et séries sur ton propre serveur Tipsarr, avec notifications push, connexion Face ID sur iOS et affichage complet sur iPad et tablette.

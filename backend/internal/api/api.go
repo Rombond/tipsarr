@@ -11,6 +11,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/auth"
 	"github.com/Rombond/tipsarr/backend/internal/avatars"
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
+	"github.com/Rombond/tipsarr/backend/internal/clientip"
 	"github.com/Rombond/tipsarr/backend/internal/events"
 	"github.com/Rombond/tipsarr/backend/internal/issues"
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
@@ -61,13 +62,15 @@ type Deps struct {
 	Marks         *marks.Service
 	LoginLimiter  *auth.Limiter // optional
 	SetupToken    string        // required by POST /setup when non-empty (set by main on a fresh install)
-	SecureCookies bool          // always mark the session cookie Secure (otherwise only behind X-Forwarded-Proto: https)
-	Hub           *events.Hub
-	Notify        *notify.Service
-	Push          *push.Service // optional
-	Jobs          *jobs.Manager
-	DryRun        bool   // global: nothing is ever sent to Radarr/Sonarr
-	ConfigDir     string // image cache lives under here
+	SecureCookies bool          // always mark the session cookie Secure (otherwise only over TLS or behind X-Forwarded-Proto: https)
+	// ClientIP resolves the visitor address from trusted proxies' headers (nil = private ranges trusted).
+	ClientIP  *clientip.Resolver
+	Hub       *events.Hub
+	Notify    *notify.Service
+	Push      *push.Service // optional
+	Jobs      *jobs.Manager
+	DryRun    bool   // global: nothing is ever sent to Radarr/Sonarr
+	ConfigDir string // image cache lives under here
 	// Demo: a throwaway public sandbox (TIPSARR_DEMO_MODE): see internal/demo.
 	Demo bool
 	// ImageBaseURL overrides the TMDB image host (tests).
@@ -85,6 +88,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 	cfg.Servers = []*huma.Server{{URL: "/api/v1"}}
 	cfg.CreateHooks = nil // no "$schema" link fields in responses
 	cfg.DocsPath = ""     // spec only; no bundled docs UI
+	cfg.Transformers = append(cfg.Transformers, hideInternalErrors)
 	cfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
 		"session": {Type: "apiKey", In: "cookie", Name: auth.CookieName},
 		"bearer":  {Type: "http", Scheme: "bearer"}, // the same token, for apps (from POST /auth/token)
@@ -92,7 +96,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 
 	var api huma.API
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Use(sessionMiddleware(d.Auth, d.Store))
+		r.Use(sessionMiddleware(d))
 		api = humachi.New(r, cfg)
 		registerSystem(api, d)
 		registerSetup(api, d)
@@ -117,6 +121,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerServarr(api, d)
 		registerWebhooks(api, d)
 		registerLDAPImport(api, d)
+		registerSecrets(api, d)
 		registerLibrary(api, d)
 		registerStats(api, d)
 		r.Get("/events", eventsHandler(d))
@@ -133,7 +138,8 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 }
 
 // sessionMiddleware loads the session user (if any) into the request context.
-func sessionMiddleware(a *auth.Service, st *store.Store) func(http.Handler) http.Handler {
+func sessionMiddleware(d Deps) func(http.Handler) http.Handler {
+	a, st := d.Auth, d.Store
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r = r.WithContext(context.WithValue(r.Context(), ipCtxKey{}, remoteIP(r)))
@@ -141,7 +147,7 @@ func sessionMiddleware(a *auth.Service, st *store.Store) func(http.Handler) http
 			if token != "" {
 				if u, sess, err := a.Authenticate(r.Context(), token); err == nil {
 					if sess.Renewed && fromCookie {
-						setSessionCookie(w, r, token, int(auth.SessionTTL.Seconds()))
+						setSessionCookie(w, r, d.SecureCookies, token, int(a.SessionTTL().Seconds()))
 					}
 					r = r.WithContext(context.WithValue(r.Context(), sessionCtxKey{}, sess))
 					// A profile without a saved language follows the language the interface shows
@@ -184,11 +190,17 @@ func requestToken(r *http.Request) (token string, fromCookie bool) {
 	return "", false
 }
 
-func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, maxAge int) {
+func setSessionCookie(w http.ResponseWriter, r *http.Request, force bool, token string, maxAge int) {
 	http.SetCookie(w, &http.Cookie{
 		Name: auth.CookieName, Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode,
-		Secure: r.Header.Get("X-Forwarded-Proto") == "https" || r.TLS != nil, MaxAge: maxAge,
+		Secure: cookieSecure(force, r.Header.Get("X-Forwarded-Proto"), r.TLS != nil), MaxAge: maxAge,
 	})
+}
+
+// cookieSecure: TIPSARR_COOKIE_SECURE=true always sets the Secure flag; otherwise it follows the request
+// (TLS, or a proxy saying X-Forwarded-Proto: https).
+func cookieSecure(force bool, proto string, tls bool) bool {
+	return force || tls || strings.EqualFold(proto, "https")
 }
 
 func sessionFrom(ctx context.Context) *store.Session {
@@ -235,8 +247,8 @@ func requireCan(ctx context.Context, flags ...perms.Mask) (*store.User, error) {
 
 func chiParam(r *http.Request, name string) string { return chi.URLParam(r, name) }
 
-// remoteIP is the client address as seen by the router (chi's RealIP middleware has already
-// applied X-Forwarded-For / X-Real-IP, which is right behind a reverse proxy).
+// remoteIP is the client address as seen by the router (the clientip middleware has already applied
+// X-Forwarded-For / X-Real-IP when the request came through a trusted proxy).
 func remoteIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

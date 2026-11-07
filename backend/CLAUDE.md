@@ -7,6 +7,6 @@ Layout rules:
 - Only `internal/clients/*` call external services; only `internal/store` touches the DB.
 - Migrations: `internal/store/migrations/NNN_name.sql`, **portable SQL** (runs on SQLite, PostgreSQL, MySQL): no AUTOINCREMENT/SERIAL, timestamps are unix-second BIGINT, ids are app-generated VARCHAR, `VARCHAR(191)` for indexed/PK text.
 - DB URL: `sqlite:<path>` (default, `<config>/tipsarr.db`), `postgres://…`, `mysql://user:pass@host:3306/db`.
-- Auth = a Jellyfin account, by password or by OIDC single sign-on (matched to a Jellyfin user by username) → own session cookie `tipsarr_session` (sha256 of token stored).
+- Auth = a Jellyfin account, by password or by OIDC single sign-on (matched to a Jellyfin user by username) → session token, sent as cookie `tipsarr_session` (web) or `Authorization: Bearer` (apps); only its sha256 is stored.
 - Tests: `go test ./...`. External engines: set `TIPSARR_TEST_PG_URL` / `TIPSARR_TEST_MYSQL_URL` (see store_test.go).
 - After changing API types run `make generate` at repo root (updates the frontend TS client).

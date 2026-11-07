@@ -1,6 +1,7 @@
 # Public demo: the demo gateway plus the Tipsarr binary it starts once per visitor. See deployments/demo/README.md.
 #   docker build -f Dockerfile.demo -t tipsarr-demo .
-FROM --platform=$BUILDPLATFORM node:25-alpine AS frontend
+# node:25-alpine (digest updated by Dependabot)
+FROM --platform=$BUILDPLATFORM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS frontend
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
@@ -8,7 +9,8 @@ COPY frontend/ ./
 COPY locales/ /app/locales/
 RUN npm run build
 
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS backend
+# golang:1.26-alpine
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine@sha256:87c65a688975c0b1d4585d204874c45ca78354670e3a5f11368c5a492303d696 AS backend
 ARG TARGETOS
 ARG TARGETARCH
 ARG VERSION=demo
@@ -21,7 +23,8 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags=
  && CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /demo-gateway ./cmd/demo-gateway
 RUN mkdir /data-empty
 
-FROM gcr.io/distroless/static-debian12:nonroot
+# gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
 COPY --from=backend /tipsarr /usr/local/bin/tipsarr
 COPY --from=backend /demo-gateway /usr/local/bin/demo-gateway
 COPY --from=backend --chown=65532:65532 /data-empty /data

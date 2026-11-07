@@ -1,0 +1,1 @@
+Découvre films et séries et demande-les pour ton serveur Jellyfin auto-hébergé.

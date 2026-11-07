@@ -21,6 +21,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
 	"github.com/Rombond/tipsarr/backend/internal/library"
 	"github.com/Rombond/tipsarr/backend/internal/media"
+	"github.com/Rombond/tipsarr/backend/internal/netguard"
 	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/push"
 	"github.com/Rombond/tipsarr/backend/internal/requests"
@@ -34,14 +35,15 @@ type settingsBody struct {
 	TMDBConfigured           bool   `json:"tmdbConfigured" doc:"Secrets are write-only; this only says whether a key is saved"`
 	JellyfinAPIKeyConfigured bool   `json:"jellyfinApiKeyConfigured" doc:"Needed for library and history sync"`
 	BoxOfficeRegions         string `json:"boxofficeRegions" doc:"Comma-separated box-office region codes, e.g. US,GB,FR"`
-	WebhookPath              string `json:"webhookPath" doc:"Path (with the secret token in the query) for the Jellyfin webhook plugin to call. Kept for older set-ups: prefer the plain path /api/v1/hooks/jellyfin with the secret in the X-Tipsarr-Token header"`
-	WebhookToken             string `json:"webhookToken" doc:"The Jellyfin webhook secret, to send in the X-Tipsarr-Token header"`
+	WebhookPath              string `json:"webhookPath" doc:"Path for the Jellyfin webhook plugin to call, with the secret in the X-Tipsarr-Token header (read it with POST /admin/secrets/jellyfin_webhook/reveal)"`
+	WebhookTokenConfigured   bool   `json:"webhookTokenConfigured" doc:"The Jellyfin webhook secret exists; it is never returned here"`
 	DryRun                   bool   `json:"dryRun" doc:"When true nothing is ever sent to Radarr/Sonarr"`
 	OIDCIssuer               string `json:"oidcIssuer" doc:"OpenID Connect provider (Authelia), e.g. https://auth.example.org"`
 	OIDCClientID             string `json:"oidcClientId"`
 	OIDCClientSecretSet      bool   `json:"oidcClientSecretConfigured"`
 	OIDCAdminGroup           string `json:"oidcAdminGroup" doc:"Members of this group become admins (optional)"`
 	OIDCGroupsClaim          string `json:"oidcGroupsClaim" doc:"Claim that lists the groups, default groups"`
+	OIDCUsernameClaim        string `json:"oidcUsernameClaim" doc:"Claim matched exactly (case included) to the Jellyfin username, default preferred_username"`
 	LDAPURL                  string `json:"ldapUrl" doc:"LLDAP/LDAP address for profile pictures, e.g. ldap://lldap:3890"`
 	LDAPBindDN               string `json:"ldapBindDn"`
 	LDAPPasswordSet          bool   `json:"ldapBindPasswordConfigured"`
@@ -61,7 +63,7 @@ type settingsBody struct {
 	TeasersFilesURL          string `json:"teasersFilesUrl" doc:"Address of the trailer resolver on the Docker network, e.g. http://trailer-resolver:8080"`
 	TeasersFilesKeySet       bool   `json:"teasersFilesKeyConfigured" doc:"The resolver key is write-only; this only says whether one is saved"`
 	TeasersFilesMaxHeight    int    `json:"teasersFilesMaxHeight" doc:"Largest video height the resolver downloads: 360, 480, 720 or 1080"`
-	APIKey                   string `json:"apiKey" doc:"Read-only key for dashboards (Glance, Homepage...), sent as the X-Api-Key header; it reads everything an admin sees and never writes. Empty = off"`
+	APIKeyConfigured         bool   `json:"apiKeyConfigured" doc:"The read-only dashboard key (X-Api-Key) is on; the key itself is read with POST /admin/secrets/api_key/reveal"`
 }
 
 type settingsOutput struct{ Body settingsBody }
@@ -88,6 +90,7 @@ type updateSettingsInput struct {
 		OIDCClientSecret      *string `json:"oidcClientSecret,omitempty" doc:"Write-only; empty string clears it"`
 		OIDCAdminGroup        *string `json:"oidcAdminGroup,omitempty"`
 		OIDCGroupsClaim       *string `json:"oidcGroupsClaim,omitempty"`
+		OIDCUsernameClaim     *string `json:"oidcUsernameClaim,omitempty" doc:"Empty string = preferred_username"`
 		TeasersFilesEnabled   *bool   `json:"teasersFilesEnabled,omitempty" doc:"Needs the resolver address and key; turning it on with either missing is refused"`
 		TeasersFilesURL       *string `json:"teasersFilesUrl,omitempty" doc:"Empty string clears it (and turns trailer files off)"`
 		TeasersFilesKey       *string `json:"teasersFilesKey,omitempty" doc:"Write-only; empty string clears it (and turns trailer files off)"`
@@ -143,14 +146,14 @@ func registerAdmin(api huma.API, d Deps) {
 			}
 		}
 		return settingsBody{
-			APIKey:              apiKey,
+			APIKeyConfigured:    apiKey != "",
 			TeasersFilesEnabled: tfOn == "true", TeasersFilesURL: tfURL, TeasersFilesKeySet: tfKey != "", TeasersFilesMaxHeight: tfHeight,
 			PushEnabled: pushOn == "true", PushText: pushText == "true", PushRelayURL: pushURL, PushRelayKeyConfigured: pushKey != "",
 			PushKeyPublic: pushPublic == "true" && pushKey != "", PushDailyQuota: quota, PushPausedUntil: paused, PushDefaultRelayURL: push.DefaultRelayURL,
 			JellyfinURL: url, JellyfinPublicURL: publicURL, TMDBConfigured: key != "", DryRun: d.DryRun,
-			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin?token=" + secret, WebhookToken: secret, ServarrAutoImport: autoImport != "false", DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage), AppPublicURL: ldapGet(ctx, d, notify.SettingPublicURL),
+			JellyfinAPIKeyConfigured: jfKey != "", BoxOfficeRegions: regions, WebhookPath: "/api/v1/hooks/jellyfin", WebhookTokenConfigured: secret != "", ServarrAutoImport: autoImport != "false", DefaultLanguage: ldapGet(ctx, d, media.SettingDefaultLanguage), AppPublicURL: ldapGet(ctx, d, notify.SettingPublicURL),
 			LDAPURL: ldapGet(ctx, d, avatars.SettingLDAPURL), LDAPBindDN: ldapGet(ctx, d, avatars.SettingLDAPBindDN), LDAPBaseDN: ldapGet(ctx, d, avatars.SettingLDAPBaseDN), LDAPPasswordSet: ldapGet(ctx, d, avatars.SettingLDAPPassword) != "",
-			OIDCIssuer: oc.Issuer, OIDCClientID: oc.ClientID, OIDCClientSecretSet: oc.ClientSecret != "", OIDCAdminGroup: oc.AdminGroup, OIDCGroupsClaim: oc.GroupsClaim,
+			OIDCIssuer: oc.Issuer, OIDCClientID: oc.ClientID, OIDCClientSecretSet: oc.ClientSecret != "", OIDCAdminGroup: oc.AdminGroup, OIDCGroupsClaim: oc.GroupsClaim, OIDCUsernameClaim: oc.UsernameClaim,
 		}, nil
 	}
 
@@ -171,8 +174,15 @@ func registerAdmin(api huma.API, d Deps) {
 		Summary: "Update settings (admin)", Tags: []string{"admin"}, Security: sec,
 		Errors: []int{http.StatusUnauthorized, http.StatusForbidden},
 	}, func(ctx context.Context, in *updateSettingsInput) (*settingsOutput, error) {
-		if _, err := requireCan(ctx, perms.ManageSettings); err != nil {
+		me, err := requireCan(ctx, perms.ManageSettings)
+		if err != nil {
 			return nil, err
+		}
+		// Fields that decide who signs in and as what, or hold credentials into Jellyfin / the directory /
+		// Tipsarr itself, need the admin role: ManageSettings can be delegated, and with these a delegate
+		// could make themself admin (an SSO admin group, their own provider) or read everything.
+		if !me.IsAdmin() && in.touchesIdentity() {
+			return nil, fail(403, "admin_only", "only an admin can change sign-in, directory and API key settings")
 		}
 		if d.Demo {
 			if err := demoSettings(in); err != nil {
@@ -214,7 +224,7 @@ func registerAdmin(api huma.API, d Deps) {
 		for key, v := range map[string]*string{
 			auth.SettingOIDCIssuer: in.Body.OIDCIssuer, auth.SettingOIDCClientID: in.Body.OIDCClientID,
 			auth.SettingOIDCClientSecret: in.Body.OIDCClientSecret, auth.SettingOIDCAdminGroup: in.Body.OIDCAdminGroup,
-			auth.SettingOIDCGroupsClaim: in.Body.OIDCGroupsClaim,
+			auth.SettingOIDCGroupsClaim: in.Body.OIDCGroupsClaim, auth.SettingOIDCUsernameClaim: in.Body.OIDCUsernameClaim,
 		} {
 			if v == nil {
 				continue
@@ -225,7 +235,8 @@ func registerAdmin(api huma.API, d Deps) {
 					return nil, fail(422, "url_invalid", "oidcIssuer must start with http:// or https://")
 				}
 				if err := d.Auth.CheckOIDC(ctx, val); err != nil {
-					return nil, fail(422, "oidc_unreachable", "cannot read the provider's configuration: "+err.Error())
+					slog.Info("OIDC discovery failed", "issuer", val, "err", err)
+					return nil, fail(422, "oidc_unreachable", "cannot read the provider's configuration ("+string(netguard.Classify(err))+")")
 				}
 			}
 			if err := d.Store.SetSetting(ctx, key, val); err != nil {
@@ -243,7 +254,8 @@ func registerAdmin(api huma.API, d Deps) {
 			}
 			if next[avatars.SettingLDAPURL] != "" {
 				if err := avatars.CheckLDAP(ctx, next[avatars.SettingLDAPURL], next[avatars.SettingLDAPBindDN], next[avatars.SettingLDAPPassword]); err != nil {
-					return nil, fail(422, "ldap_unreachable", "cannot sign in to LDAP: "+err.Error())
+					slog.Info("LDAP test failed", "err", err)
+					return nil, fail(422, "ldap_unreachable", "cannot sign in to LDAP: "+avatars.LDAPFailure(err))
 				}
 			}
 			for k, v := range next {
@@ -441,4 +453,16 @@ func demoSettings(in *updateSettingsInput) error {
 		return fail(http.StatusForbidden, demo.ErrorCode, demo.RefusalDetail)
 	}
 	return nil
+}
+
+// touchesIdentity reports whether the update changes a sign-in, identity or credential setting (admin role only).
+func (in *updateSettingsInput) touchesIdentity() bool {
+	b := &in.Body
+	for _, p := range []*string{b.OIDCIssuer, b.OIDCClientID, b.OIDCClientSecret, b.OIDCAdminGroup, b.OIDCGroupsClaim, b.OIDCUsernameClaim,
+		b.LDAPURL, b.LDAPBindDN, b.LDAPPassword, b.LDAPBaseDN, b.JellyfinAPIKey, b.AppPublicURL} {
+		if p != nil {
+			return true
+		}
+	}
+	return b.APIKeyEnabled != nil || b.RegenerateAPIKey != nil
 }

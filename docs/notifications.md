@@ -4,6 +4,26 @@ Tipsarr sends webhook notifications as outgoing HTTP POSTs (Admin > Webhooks). E
 listens to, and optionally a Liquid template, authentication, extra headers, an HMAC secret and "send once per
 recipient". For the mobile apps, see [push notifications](push-notifications.md). Templating is inspired by Seerr's Liquid webhooks (seerr-team/seerr#2039, MIT).
 
+## Allowed addresses
+
+Webhooks only reach **public** addresses by default. The address is checked when Tipsarr connects, after the
+DNS lookup, so a name that resolves to a private address is refused too, and so is every redirect hop (at most 3).
+
+- Always refused: loopback (`127.0.0.1`, `::1`, `localhost`), link-local (`169.254.0.0/16`, including the cloud
+  metadata address `169.254.169.254`, `fe80::/10`), `0.0.0.0` and multicast.
+- Refused unless allowed: private networks (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `fc00::/7`) and
+  CGNAT (`100.64.0.0/10`, e.g. Tailscale).
+- To reach a receiver on your LAN (ntfy, Home Assistant, Gotify…), an admin lists it under **Admin > Webhooks >
+  Allowed internal hosts**, one per line: a host name (`ntfy.lan`), `host:port` (`192.168.1.20:8123`) or a CIDR
+  range (`10.0.0.0/24`). On the Docker network, list the container name (`ntfy`) or the subnet.
+- A webhook pointing at a refused address shows a "blocked address" badge; the test button answers "refused by the
+  outbound policy". It never shows the raw network error.
+- A webhook can never target a configured Radarr/Sonarr instance (same host name, or same resolved address and
+  port), so it cannot write to them outside dry-run.
+
+> Upgrading from 1.0: webhooks that pointed at a private address stop working until the host is allowed. They are
+> listed in the log at start (`webhook points at a private or local address`) and on the Webhooks page.
+
 ## Events
 
 | Event | When | Concerned people (per-recipient) |

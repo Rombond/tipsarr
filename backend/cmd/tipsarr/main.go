@@ -18,6 +18,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/auth"
 	"github.com/Rombond/tipsarr/backend/internal/avatars"
 	"github.com/Rombond/tipsarr/backend/internal/boxoffice"
+	"github.com/Rombond/tipsarr/backend/internal/clientip"
 	"github.com/Rombond/tipsarr/backend/internal/config"
 	"github.com/Rombond/tipsarr/backend/internal/demo"
 	"github.com/Rombond/tipsarr/backend/internal/events"
@@ -72,7 +73,11 @@ func run(cfg config.Config) error {
 	if err := dropPrivileges(cfg.ConfigDir); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(cfg.ConfigDir, 0o755); err != nil {
+	if err := os.MkdirAll(cfg.ConfigDir, 0o700); err != nil {
+		return err
+	}
+	secretKey, err := store.LoadSecretKey(cfg.ConfigDir)
+	if err != nil {
 		return err
 	}
 	st, err := store.Open(ctx, cfg.DBURL)
@@ -80,6 +85,9 @@ func run(cfg config.Config) error {
 		return err
 	}
 	defer st.Close()
+	if err := st.EnableSecrets(ctx, secretKey); err != nil {
+		return fmt.Errorf("secrets: %w", err)
+	}
 	slog.Info("database ready", "engine", st.Dialect)
 
 	if cfg.JellyfinURL != "" {
@@ -119,6 +127,10 @@ func run(cfg config.Config) error {
 	// TIPSARR_TMDB_URL, TIPSARR_TMDB_IMAGE_URL and TIPSARR_BOXOFFICE_URL point the server at fakes (see dev/README.md); unset = the real services.
 	mediaSvc := media.New(st, os.Getenv("TIPSARR_TMDB_URL"))
 	notifier := notify.New(st, cfg.DryRun)
+	for _, h := range notifier.BlockedWebhooks(ctx) {
+		slog.Warn("webhook points at a private or local address and will be refused: allow the host in Settings > Webhooks > Allowed internal hosts",
+			"webhook", h.Name, "url", h.URL)
+	}
 	pusher := push.New(st, cfg.DryRun)
 	if dm.Enabled {
 		notifier.Offline = true // webhooks can be written and previewed, never sent; no push either
@@ -171,9 +183,9 @@ func run(cfg config.Config) error {
 	}})
 	jm.Start(ctx)
 
-	// Optional (TIPSARR_SETUP_TOKEN=true): a fresh install must be claimed with a one-time token
-	// that only appears in this log, so a stranger who reaches the port first cannot point Tipsarr
-	// at their own "Jellyfin". Off by default: on a private network it is just friction.
+	// A fresh install must be claimed with a one-time token that only appears in this log, so a stranger
+	// who reaches the port first cannot point Tipsarr at their own "Jellyfin". On by default unless
+	// TIPSARR_JELLYFIN_URL is set; TIPSARR_SETUP_TOKEN=false turns it off.
 	setupToken := ""
 	if cur, _ := st.GetSetting(ctx, auth.SettingJellyfinURL); cur == "" && cfg.RequireSetupToken {
 		raw := make([]byte, 12)
@@ -184,14 +196,23 @@ func run(cfg config.Config) error {
 		slog.Warn("first run: open Tipsarr in a browser and enter this setup token", "token", setupToken)
 	}
 
+	trusted, err := clientip.Parse(cfg.TrustedProxies)
+	if err != nil {
+		return fmt.Errorf("TIPSARR_TRUSTED_PROXIES: %w", err)
+	}
+	authSvc := auth.New(st)
+	authSvc.SetSessionTTL(cfg.SessionTTL)
+	authSvc.SetRecheckGrace(cfg.RecheckGrace)
 	handler, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: auth.New(st), Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issueSvc, Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(8, 10*time.Minute), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier, Push: pusher,
+		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: authSvc, ClientIP: trusted, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issueSvc, Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(st), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier, Push: pusher,
 		DryRun: cfg.DryRun, Demo: dm.Enabled, ConfigDir: cfg.ConfigDir, ImageBaseURL: os.Getenv("TIPSARR_TMDB_IMAGE_URL"),
 	})
 	if cfg.DryRun {
 		slog.Warn("DRY-RUN is ON: nothing will be sent to Radarr/Sonarr (set TIPSARR_DRY_RUN=false to disable)")
 	}
-	srv := &http.Server{Addr: cfg.Addr, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
+	// WriteTimeout covers ordinary answers; the event stream and teaser videos clear it per request.
+	srv := &http.Server{Addr: cfg.Addr, Handler: handler, ReadHeaderTimeout: 10 * time.Second, ReadTimeout: time.Minute,
+		WriteTimeout: 2 * time.Minute, IdleTimeout: 2 * time.Minute}
 
 	go func() {
 		<-ctx.Done()

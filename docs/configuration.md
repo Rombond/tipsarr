@@ -47,6 +47,10 @@ Everyone can choose the quality profile when requesting. The folder choice is sh
 folder" right (and admins); Settings → Folder choice can give it to everyone. Whatever is not chosen uses the
 Radarr/Sonarr defaults.
 
+Radarr/Sonarr instances: the connection test reaches LAN addresses but refuses loopback (`127.0.0.1`, `localhost`)
+and link-local addresses; use the container name or LAN address. Changing the host of an instance asks for the API
+key again (the saved key is only ever sent to the host it was saved for).
+
 ## Import from Radarr and Sonarr
 
 Settings → Import: titles Radarr and Sonarr already monitor but have not downloaded appear in Requests as approved, so
@@ -56,7 +60,7 @@ everyone can follow them. The `servarr-import` job runs every hour.
 
 Settings → Profile pictures from LDAP: address (`ldap://host:3890` for LLDAP), a read-only bind account and the users'
 base DN. Tipsarr reads `jpegPhoto` where `uid` equals the Jellyfin username (cached 12 hours). "Import from Jellyfin"
-copies the settings from Jellyfin's LDAP plugin. An uploaded picture takes priority.
+copies the settings from Jellyfin's LDAP plugin. An uploaded picture takes priority. Pictures larger than 4096 × 4096 pixels (16 MP) or 5 MB are refused.
 
 ## Jobs
 

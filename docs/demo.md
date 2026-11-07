@@ -6,6 +6,10 @@ Each visitor gets a Tipsarr of their own, started from a seeded template, with a
 setting, approve requests, create users and webhooks: only you see it. The sandbox is deleted after 30 minutes without
 activity, or 60 minutes after it started. The login page offers "Sign in as admin" and "Sign in as user".
 
+The iOS and Android apps work too: server `https://tipsarr-demo.brebond.com`, user `admin` / `demo` (admin) or
+`user` / `demo` (plain user). Each sign-in from an app starts its own sandbox; when it ends the app shows its sign-in
+screen again.
+
 What is real and what is not:
 
 - Movie and show data, posters and box-office charts are real (TMDB, Box Office Mojo), through a shared cache.

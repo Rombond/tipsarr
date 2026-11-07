@@ -24,6 +24,8 @@ type fakeIdP struct {
 	username string
 	groups   []string
 	rejected bool // the token endpoint answers 400
+	// extra claims put in the ID token (email, name...)
+	extra map[string]any
 	// profile claims only through the userinfo endpoint, like Authelia by default
 	userinfoOnly bool
 }
@@ -58,6 +60,9 @@ func newFakeIdP(t *testing.T) *fakeIdP {
 			return
 		}
 		claims := map[string]any{"preferred_username": f.username, "groups": f.groups, "nonce": f.nonce}
+		for k, v := range f.extra {
+			claims[k] = v
+		}
 		if f.userinfoOnly {
 			claims = map[string]any{"nonce": f.nonce}
 		}
@@ -151,8 +156,22 @@ func TestSingleSignOn(t *testing.T) {
 		t.Fatalf("methods = %s", b)
 	}
 
+	// the username claim must match exactly: no case folding, no fallback to name / nickname
+	if cb := ssoLogin(t, e, idp, "Bob", nil); !strings.Contains(cb.Header.Get("Location"), "reason=no_user") {
+		t.Fatalf("case-different username = %s", cb.Header.Get("Location"))
+	}
+	idp.mu.Lock()
+	idp.extra = map[string]any{"name": "bob", "nickname": "bob"}
+	idp.mu.Unlock()
+	if cb := ssoLogin(t, e, idp, "", nil); !strings.Contains(cb.Header.Get("Location"), "sso=refused") {
+		t.Fatalf("display-name fallback = %s", cb.Header.Get("Location"))
+	}
+	idp.mu.Lock()
+	idp.extra = nil
+	idp.mu.Unlock()
+
 	// a Jellyfin user signs in, with no password
-	cb := ssoLogin(t, e, idp, "Bob", nil) // the match ignores case
+	cb := ssoLogin(t, e, idp, "bob", nil)
 	var session *http.Cookie
 	for _, c := range cb.Cookies() {
 		if c.Name == "tipsarr_session" {
@@ -175,6 +194,41 @@ func TestSingleSignOn(t *testing.T) {
 	if _, b := call(t, e.app, "GET", "/api/v1/me", "", session); !strings.Contains(b, `"name":"carol"`) || !strings.Contains(b, `"role":"admin"`) {
 		t.Fatalf("carol = %s", b)
 	}
+	// a password sign-in cannot re-check the group: carol keeps the role it gave
+	if resp, b := call(t, e.app, "POST", "/api/v1/auth/login", `{"username":"carol","password":"pw"}`); resp.StatusCode == 200 && !strings.Contains(b, `"role":"admin"`) {
+		t.Fatalf("password sign-in dropped the SSO admin role: %s", b)
+	}
+	// out of the group at the next SSO sign-in: demoted
+	cb = ssoLogin(t, e, idp, "carol", []string{"users"})
+	for _, c := range cb.Cookies() {
+		if c.Name == "tipsarr_session" {
+			session = c
+		}
+	}
+	if _, b := call(t, e.app, "GET", "/api/v1/me", "", session); !strings.Contains(b, `"role":"user"`) {
+		t.Fatalf("carol left the admin group = %s", b)
+	}
+
+	// another username claim (email): an address the provider says is unverified is refused
+	if resp, _ := call(t, e.app, "PUT", "/api/v1/admin/settings", `{"oidcUsernameClaim":"email"}`, admin); resp.StatusCode != 200 {
+		t.Fatalf("save username claim = %d", resp.StatusCode)
+	}
+	idp.mu.Lock()
+	idp.extra = map[string]any{"email": "bob", "email_verified": false}
+	idp.mu.Unlock()
+	if cb := ssoLogin(t, e, idp, "x", nil); !strings.Contains(cb.Header.Get("Location"), "sso=refused") {
+		t.Fatalf("unverified email = %s", cb.Header.Get("Location"))
+	}
+	idp.mu.Lock()
+	idp.extra = map[string]any{"email": "bob", "email_verified": true}
+	idp.mu.Unlock()
+	if cb := ssoLogin(t, e, idp, "x", nil); cb.Header.Get("Location") != "/" {
+		t.Fatalf("verified email = %s", cb.Header.Get("Location"))
+	}
+	idp.mu.Lock()
+	idp.extra = nil
+	idp.mu.Unlock()
+	call(t, e.app, "PUT", "/api/v1/admin/settings", `{"oidcUsernameClaim":""}`, admin)
 
 	// providers that keep profile claims out of the ID token (Authelia): they come from userinfo
 	idp.mu.Lock()

@@ -31,7 +31,7 @@ func newService(t *testing.T) (*Service, *store.Store) {
 func addUser(t *testing.T, st *store.Store, id, name string, admin bool, discord string) *store.User {
 	t.Helper()
 	ctx := context.Background()
-	u, err := st.UpsertUser(ctx, id, name, admin)
+	u, err := st.UpsertUser(ctx, id, name, store.AdminGrant{Admin: admin, Source: store.AdminFromJellyfin})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"slices"
 	"sort"
 	"strings"
 
+	"github.com/Rombond/tipsarr/backend/internal/netguard"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/store"
@@ -30,6 +32,7 @@ type webhookView struct {
 	AuthUsername     string          `json:"authUsername"`
 	AuthConfigured   bool            `json:"authSecretConfigured" doc:"A bearer token or basic password is saved (write-only)"`
 	PerRecipient     bool            `json:"perRecipient" doc:"One delivery per concerned person, with notifyUser filled"`
+	BlockedByPolicy  bool            `json:"blockedByPolicy" doc:"The URL points at a private or local address the outbound policy refuses (see /admin/webhooks/egress)"`
 }
 
 func toWebhookView(w store.Webhook) webhookView {
@@ -145,6 +148,16 @@ func renderError(err error) string {
 	return ""
 }
 
+type webhookRef struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type webhookEgress struct {
+	AllowedHosts []string     `json:"allowedHosts" doc:"Private targets webhooks may reach: host, host:port or CIDR"`
+	Blocked      []webhookRef `json:"blocked" doc:"Saved webhooks whose URL the policy refuses now"`
+}
+
 func registerWebhooks(api huma.API, d Deps) {
 	sec := []map[string][]string{{"session": {}}, {"bearer": {}}}
 	adminErrs := []int{http.StatusUnauthorized, http.StatusForbidden}
@@ -187,11 +200,70 @@ func registerWebhooks(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
+		blocked := map[string]bool{}
+		for _, b := range d.Notify.BlockedWebhooks(ctx) {
+			blocked[b.ID] = true
+		}
 		out := make([]webhookView, 0, len(rows))
 		for _, r := range rows {
-			out = append(out, toWebhookView(r))
+			v := toWebhookView(r)
+			v.BlockedByPolicy = blocked[r.ID]
+			out = append(out, v)
 		}
 		return &struct{ Body []webhookView }{out}, nil
+	})
+
+	egressOut := func(ctx context.Context) (*struct{ Body webhookEgress }, error) {
+		v, err := d.Store.GetSetting(ctx, notify.SettingAllowedHosts)
+		if err != nil {
+			return nil, err
+		}
+		out := webhookEgress{AllowedHosts: notify.SplitAllowList(v), Blocked: []webhookRef{}}
+		if out.AllowedHosts == nil {
+			out.AllowedHosts = []string{}
+		}
+		for _, b := range d.Notify.BlockedWebhooks(ctx) {
+			out.Blocked = append(out.Blocked, webhookRef{ID: b.ID, Name: b.Name})
+		}
+		return &struct{ Body webhookEgress }{out}, nil
+	}
+	huma.Register(api, huma.Operation{
+		OperationID: "getWebhookEgress", Method: http.MethodGet, Path: "/admin/webhooks/egress",
+		Summary:     "Outbound policy of webhooks (admin)",
+		Description: "Webhooks may only reach public addresses, plus the private ones listed here. Loopback and link-local addresses are always refused.",
+		Tags:        []string{"admin"}, Security: sec, Errors: adminErrs,
+	}, func(ctx context.Context, _ *struct{}) (*struct{ Body webhookEgress }, error) {
+		if _, err := requireAdmin(ctx); err != nil {
+			return nil, err
+		}
+		return egressOut(ctx)
+	})
+	huma.Register(api, huma.Operation{
+		OperationID: "updateWebhookEgress", Method: http.MethodPut, Path: "/admin/webhooks/egress",
+		Summary: "Set the private hosts webhooks may reach (admin)", Tags: []string{"admin"}, Security: sec,
+		Errors: append(adminErrs, http.StatusUnprocessableEntity),
+	}, func(ctx context.Context, in *struct {
+		Body struct {
+			AllowedHosts []string `json:"allowedHosts" maxItems:"50" doc:"host, host:port or CIDR, e.g. ntfy.lan, 192.168.1.20:8123, 10.0.0.0/24"`
+		}
+	}) (*struct{ Body webhookEgress }, error) {
+		if _, err := requireAdmin(ctx); err != nil {
+			return nil, err
+		}
+		var keep []string
+		for _, h := range in.Body.AllowedHosts {
+			if h = strings.TrimSpace(h); h == "" {
+				continue
+			}
+			if !netguard.ValidAllowEntry(h) {
+				return nil, fail(422, "bad_allowed_host", "not a host, host:port or CIDR: "+h)
+			}
+			keep = append(keep, h)
+		}
+		if err := d.Store.SetSetting(ctx, notify.SettingAllowedHosts, strings.Join(keep, "\n")); err != nil {
+			return nil, err
+		}
+		return egressOut(ctx)
 	})
 
 	huma.Register(api, huma.Operation{
@@ -363,7 +435,7 @@ func registerWebhooks(api huma.API, d Deps) {
 		}
 		m, err := d.Notify.Render(ctx, *w, sampleEvent(notify.Test, me), to)
 		if errors.Is(err, notify.ErrServarrTarget) {
-			return nil, fail(502, "delivery_failed", "delivery failed: "+err.Error())
+			return nil, fail(502, "delivery_failed", "delivery failed: "+notify.FailureText(err))
 		}
 		if err != nil {
 			if msg := renderError(err); msg != "" {
@@ -372,7 +444,8 @@ func registerWebhooks(api huma.API, d Deps) {
 			return nil, err
 		}
 		if err := d.Notify.Post(ctx, m); err != nil {
-			return nil, fail(502, "delivery_failed", "delivery failed: "+err.Error())
+			slog.Info("webhook test failed", "webhook", w.Name, "err", err) // details stay in the log
+			return nil, fail(502, "delivery_failed", "delivery failed: "+notify.FailureText(err))
 		}
 		return &struct{}{}, nil
 	})

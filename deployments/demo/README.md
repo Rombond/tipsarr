@@ -17,6 +17,19 @@ Demo mode in a sandbox: dry-run forced; TMDB key, Jellyfin key and public URL lo
 yt-dlp jobs off; every outbound connection limited to the gateway's internal address; webhook test, push relay,
 LDAP, OIDC and resolver calls answer 403 `demo_disabled`; the login page offers "Sign in as admin / as user".
 
+## Sessions: web and apps
+
+- Web: a browser loading a page gets a sandbox and the `tipsarr_demo` cookie. API calls without a session answer
+  401 `demo_expired`.
+- Apps (Bearer token): `GET /api/v1/status`, `/health`, `/auth/methods` and `/setup/status` without a session are
+  answered by any running sandbox (a warm one first) and allocate nothing (503 `demo_starting` while none runs).
+  `POST /api/v1/auth/token` (or `/auth/login`) without a session allocates a sandbox, with the same per-IP limit
+  (429 `demo_ip_limit`) and cap (503 `demo_full`); a failed sign-in frees it at once. The token returned is mapped to
+  the session, so later requests with `Authorization: Bearer <token>` (event stream and images included) reach it.
+  When the session ends, the token gets 401 `demo_expired` and the app returns to its sign-in screen.
+- Accounts (fake Jellyfin, password `demo` for all): `admin` (admin), `user` (plain user), `carol`, `dave`.
+  Push device registration is stored by the sandbox but nothing is ever sent (push cannot be turned on).
+
 ## Run locally
 
 ```

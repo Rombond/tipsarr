@@ -33,6 +33,9 @@
 	<CardContent class="grid gap-3">
 		<Button disabled={busy} onclick={() => enter('admin')}>{t('login.demo_admin')}</Button>
 		<Button variant="outline" disabled={busy} onclick={() => enter('user')}>{t('login.demo_user')}</Button>
+		<p class="text-sm text-muted-foreground">
+			{t('login.demo_apps', { server: location.origin, admin: 'admin', user: 'user', password: 'demo' })}
+		</p>
 		{#if error}
 			<p class="text-sm text-destructive">{error}</p>
 		{/if}

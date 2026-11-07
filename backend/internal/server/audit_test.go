@@ -66,6 +66,19 @@ func TestSecurityHeadersAndLimits(t *testing.T) {
 	if !strings.Contains(resp.Header.Get("Content-Security-Policy"), "frame-ancestors 'none'") {
 		t.Fatal("CSP must forbid framing")
 	}
+	if csp := resp.Header.Get("Content-Security-Policy"); strings.Contains(csp, "script-src 'self' 'unsafe-inline'") || !strings.Contains(csp, "script-src 'self'") {
+		t.Fatalf("scripts must not allow unsafe-inline: %s", csp)
+	}
+	if resp.Header.Get("Strict-Transport-Security") != "" {
+		t.Fatal("no HSTS over plain http")
+	}
+	hreq, _ := http.NewRequest("GET", e.app.URL+"/api/v1/health", nil)
+	hreq.Header.Set("X-Forwarded-Proto", "https")
+	if r2, err := http.DefaultClient.Do(hreq); err != nil || r2.Header.Get("Strict-Transport-Security") == "" {
+		t.Fatalf("HSTS behind an https proxy missing (%v)", err)
+	} else {
+		r2.Body.Close()
+	}
 	// absurd page numbers are refused before any TMDB call
 	before := tmdbHits.Load()
 	if resp, _ := call(t, e.app, "GET", "/api/v1/discover/trending?page=501", "", bob); resp.StatusCode != http.StatusUnprocessableEntity {

@@ -2,9 +2,12 @@
 package notify
 
 import (
+	"context"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/Rombond/tipsarr/backend/internal/netguard"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
 
@@ -56,8 +59,36 @@ type Service struct {
 	delays  []time.Duration // waits before retry 2, 3, ...
 }
 
+// SettingAllowedHosts lists the private-network targets webhooks may reach (one per line or comma:
+// host, host:port or CIDR). Loopback and link-local addresses are refused whatever it says.
+const SettingAllowedHosts = "webhooks.allowed_internal_hosts"
+
 func New(s *store.Store, dryRun bool) *Service {
-	return &Service{store: s, http: &http.Client{Timeout: 10 * time.Second}, dryRun: dryRun, delays: []time.Duration{time.Second, 5 * time.Second}}
+	svc := &Service{store: s, dryRun: dryRun, delays: []time.Duration{time.Second, 5 * time.Second}}
+	svc.http = svc.Policy().Client(10*time.Second, 3)
+	return svc
+}
+
+// Policy is the egress policy of webhook deliveries: public addresses, plus the private ones the
+// admin allowed (SettingAllowedHosts).
+func (s *Service) Policy() netguard.Policy {
+	return netguard.Policy{AllowList: func() []string {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		v, _ := s.store.GetSetting(ctx, SettingAllowedHosts)
+		return SplitAllowList(v)
+	}}
+}
+
+// SplitAllowList splits the stored allow-list (lines or commas).
+func SplitAllowList(v string) []string {
+	var out []string
+	for _, f := range strings.FieldsFunc(v, func(r rune) bool { return r == '\n' || r == ',' || r == '\r' }) {
+		if f = strings.TrimSpace(f); f != "" {
+			out = append(out, f)
+		}
+	}
+	return out
 }
 
 // SetPusher enables mobile push; without it Push does nothing.

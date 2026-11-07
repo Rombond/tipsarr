@@ -28,7 +28,7 @@ func dropPrivileges(configDir string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
+	if err := os.MkdirAll(configDir, 0o700); err != nil {
 		return err
 	}
 	if uid == 0 && gid == 0 {
