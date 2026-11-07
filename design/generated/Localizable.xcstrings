@@ -370,6 +370,39 @@
         }
       }
     },
+    "banner.demo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demo: your changes disappear when your session ends"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Démo : tes changements disparaissent à la fin de ta session"
+          }
+        }
+      }
+    },
+    "banner.demo_left": {
+      "comment": "placeholders: minutes",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ min left"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "encore %@ min"
+          }
+        }
+      }
+    },
     "banner.dry_run": {
       "localizations": {
         "en": {
@@ -1713,6 +1746,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aucun classement n’est enregistré pour ce week-end."
+          }
+        }
+      }
+    },
+    "error.demo_disabled": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disabled in the demo: this would contact another service."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Désactivé dans la démo : cette action contacterait un autre service."
+          }
+        }
+      }
+    },
+    "error.demo_expired": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your demo session has ended. Reload the page to start a new one."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta session de démo est terminée. Recharge la page pour en commencer une nouvelle."
           }
         }
       }
@@ -4048,6 +4113,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "Redirection vers la connexion…"
+          }
+        }
+      }
+    },
+    "login.demo_admin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in as admin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrer comme admin"
+          }
+        }
+      }
+    },
+    "login.demo_desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a role, no password needed. Everything you do stays in your own sandbox."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisis un rôle, pas besoin de mot de passe. Tout ce que tu fais reste dans ton propre bac à sable."
+          }
+        }
+      }
+    },
+    "login.demo_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try the demo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essaie la démo"
+          }
+        }
+      }
+    },
+    "login.demo_user": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in as user"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrer comme utilisateur"
           }
         }
       }
