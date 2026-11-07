@@ -21,7 +21,8 @@
 
 **[Try the live demo](https://tipsarr-demo.brebond.com)**: every visitor gets a private, throwaway Tipsarr with sample
 data and admin access. Nothing you do there is seen by anyone else; the sandbox is deleted after 30 minutes without
-activity (60 minutes at most).
+activity (60 minutes at most). In the iOS and Android apps, use the server `https://tipsarr-demo.brebond.com` with
+user `admin` / `demo` (admin) or `user` / `demo` (plain user).
 
 Tipsarr is a single Go binary with the web interface built in. Sign in with your Jellyfin account, browse what is
 popular, see what your server already has, ask for what it lacks, and let [Radarr](https://radarr.video) and

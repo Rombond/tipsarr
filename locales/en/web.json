@@ -385,6 +385,7 @@
   "login.demo_desc": "Pick a role, no password needed. Everything you do stays in your own sandbox.",
   "login.demo_admin": "Sign in as admin",
   "login.demo_user": "Sign in as user",
+  "login.demo_apps": "Using the mobile apps? Server {server}, user {admin} (admin) or {user}, password {password}.",
   "error.demo_disabled": "Disabled in the demo: this would contact another service.",
   "error.demo_expired": "Your demo session has ended. Reload the page to start a new one.",
   "brand.tagline": "Discover, request and watch from your own library.",

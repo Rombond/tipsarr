@@ -385,6 +385,7 @@
   "login.demo_desc": "Choisis un rôle, pas besoin de mot de passe. Tout ce que tu fais reste dans ton propre bac à sable.",
   "login.demo_admin": "Entrer comme admin",
   "login.demo_user": "Entrer comme utilisateur",
+  "login.demo_apps": "Tu utilises les applis mobiles ? Serveur : {server}, identifiant {admin} (admin) ou {user}, mot de passe {password}.",
   "error.demo_disabled": "Désactivé dans la démo : cette action contacterait un autre service.",
   "error.demo_expired": "Ta session de démo est terminée. Recharge la page pour en commencer une nouvelle.",
   "brand.tagline": "Découvre, demande et regarde depuis ta propre bibliothèque.",

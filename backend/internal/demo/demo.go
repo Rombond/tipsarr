@@ -27,8 +27,8 @@ const ErrorCode = "demo_disabled"
 
 // Accounts of the seeded demo (the fake Jellyfin accepts Password for each).
 const (
-	AdminUser = "alice"
-	PlainUser = "bob"
+	AdminUser = "admin"
+	PlainUser = "user"
 	Password  = "demo"
 )
 
