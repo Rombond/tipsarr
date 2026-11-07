@@ -22,7 +22,15 @@ func NewID() string {
 
 func (s *Store) ListServarr(ctx context.Context) ([]ServarrInstance, error) {
 	var rows []ServarrInstance
-	return rows, s.DB.NewSelect().Model(&rows).Order("kind", "created_at").Scan(ctx)
+	if err := s.DB.NewSelect().Model(&rows).Order("kind", "created_at").Scan(ctx); err != nil {
+		return nil, err
+	}
+	for i := range rows {
+		if err := s.openServarr(&rows[i]); err != nil {
+			return nil, err
+		}
+	}
+	return rows, nil
 }
 
 func (s *Store) GetServarr(ctx context.Context, id string) (*ServarrInstance, error) {
@@ -31,7 +39,10 @@ func (s *Store) GetServarr(ctx context.Context, id string) (*ServarrInstance, er
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
-	return in, err
+	if err != nil {
+		return nil, err
+	}
+	return in, s.openServarr(in)
 }
 
 // DefaultServarr returns the default instance of a kind, or ErrNotFound.
@@ -41,7 +52,10 @@ func (s *Store) DefaultServarr(ctx context.Context, kind string) (*ServarrInstan
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
-	return in, err
+	if err != nil {
+		return nil, err
+	}
+	return in, s.openServarr(in)
 }
 
 // SaveServarr inserts or updates an instance; when it is the default of its kind the others are cleared.
@@ -59,14 +73,22 @@ func (s *Store) SaveServarr(ctx context.Context, in *ServarrInstance) error {
 				in.IsDefault = 1 // first instance of a kind is the default
 			}
 			in.CreatedAt = time.Now().Unix()
-			if _, err := tx.NewInsert().Model(in).Exec(ctx); err != nil {
+			row, err := s.sealServarr(in)
+			if err != nil {
+				return err
+			}
+			if _, err := tx.NewInsert().Model(row).Exec(ctx); err != nil {
 				return err
 			}
 		case err != nil:
 			return err
 		default:
 			in.CreatedAt = existing.CreatedAt
-			if _, err := tx.NewUpdate().Model(in).WherePK().Exec(ctx); err != nil {
+			row, err := s.sealServarr(in)
+			if err != nil {
+				return err
+			}
+			if _, err := tx.NewUpdate().Model(row).WherePK().Exec(ctx); err != nil {
 				return err
 			}
 		}
@@ -236,7 +258,15 @@ func (s *Store) UserNames(ctx context.Context, ids []string) (map[string]string,
 
 func (s *Store) ListWebhooks(ctx context.Context) ([]Webhook, error) {
 	var rows []Webhook
-	return rows, s.DB.NewSelect().Model(&rows).Order("created_at").Scan(ctx)
+	if err := s.DB.NewSelect().Model(&rows).Order("created_at").Scan(ctx); err != nil {
+		return nil, err
+	}
+	for i := range rows {
+		if err := s.openWebhook(&rows[i]); err != nil {
+			return nil, err
+		}
+	}
+	return rows, nil
 }
 
 func (s *Store) GetWebhook(ctx context.Context, id string) (*Webhook, error) {
@@ -245,11 +275,18 @@ func (s *Store) GetWebhook(ctx context.Context, id string) (*Webhook, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
-	return w, err
+	if err != nil {
+		return nil, err
+	}
+	return w, s.openWebhook(w)
 }
 
 func (s *Store) SaveWebhook(ctx context.Context, w *Webhook) error {
-	res, err := s.DB.NewUpdate().Model(w).Column("name", "url", "secret", "events", "enabled", "preset", "template", "headers", "auth_type", "auth_username", "auth_secret", "per_recipient").WherePK().Exec(ctx)
+	row, err := s.sealWebhook(w)
+	if err != nil {
+		return err
+	}
+	res, err := s.DB.NewUpdate().Model(row).Column("name", "url", "secret", "events", "enabled", "preset", "template", "headers", "auth_type", "auth_username", "auth_secret", "per_recipient").WherePK().Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -257,7 +294,8 @@ func (s *Store) SaveWebhook(ctx context.Context, w *Webhook) error {
 		return nil
 	}
 	w.CreatedAt = time.Now().Unix()
-	_, err = s.DB.NewInsert().Model(w).Exec(ctx)
+	row.CreatedAt = w.CreatedAt
+	_, err = s.DB.NewInsert().Model(row).Exec(ctx)
 	return err
 }
 

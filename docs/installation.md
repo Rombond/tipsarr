@@ -31,7 +31,38 @@ from `TIPSARR_JELLYFIN_URL`); sign in with a Jellyfin account. **The first Jelly
 the Tipsarr admin.** Continue with [Configuration](configuration.md).
 
 The container starts as root only to give `/config` to `PUID:PGID` (default `65532`), then drops to that user, like the
-`*arr` images. You never need to `chown` the folder.
+`*arr` images. You never need to `chown` the folder. New config folders are created with mode `700`; for an existing one,
+`chmod 700 ./config` is recommended (it holds the database and the secrets key).
+
+### Hardening (recommended)
+
+The process only needs three capabilities, and only during its first instant as root: `CHOWN` (give `/config` to
+`PUID:PGID`), `SETUID` and `SETGID` (switch to that user). It writes nowhere but `/config` (and the Teasers folder), so
+the root filesystem can be read-only:
+
+```yaml
+services:
+  tipsarr:
+    # ... as above
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+```
+
+If you run the container directly as your user (`user: '1000:1000'`, the folder already belonging to it), drop
+`cap_add` entirely: no capability is needed. If you later change `PUID` on a `700` folder, `chown` it yourself first (root
+without `DAC_READ_SEARCH` cannot walk a `700` folder owned by someone else).
+
+### Secrets encryption key
+
+API keys, client secrets, passwords and webhook credentials are stored encrypted (AES-256-GCM) in the database. The key
+comes from `TIPSARR_SECRET_KEY` or, without it, from `<config>/secret.key`, generated (mode `600`) at the first start.
+**Back it up together with the database**: a database restored without its key starts with an error, and the secrets
+then have to be entered again. Existing plaintext secrets are encrypted automatically at the first start after
+upgrading; no rotation is ever required. With PostgreSQL or MySQL, the key still lives in the config folder unless you
+set `TIPSARR_SECRET_KEY` (`openssl rand -base64 32`).
 
 A ready-made file is in [`deployments/docker-compose.yml`](../deployments/docker-compose.yml). To build the image
 yourself: `docker build -t tipsarr .` from the repository root.
@@ -61,6 +92,7 @@ stored in the database.
 | `TIPSARR_DRY_RUN` | `true` | `false` (or `0`) lets approved requests reach Radarr/Sonarr and push notifications leave |
 | `TIPSARR_COOKIE_SECURE` | `false` | `true` always marks the session cookie `Secure`; otherwise only behind a proxy sending `X-Forwarded-Proto: https` |
 | `TIPSARR_SETUP_TOKEN` | `false` | `true`: the first-run page asks for a one-time token printed in the log. Use it if a fresh install is reachable by strangers |
+| `TIPSARR_SECRET_KEY` | `<config>/secret.key` | Key encrypting the stored secrets: 32 bytes in base64 (`openssl rand -base64 32`). See [Secrets encryption key](#secrets-encryption-key) |
 | `TIPSARR_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 | `TIPSARR_TRAILERS_DIR` | `<config>/trailers` | Folder shared with the optional `trailer-resolver` sidecar (Teasers), mounted read-only |
 | `PUID` / `PGID` | `65532` | User and group the container runs as |

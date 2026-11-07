@@ -1,0 +1,25 @@
+# Keeps the pinned versions current: GitHub Actions are pinned by commit SHA and base images by digest, so these
+# updates are the only way they move.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      actions: { patterns: ['*'] }
+  - package-ecosystem: docker
+    directories: [/, /trailer-resolver]
+    schedule: { interval: weekly }
+  - package-ecosystem: gomod
+    directories: [/backend, /trailer-resolver]
+    schedule: { interval: weekly }
+    groups:
+      go: { patterns: ['*'], update-types: [minor, patch] }
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly }
+    groups:
+      npm: { patterns: ['*'], update-types: [minor, patch] }
+  - package-ecosystem: gradle
+    directory: /android
+    schedule: { interval: weekly }

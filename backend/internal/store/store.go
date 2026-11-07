@@ -29,7 +29,8 @@ var migrationsFS embed.FS
 
 type Store struct {
 	DB      *bun.DB
-	Dialect string // sqlite | postgres | mysql
+	Dialect string     // sqlite | postgres | mysql
+	secrets *secretBox // nil = secrets kept in plaintext (see EnableSecrets)
 }
 
 // Open connects to the database described by dbURL and applies pending migrations.
