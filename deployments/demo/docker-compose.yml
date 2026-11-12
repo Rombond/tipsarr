@@ -20,6 +20,7 @@ services:
       DEMO_IDLE_TIMEOUT: 30m
       DEMO_MAX_LIFETIME: 60m
       DEMO_SESSIONS_PER_IP: 5
+      DEMO_IP_ALLOWLIST: ${DEMO_IP_ALLOWLIST:-}  # exempt from the per-IP limit (fail2ban ignoreip syntax)
       DEMO_IP_WINDOW: 1h
       DEMO_TMDB_RATE: 5            # TMDB calls per second, for the whole demo
       DEMO_CHILD_MEMORY: 160MiB    # GOMEMLIMIT of each sandbox

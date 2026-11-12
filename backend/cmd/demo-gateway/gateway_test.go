@@ -479,3 +479,18 @@ func TestAppSignInPerIPLimit(t *testing.T) {
 		t.Fatalf("ip rejections = %d", g.rejectedIP.Load())
 	}
 }
+
+func TestAllowlistedIPSkipsPerIPLimit(t *testing.T) {
+	_, trusted, _ := net.ParseCIDR("127.0.0.0/8")
+	_, _, _, srv := newTestGateway(t, Config{MaxSessions: 5, SessionsPerIP: 1, TrustedProxies: []*net.IPNet{trusted},
+		Allowlist: ParseAllowlist("203.0.113.0/24", time.Minute)})
+	for i := 0; i < 3; i++ {
+		if code, _ := (&visitor{srv: srv, ip: "203.0.113.7"}).get(t, "/", true); code != 200 {
+			t.Fatalf("allowlisted session %d = %d", i+1, code)
+		}
+	}
+	(&visitor{srv: srv, ip: "192.0.2.10"}).get(t, "/", true)
+	if code, _ := (&visitor{srv: srv, ip: "192.0.2.10"}).get(t, "/", true); code != http.StatusTooManyRequests {
+		t.Fatalf("other ip still limited, got %d", code)
+	}
+}
