@@ -54,6 +54,7 @@ binary, the seed or `DEMO_INTERNAL_ADDR` changes. `demo-gateway seed` only build
 | `DEMO_WARM` / `DEMO_MAX_SESSIONS` | `3` / `20` | started sandboxes waiting / session cap |
 | `DEMO_IDLE_TIMEOUT` / `DEMO_MAX_LIFETIME` | `30m` / `60m` | session end |
 | `DEMO_SESSIONS_PER_IP` / `DEMO_IP_WINDOW` | `5` / `1h` | new sessions per client address |
+| `DEMO_IP_ALLOWLIST` | (none) | IPs, CIDRs and host names (fail2ban `ignoreip` syntax, spaces or commas) exempt from the per-address limit; host names are resolved again every 5 minutes |
 | `DEMO_TRUSTED_PROXIES` | (none) | CIDRs whose `X-Forwarded-For` is trusted |
 | `DEMO_COOKIE_SECURE` | `false` | always Secure cookie (otherwise only behind https) |
 | `DEMO_TMDB_RATE` / `DEMO_TMDB_TTL` | `5` / `24h` | TMDB calls per second for the whole demo / cache lifetime |

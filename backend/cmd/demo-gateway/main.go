@@ -145,6 +145,7 @@ func run(seedOnly bool) error {
 		Warm: envInt("DEMO_WARM", 3), MaxSessions: envInt("DEMO_MAX_SESSIONS", 20),
 		IdleTimeout: envDur("DEMO_IDLE_TIMEOUT", 30*time.Minute), MaxLifetime: envDur("DEMO_MAX_LIFETIME", 60*time.Minute),
 		SessionsPerIP: envInt("DEMO_SESSIONS_PER_IP", 5), IPWindow: envDur("DEMO_IP_WINDOW", time.Hour),
+		Allowlist:      ParseAllowlist(env("DEMO_IP_ALLOWLIST", ""), 5*time.Minute),
 		TrustedProxies: trusted, MaxBody: int64(envInt("DEMO_MAX_BODY_BYTES", 5<<20)), CookieSecure: env("DEMO_COOKIE_SECURE", "false") == "true",
 	}
 	g := NewGateway(cfg, sp)

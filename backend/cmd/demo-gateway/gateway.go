@@ -52,6 +52,7 @@ type Config struct {
 	IdleTimeout    time.Duration
 	MaxLifetime    time.Duration
 	SessionsPerIP  int
+	Allowlist      *Allowlist // exempt from SessionsPerIP
 	IPWindow       time.Duration
 	TrustedProxies []*net.IPNet
 	MaxBody        int64
@@ -240,7 +241,7 @@ func (g *Gateway) allocate(ip string) (*session, refusal) {
 		return nil, refusedFull
 	}
 	ts := recent(g.perIP[ip], now, g.cfg.IPWindow)
-	if g.cfg.SessionsPerIP > 0 && len(ts) >= g.cfg.SessionsPerIP {
+	if g.cfg.SessionsPerIP > 0 && len(ts) >= g.cfg.SessionsPerIP && !g.cfg.Allowlist.Allowed(ip) {
 		g.perIP[ip] = ts
 		g.mu.Unlock()
 		g.rejectedIP.Add(1)
