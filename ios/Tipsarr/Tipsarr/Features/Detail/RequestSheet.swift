@@ -108,6 +108,9 @@ struct RequestSheet: View {
                 .font(.subheadline)
                 .disabled(selectable.isEmpty)
             }
+            if model.detail?.seasonNumberingDiffers == true {
+                Text("m.detail.seasons_numbering_note").font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+            }
             ForEach(model.regularSeasons) { season in
                 let inLibrary = season.isComplete
                 let tracked = season.monitored && !inLibrary
@@ -119,8 +122,11 @@ struct RequestSheet: View {
                             .foregroundStyle(covered ? Tokens.palette.mutedFg : Tokens.palette.fg)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(verbatim: season.name).font(.body.weight(.semibold))
-                            Text(verbatim: Plural.text("seasons.episodes", count: season.episodeCount))
-                                .font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+                            // 0 = the count is unknown: no count rather than "0 episodes".
+                            if season.episodeCount > 0 {
+                                Text(verbatim: Plural.text("seasons.episodes", count: season.episodeCount))
+                                    .font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+                            }
                         }
                         Spacer()
                         ForEach(season.badges, id: \.self) { StatusBadge(state: $0) }

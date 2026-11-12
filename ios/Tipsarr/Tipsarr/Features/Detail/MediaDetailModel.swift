@@ -140,7 +140,7 @@ final class MediaDetailModel {
     func submitRequest(seasons: [Int]?, profileID: Int?, folder: String?) async throws -> RequestRecord {
         busy = true
         defer { busy = false }
-        let record = try await context.api.createRequest(route.type, tmdbId: route.tmdbId, seasons: seasons, profileID: profileID, folder: folder)
+        let record = try await context.api.createRequest(route.type, tmdbId: route.tmdbId, seasons: seasons, profileID: profileID, folder: folder, seasonNumbering: route.type == .tv ? detail?.seasonNumbering : nil)
         request = record
         coveredSeasons.formUnion(record.seasons)
         detail?.requestOpen = true

@@ -7,6 +7,8 @@ struct SeasonList: View {
     /// Seasons already covered by a request, with the state to show on them.
     let covered: Set<Int>
     let state: RequestState
+    /// TMDB splits the show differently: the list follows Sonarr's (TVDB) numbering.
+    var numberingDiffers: Bool = false
 
     @Environment(\.appContext) private var context
     @State private var open: Int?
@@ -17,6 +19,9 @@ struct SeasonList: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Spacing.md) {
             Text("seasons.title").font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
+            if numberingDiffers {
+                Text("m.detail.seasons_numbering_note").font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+            }
             ForEach(seasons) { season in
                 VStack(spacing: 0) {
                     Button { Task { await toggle(season.number) } } label: { header(season) }
@@ -59,6 +64,8 @@ struct SeasonList: View {
                 Text("seasons.loading").font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
             } else if let message = failed[number] {
                 Text(verbatim: message).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+            } else if let list = episodes[number], list.isEmpty {
+                Text("m.detail.no_episodes").font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
             } else {
                 ForEach(episodes[number] ?? []) { episode in EpisodeRow(episode: episode) }
             }
@@ -68,9 +75,11 @@ struct SeasonList: View {
     }
 
     private func meta(_ season: SeasonInfo) -> String {
-        let count = Plural.text("seasons.episodes", count: season.episodeCount)
-        guard let year = season.airDate.flatMap({ $0.count >= 4 ? String($0.prefix(4)) : nil }) else { return count }
-        return "\(count) · \(year)"
+        // 0 = the count is unknown (a season only Sonarr lists, not tracked yet): show no count.
+        var parts: [String] = []
+        if season.episodeCount > 0 { parts.append(Plural.text("seasons.episodes", count: season.episodeCount)) }
+        if let year = season.airDate.flatMap({ $0.count >= 4 ? String($0.prefix(4)) : nil }) { parts.append(year) }
+        return parts.joined(separator: " · ")
     }
 
     private func toggle(_ number: Int) async {

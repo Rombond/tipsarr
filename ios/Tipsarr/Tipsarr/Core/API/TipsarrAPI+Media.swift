@@ -64,11 +64,12 @@ extension TipsarrAPI {
         }
     }
 
-    func createRequest(_ type: MediaType, tmdbId: Int, seasons: [Int]?, profileID: Int?, folder: String?) async throws -> RequestRecord {
+    func createRequest(_ type: MediaType, tmdbId: Int, seasons: [Int]?, profileID: Int?, folder: String?, seasonNumbering: String? = nil) async throws -> RequestRecord {
         try await load { client in
             let body = Components.Schemas.CreateRequestRequest(
                 qualityProfileId: profileID.map(Int64.init),
                 rootFolder: folder,
+                seasonNumbering: seasonNumbering.flatMap(Components.Schemas.CreateRequestRequest.seasonNumberingPayload.init(rawValue:)),
                 seasons: seasons?.map(Int64.init),
                 tmdbId: Int64(tmdbId),
                 _type: type == .tv ? .tv : .movie
@@ -142,6 +143,8 @@ extension MediaDetail {
             seasons: (d.seasons ?? []).map {
                 SeasonInfo(number: Int($0.number), name: $0.name, episodeCount: Int($0.episodeCount), airDate: $0.airDate, libraryEpisodes: Int($0.libraryEpisodes), monitored: $0.monitored)
             },
+            seasonNumbering: d.seasonNumbering?.rawValue,
+            seasonNumberingDiffers: d.seasonNumberingDiffers ?? false,
             numberOfSeasons: d.numberOfSeasons.map(Int.init),
             numberOfEpisodes: d.numberOfEpisodes.map(Int.init),
             studios: d.studios ?? [],

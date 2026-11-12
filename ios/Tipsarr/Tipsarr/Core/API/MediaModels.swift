@@ -68,6 +68,10 @@ struct MediaDetail: Sendable {
     /// Radarr monitors the movie and looks for it.
     var monitored: Bool = false
     var seasons: [SeasonInfo]
+    /// Numbering of `seasons`: "tvdb" (Sonarr's) or "tmdb" (fallback); sent back with a request.
+    var seasonNumbering: String?
+    /// TMDB splits the show's seasons differently from Sonarr (TVDB): the list follows Sonarr's.
+    var seasonNumberingDiffers: Bool = false
     var numberOfSeasons: Int?
     var numberOfEpisodes: Int?
     var studios: [String]
