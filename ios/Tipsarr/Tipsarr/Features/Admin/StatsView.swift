@@ -150,29 +150,32 @@ struct StatsView: View {
 
     // MARK: Charts
 
+    // Drawn by hand: Swift Charts on iOS 27 put category labels above the bars, overlapped by the next bar.
     private func buckets(_ list: [StatsBucket], byHours: Bool) -> some View {
         let top = Array(list.prefix(8))
-        return Chart(top) { item in
-            BarMark(x: .value("v", byHours && item.hours > 0 ? item.hours : Double(item.titles)), y: .value("Name", item.name), height: .fixed(16))
-                .foregroundStyle(Tokens.palette.primary)
-                .clipShape(.rect(cornerRadius: 3))
-                .annotation(position: .trailing) {
+        let value: (StatsBucket) -> Double = { byHours && $0.hours > 0 ? $0.hours : Double($0.titles) }
+        let maxValue = max(top.map(value).max() ?? 0, 1)
+        return Grid(alignment: .leading, horizontalSpacing: Tokens.Spacing.sm, verticalSpacing: Tokens.Spacing.sm) {
+            ForEach(top) { item in
+                GridRow {
+                    Text(verbatim: item.name)
+                        .font(.caption).foregroundStyle(Tokens.palette.fg)
+                        .lineLimit(1)
+                        .frame(maxWidth: 110, alignment: .leading)
+                    GeometryReader { geo in
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Tokens.palette.primary)
+                            .frame(width: max(2, geo.size.width * value(item) / maxValue))
+                    }
+                    .frame(height: 16)
                     Text(verbatim: byHours && item.hours > 0 ? StatsFormat.hours(item.hours) : Plural.text("m.stats.n_titles", count: item.titles))
                         .font(.caption2).foregroundStyle(Tokens.palette.mutedFg)
+                        .lineLimit(1)
+                        .gridColumnAlignment(.trailing)
                 }
-        }
-        .chartYScale(domain: top.map(\.name))
-        .chartXAxis(.hidden)
-        // Labels only: the default category marks draw a gridline through each label
-        // and can wrap the label above its bar.
-        .chartYAxis {
-            AxisMarks(position: .leading) { _ in
-                AxisValueLabel(horizontalSpacing: Tokens.Spacing.sm, verticalSpacing: 0)
-                    .font(.caption).foregroundStyle(Tokens.palette.fg)
+                .accessibilityElement(children: .combine)
             }
         }
-        .chartPlotStyle { $0.padding(.trailing, 56) }
-        .frame(height: CGFloat(top.count) * 30 + 8)
     }
 
     private func monthsChart(_ months: [StatsMonth]) -> some View {
