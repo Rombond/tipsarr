@@ -20,11 +20,12 @@ import (
 
 // Upstream is one service the caching proxy forwards to.
 type Upstream struct {
-	Prefix  string        // e.g. "/tmdb/"
-	Base    string        // e.g. "https://api.themoviedb.org"
-	TTL     time.Duration // how long an answer is reused
-	Limiter *Limiter      // shared outbound rate limit (nil = none)
-	TMDBKey string        // when set, the key is injected (any api_key from the caller is dropped)
+	Prefix  string              // e.g. "/tmdb/"
+	Base    string              // e.g. "https://api.themoviedb.org"
+	TTL     time.Duration       // how long an answer is reused
+	Limiter *Limiter            // shared outbound rate limit (nil = none)
+	TMDBKey string              // when set, the key is injected (any api_key from the caller is dropped)
+	Filter  func([]byte) []byte // when set, rewrites successful JSON answers as they are served (the cache keeps them raw)
 }
 
 // Proxy is a caching, rate-limited reverse proxy for GET calls to TMDB (API and images) and the box office. Every
@@ -92,8 +93,12 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if ent.ContentType != "" {
 			w.Header().Set("Content-Type", ent.ContentType)
 		}
+		body := ent.body
+		if up.Filter != nil && ent.Status == http.StatusOK && isTMDBJSON(ent.ContentType) {
+			body = up.Filter(body)
+		}
 		w.WriteHeader(ent.Status)
-		_, _ = w.Write(ent.body)
+		_, _ = w.Write(body)
 		return
 	}
 	http.NotFound(w, r)
