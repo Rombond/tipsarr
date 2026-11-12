@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/perms"
 	"github.com/Rombond/tipsarr/backend/internal/stats"
 	"github.com/danielgtaylor/huma/v2"
@@ -35,7 +36,12 @@ func registerStats(api huma.API, d Deps) {
 		default:
 			target = in.User
 		}
-		res, err := d.Stats.Compute(ctx, target, in.Period, u.Can(perms.ManageUsers))
+		// Jellyfin's genres are TMDB's English names: show them in the viewer's language.
+		var genreName func(string) string
+		if d.Media != nil {
+			genreName = d.Media.GenreNamer(ctx, media.Opts{Language: u.Language, Region: u.Region})
+		}
+		res, err := d.Stats.Compute(ctx, target, in.Period, u.Can(perms.ManageUsers), genreName)
 		if err != nil {
 			return nil, err
 		}

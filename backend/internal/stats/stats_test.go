@@ -31,3 +31,24 @@ func TestMostWatchedIsRankedByTimeSpent(t *testing.T) {
 		t.Fatalf("per type = %+v / %+v", res.TopMovies, res.TopShows)
 	}
 }
+
+// Genres are shown in the viewer's language, and two names that translate to the same genre merge.
+func TestGenresAreTranslated(t *testing.T) {
+	fr := map[string]string{"Adventure": "Aventure", "Science Fiction": "Science-Fiction"}
+	name := func(g string) string {
+		if n, ok := fr[g]; ok {
+			return n
+		}
+		return g
+	}
+	titles := map[string]*title{
+		"movie:1": {typ: "movie", tmdb: 1, plays: 1, secs: 7200, genres: []string{"Adventure", "Science Fiction", "Science-Fiction"}},
+		"movie:2": {typ: "movie", tmdb: 2, plays: 1, secs: 3600, genres: []string{"Science-Fiction"}},
+	}
+	translateGenres(titles, name)
+	res := &StatsReport{}
+	aggregate(res, titles)
+	if len(res.Genres) != 2 || res.Genres[0].Name != "Science-Fiction" || res.Genres[0].Titles != 2 || res.Genres[1].Name != "Aventure" {
+		t.Fatalf("genres = %+v", res.Genres)
+	}
+}
