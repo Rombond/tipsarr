@@ -4539,13 +4539,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Signing out removes an account from this iPhone."
+            "value": "Signing out removes an account from this device."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se déconnecter retire un compte de cet iPhone."
+            "value": "Se déconnecter retire un compte de cet appareil."
           }
         }
       }
@@ -7123,13 +7123,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your password is kept in the iPhone’s Keychain, protected by Face ID or your passcode. It is only used to sign you back in when your session ends."
+            "value": "Your password is kept in the device’s Keychain, protected by Face ID or your passcode. It is only used to sign you back in when your session ends."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ton mot de passe est conservé dans le trousseau de l’iPhone, protégé par Face ID ou ton code. Il sert uniquement à te reconnecter quand ta session se termine."
+            "value": "Ton mot de passe est conservé dans le trousseau de l’appareil, protégé par Face ID ou ton code. Il sert uniquement à te reconnecter quand ta session se termine."
           }
         }
       }
@@ -7155,13 +7155,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Default (iPhone language)"
+            "value": "Default (device language)"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Par défaut (langue de l’iPhone)"
+            "value": "Par défaut (langue de l’appareil)"
           }
         }
       }
@@ -7459,13 +7459,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign out of Tipsarr on this iPhone?"
+            "value": "Sign out of Tipsarr on this device?"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se déconnecter de Tipsarr sur cet iPhone ?"
+            "value": "Se déconnecter de Tipsarr sur cet appareil ?"
           }
         }
       }
@@ -7507,13 +7507,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Follows your iPhone"
+            "value": "Follows your device"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Suit ton iPhone"
+            "value": "Suit ton appareil"
           }
         }
       }
