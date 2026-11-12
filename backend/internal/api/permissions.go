@@ -17,7 +17,7 @@ type permissionDefaults struct {
 	Permissions     int64 `json:"permissions" doc:"Mask new people start with (see flags)"`
 	MovieQuotaLimit int   `json:"movieQuotaLimit" minimum:"0" maximum:"100000" doc:"Movie requests allowed per period, 0 = no limit"`
 	MovieQuotaDays  int   `json:"movieQuotaDays" minimum:"0" maximum:"3650"`
-	TVQuotaLimit    int   `json:"tvQuotaLimit" minimum:"0" maximum:"100000" doc:"Seasons of shows allowed per period, 0 = no limit"`
+	TVQuotaLimit    int   `json:"tvQuotaLimit" minimum:"0" maximum:"100000" doc:"Seasons of shows allowed per period (one request costs at most this), 0 = no limit"`
 	TVQuotaDays     int   `json:"tvQuotaDays" minimum:"0" maximum:"3650"`
 }
 

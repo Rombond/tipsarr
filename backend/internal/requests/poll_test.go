@@ -10,14 +10,7 @@ func TestShowProgress(t *testing.T) {
 	var sr servarr.Series
 	sr.Statistics.EpisodeCount, sr.Statistics.EpisodeFileCount = 20, 10
 	add := func(n, files int) {
-		sr.Seasons = append(sr.Seasons, struct {
-			SeasonNumber int  `json:"seasonNumber"`
-			Monitored    bool `json:"monitored"`
-			Statistics   struct {
-				EpisodeFileCount int `json:"episodeFileCount"`
-				EpisodeCount     int `json:"episodeCount"`
-			} `json:"statistics"`
-		}{SeasonNumber: n, Monitored: true})
+		sr.Seasons = append(sr.Seasons, servarr.SeriesSeason{SeasonNumber: n, Monitored: true})
 		last := &sr.Seasons[len(sr.Seasons)-1]
 		last.Statistics.EpisodeCount, last.Statistics.EpisodeFileCount = 10, files
 	}

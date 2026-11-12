@@ -34,7 +34,8 @@ Users → Defaults for new people.
 ## Request limits
 
 Users → a person → Request limits: a number of movies and of TV show seasons per number of days. Empty = the default,
-`0` = no limit. People with "manage requests" have no limit.
+`0` = no limit. A show request counts its seasons, but one request never costs more than the whole limit, so a
+long show can always be asked for. People with "manage requests" have no limit.
 
 ## Recommendations from other accounts
 
