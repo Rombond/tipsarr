@@ -18,6 +18,7 @@
 		busy = false,
 		error = null,
 		quotaText = '',
+		numberingDiffers = false,
 		onsubmit,
 	}: {
 		open?: boolean;
@@ -30,6 +31,8 @@
 		error?: string | null;
 		/** What is left of the person's request limit, empty when there is none. */
 		quotaText?: string;
+		/** Sonarr (TVDB) splits the show differently from TMDB. */
+		numberingDiffers?: boolean;
 		onsubmit: (choice: RequestChoice) => void;
 	} = $props();
 
@@ -72,6 +75,7 @@
 		<Dialog.Header>
 			<Dialog.Title>{title ? t('req.dialog_title', { title }) : t('req.which_seasons')}</Dialog.Title>
 			{#if quotaText}<Dialog.Description>{quotaText}</Dialog.Description>{/if}
+			{#if type === 'tv' && numberingDiffers}<Dialog.Description>{t('seasons.numbering_note')}</Dialog.Description>{/if}
 		</Dialog.Header>
 
 		{#if askSeasons}
@@ -95,7 +99,7 @@
 							{#each seasonStatuses(s) as st (st)}
 								<StatusBadge status={st}>{t(`state.${st}` as 'state.available')}</StatusBadge>
 							{/each}
-							{#if !complete}{t('seasons.episodes', { count: s.episodeCount })}{/if}
+							{#if !complete && s.episodeCount > 0}{t('seasons.episodes', { count: s.episodeCount })}{/if}
 						</span>
 					</label>
 				{/each}

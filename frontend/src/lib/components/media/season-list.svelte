@@ -6,7 +6,16 @@
 	import { seasonStatuses, episodeStatus } from '$lib/status';
 	import ChevronIcon from '@lucide/svelte/icons/chevron-down';
 
-	let { tmdbId, seasons }: { tmdbId: number; seasons: Schemas['Season'][] } = $props();
+	let {
+		tmdbId,
+		seasons,
+		numberingDiffers = false,
+	}: {
+		tmdbId: number;
+		seasons: Schemas['Season'][];
+		/** Sonarr (TVDB) splits the show differently from TMDB. */
+		numberingDiffers?: boolean;
+	} = $props();
 
 	let openSeason = $state<number | null>(null);
 	let episodes = $state<Record<number, Schemas['Episode'][]>>({});
@@ -35,6 +44,7 @@
 	const date = (d?: string) => fmtDate(d);
 </script>
 
+{#if numberingDiffers}<p class="mb-2 text-xs text-muted-foreground">{t('seasons.numbering_note')}</p>{/if}
 <ul class="grid gap-1.5 text-sm">
 	{#each seasons as s (s.number)}
 		<li class="overflow-hidden rounded-lg border border-border">
@@ -49,7 +59,7 @@
 					{#each seasonStatuses(s) as st (st)}
 						<StatusBadge status={st}>{t(`state.${st}` as 'state.available')}</StatusBadge>
 					{/each}
-					{t('seasons.episodes', { count: s.episodeCount })}{#if s.airDate}&nbsp;· {s.airDate.slice(0, 4)}{/if}
+					{#if s.episodeCount > 0}{t('seasons.episodes', { count: s.episodeCount })}{/if}{#if s.airDate}{#if s.episodeCount > 0}&nbsp;· {/if}{s.airDate.slice(0, 4)}{/if}
 					<ChevronIcon class="size-4 transition-transform {openSeason === s.number ? 'rotate-180' : ''}" />
 				</span>
 			</button>
@@ -59,6 +69,8 @@
 						<p class="py-2 text-muted-foreground">{t('seasons.loading')}</p>
 					{:else if error}
 						<p class="py-2 text-destructive">{error}</p>
+					{:else if !episodes[s.number]?.length}
+						<p class="py-2 text-muted-foreground">{t('seasons.no_episodes')}</p>
 					{:else}
 						<ol class="grid gap-3">
 							{#each episodes[s.number] ?? [] as e (e.number)}
