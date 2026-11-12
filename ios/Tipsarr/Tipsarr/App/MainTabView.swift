@@ -51,7 +51,8 @@ struct MainTabView: View {
                 router.profileOpen = false
                 router.tab = .requests
             }
-            .tipsarrSheet(detents: [.large])
+            // Page size on iPad: the form size cut the most-watched posters and their captions, and a form sheet does not grow.
+            .tipsarrSheet(detents: [.large], sizing: .page)
         }
         .sheet(isPresented: $router.settingsOpen) {
             SettingsScreen(account: account, profile: profile, path: $router.settingsPath) { router.settingsOpen = false }
