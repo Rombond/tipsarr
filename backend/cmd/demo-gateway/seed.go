@@ -16,7 +16,7 @@ import (
 )
 
 // The template is rebuilt when this changes (or the internal address, which is saved in it).
-const seedVersion = "2"
+const seedVersion = "3"
 
 type seedClient struct {
 	base string
@@ -170,16 +170,16 @@ func seed(addr, internal string) {
 		_, out := u.do("POST", "/requests", b)
 		return field(out, "id")
 	}
-	ask(bob, "movie", 693134)                      // Dune: Part Two, pending
-	ask(bob, "tv", 76479, 1, 2)                    // The Boys, pending
-	if id := ask(bob, "movie", 335984); id != "" { // Blade Runner 2049, approved (dry-run)
+	ask(bob, "movie", 693134)                       // Dune: Part Two, pending
+	ask(bob, "tv", 1421, 1, 2)                      // Modern Family, pending
+	if id := ask(bob, "movie", 1022789); id != "" { // Inside Out 2, approved (dry-run)
 		admin.do("POST", "/requests/"+id+"/approve", obj{})
 	}
 	if id := ask(bob, "movie", 299534); id != "" { // Avengers: Endgame, declined
 		carol.do("POST", "/requests/"+id+"/decline", obj{"reason": "Nous avons déjà la version 4K."})
 	}
-	ask(carol, "movie", 324857) // a request manager: approved at once
-	ask(dave, "movie", 545611)
+	ask(carol, "movie", 324857) // Spider-Man: Into the Spider-Verse; a request manager: approved at once
+	ask(dave, "movie", 508442)  // Soul
 	ask(admin, "tv", 1668, 1)
 
 	_, out := bob.do("POST", "/issues", obj{"type": "movie", "tmdbId": 27205, "kind": "subtitles", "message": "Les sous-titres français sont décalés après 40 minutes."})
@@ -187,7 +187,7 @@ func seed(addr, internal string) {
 		admin.do("POST", "/issues/"+id+"/comments", obj{"message": "Merci, je regarde le fichier de sous-titres."})
 		bob.do("POST", "/issues/"+id+"/comments", obj{"message": "Ça commence vers 41:30."})
 	}
-	_, out = carol.do("POST", "/issues", obj{"type": "tv", "tmdbId": 1396, "kind": "video", "season": 1, "episode": 3, "message": "L'image se fige au début de l'épisode."})
+	_, out = carol.do("POST", "/issues", obj{"type": "tv", "tmdbId": 2316, "kind": "video", "season": 1, "episode": 3, "message": "L'image se fige au début de l'épisode."})
 	if id := field(out, "id"); id != "" {
 		admin.do("POST", "/issues/"+id+"/comments", obj{"message": "Fichier remplacé, ça devrait aller."})
 		admin.do("POST", "/issues/"+id+"/resolve", obj{})
@@ -199,8 +199,8 @@ func seed(addr, internal string) {
 		id   int
 		list string
 	}{
-		{bob, "movie", 274, "watchlist"}, {bob, "movie", 807, "watchlist"}, {bob, "tv", 87108, "watchlist"}, {bob, "movie", 597, "blocklist"},
-		{admin, "movie", 496243, "watchlist"}, {carol, "tv", 100088, "watchlist"},
+		{bob, "movie", 425, "watchlist"}, {bob, "movie", 920, "watchlist"}, {bob, "tv", 97546, "watchlist"}, {bob, "movie", 597, "blocklist"},
+		{admin, "movie", 315162, "watchlist"}, {carol, "tv", 82856, "watchlist"},
 	} {
 		w.u.do("POST", "/"+w.list, obj{"type": w.typ, "tmdbId": w.id})
 	}

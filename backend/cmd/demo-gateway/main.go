@@ -115,7 +115,7 @@ func run(seedOnly bool) error {
 	ttl := envDur("DEMO_TMDB_TTL", 24*time.Hour)
 	tmdbLimit := demo.NewLimiter(tmdbRate, max(1, int(tmdbRate*2)))
 	proxy := demo.NewProxy(filepath.Join(data, "cache"),
-		demo.Upstream{Prefix: "/tmdb/", Base: env("DEMO_TMDB_UPSTREAM", "https://api.themoviedb.org"), TTL: ttl, Limiter: tmdbLimit, TMDBKey: key},
+		demo.Upstream{Prefix: "/tmdb/", Base: env("DEMO_TMDB_UPSTREAM", "https://api.themoviedb.org"), TTL: ttl, Limiter: tmdbLimit, TMDBKey: key, Filter: demo.SafeTMDB},
 		demo.Upstream{Prefix: "/tmdbimg/", Base: env("DEMO_TMDB_IMAGE_UPSTREAM", "https://image.tmdb.org"), TTL: 30 * 24 * time.Hour, Limiter: demo.NewLimiter(20, 40)},
 		demo.Upstream{Prefix: "/boxoffice/", Base: env("DEMO_BOXOFFICE_UPSTREAM", "https://www.boxofficemojo.com"), TTL: 12 * time.Hour, Limiter: demo.NewLimiter(0.5, 2)},
 	)
