@@ -92,5 +92,7 @@
   "webhook.var.comment.message": "Texte du commentaire (texte libre : utilise json)",
   "webhook.var.comment.userId": "Identifiant de l’auteur du commentaire",
   "webhook.var.comment.name": "Nom de l’auteur du commentaire",
-  "webhook.var.data.message": "Données brutes de l’événement (le data de l’enveloppe JSON)"
+  "webhook.var.data.message": "Données brutes de l’événement (le data de l’enveloppe JSON)",
+  "srv.season": "Saison {n}",
+  "srv.season.specials": "Épisodes spéciaux"
 }

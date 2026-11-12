@@ -92,5 +92,7 @@
   "webhook.var.comment.message": "Comment text (free text: use json)",
   "webhook.var.comment.userId": "Id of the comment author",
   "webhook.var.comment.name": "Name of the comment author",
-  "webhook.var.data.message": "Raw event data (the data of the JSON envelope)"
+  "webhook.var.data.message": "Raw event data (the data of the JSON envelope)",
+  "srv.season": "Season {n}",
+  "srv.season.specials": "Specials"
 }

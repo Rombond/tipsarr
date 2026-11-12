@@ -34,6 +34,7 @@ const (
 type Service struct {
 	store   *store.Store
 	baseURL string // TMDB base URL override (tests)
+	seasons SeasonSource
 }
 
 func New(s *store.Store, baseURL string) *Service { return &Service{store: s, baseURL: baseURL} }
@@ -42,6 +43,9 @@ func New(s *store.Store, baseURL string) *Service { return &Service{store: s, ba
 type Opts struct {
 	Language string // e.g. fr-FR; empty = en-US
 	Region   string // e.g. FR; empty = none
+	// Seasons: a TV Detail asks the SeasonSource (Sonarr) for TVDB-numbered seasons. Only callers that
+	// show or use seasons set it; others get TMDB seasons without paying for a Sonarr call.
+	Seasons bool
 }
 
 func (o Opts) lang() string {
@@ -132,37 +136,6 @@ func (s *Service) annotate(ctx context.Context, items []Item) {
 			}
 			items[i].RequestStatus = active[items[i].TMDBID]
 		}
-	}
-}
-
-// showAvailability compares TMDB season sizes with what the library holds.
-func (s *Service) showAvailability(ctx context.Context, d *Detail) {
-	have, err := s.store.LibraryIDs(ctx, "tv", []int{d.TMDBID})
-	if err != nil || !have[d.TMDBID] {
-		return
-	}
-	lib, err := s.store.LibrarySeasons(ctx, d.TMDBID)
-	if err != nil {
-		return
-	}
-	complete, anyEpisode := true, false
-	for i, sn := range d.Seasons {
-		d.Seasons[i].LibraryEpisodes = lib[sn.Number]
-		if sn.Number == 0 || sn.EpisodeCount == 0 {
-			continue // specials and announced-but-empty seasons don't count
-		}
-		if lib[sn.Number] > 0 {
-			anyEpisode = true
-		}
-		if lib[sn.Number] < sn.EpisodeCount {
-			complete = false
-		}
-	}
-	switch {
-	case complete && anyEpisode:
-		d.Availability = AvailabilityAvailable
-	default:
-		d.Availability = AvailabilityPartial
 	}
 }
 
@@ -560,7 +533,11 @@ func (s *Service) Detail(ctx context.Context, o Opts, mediaType string, id int) 
 	s.annotate(ctx, one)
 	d.Availability, d.RequestStatus = one[0].Availability, one[0].RequestStatus
 	if mediaType == "tv" {
-		s.showAvailability(ctx, d)
+		d.SeasonNumbering = NumberingTMDB
+		if o.Seasons {
+			s.applySeasonSource(ctx, o, d)
+		}
+		s.ApplyLibrary(ctx, d)
 	}
 	if d.Availability != AvailabilityNone {
 		d.WatchURL = s.watchURL(ctx, mediaType, d.TMDBID)
