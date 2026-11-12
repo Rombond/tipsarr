@@ -102,7 +102,8 @@ type title struct {
 }
 
 // Compute returns the stats of one user ("" = everyone) for a period (30d, 12m or all).
-func (s *Service) Compute(ctx context.Context, userID, period string, adminViewer bool) (*StatsReport, error) {
+// genreName, when set, renames Jellyfin's genres (English, or the server's metadata language) into the viewer's language.
+func (s *Service) Compute(ctx context.Context, userID, period string, adminViewer bool, genreName func(string) string) (*StatsReport, error) {
 	now := time.Now()
 	var since time.Time
 	switch period {
@@ -140,6 +141,9 @@ func (s *Service) Compute(ctx context.Context, userID, period string, adminViewe
 	}
 	if err != nil {
 		return nil, err
+	}
+	if genreName != nil {
+		translateGenres(titles, genreName)
 	}
 	aggregate(res, titles)
 
@@ -272,6 +276,22 @@ func (s *Service) fromHistory(ctx context.Context, userID string, meta map[strin
 		}
 	}
 	return nil
+}
+
+// translateGenres renames each title's genres, dropping the duplicates a merge creates ("Science Fiction" and
+// "Science-Fiction" on the same title both become one genre).
+func translateGenres(titles map[string]*title, genreName func(string) string) {
+	for _, t := range titles {
+		seen := map[string]bool{}
+		out := make([]string, 0, len(t.genres))
+		for _, g := range t.genres {
+			if n := genreName(g); !seen[n] {
+				seen[n] = true
+				out = append(out, n)
+			}
+		}
+		t.genres = out
+	}
 }
 
 func aggregate(res *StatsReport, titles map[string]*title) {

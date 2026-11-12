@@ -276,6 +276,39 @@ func (s *Service) Genres(ctx context.Context, o Opts, mediaType string) ([]Genre
 	return raw.Genres, nil
 }
 
+// GenreNamer maps a genre name as Jellyfin stores it (TMDB's English name, e.g. "Adventure") to TMDB's name in
+// o's language. Unknown names (custom genres, or already in another language) come back unchanged.
+func (s *Service) GenreNamer(ctx context.Context, o Opts) func(string) string {
+	names := map[string]string{}
+	if o.lang() != defaultLang {
+		for _, mt := range []string{"movie", "tv"} {
+			en, err := s.Genres(ctx, Opts{}, mt)
+			if err != nil {
+				continue
+			}
+			loc, err := s.Genres(ctx, o, mt)
+			if err != nil {
+				continue
+			}
+			byID := map[int]string{}
+			for _, g := range loc {
+				byID[g.ID] = g.Name
+			}
+			for _, g := range en {
+				if n := byID[g.ID]; n != "" {
+					names[strings.ToLower(g.Name)] = n
+				}
+			}
+		}
+	}
+	return func(name string) string {
+		if n, ok := names[strings.ToLower(name)]; ok {
+			return n
+		}
+		return name
+	}
+}
+
 // ---- search --------------------------------------------------------------------
 
 func (s *Service) Search(ctx context.Context, o Opts, query string, page int, tags bool) (*SearchResult, error) {
