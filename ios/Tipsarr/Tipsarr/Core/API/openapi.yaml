@@ -287,6 +287,12 @@ components:
         rootFolder:
           description: Root folder to use (omit for the default)
           type: string
+        seasonNumbering:
+          description: "TV only: the detail's seasonNumbering the seasons were picked in; a different one than the server's now is 409 season_numbering_changed"
+          enum:
+            - tvdb
+            - tmdb
+          type: string
         seasons:
           description: TV only; empty means every season
           items:
@@ -447,6 +453,15 @@ components:
         runtimeMinutes:
           format: int64
           type: integer
+        seasonNumbering:
+          description: "Numbering of seasons: tvdb (Sonarr) or tmdb (fallback when Sonarr cannot tell)"
+          enum:
+            - tvdb
+            - tmdb
+          type: string
+        seasonNumberingDiffers:
+          description: TMDB splits this show's seasons differently from Sonarr (TVDB)
+          type: boolean
         seasons:
           items:
             $ref: "#/components/schemas/Season"
@@ -1470,7 +1485,7 @@ components:
           minimum: 0
           type: integer
         tvQuotaLimit:
-          description: Seasons of shows allowed per period, 0 = no limit
+          description: Seasons of shows allowed per period (one request costs at most this), 0 = no limit
           format: int64
           maximum: 100000
           minimum: 0
@@ -2034,6 +2049,7 @@ components:
         airDate:
           type: string
         episodeCount:
+          description: Episodes in the season; 0 = unknown
           format: int64
           type: integer
         libraryEpisodes:
@@ -3081,6 +3097,12 @@ components:
           $ref: "#/components/schemas/UserRef"
         rootFolder:
           description: Chosen root folder (absent = the instance default)
+          type: string
+        seasonNumbering:
+          description: "Shows only: numbering of seasons, tvdb (Sonarr) or tmdb (made while Sonarr could not tell; translated when it is sent)"
+          enum:
+            - tvdb
+            - tmdb
           type: string
         seasonProgress:
           description: "Shows only: completion per season"
@@ -7246,6 +7268,7 @@ paths:
         - media
   /media/tv/{id}/seasons/{season}:
     get:
+      description: "`season` follows the numbering of the show's detail (`seasonNumbering`): Sonarr's (TVDB) when it can tell. A season no source can list yet has no episodes."
       operationId: tvSeason
       parameters:
         - in: path

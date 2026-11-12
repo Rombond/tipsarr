@@ -148,6 +148,7 @@
     <string name="error_quota_reached">Tu as atteint ta limite de demandes pour le moment.</string>
     <string name="error_refresh_too_soon">Actualisé à l’instant, réessaie dans une minute.</string>
     <string name="error_retype_key">Saisis à nouveau la clé API quand tu changes l’adresse.</string>
+    <string name="error_season_numbering_changed">Les saisons de cette série ont changé. Recharge la page et choisis-les à nouveau.</string>
     <string name="error_setup_done">La configuration est déjà terminée.</string>
     <string name="error_setup_token">Jeton d’installation requis : consulte le journal du serveur Tipsarr.</string>
     <string name="error_setup_unreachable">Impossible de joindre un serveur Jellyfin à cette adresse.</string>
@@ -796,6 +797,8 @@
     <string name="srv_job_trailers_synced">%1$s fichiers prêts, %2$s en attente, %3$s en échec</string>
     <string name="srv_job_ytdlp_current">yt-dlp est à jour (%1$s)</string>
     <string name="srv_job_ytdlp_updated">yt-dlp mis à jour de %1$s vers %2$s</string>
+    <string name="srv_season">Saison %1$s</string>
+    <string name="srv_season_specials">Épisodes spéciaux</string>
     <string name="state_approved">Approuvé</string>
     <string name="state_available">Disponible</string>
     <string name="state_declined">Refusé</string>

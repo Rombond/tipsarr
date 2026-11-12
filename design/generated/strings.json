@@ -133,6 +133,7 @@
   "error.tmdb_not_configured": "The TMDB key is not configured. An administrator can add it in Settings.",
   "error.tmdb_failed": "TMDB did not answer. Try again in a moment.",
   "error.already_available": "This title is already available in the library.",
+  "error.season_numbering_changed": "The seasons of this show changed. Reload and pick them again.",
   "error.duplicate_request": "This title already has an active request.",
   "error.bad_state": "The request is not in a state that allows this.",
   "error.no_instance": "No Radarr or Sonarr instance is configured for this type of title.",
@@ -1023,7 +1024,9 @@
   "webhook.var.comment.message": "Comment text (free text: use json)",
   "webhook.var.comment.userId": "Id of the comment author",
   "webhook.var.comment.name": "Name of the comment author",
-  "webhook.var.data.message": "Raw event data (the data of the JSON envelope)"
+  "webhook.var.data.message": "Raw event data (the data of the JSON envelope)",
+  "srv.season": "Season {n}",
+  "srv.season.specials": "Specials"
  },
  "fr": {
   "users.title": "Utilisateurs",
@@ -1159,6 +1162,7 @@
   "error.tmdb_not_configured": "La clé TMDB n’est pas configurée. Un administrateur peut l’ajouter dans les Réglages.",
   "error.tmdb_failed": "TMDB n’a pas répondu. Réessaie dans un instant.",
   "error.already_available": "Ce titre est déjà disponible dans la bibliothèque.",
+  "error.season_numbering_changed": "Les saisons de cette série ont changé. Recharge la page et choisis-les à nouveau.",
   "error.duplicate_request": "Ce titre a déjà une demande en cours.",
   "error.bad_state": "La demande n’est pas dans un état qui le permet.",
   "error.no_instance": "Aucune instance Radarr ou Sonarr n’est configurée pour ce type de titre.",
@@ -2049,6 +2053,8 @@
   "webhook.var.comment.message": "Texte du commentaire (texte libre : utilise json)",
   "webhook.var.comment.userId": "Identifiant de l’auteur du commentaire",
   "webhook.var.comment.name": "Nom de l’auteur du commentaire",
-  "webhook.var.data.message": "Données brutes de l’événement (le data de l’enveloppe JSON)"
+  "webhook.var.data.message": "Données brutes de l’événement (le data de l’enveloppe JSON)",
+  "srv.season": "Saison {n}",
+  "srv.season.specials": "Épisodes spéciaux"
  }
 }

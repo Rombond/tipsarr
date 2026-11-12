@@ -2358,6 +2358,22 @@
         }
       }
     },
+    "error.season_numbering_changed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The seasons of this show changed. Reload and pick them again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les saisons de cette série ont changé. Recharge la page et choisis-les à nouveau."
+          }
+        }
+      }
+    },
     "error.setup_done": {
       "localizations": {
         "en": {
@@ -12811,6 +12827,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "yt-dlp mis à jour de %1$@ vers %2$@"
+          }
+        }
+      }
+    },
+    "srv.season": {
+      "comment": "placeholders: n",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Season %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saison %@"
+          }
+        }
+      }
+    },
+    "srv.season.specials": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Specials"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Épisodes spéciaux"
           }
         }
       }
