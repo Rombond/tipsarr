@@ -28,6 +28,11 @@ func TestMigrationSeasonNumberingBackfill(t *testing.T) {
 			}
 			defer s.Close()
 			p := fmt.Sprintf("m%d", time.Now().UnixNano()) // external DBs persist between runs
+			// the rows are active requests: remove them so other store tests sharing the database do not see them
+			t.Cleanup(func() {
+				_, _ = s.DB.NewDelete().Model((*Request)(nil)).Where("id LIKE ?", p+"%").Exec(ctx)
+				_, _ = s.DB.NewDelete().Model((*RequestSeason)(nil)).Where("request_id LIKE ?", p+"%").Exec(ctx)
+			})
 			rows := map[string]*Request{
 				p + "sent":     {MediaType: "tv", Status: StatusApproved, SentAt: 10},
 				p + "imported": {MediaType: "tv", Status: StatusApproved, Source: "sonarr"},
@@ -36,7 +41,7 @@ func TestMigrationSeasonNumberingBackfill(t *testing.T) {
 				p + "movie":    {MediaType: "movie", Status: StatusPending},
 			}
 			for id, r := range rows {
-				r.ID, r.TMDBID, r.Title = id, 1, id
+				r.ID, r.TMDBID, r.Title = id, 990032, id
 				if err := s.CreateRequest(ctx, r, nil); err != nil {
 					t.Fatal(err)
 				}
