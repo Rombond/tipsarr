@@ -198,7 +198,7 @@ fun MediaDetailScreen(model: MediaDetailModel, serverUrl: String, onBack: () -> 
                         Banners(model)
                         Overview(detail)
                         if (detail.type == MediaType.Tv && model.regularSeasons.isNotEmpty()) {
-                            SeasonList(model.api, model.route.tmdbId, model.regularSeasons, model.coveredSeasons, model.request?.state ?: RequestState.Requested)
+                            SeasonList(model.api, model.route.tmdbId, model.regularSeasons, model.coveredSeasons, model.request?.state ?: RequestState.Requested, model.detail?.seasonNumberingDiffers == true)
                         }
                         Facts(detail)
                         if (detail.cast.isNotEmpty()) Cast(detail) { onOpenPerson(com.brebond.tipsarr.features.person.PersonRoute(it.id, it.name)) }

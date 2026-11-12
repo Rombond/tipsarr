@@ -124,6 +124,7 @@ fun RequestSheet(model: MediaDetailModel, onDismiss: () -> Unit, onDone: (Reques
                             Text(stringResource(if (allSelected) R.string.req_select_none else R.string.req_select_all))
                         }
                     }
+                    if (detail?.seasonNumberingDiffers == true) Text(stringResource(R.string.seasons_numbering_note), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
                     model.regularSeasons.forEach { season ->
                         val inLibrary = season.isComplete
                         val tracked = season.monitored && !inLibrary
@@ -142,7 +143,7 @@ fun RequestSheet(model: MediaDetailModel, onDismiss: () -> Unit, onDone: (Reques
                             )
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(season.name, fontSize = Tokens.FontSize.body, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg)
-                                Text(context.plural("seasons_episodes", season.episodeCount), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+                                if (season.episodeCount > 0) Text(context.plural("seasons_episodes", season.episodeCount), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
                             }
                             season.badges.forEach { StatusBadge(it) }
                             if (covered && !inLibrary && !tracked) StatusBadge(model.request?.state ?: com.brebond.tipsarr.ui.RequestState.Requested)

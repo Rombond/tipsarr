@@ -43,6 +43,10 @@ data class MediaDetail(
     val monitored: Boolean = false,
     val seasons: List<SeasonInfo>? = null,
     val numberOfSeasons: Int? = null,
+    /** Whose season numbers `seasons` uses: "tvdb" (Sonarr) or "tmdb"; older servers send none. */
+    val seasonNumbering: String? = null,
+    /** True when TVDB splits the show differently from TMDB (the detail shows a note). */
+    val seasonNumberingDiffers: Boolean = false,
     val studios: List<String>? = null,
     val cast: List<CastMember> = emptyList(),
     val recommendations: List<MediaItem> = emptyList(),
@@ -83,7 +87,7 @@ data class RequestOptions(
 )
 
 @Serializable
-data class CreateRequestBody(val type: MediaType, val tmdbId: Int, val seasons: List<Int>? = null, val qualityProfileId: Int? = null, val rootFolder: String? = null)
+data class CreateRequestBody(val type: MediaType, val tmdbId: Int, val seasons: List<Int>? = null, val qualityProfileId: Int? = null, val rootFolder: String? = null, val seasonNumbering: String? = null)
 
 @Serializable
 data class UserRef(val id: String = "", val name: String = "")
@@ -115,6 +119,7 @@ data class RequestView(
     val createdAt: Long = 0,
     val qualityProfileId: Int? = null,
     val rootFolder: String? = null,
+    val seasonNumbering: String? = null,
     /** Set when the request was imported from what Radarr/Sonarr already monitor. */
     val source: String? = null,
     /** What happened to the request and when, oldest first; a server older than 0.11 sends none. */

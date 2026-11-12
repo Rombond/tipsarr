@@ -19,8 +19,8 @@ suspend fun TipsarrApi.flags(type: MediaType, id: Int): TitleFlags = get("/media
 suspend fun TipsarrApi.requestOptions(type: MediaType): RequestOptions? =
     try { get("/requests/options?type=${type.path()}", RequestOptions.serializer()) } catch (e: ApiError) { null }
 
-suspend fun TipsarrApi.createRequest(type: MediaType, tmdbId: Int, seasons: List<Int>?, profileId: Int?, folder: String?): RequestRecord =
-    post("/requests", CreateRequestBody(type, tmdbId, seasons, profileId, folder), CreateRequestBody.serializer(), RequestView.serializer()).toRecord()
+suspend fun TipsarrApi.createRequest(type: MediaType, tmdbId: Int, seasons: List<Int>?, profileId: Int?, folder: String?, seasonNumbering: String? = null): RequestRecord =
+    post("/requests", CreateRequestBody(type, tmdbId, seasons, profileId, folder, seasonNumbering), CreateRequestBody.serializer(), RequestView.serializer()).toRecord()
 
 suspend fun TipsarrApi.myRequests(take: Int = 100): List<RequestRecord> =
     get("/requests?filter=mine&take=$take", RequestList.serializer()).items.map { it.toRecord() }
