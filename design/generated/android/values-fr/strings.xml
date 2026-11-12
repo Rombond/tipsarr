@@ -316,11 +316,13 @@
     <string name="m_connect_title">Connecte-toi à ton serveur</string>
     <string name="m_connect_unreachable">Impossible de joindre ce serveur. Vérifie l’adresse et ta connexion.</string>
     <string name="m_detail_declined">Refusé par un admin.</string>
+    <string name="m_detail_no_episodes">La liste des épisodes apparaîtra quand Sonarr suivra cette série.</string>
     <string name="m_detail_no_overview">Aucun résumé disponible.</string>
     <string name="m_detail_open_jellyfin">Ouvrir dans Jellyfin</string>
     <string name="m_detail_ratings_tv_hint">Seules les notes TMDB existent pour les séries.</string>
     <string name="m_detail_request_again">Redemander</string>
     <string name="m_detail_seasons_count">%1$s saison | %1$s saisons</string>
+    <string name="m_detail_seasons_numbering_note">Les saisons suivent la numérotation de Sonarr (TVDB), qui découpe cette série autrement que TMDB.</string>
     <string name="m_detail_share">Partager</string>
     <string name="m_discover_chip_for_you">Pour toi</string>
     <string name="m_discover_chip_movies">Films</string>
@@ -709,6 +711,7 @@
     <string name="req_retry">Réessayer</string>
     <string name="req_root_folder">Dossier</string>
     <string name="req_season_badge">Saison %1$s</string>
+    <string name="req_season_range">Saisons %1$s à %2$s</string>
     <string name="req_seasons">Saison %1$s | Saisons %1$s</string>
     <string name="req_select_all">Tout sélectionner</string>
     <string name="req_select_none">Tout désélectionner</string>
@@ -773,7 +776,9 @@
     <string name="search_tags">Mots-clés :</string>
     <string name="seasons_episodes">%1$s épisode | %1$s épisodes</string>
     <string name="seasons_loading">Chargement des épisodes…</string>
+    <string name="seasons_no_episodes">La liste des épisodes apparaîtra quand Sonarr suivra cette série.</string>
     <string name="seasons_no_preview">Pas d’aperçu</string>
+    <string name="seasons_numbering_note">Les saisons suivent la numérotation de Sonarr (TVDB), qui découpe cette série autrement que TMDB.</string>
     <string name="seasons_season">Saison %1$s</string>
     <string name="seasons_title">Saisons</string>
     <string name="srv_job_boxoffice_stored">%1$s classements enregistrés</string>
