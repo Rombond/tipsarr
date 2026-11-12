@@ -62,8 +62,11 @@ struct SearchView: View {
     private var splitBody: some View {
         NavigationSplitView(columnVisibility: .constant(.all)) {
             searchable(pane, placement: .sidebar)
-                .navigationSplitViewColumnWidth(min: 340, ideal: 400, max: 460)
                 .mediaDestinations()
+                .toolbar(removing: .sidebarToggle)
+                // Last: put before `.navigationDestination` it was ignored, the column stayed at the 320 pt system
+                // width and the scope segments were cut ("Perso…").
+                .navigationSplitViewColumnWidth(min: 360, ideal: 400, max: 460)
         } detail: {
             NavigationStack {
                 if let selection {
