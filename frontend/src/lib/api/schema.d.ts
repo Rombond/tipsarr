@@ -1202,7 +1202,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Episodes of a season */
+        /**
+         * Episodes of a season
+         * @description `season` follows the numbering of the show's detail (`seasonNumbering`): Sonarr's (TVDB) when it can tell. A season no source can list yet has no episodes.
+         */
         get: operations["tvSeason"];
         put?: never;
         post?: never;
@@ -1824,6 +1827,11 @@ export interface components {
             qualityProfileId?: number;
             /** @description Root folder to use (omit for the default) */
             rootFolder?: string;
+            /**
+             * @description TV only: the detail's seasonNumbering the seasons were picked in; a different one than the server's now is 409 season_numbering_changed
+             * @enum {string}
+             */
+            seasonNumbering?: "tvdb" | "tmdb";
             /** @description TV only; empty means every season */
             seasons?: number[];
             /** Format: int64 */
@@ -1903,6 +1911,13 @@ export interface components {
             reviews: components["schemas"]["Review"][];
             /** Format: int64 */
             runtimeMinutes?: number;
+            /**
+             * @description Numbering of seasons: tvdb (Sonarr) or tmdb (fallback when Sonarr cannot tell)
+             * @enum {string}
+             */
+            seasonNumbering?: "tvdb" | "tmdb";
+            /** @description TMDB splits this show's seasons differently from Sonarr (TVDB) */
+            seasonNumberingDiffers?: boolean;
             seasons?: components["schemas"]["Season"][];
             similar: components["schemas"]["Item"][];
             status?: string;
@@ -2407,7 +2422,7 @@ export interface components {
             tvQuotaDays: number;
             /**
              * Format: int64
-             * @description Seasons of shows allowed per period, 0 = no limit
+             * @description Seasons of shows allowed per period (one request costs at most this), 0 = no limit
              */
             tvQuotaLimit: number;
         };
@@ -2688,7 +2703,10 @@ export interface components {
         };
         Season: {
             airDate?: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Episodes in the season; 0 = unknown
+             */
             episodeCount: number;
             /**
              * Format: int64
@@ -3229,6 +3247,11 @@ export interface components {
             requestedBy: components["schemas"]["UserRef"];
             /** @description Chosen root folder (absent = the instance default) */
             rootFolder?: string;
+            /**
+             * @description Shows only: numbering of seasons, tvdb (Sonarr) or tmdb (made while Sonarr could not tell; translated when it is sent)
+             * @enum {string}
+             */
+            seasonNumbering?: "tvdb" | "tmdb";
             /** @description Shows only: completion per season */
             seasonProgress?: components["schemas"]["SeasonProgress"][];
             seasons?: number[];

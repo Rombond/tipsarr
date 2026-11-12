@@ -68,13 +68,20 @@ func TestQuotaUsageCountsSeasonsAndSkipsDeclined(t *testing.T) {
 	add("m0", "movie", StatusPending, 5) // older than the window
 	add("t1", "tv", StatusPending, 150, 1, 2, 3)
 	add("t2", "tv", StatusFailed, 160, 1)
-	if n, oldest, err := s.QuotaUsage(ctx, "u", "movie", 50); err != nil || n != 2 || oldest != 100 {
+	if n, oldest, err := s.QuotaUsage(ctx, "u", "movie", 50, 0); err != nil || n != 2 || oldest != 100 {
 		t.Fatalf("movies = %d %d %v", n, oldest, err)
 	}
-	if n, _, err := s.QuotaUsage(ctx, "u", "tv", 50); err != nil || n != 3 {
+	if n, _, err := s.QuotaUsage(ctx, "u", "tv", 50, 0); err != nil || n != 3 {
 		t.Fatalf("shows count seasons: %d %v", n, err)
 	}
-	if n, _, _ := s.QuotaUsage(ctx, "someone-else", "movie", 0); n != 0 {
+	if n, _, err := s.QuotaUsage(ctx, "u", "tv", 50, 2); err != nil || n != 2 {
+		t.Fatalf("a show request costs at most the cap: %d %v", n, err)
+	}
+	add("t3", "tv", StatusPending, 170, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17)
+	if n, oldest, err := s.QuotaUsage(ctx, "u", "tv", 50, 10); err != nil || n != 13 || oldest != 150 {
+		t.Fatalf("17 seasons capped at 10 plus 3: %d %d %v", n, oldest, err)
+	}
+	if n, _, _ := s.QuotaUsage(ctx, "someone-else", "movie", 0, 0); n != 0 {
 		t.Fatalf("other person = %d", n)
 	}
 }

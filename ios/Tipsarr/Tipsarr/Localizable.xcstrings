@@ -2358,6 +2358,22 @@
         }
       }
     },
+    "error.season_numbering_changed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The seasons of this show changed. Reload and pick them again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les saisons de cette série ont changé. Recharge la page et choisis-les à nouveau."
+          }
+        }
+      }
+    },
     "error.setup_done": {
       "localizations": {
         "en": {
@@ -5049,6 +5065,22 @@
         }
       }
     },
+    "m.detail.no_episodes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The episode list appears once Sonarr tracks this show."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La liste des épisodes apparaîtra quand Sonarr suivra cette série."
+          }
+        }
+      }
+    },
     "m.detail.no_overview": {
       "localizations": {
         "en": {
@@ -5125,6 +5157,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ saison | %1$@ saisons"
+          }
+        }
+      }
+    },
+    "m.detail.seasons_numbering_note": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seasons follow Sonarr’s numbering (TVDB), which splits this show differently from TMDB."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les saisons suivent la numérotation de Sonarr (TVDB), qui découpe cette série autrement que TMDB."
           }
         }
       }
@@ -11375,6 +11423,23 @@
         }
       }
     },
+    "req.season_range": {
+      "comment": "placeholders: from, to",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seasons %1$@–%2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisons %1$@ à %2$@"
+          }
+        }
+      }
+    },
     "req.seasons": {
       "comment": "placeholders: list, list",
       "localizations": {
@@ -12415,6 +12480,22 @@
         }
       }
     },
+    "seasons.no_episodes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The episode list appears once Sonarr tracks this show."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La liste des épisodes apparaîtra quand Sonarr suivra cette série."
+          }
+        }
+      }
+    },
     "seasons.no_preview": {
       "localizations": {
         "en": {
@@ -12427,6 +12508,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pas d’aperçu"
+          }
+        }
+      }
+    },
+    "seasons.numbering_note": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seasons follow Sonarr’s numbering (TVDB), which splits this show differently from TMDB."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les saisons suivent la numérotation de Sonarr (TVDB), qui découpe cette série autrement que TMDB."
           }
         }
       }
@@ -12811,6 +12908,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "yt-dlp mis à jour de %1$@ vers %2$@"
+          }
+        }
+      }
+    },
+    "srv.season": {
+      "comment": "placeholders: n",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Season %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saison %@"
+          }
+        }
+      }
+    },
+    "srv.season.specials": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Specials"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Épisodes spéciaux"
           }
         }
       }

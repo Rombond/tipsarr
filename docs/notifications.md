@@ -78,7 +78,7 @@ event) and in **Test** (answers 422 `template_error` with the message).
 | `image` | poster URL (TMDB, w500), empty when unknown |
 | `url` | link to the title (`/media/<type>/<tmdbId>`) or the issue (`/issues/<id>`) under the **Tipsarr address for links** set on the Webhooks page; empty when that address is not set |
 | `media.tmdbId`, `media.imdbId`, `media.tvdbId`, `media.type`, `media.title`, `media.year`, `media.status`, `media.is4k` | the title (imdbId/tvdbId are empty for now) |
-| `request.*` | the request as in the API (`id`, `status`, `stage`, `seasons`, `requestedBy`, `declineReason`...) |
+| `request.*` | the request as in the API (`id`, `status`, `stage`, `seasons`, `requestedBy`, `declineReason`...); `seasons` use Sonarr's numbering (TVDB), see the [FAQ](faq.md) |
 | `requestedBy.id`, `.name`, `.discordId`, `.telegramChatId` | the requester |
 | `issue.*` | the issue as in the API (`id`, `kind`, `status`, `season`, `episode`, `createdBy`...) |
 | `comment.message`, `comment.name`, `comment.userId` | the comment (issue.created: the report text) |

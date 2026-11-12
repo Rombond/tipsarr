@@ -68,6 +68,8 @@
 		requestStatus={details.requestStatus}
 		monitored={details.monitored}
 		title={details.title}
+		seasonNumbering={details.seasonNumbering}
+		numberingDiffers={details.seasonNumberingDiffers}
 	/>
 	{/if}
 

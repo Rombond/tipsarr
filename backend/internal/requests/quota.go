@@ -78,7 +78,7 @@ func (s *Service) window(ctx context.Context, u *store.User, mediaType string) (
 		return w, nil
 	}
 	now := s.now()
-	used, oldest, err := s.store.QuotaUsage(ctx, u.ID, mediaType, now.AddDate(0, 0, -days).Unix())
+	used, oldest, err := s.store.QuotaUsage(ctx, u.ID, mediaType, now.AddDate(0, 0, -days).Unix(), perRequestCap(mediaType, limit))
 	if err != nil {
 		return w, err
 	}
@@ -105,11 +105,23 @@ func (s *Service) Quota(ctx context.Context, u *store.User) (*Quota, error) {
 	return &Quota{Movie: m, TV: t}, nil
 }
 
-// checkQuota refuses a request that needs more than what is left (one for a movie, one per season for a show).
+// perRequestCap is the most one request may cost: a show request counts its seasons, but never more than the limit.
+func perRequestCap(mediaType string, limit int) int {
+	if mediaType == "tv" {
+		return limit
+	}
+	return 0
+}
+
+// checkQuota refuses a request that needs more than what is left (one for a movie, one per season for a show,
+// at most the whole limit for one show request).
 func (s *Service) checkQuota(ctx context.Context, u *store.User, mediaType string, needed int) error {
 	w, err := s.window(ctx, u, mediaType)
 	if err != nil {
 		return err
+	}
+	if c := perRequestCap(mediaType, w.Limit); c > 0 {
+		needed = min(needed, c)
 	}
 	if w.Limit > 0 && w.Used+needed > w.Limit {
 		reset := w.ResetsAt

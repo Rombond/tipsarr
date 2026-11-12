@@ -26,6 +26,8 @@ func reqErr(err error) error {
 		return fail(409, "already_available", err.Error())
 	case errors.Is(err, requests.ErrAlreadyMonitored):
 		return fail(409, "already_monitored", err.Error())
+	case errors.Is(err, requests.ErrNumberingChanged):
+		return fail(409, "season_numbering_changed", err.Error())
 	case errors.Is(err, requests.ErrDuplicate):
 		return fail(409, "duplicate_request", err.Error())
 	case errors.Is(err, requests.ErrBadState):
@@ -127,13 +129,14 @@ func registerRequests(api huma.API, d Deps) {
 			Seasons          []int  `json:"seasons,omitempty" doc:"TV only; empty means every season"`
 			QualityProfileID *int   `json:"qualityProfileId,omitempty" doc:"Radarr/Sonarr quality profile to use (omit for the default); see /requests/options"`
 			RootFolder       string `json:"rootFolder,omitempty" doc:"Root folder to use (omit for the default)"`
+			SeasonNumbering  string `json:"seasonNumbering,omitempty" enum:"tvdb,tmdb" doc:"TV only: the detail's seasonNumbering the seasons were picked in; a different one than the server's now is 409 season_numbering_changed"`
 		}
 	}) (*requestOutput, error) {
 		u, err := requireUser(ctx)
 		if err != nil {
 			return nil, err
 		}
-		p := requests.CreateParams{Type: in.Body.Type, TMDBID: in.Body.TMDBID, Seasons: in.Body.Seasons}
+		p := requests.CreateParams{Type: in.Body.Type, TMDBID: in.Body.TMDBID, Seasons: in.Body.Seasons, SeasonNumbering: in.Body.SeasonNumbering}
 		if in.Body.QualityProfileID != nil || in.Body.RootFolder != "" {
 			p.Overrides = &requests.Overrides{ProfileID: in.Body.QualityProfileID, RootFolder: in.Body.RootFolder}
 		}

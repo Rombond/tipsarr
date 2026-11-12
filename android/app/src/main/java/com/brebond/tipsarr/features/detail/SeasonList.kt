@@ -59,7 +59,7 @@ import java.util.Locale
 
 /** Seasons of a show; a tap opens the episodes of that season (loaded on first open), as on the web. */
 @Composable
-fun SeasonList(api: TipsarrApi, tmdbId: Int, seasons: List<SeasonInfo>, covered: Set<Int>, state: RequestState) {
+fun SeasonList(api: TipsarrApi, tmdbId: Int, seasons: List<SeasonInfo>, covered: Set<Int>, state: RequestState, numberingDiffers: Boolean = false) {
     val context = LocalContext.current
     var open by remember { mutableStateOf<Int?>(null) }
     val episodes = remember { mutableStateMapOf<Int, List<Episode>>() }
@@ -84,6 +84,7 @@ fun SeasonList(api: TipsarrApi, tmdbId: Int, seasons: List<SeasonInfo>, covered:
             stringResource(R.string.seasons_title), fontSize = Tokens.FontSize.title3, fontWeight = FontWeight.Bold,
             color = Tokens.palette.fg, modifier = Modifier.semantics { heading() },
         )
+        if (numberingDiffers) Text(stringResource(R.string.seasons_numbering_note), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
         seasons.forEach { season ->
             val shape = RoundedCornerShape(Tokens.Radius.md)
             Column(Modifier.fillMaxWidth().clip(shape).background(Tokens.palette.card).border(BorderStroke(1.dp, Tokens.palette.border), shape).animateContentSize()) {
@@ -93,9 +94,11 @@ fun SeasonList(api: TipsarrApi, tmdbId: Int, seasons: List<SeasonInfo>, covered:
                 ) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(season.name, fontSize = Tokens.FontSize.body, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        val count = context.plural("seasons_episodes", season.episodeCount)
+                        // 0 means the server does not know the count yet: show the year alone.
+                        val count = season.episodeCount.takeIf { it > 0 }?.let { context.plural("seasons_episodes", it) }
                         val year = season.airDate?.takeIf { it.length >= 4 }?.take(4)
-                        Text(if (year != null) "$count · $year" else count, fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+                        val line = listOfNotNull(count, year).joinToString(" · ")
+                        if (line.isNotEmpty()) Text(line, fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
                     }
                     season.badges.forEach { StatusBadge(it) }
                     // The request's own state, unless the library already says the same (an available season showed "Available" twice).
@@ -114,6 +117,7 @@ fun SeasonList(api: TipsarrApi, tmdbId: Int, seasons: List<SeasonInfo>, covered:
                         when {
                             loading == season.number -> Text(stringResource(R.string.seasons_loading), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
                             message != null -> Text(message, fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
+                            episodes[season.number]?.isEmpty() == true -> Text(stringResource(R.string.seasons_no_episodes), fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg)
                             else -> episodes[season.number].orEmpty().forEach { EpisodeRow(it) }
                         }
                     }

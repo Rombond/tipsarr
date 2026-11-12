@@ -45,7 +45,7 @@ func (s *Service) arrTarget(ctx context.Context, o media.Opts, typ string, tmdbI
 		}
 		return kind, name, base, strconv.Itoa(tmdbID), m.ID, c, nil
 	}
-	d, derr := s.media.Detail(ctx, o, "tv", tmdbID)
+	d, derr := s.media.Detail(ctx, media.Opts{Language: o.Language, Region: o.Region, Seasons: true}, "tv", tmdbID)
 	if derr != nil {
 		return "", "", "", "", 0, nil, derr
 	}

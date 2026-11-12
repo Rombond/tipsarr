@@ -148,6 +148,7 @@
     <string name="error_quota_reached">You have reached your request limit for now.</string>
     <string name="error_refresh_too_soon">Refreshed a moment ago, try again in a minute.</string>
     <string name="error_retype_key">Enter the API key again when you change the address.</string>
+    <string name="error_season_numbering_changed">The seasons of this show changed. Reload and pick them again.</string>
     <string name="error_setup_done">Setup has already been completed.</string>
     <string name="error_setup_token">Setup token required: see the Tipsarr server log.</string>
     <string name="error_setup_unreachable">Cannot reach a Jellyfin server at that address.</string>
@@ -315,11 +316,13 @@
     <string name="m_connect_title">Connect to your server</string>
     <string name="m_connect_unreachable">Can’t reach this server. Check the address and your connection.</string>
     <string name="m_detail_declined">Declined by an admin.</string>
+    <string name="m_detail_no_episodes">The episode list appears once Sonarr tracks this show.</string>
     <string name="m_detail_no_overview">No overview available.</string>
     <string name="m_detail_open_jellyfin">Open in Jellyfin</string>
     <string name="m_detail_ratings_tv_hint">Only TMDB scores exist for TV shows.</string>
     <string name="m_detail_request_again">Request again</string>
     <string name="m_detail_seasons_count">%1$s season | %1$s seasons</string>
+    <string name="m_detail_seasons_numbering_note">Seasons follow Sonarr’s numbering (TVDB), which splits this show differently from TMDB.</string>
     <string name="m_detail_share">Share</string>
     <string name="m_discover_chip_for_you">For you</string>
     <string name="m_discover_chip_movies">Movies</string>
@@ -708,6 +711,7 @@
     <string name="req_retry">Retry</string>
     <string name="req_root_folder">Folder</string>
     <string name="req_season_badge">Season %1$s</string>
+    <string name="req_season_range">Seasons %1$s–%2$s</string>
     <string name="req_seasons">Season %1$s | Seasons %1$s</string>
     <string name="req_select_all">Select all</string>
     <string name="req_select_none">Select none</string>
@@ -772,7 +776,9 @@
     <string name="search_tags">Tags:</string>
     <string name="seasons_episodes">%1$s episode | %1$s episodes</string>
     <string name="seasons_loading">Loading episodes…</string>
+    <string name="seasons_no_episodes">The episode list appears once Sonarr tracks this show.</string>
     <string name="seasons_no_preview">No preview</string>
+    <string name="seasons_numbering_note">Seasons follow Sonarr’s numbering (TVDB), which splits this show differently from TMDB.</string>
     <string name="seasons_season">Season %1$s</string>
     <string name="seasons_title">Seasons</string>
     <string name="srv_job_boxoffice_stored">%1$s charts stored</string>
@@ -796,6 +802,8 @@
     <string name="srv_job_trailers_synced">%1$s trailer files ready, %2$s waiting, %3$s failed</string>
     <string name="srv_job_ytdlp_current">yt-dlp is up to date (%1$s)</string>
     <string name="srv_job_ytdlp_updated">yt-dlp updated from %1$s to %2$s</string>
+    <string name="srv_season">Season %1$s</string>
+    <string name="srv_season_specials">Specials</string>
     <string name="state_approved">Approved</string>
     <string name="state_available">Available</string>
     <string name="state_declined">Declined</string>

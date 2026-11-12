@@ -309,7 +309,7 @@ struct MediaDetailView: View {
     }
 
     private var seasons: some View {
-        SeasonList(tmdbId: model.route.tmdbId, seasons: model.regularSeasons, covered: model.coveredSeasons, state: model.request?.state ?? .requested)
+        SeasonList(tmdbId: model.route.tmdbId, seasons: model.regularSeasons, covered: model.coveredSeasons, state: model.request?.state ?? .requested, numberingDiffers: model.detail?.seasonNumberingDiffers ?? false)
     }
 
     private func facts(_ detail: MediaDetail) -> some View {

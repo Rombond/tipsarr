@@ -156,6 +156,7 @@ func run(cfg config.Config) error {
 	jm.Register(jobs.Job{Name: "boxoffice-refresh", Every: 12 * time.Hour, InitialDelay: time.Minute, Run: box.Refresh})
 	reqSvc := requests.New(st, mediaSvc, hub, notifier, cfg.DryRun)
 	reqSvc.SetLibrary(lib)
+	mediaSvc.SetSeasonSource(reqSvc.SeasonSource()) // TV seasons numbered like Sonarr (TVDB)
 	issueSvc := issues.New(st, mediaSvc, hub, notifier)
 	issueSvc.SetArr(reqSvc)
 	jm.Register(jobs.Job{Name: "request-poll", Every: 15 * time.Second, InitialDelay: 20 * time.Second, Quiet: true, Run: func(ctx context.Context) (i18n.Msg, error) {

@@ -2,6 +2,7 @@ package demo
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -154,5 +155,69 @@ func TestServices(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("radarr write = %d", resp.StatusCode)
+	}
+}
+
+// The fake Sonarr numbers Bleach like TVDB (17 arcs) and leaves other shows to TMDB.
+func TestFakeSonarrBleach(t *testing.T) {
+	srv := httptest.NewServer(Services(time.Now(), nil))
+	defer srv.Close()
+	get := func(path string, v any) {
+		t.Helper()
+		req, _ := http.NewRequest("GET", srv.URL+PathSonarr+path, nil)
+		req.Header.Set("X-Api-Key", ArrKey)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
+			t.Fatalf("%s: %v", path, err)
+		}
+	}
+	type season struct {
+		SeasonNumber int `json:"seasonNumber"`
+		Statistics   struct {
+			TotalEpisodeCount int `json:"totalEpisodeCount"`
+		} `json:"statistics"`
+	}
+	var lookup []struct{ Seasons []season }
+	get("/api/v3/series/lookup?term=tvdb:12345", &lookup)
+	if len(lookup) != 1 || len(lookup[0].Seasons) != 0 {
+		t.Fatalf("unknown lookup = %+v", lookup)
+	}
+	get("/api/v3/series/lookup?term=tvdb:74796", &lookup)
+	if n := len(lookup[0].Seasons); n != 18 {
+		t.Fatalf("bleach lookup seasons = %d", n)
+	}
+	var series []struct {
+		ID        int  `json:"id"`
+		Monitored bool `json:"monitored"`
+		Seasons   []season
+	}
+	get("/api/v3/series?tvdbId=74796", &series)
+	if len(series) != 1 || series[0].ID != 86 || series[0].Monitored || len(series[0].Seasons) != 18 ||
+		series[0].Seasons[17].Statistics.TotalEpisodeCount != 50 || series[0].Seasons[0].Statistics.TotalEpisodeCount != 7 {
+		t.Fatalf("series = %+v", series)
+	}
+	get("/api/v3/series?tvdbId=1", &series)
+	if len(series) != 0 {
+		t.Fatalf("other series = %+v", series)
+	}
+	var eps []struct {
+		SeasonNumber  int    `json:"seasonNumber"`
+		EpisodeNumber int    `json:"episodeNumber"`
+		AirDate       string `json:"airDate"`
+	}
+	get("/api/v3/episode?seriesId=86", &eps)
+	count := map[int]int{}
+	for _, e := range eps {
+		count[e.SeasonNumber]++
+		if e.SeasonNumber == 17 && e.EpisodeNumber == 1 && e.AirDate != "2022-10-11" {
+			t.Fatalf("S17E1 aired %s", e.AirDate)
+		}
+	}
+	if count[17] != 50 || count[14] != 51 || count[0] != 7 {
+		t.Fatalf("episode counts = %v", count)
 	}
 }

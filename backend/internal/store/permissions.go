@@ -43,17 +43,24 @@ func (s *Store) SettingInt(ctx context.Context, key string, def int) int {
 }
 
 // QuotaUsage counts what a person requested since the given time: requests for movies, seasons for shows.
+// A show request counts at most perRequestCap seasons (0 = no cap), so one request never costs more than the limit.
 // Declined and failed requests give their share back. oldest is the creation time of the oldest counted request.
-func (s *Store) QuotaUsage(ctx context.Context, userID, mediaType string, since int64) (used int, oldest int64, err error) {
+func (s *Store) QuotaUsage(ctx context.Context, userID, mediaType string, since int64, perRequestCap int) (used int, oldest int64, err error) {
 	var row struct {
 		N      int
 		Oldest int64
 	}
 	q := `SELECT COUNT(*) AS n, COALESCE(MIN(r.created_at), 0) AS oldest FROM requests r WHERE r.requested_by = ? AND r.media_type = ? AND r.created_at >= ? AND r.status NOT IN ('declined', 'failed')`
+	args := []any{userID, mediaType, since}
 	if mediaType == "tv" {
-		q = `SELECT COUNT(*) AS n, COALESCE(MIN(r.created_at), 0) AS oldest FROM request_seasons rs JOIN requests r ON r.id = rs.request_id WHERE r.requested_by = ? AND r.media_type = ? AND r.created_at >= ? AND r.status NOT IN ('declined', 'failed')`
+		if perRequestCap <= 0 {
+			perRequestCap = 1 << 30
+		}
+		q = `SELECT COALESCE(SUM(CASE WHEN c.cnt > ? THEN ? ELSE c.cnt END), 0) AS n, COALESCE(MIN(c.created_at), 0) AS oldest FROM (` +
+			`SELECT r.id, r.created_at, COUNT(*) AS cnt FROM request_seasons rs JOIN requests r ON r.id = rs.request_id WHERE r.requested_by = ? AND r.media_type = ? AND r.created_at >= ? AND r.status NOT IN ('declined', 'failed') GROUP BY r.id, r.created_at) c`
+		args = []any{perRequestCap, perRequestCap, userID, mediaType, since}
 	}
-	if err := s.DB.NewRaw(q, userID, mediaType, since).Scan(ctx, &row); err != nil {
+	if err := s.DB.NewRaw(q, args...).Scan(ctx, &row); err != nil {
 		return 0, 0, err
 	}
 	return row.N, row.Oldest, nil

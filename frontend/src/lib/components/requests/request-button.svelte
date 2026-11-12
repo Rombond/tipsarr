@@ -13,6 +13,8 @@
 		monitored = false,
 		onRequested,
 		title = '',
+		seasonNumbering = undefined,
+		numberingDiffers = false,
 	}: {
 		type: 'movie' | 'tv';
 		tmdbId: number;
@@ -23,6 +25,8 @@
 		monitored?: boolean;
 		onRequested?: (r: Schemas['View']) => void;
 		title?: string;
+		seasonNumbering?: 'tvdb' | 'tmdb';
+		numberingDiffers?: boolean;
 	} = $props();
 
 	let created = $state<string | null>(null);
@@ -55,6 +59,8 @@
 	{tmdbId}
 	{title}
 	{seasons}
+	{seasonNumbering}
+	{numberingDiffers}
 	onrequested={(r) => {
 		created = r.status;
 		onRequested?.(r);

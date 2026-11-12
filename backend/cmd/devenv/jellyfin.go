@@ -36,7 +36,7 @@ func libShows() []int {
 
 // seasons a library show has: all of them, except the newest for every third show (those show as partial)
 func libSeasons(show int) []int {
-	n := seasonCount(show)
+	n := tvdbSeasonCount(show) // Jellyfin folders follow Sonarr (TVDB) numbering
 	if show%3 == 0 && n > 1 {
 		n--
 	}
@@ -70,7 +70,7 @@ func libTitle(id int) fakejf.Title {
 	t := fakejf.Title{TMDB: id, Name: jfName(id), Year: year(id), Genres: jfGenres(id), RuntimeMin: runtime(id), Rating: vote(id), AddedDaysAgo: 3 + (id*11)%70}
 	if isShow(id) {
 		t.Series, t.RuntimeMin, t.Seasons = true, 40+id%20, libSeasons(id)
-		t.Episodes = func(s int) int { return episodeCount(id, s) }
+		t.Episodes = func(s int) int { return tvdbEpisodeCount(id, s) }
 	}
 	return t
 }

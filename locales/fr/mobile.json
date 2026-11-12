@@ -65,6 +65,8 @@
   "m.issue.send": "Envoyer le signalement",
   "m.detail.no_overview": "Aucun résumé disponible.",
   "m.detail.seasons_count": "%1$@ saison | %1$@ saisons",
+  "m.detail.seasons_numbering_note": "Les saisons suivent la numérotation de Sonarr (TVDB), qui découpe cette série autrement que TMDB.",
+  "m.detail.no_episodes": "La liste des épisodes apparaîtra quand Sonarr suivra cette série.",
   "m.search.prompt": "Films, séries, personnes",
   "m.search.recents": "Recherches récentes",
   "m.search.clear": "Effacer",

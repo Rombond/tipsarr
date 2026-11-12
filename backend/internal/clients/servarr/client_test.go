@@ -225,3 +225,126 @@ func TestQualityProfilesKnow4K(t *testing.T) {
 		t.Error("IsUHD")
 	}
 }
+
+// trackedSonarr serves one tracked series (id 86, tvdb 74796) with S1 monitored and S2, S17 not.
+func trackedSonarr(t *testing.T, puts *[]map[string]any, cmds *[]map[string]any) *httptest.Server {
+	t.Helper()
+	var mu sync.Mutex
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		mu.Lock()
+		defer mu.Unlock()
+		switch {
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v3/series/86":
+			var b map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&b)
+			*puts = append(*puts, b)
+			_, _ = w.Write([]byte(`{}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v3/command":
+			var b map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&b)
+			*cmds = append(*cmds, b)
+			_, _ = w.Write([]byte(`{"id":1}`))
+		case r.Method != http.MethodGet:
+			t.Errorf("unexpected write %s %s", r.Method, r.URL.Path)
+		case r.URL.Path == "/api/v3/series" || r.URL.Path == "/api/v3/series/86":
+			s := `{"id":86,"title":"Bleach","tvdbId":74796,"monitored":false,"extra":"kept","seasons":[{"seasonNumber":1,"monitored":true},{"seasonNumber":2,"monitored":false},{"seasonNumber":17,"monitored":false}]}`
+			if r.URL.Path == "/api/v3/series" {
+				s = "[" + s + "]"
+			}
+			_, _ = w.Write([]byte(s))
+		case r.URL.Path == "/api/v3/series/lookup":
+			_, _ = w.Write([]byte(`[{"id":null,"title":"Other","tvdbId":1},{"id":null,"title":"Bleach","tvdbId":74796,"statistics":{"seasonCount":17,"totalEpisodeCount":0},"seasons":[{"seasonNumber":0,"monitored":false},{"seasonNumber":17,"monitored":true}]}]`))
+		case r.URL.Path == "/api/v3/episode":
+			_, _ = w.Write([]byte(`[{"id":5,"seasonNumber":17,"episodeNumber":1,"title":"The Blood Warfare","overview":"o","airDate":"2022-10-11","runtime":24,"absoluteEpisodeNumber":367,"hasFile":true,"monitored":true,"images":null}]`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+}
+
+func TestLookupSeriesUntracked(t *testing.T) {
+	var puts, cmds []map[string]any
+	srv := trackedSonarr(t, &puts, &cmds)
+	defer srv.Close()
+	c := New(KindSonarr, srv.URL, "key", false)
+	s, err := c.LookupSeries(context.Background(), 74796)
+	if err != nil || s == nil {
+		t.Fatalf("lookup = %+v %v", s, err)
+	}
+	if s.ID != 0 || s.Title != "Bleach" || len(s.Seasons) != 2 || s.Seasons[1].SeasonNumber != 17 || !s.Seasons[1].Monitored {
+		t.Fatalf("lookup = %+v", s)
+	}
+	if s, err := c.LookupSeries(context.Background(), 999); s != nil || err != nil {
+		t.Fatalf("unknown = %+v %v", s, err)
+	}
+}
+
+func TestSeriesEpisodesFields(t *testing.T) {
+	var puts, cmds []map[string]any
+	srv := trackedSonarr(t, &puts, &cmds)
+	defer srv.Close()
+	eps, err := New(KindSonarr, srv.URL, "key", false).SeriesEpisodes(context.Background(), 86)
+	if err != nil || len(eps) != 1 {
+		t.Fatalf("episodes = %+v %v", eps, err)
+	}
+	e := eps[0]
+	if e.Title != "The Blood Warfare" || e.Overview != "o" || e.AirDate != "2022-10-11" || e.Runtime != 24 || e.AbsoluteEpisodeNumber != 367 || !e.HasFile {
+		t.Fatalf("episode = %+v", e)
+	}
+}
+
+func TestSeasonTotalEpisodeCount(t *testing.T) {
+	var s Series
+	if err := json.Unmarshal([]byte(`{"seasons":[{"seasonNumber":17,"statistics":{"episodeCount":0,"totalEpisodeCount":50}}]}`), &s); err != nil {
+		t.Fatal(err)
+	}
+	if s.Seasons[0].Statistics.TotalEpisodeCount != 50 {
+		t.Fatalf("total = %+v", s.Seasons[0].Statistics)
+	}
+}
+
+// Asking for a season of a show Sonarr already tracks monitors and searches it, and never unmonitors anything.
+func TestAddSeriesExistingMonitorsSeasons(t *testing.T) {
+	var puts, cmds []map[string]any
+	srv := trackedSonarr(t, &puts, &cmds)
+	defer srv.Close()
+	id, err := New(KindSonarr, srv.URL, "key", false).AddSeries(context.Background(), 74796, 1, "/tv", []int{17}, "")
+	if err != nil || id != 86 {
+		t.Fatalf("add = %d %v", id, err)
+	}
+	if len(puts) != 1 {
+		t.Fatalf("puts = %v", puts)
+	}
+	b := puts[0]
+	if b["monitored"] != true || b["extra"] != "kept" {
+		t.Fatalf("series body = %v", b)
+	}
+	got := map[float64]bool{}
+	for _, s := range b["seasons"].([]any) {
+		m := s.(map[string]any)
+		got[m["seasonNumber"].(float64)] = m["monitored"].(bool)
+	}
+	if !got[1] || got[2] || !got[17] {
+		t.Fatalf("seasons = %v (S1 stays, S2 untouched, S17 on)", got)
+	}
+	if len(cmds) != 1 || cmds[0]["name"] != "SeasonSearch" || cmds[0]["seriesId"] != float64(86) || cmds[0]["seasonNumber"] != float64(17) {
+		t.Fatalf("commands = %v", cmds)
+	}
+}
+
+func TestMonitorSeasonsDryRun(t *testing.T) {
+	var puts, cmds []map[string]any
+	srv := trackedSonarr(t, &puts, &cmds)
+	defer srv.Close()
+	c := New(KindSonarr, srv.URL, "key", true)
+	if err := c.MonitorSeasons(context.Background(), 86, []int{17}); !errors.Is(err, ErrDryRun) {
+		t.Fatalf("err = %v", err)
+	}
+	if _, err := c.AddSeries(context.Background(), 74796, 1, "/tv", []int{17}, ""); !errors.Is(err, ErrDryRun) {
+		t.Fatalf("add err = %v", err)
+	}
+	if len(puts)+len(cmds) != 0 {
+		t.Fatalf("dry-run wrote: %v %v", puts, cmds)
+	}
+}

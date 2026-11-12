@@ -185,7 +185,7 @@
 				{#if mediaType === 'tv' && seasons.length}
 					<section class="grid gap-2">
 						<h2 class="font-semibold text-lg">{t('seasons.title')}</h2>
-						<SeasonList {tmdbId} {seasons} />
+						<SeasonList {tmdbId} {seasons} numberingDiffers={details.seasonNumberingDiffers} />
 					</section>
 				{/if}
 			</div>

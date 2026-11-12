@@ -177,7 +177,7 @@ class MediaDetailModel(
     suspend fun submitRequest(seasons: List<Int>?, profileId: Int?, folder: String?): RequestRecord {
         busy = true
         try {
-            val record = api.createRequest(route.type, route.tmdbId, seasons, profileId, folder)
+            val record = api.createRequest(route.type, route.tmdbId, seasons, profileId, folder, detail?.seasonNumbering?.takeIf { route.type == MediaType.Tv })
             request = record
             coveredSeasons = coveredSeasons + record.seasons
             detail = detail?.copy(requestStatus = com.brebond.tipsarr.core.api.RequestStatus.Pending)

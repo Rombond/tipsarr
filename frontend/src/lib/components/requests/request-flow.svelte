@@ -16,6 +16,8 @@
 		tmdbId,
 		title = '',
 		seasons = undefined,
+		seasonNumbering = undefined,
+		numberingDiffers = false,
 		busy = $bindable(false),
 		onrequested,
 	}: {
@@ -24,6 +26,9 @@
 		title?: string;
 		/** Known seasons; fetched on demand when omitted (cards). */
 		seasons?: Schemas['Season'][];
+		/** Numbering the known seasons follow (MediaDetail.seasonNumbering); sent so a stale pick gets 409. */
+		seasonNumbering?: 'tvdb' | 'tmdb';
+		numberingDiffers?: boolean;
 		busy?: boolean;
 		onrequested?: (r: Schemas['View']) => void;
 	} = $props();
@@ -31,6 +36,9 @@
 	let open = $state(false);
 	let error = $state<string | null>(null);
 	let loaded = $state<Schemas['Season'][] | null>(null);
+	let loadedNumbering = $state<{ numbering?: 'tvdb' | 'tmdb'; differs?: boolean } | null>(null);
+	const numbering = $derived(seasons ? seasonNumbering : loadedNumbering?.numbering);
+	const differs = $derived(seasons ? numberingDiffers : (loadedNumbering?.differs ?? false));
 	let options = $state<Schemas['Options'] | null>(null);
 	let quota = $state<Schemas['Quota'] | null>(null);
 	const known = $derived(seasons ?? loaded ?? []);
@@ -46,7 +54,7 @@
 		error = null;
 		try {
 			const r = await unwrap(
-				api.POST('/requests', { body: { type, tmdbId, seasons: choice.seasons, qualityProfileId: choice.qualityProfileId, rootFolder: choice.rootFolder } }),
+				api.POST('/requests', { body: { type, tmdbId, seasons: choice.seasons, seasonNumbering: type === 'tv' ? numbering : undefined, qualityProfileId: choice.qualityProfileId, rootFolder: choice.rootFolder } }),
 			);
 			open = false;
 			toast.success(
@@ -68,7 +76,9 @@
 		if (type === 'tv' && seasons === undefined && loaded === null) {
 			busy = true;
 			try {
-				loaded = (await unwrap(api.GET('/media/{type}/{id}', { params: { path: { type: 'tv', id: tmdbId } } }))).seasons ?? [];
+				const d = await unwrap(api.GET('/media/{type}/{id}', { params: { path: { type: 'tv', id: tmdbId } } }));
+				loaded = d.seasons ?? [];
+				loadedNumbering = { numbering: d.seasonNumbering, differs: d.seasonNumberingDiffers };
 			} catch (e) {
 				toast.error(errorText(e));
 				busy = false;
@@ -88,4 +98,4 @@
 	}
 </script>
 
-<RequestDialog bind:open {type} {title} seasons={known} {options} {busy} {error} {quotaText} onsubmit={submit} />
+<RequestDialog bind:open {type} {title} seasons={known} {options} {busy} {error} {quotaText} numberingDiffers={differs} onsubmit={submit} />

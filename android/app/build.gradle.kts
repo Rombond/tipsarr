@@ -1,6 +1,6 @@
 import java.util.Properties
 
-val appVersion = "1.0.0"
+val appVersion = "1.0.1"
 
 // Release signing: `keystore.properties` (not committed) points at the keystore; without it the release build is left unsigned.
 val keystoreProps = Properties().apply {
@@ -23,7 +23,7 @@ android {
         applicationId = "com.brebond.tipsarr"
         minSdk = 26
         targetSdk = 36
-        versionCode = 10
+        versionCode = 11
         versionName = appVersion
         buildConfigField("String", "APP_VERSION", "\"$appVersion\"")
     }

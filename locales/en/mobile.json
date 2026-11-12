@@ -65,6 +65,8 @@
   "m.issue.send": "Send report",
   "m.detail.no_overview": "No overview available.",
   "m.detail.seasons_count": "%1$@ season | %1$@ seasons",
+  "m.detail.seasons_numbering_note": "Seasons follow Sonarr’s numbering (TVDB), which splits this show differently from TMDB.",
+  "m.detail.no_episodes": "The episode list appears once Sonarr tracks this show.",
   "m.search.prompt": "Movies, TV shows, people",
   "m.search.recents": "Recent searches",
   "m.search.clear": "Clear",

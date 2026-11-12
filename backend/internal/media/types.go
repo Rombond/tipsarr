@@ -82,13 +82,17 @@ type Review struct {
 type Season struct {
 	Number       int    `json:"number"`
 	Name         string `json:"name"`
-	EpisodeCount int    `json:"episodeCount"`
+	EpisodeCount int    `json:"episodeCount" doc:"Episodes in the season; 0 = unknown"`
 	AirDate      string `json:"airDate,omitempty"`
 	PosterPath   string `json:"posterPath,omitempty"`
 	// LibraryEpisodes counts the episodes of this season the Jellyfin library holds (0 when the show is not in it).
 	LibraryEpisodes int `json:"libraryEpisodes" doc:"Episodes of this season already in the library"`
 	// Monitored: Sonarr already tracks this season, it fetches what is missing by itself (and airing episodes as they come).
 	Monitored bool `json:"monitored" doc:"Sonarr already monitors this season"`
+	// TMDBNumber is the TMDB season matching this (TVDB-numbered) season, 0 when none.
+	TMDBNumber int `json:"-"`
+	// CountUnknown: neither Sonarr nor TMDB told how many episodes the season has.
+	CountUnknown bool `json:"-"`
 }
 
 // Complete says the library holds every announced episode of the season.
@@ -115,6 +119,8 @@ type Detail struct {
 	NumberOfSeasons        int          `json:"numberOfSeasons,omitempty"`
 	NumberOfEpisodes       int          `json:"numberOfEpisodes,omitempty"`
 	Seasons                []Season     `json:"seasons,omitempty"`
+	SeasonNumbering        string       `json:"seasonNumbering,omitempty" enum:"tvdb,tmdb" doc:"Numbering of seasons: tvdb (Sonarr) or tmdb (fallback when Sonarr cannot tell)"`
+	SeasonNumberingDiffers bool         `json:"seasonNumberingDiffers,omitempty" doc:"TMDB splits this show's seasons differently from Sonarr (TVDB)"`
 	CollectionID           int          `json:"collectionId,omitempty"`
 	CollectionName         string       `json:"collectionName,omitempty"`
 	CollectionBackdropPath string       `json:"collectionBackdropPath,omitempty"`

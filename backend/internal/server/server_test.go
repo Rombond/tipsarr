@@ -304,6 +304,17 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 	mux.HandleFunc("/movie/77", hit(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"id":77,"title":"Gone Movie","release_date":"2019-05-05","poster_path":"/gone.jpg","vote_average":7.1,"genres":[{"id":53,"name":"Thriller"}],"credits":{"cast":[],"crew":[]},"recommendations":{"results":[]},"similar":{"results":[]}}`))
 	}))
+	// Bleach: TMDB has two regular seasons where Sonarr (TVDB) has 17 (see bleach_fixture_test.go)
+	mux.HandleFunc("/tv/30984", hit(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"id":30984,"name":"Bleach","first_air_date":"2004-10-05","original_language":"ja","genres":[{"id":16,"name":"Animation"}],"number_of_seasons":2,"number_of_episodes":416,
+			"seasons":[{"season_number":0,"name":"Specials","episode_count":4},{"season_number":1,"name":"Bleach","episode_count":366,"air_date":"2004-10-05","poster_path":"/b1.jpg"},
+			{"season_number":2,"name":"Thousand-Year Blood War","episode_count":50,"air_date":"2022-10-11","poster_path":"/tybw.jpg"}],
+			"external_ids":{"tvdb_id":74796},"recommendations":{"results":[]},"similar":{"results":[]}}`))
+	}))
+	mux.HandleFunc("/tv/30984/season/2", hit(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"season_number":2,"name":"Thousand-Year Blood War","air_date":"2022-10-11","episodes":[
+			{"episode_number":1,"name":"The Blood Warfare"},{"episode_number":2,"name":"Foundation Stones"},{"episode_number":3,"name":"March of the Starcross"}]}`))
+	}))
 	mux.HandleFunc("/movie/404", hit(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotFound) }))
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -414,6 +425,7 @@ func newEnvOpts(t *testing.T, dryRun bool, setupToken string, demoMode bool) *en
 	pusher.SetRetryDelays(10*time.Millisecond, 10*time.Millisecond)
 	notifier.SetPusher(pusher)
 	reqs := requests.New(st, mediaSvc, hub, notifier, dryRun)
+	mediaSvc.SetSeasonSource(reqs.SeasonSource())
 	box := boxoffice.New(st, mediaSvc, fakeBOM(t).URL)
 	box.SetPause(0)
 	box.SetNow(func() time.Time { return time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC) }) // a Tuesday: latest weekend is 2026W40

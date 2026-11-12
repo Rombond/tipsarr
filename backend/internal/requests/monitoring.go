@@ -29,62 +29,7 @@ func (s *Service) Annotate(ctx context.Context, d *media.Detail) {
 			d.Monitored = m.Monitored && !m.HasFile
 		}
 	case "tv":
-		sr := s.series(ctx, d.TVDBID)
-		if sr == nil || !sr.Monitored {
-			return
-		}
-		monitored := map[int]bool{}
-		for _, sn := range sr.Seasons {
-			monitored[sn.SeasonNumber] = sn.Monitored
-		}
-		for i := range d.Seasons {
-			d.Seasons[i].Monitored = monitored[d.Seasons[i].Number]
-		}
-	}
-}
-
-func (s *Service) series(ctx context.Context, tvdbID int) *servarr.Series {
-	c := s.instance(ctx, servarr.KindSonarr)
-	if c == nil || tvdbID == 0 {
-		return nil
-	}
-	sr, err := c.SeriesByTVDB(ctx, tvdbID)
-	if err != nil {
-		return nil
-	}
-	return sr
-}
-
-// AnnotateEpisodes marks each episode of a season as available, monitored (Sonarr is looking for it) or missing.
-func (s *Service) AnnotateEpisodes(ctx context.Context, o media.Opts, tmdbID int, sd *media.SeasonDetail) {
-	d, err := s.media.Detail(ctx, o, "tv", tmdbID)
-	if err != nil {
-		return
-	}
-	sr := s.series(ctx, d.TVDBID)
-	if sr == nil {
-		return
-	}
-	c := s.instance(ctx, servarr.KindSonarr)
-	eps, err := c.Episodes(ctx, sr.ID, sd.Number)
-	if err != nil {
-		return
-	}
-	by := map[int]servarr.Episode{}
-	for _, e := range eps {
-		by[e.EpisodeNumber] = e
-	}
-	for i := range sd.Episodes {
-		e, ok := by[sd.Episodes[i].Number]
-		switch {
-		case !ok:
-			// Sonarr does not know the episode (not aired in its database): leave the state empty
-		case e.HasFile:
-			sd.Episodes[i].State = "available"
-		case e.Monitored && sr.Monitored:
-			sd.Episodes[i].State = "monitored"
-		default:
-			sd.Episodes[i].State = "missing"
-		}
+		// Season monitoring comes with the seasons themselves: media.Detail asks Sonarr (Opts.Seasons) and
+		// numbers them like Sonarr does. TMDB-numbered seasons (Sonarr unreachable) cannot be matched by number.
 	}
 }
