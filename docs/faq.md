@@ -8,6 +8,13 @@ Dry-run is on by default. Settings shows "Dry-run on"; the log says what would h
 Save a Jellyfin API key, then run `library-sync` on the Jobs page. Add the Jellyfin webhook for instant updates
 ([installation](installation.md#jellyfin)).
 
+**A show has more (or fewer) seasons than on TMDB.**
+Seasons follow Sonarr's numbering (TVDB), the one Sonarr and your Jellyfin folders use. Some shows are split
+differently on TMDB: Bleach is 2 seasons on TMDB and 17 on TVDB. Tipsarr takes the season list from Sonarr and keeps
+TMDB for posters, synopsis and cast; a season with a TMDB match keeps its TMDB name and poster. A season that
+appears only on TVDB shows its episodes once Sonarr tracks the show. When Sonarr is unreachable or the show has no
+TVDB id, Tipsarr falls back to the TMDB seasons. An episode count of 0 in the API means unknown.
+
 **No posters, no search results.**
 The TMDB key is missing or wrong (Settings → API keys). Tipsarr must reach `api.themoviedb.org` and
 `image.tmdb.org`.

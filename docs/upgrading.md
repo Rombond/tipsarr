@@ -28,3 +28,22 @@ does not check the schema version and may misbehave on a database migrated by a 
 ## Mobile apps
 
 Update the server first, then the apps. Apps keep working with an older server but hide what it does not support.
+
+## Version notes
+
+### 0.18: TV seasons follow Sonarr's numbering
+
+TV seasons now come from Sonarr (TVDB numbering), not TMDB (see the [FAQ](faq.md)). Existing requests are not
+renumbered. TV requests already sent to Sonarr or imported are marked as TVDB-numbered. The others (pending or
+failed) are marked as TMDB-numbered and checked at approval: if the two numberings match, nothing changes; a request
+for every TMDB season becomes every Sonarr season; otherwise approval fails with a message asking to request every
+season or pick the season in Sonarr. Nothing wrong is ever sent to Sonarr.
+
+To list the requests that will go through this check (read-only):
+
+```sql
+SELECT id, title, status FROM requests
+WHERE media_type = 'tv' AND season_numbering = 'tmdb' AND status IN ('pending', 'failed');
+```
+
+Requests already in Sonarr under a wrong season are not changed: fix them in Sonarr.
