@@ -56,6 +56,20 @@ func (e *arrEntry) frac(k int) float64 {
 	return clamp((e.since() - arrWait.Seconds() - float64(k)*seasonSec) / seasonSec)
 }
 
+// files is how many episodes of season s are downloaded (0 when the season is not monitored)
+func (e *arrEntry) files(s int) int {
+	k := sort.SearchInts(e.seasons, s)
+	if k >= len(e.seasons) || e.seasons[k] != s {
+		return 0
+	}
+	ec := tvdbEpisodeCount(e.tmdb, s)
+	f := e.frac(k)
+	if f >= 1 {
+		return ec
+	}
+	return int(f * float64(ec))
+}
+
 func (a *arr) seriesJSON(e *arrEntry) obj {
 	monitored := map[int]bool{}
 	for _, s := range e.seasons {
@@ -63,19 +77,14 @@ func (a *arr) seriesJSON(e *arrEntry) obj {
 	}
 	seasons := []obj{}
 	totalEps, totalFiles := 0, 0
-	for s := 0; s <= seasonCount(e.tmdb); s++ {
-		ec := episodeCount(e.tmdb, s)
-		files := 0
+	for s := 0; s <= tvdbSeasonCount(e.tmdb); s++ {
+		total := tvdbEpisodeCount(e.tmdb, s)
+		ec, files := 0, e.files(s)
 		if monitored[s] {
-			k := sort.SearchInts(e.seasons, s)
-			f := e.frac(k)
-			files = int(f * float64(ec))
-			if f >= 1 {
-				files = ec
-			}
+			ec = total
 			totalEps, totalFiles = totalEps+ec, totalFiles+files
 		}
-		seasons = append(seasons, obj{"seasonNumber": s, "monitored": monitored[s], "statistics": obj{"episodeCount": ec, "episodeFileCount": files}})
+		seasons = append(seasons, obj{"seasonNumber": s, "monitored": monitored[s], "statistics": obj{"episodeCount": ec, "episodeFileCount": files, "totalEpisodeCount": total}})
 	}
 	return obj{"id": e.id, "title": e.title, "tvdbId": e.tvdb, "tmdbId": e.tmdb, "monitored": true, "year": year(e.tmdb), "seasons": seasons,
 		"statistics": obj{"episodeCount": totalEps, "episodeFileCount": totalFiles}}
@@ -97,7 +106,7 @@ func (a *arr) queue() []obj {
 			if f <= 0 || f >= 1 {
 				continue
 			}
-			ec := episodeCount(e.tmdb, s)
+			ec := tvdbEpisodeCount(e.tmdb, s)
 			cur := int(f * float64(ec))
 			for ep := cur; ep < ec; ep++ {
 				rec := obj{"seriesId": e.id, "title": e.title, "size": 1000.0, "sizeleft": 1000.0, "timeleft": hhmmss((1 - f) * seasonSec), "status": "queued", "seasonNumber": s}
@@ -230,10 +239,66 @@ func newArr(kind string) http.Handler {
 			return
 		}
 		seasons := []obj{}
-		for s := 0; s <= seasonCount(tmdb); s++ {
+		for s := 0; s <= tvdbSeasonCount(tmdb); s++ {
 			seasons = append(seasons, obj{"seasonNumber": s, "monitored": false})
 		}
 		writeJSON(w, []obj{{"title": title(tmdb, "en"), "tvdbId": tvdb, "tmdbId": tmdb, "year": year(tmdb), "seasons": seasons, "seriesType": "standard"}})
+	})
+	h("GET /api/v3/episode", func(w http.ResponseWriter, r *http.Request) {
+		id, _ := strconv.Atoi(r.URL.Query().Get("seriesId"))
+		e, ok := a.items[id]
+		if !ok {
+			writeJSON(w, []obj{})
+			return
+		}
+		only, filtered := 0, r.URL.Query().Get("seasonNumber") != ""
+		if filtered {
+			only, _ = strconv.Atoi(r.URL.Query().Get("seasonNumber"))
+		}
+		out := []obj{}
+		for s := 0; s <= tvdbSeasonCount(e.tmdb); s++ {
+			if filtered && s != only {
+				continue
+			}
+			k := sort.SearchInts(e.seasons, s)
+			monitored := k < len(e.seasons) && e.seasons[k] == s
+			files, first := e.files(s), tvdbFirstAired(e.tmdb, s)
+			for ep := 1; ep <= tvdbEpisodeCount(e.tmdb, s); ep++ {
+				out = append(out, obj{"id": id*10000 + s*100 + ep, "seriesId": id, "seasonNumber": s, "episodeNumber": ep,
+					"title": fmt.Sprintf("Chapter %d.%d", s, ep), "overview": overview(e.tmdb, "en"), "airDate": first.AddDate(0, 0, 7*(ep-1)).Format("2006-01-02"),
+					"runtime": 40 + e.tmdb%20, "hasFile": ep <= files, "monitored": monitored, "images": nil})
+			}
+		}
+		writeJSON(w, out)
+	})
+	// MonitorSeasons on a series Sonarr already has: PUT the series back with more seasons monitored, then search.
+	h("PUT /api/v3/series/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id, _ := strconv.Atoi(r.PathValue("id"))
+		e, ok := a.items[id]
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		var b struct {
+			Seasons []struct {
+				SeasonNumber int  `json:"seasonNumber"`
+				Monitored    bool `json:"monitored"`
+			} `json:"seasons"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&b)
+		for _, s := range b.Seasons {
+			k := sort.SearchInts(e.seasons, s.SeasonNumber)
+			if s.Monitored && (k >= len(e.seasons) || e.seasons[k] != s.SeasonNumber) {
+				e.seasons = append(e.seasons, s.SeasonNumber)
+				sort.Ints(e.seasons)
+			}
+		}
+		w.WriteHeader(http.StatusAccepted)
+		writeJSON(w, a.seriesJSON(e))
+	})
+	h("POST /api/v3/command", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+		writeJSON(w, obj{"id": 1, "name": "SeasonSearch", "status": "queued"})
 	})
 	h("POST /api/v3/series", func(w http.ResponseWriter, r *http.Request) {
 		var b struct {

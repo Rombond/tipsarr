@@ -165,7 +165,7 @@ func detail(id int, lang string) obj {
 		seasons := []obj{{"season_number": 0, "name": "Specials", "episode_count": 2}}
 		total := 0
 		for s := 1; s <= n; s++ {
-			seasons = append(seasons, obj{"season_number": s, "name": "Season " + strconv.Itoa(s), "episode_count": episodeCount(id, s), "air_date": time.Date(year(id)+s-1, 1, 10, 0, 0, 0, 0, time.UTC).Format("2006-01-02"), "poster_path": img("t", id)})
+			seasons = append(seasons, obj{"season_number": s, "name": tmdbSeasonName(id, s), "episode_count": episodeCount(id, s), "air_date": tmdbSeasonAir(id, s).Format("2006-01-02"), "poster_path": img("t", id)})
 			total += episodeCount(id, s)
 		}
 		d["seasons"], d["number_of_seasons"], d["number_of_episodes"] = seasons, n, total
@@ -383,7 +383,7 @@ func newTMDB() http.Handler {
 			eps = append(eps, obj{"episode_number": e, "name": name, "overview": overview(id, lang), "air_date": time.Date(year(id)+n-1, 1, 10+e, 0, 0, 0, 0, time.UTC).Format("2006-01-02"),
 				"still_path": img("s", id), "runtime": 40 + (id+e)%20, "vote_average": vote(id + e)})
 		}
-		writeJSON(w, obj{"season_number": n, "name": "Season " + strconv.Itoa(n), "overview": overview(id, lang), "air_date": time.Date(year(id)+n-1, 1, 10, 0, 0, 0, 0, time.UTC).Format("2006-01-02"),
+		writeJSON(w, obj{"season_number": n, "name": tmdbSeasonName(id, n), "overview": overview(id, lang), "air_date": tmdbSeasonAir(id, n).Format("2006-01-02"),
 			"poster_path": img("t", id), "episodes": eps})
 	}))
 	mux.HandleFunc("/person/{id}", hit(func(w http.ResponseWriter, r *http.Request) {

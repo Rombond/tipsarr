@@ -117,8 +117,69 @@ func vote(id int) float64       { return float64(50+(id*13)%45) / 10 }
 func runtime(id int) int        { return 80 + (id*7)%80 }
 func popularity(id int) float64 { return float64((id*37)%100) + 0.5 }
 
-func seasonCount(id int) int          { return id%4 + 1 }
-func episodeCount(id, season int) int { return 8 + (id+season)%5 }
+// mismatchShow is numbered differently by TMDB and TVDB (like Bleach): TMDB has two seasons (30 + 12 episodes),
+// TVDB (Sonarr, Jellyfin) splits the first one into four arcs, so TVDB S5 is TMDB S2.
+const mismatchShow = 240
+
+func seasonCount(id int) int {
+	if id == mismatchShow {
+		return 2
+	}
+	return id%4 + 1
+}
+
+func episodeCount(id, season int) int {
+	if id == mismatchShow && season > 0 {
+		return []int{30, 12}[min(season, 2)-1]
+	}
+	return 8 + (id+season)%5
+}
+
+// tmdbSeasonAir is the TMDB air date of a season.
+func tmdbSeasonAir(id, season int) time.Time {
+	return time.Date(year(id)+season-1, 1, 10, 0, 0, 0, 0, time.UTC)
+}
+
+// tmdbSeasonName names TMDB seasons; mismatchShow's S2 has its own name, so its TVDB S5 shows it.
+func tmdbSeasonName(id, season int) string {
+	if id == mismatchShow && season == 2 {
+		return "The Last War"
+	}
+	return fmt.Sprintf("Season %d", season)
+}
+
+// tvdbSeasonEps is the TVDB (Sonarr) layout of a show: episode counts per season, index 0 = specials.
+func tvdbSeasonEps(id int) []int {
+	if id == mismatchShow {
+		return []int{2, 8, 7, 8, 7, 12}
+	}
+	out := []int{2}
+	for s := 1; s <= seasonCount(id); s++ {
+		out = append(out, episodeCount(id, s))
+	}
+	return out
+}
+
+func tvdbSeasonCount(id int) int { return len(tvdbSeasonEps(id)) - 1 }
+
+func tvdbEpisodeCount(id, season int) int {
+	eps := tvdbSeasonEps(id)
+	if season < 0 || season >= len(eps) {
+		return 0
+	}
+	return eps[season]
+}
+
+// tvdbFirstAired is the first air date of a TVDB season; the last arc of mismatchShow matches TMDB S2.
+func tvdbFirstAired(id, season int) time.Time {
+	if id == mismatchShow {
+		if season == 5 {
+			return tmdbSeasonAir(id, 2)
+		}
+		return tmdbSeasonAir(id, 1).AddDate(0, 0, 70*(season-1))
+	}
+	return tmdbSeasonAir(id, season)
+}
 
 func imdbID(id int) string { return fmt.Sprintf("tt%07d", 1000000+id*13) }
 func tvdbID(id int) int    { return 90000 + id }
