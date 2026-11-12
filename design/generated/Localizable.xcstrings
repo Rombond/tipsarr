@@ -7534,6 +7534,142 @@
         }
       }
     },
+    "m.stats.n_available": {
+      "comment": "placeholders: count, count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ available | %1$@ available"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ disponible | %1$@ disponibles"
+          }
+        }
+      }
+    },
+    "m.stats.n_declined": {
+      "comment": "placeholders: count, count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ declined | %1$@ declined"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ refusée | %1$@ refusées"
+          }
+        }
+      }
+    },
+    "m.stats.n_episodes": {
+      "comment": "placeholders: count, count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ episode watched | %1$@ episodes watched"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ épisode regardé | %1$@ épisodes regardés"
+          }
+        }
+      }
+    },
+    "m.stats.n_movies": {
+      "comment": "placeholders: count, count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ movie | %1$@ movies"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ film | %1$@ films"
+          }
+        }
+      }
+    },
+    "m.stats.n_plays": {
+      "comment": "placeholders: count, count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ play | %1$@ plays"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ lecture | %1$@ lectures"
+          }
+        }
+      }
+    },
+    "m.stats.n_shows": {
+      "comment": "placeholders: count, count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ TV show | %1$@ TV shows"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ série | %1$@ séries"
+          }
+        }
+      }
+    },
+    "m.stats.n_titles": {
+      "comment": "placeholders: count, count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ title | %1$@ titles"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ titre | %1$@ titres"
+          }
+        }
+      }
+    },
+    "m.stats.never_hint": {
+      "comment": "placeholders: count, count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ title in the library that nobody ever played, oldest first (admins only). | %1$@ titles in the library that nobody ever played, oldest first (admins only)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ titre de la bibliothèque que personne n’a jamais lu, les plus anciens d’abord (admins uniquement). | %1$@ titres de la bibliothèque que personne n’a jamais lus, les plus anciens d’abord (admins uniquement)."
+          }
+        }
+      }
+    },
     "m.stats.open": {
       "localizations": {
         "en": {
@@ -7546,6 +7682,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Statistiques"
+          }
+        }
+      }
+    },
+    "m.stats.unwatched_more": {
+      "comment": "placeholders: count, count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "and %1$@ more | and %1$@ more"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "et %1$@ autre | et %1$@ autres"
           }
         }
       }
