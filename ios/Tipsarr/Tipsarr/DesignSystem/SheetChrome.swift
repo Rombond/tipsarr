@@ -24,18 +24,28 @@ extension View {
 
 extension View {
     /// A bottom sheet as tall as its content (`contentHeight`, measured by the sheet), up to `maxHeight`; drag up for
-    /// the full height. iOS 26 adds the bottom safe area to a custom height on a floating sheet (empty space under the
-    /// last button), so it is taken off here.
-    func fittedSheetDetents(_ contentHeight: CGFloat, maxHeight: CGFloat = 640) -> some View {
-        let height = contentHeight > 0 ? max(contentHeight - Self.windowBottomInset, 1) : 0
-        return presentationDetents([.height(min(height, maxHeight)), .large])
+    /// the full height. `pinnedFooter`: the content ends with a `safeAreaInset` bar that already stays clear of the
+    /// sheet's bottom safe area, so none of it is taken off.
+    func fittedSheetDetents(_ contentHeight: CGFloat, maxHeight: CGFloat = 640, pinnedFooter: Bool = false) -> some View {
+        modifier(FittedSheetDetents(contentHeight: contentHeight, maxHeight: maxHeight, pinnedFooter: pinnedFooter))
     }
+}
 
-    @MainActor private static var windowBottomInset: CGFloat {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap(\.windows)
-            .first(where: \.isKeyWindow)?.safeAreaInsets.bottom ?? 0
+/// iOS 26 adds the sheet's bottom safe area to a custom height on a floating iPhone sheet (empty space under the last
+/// button of a scrolling form), so it is taken off. The inset is the sheet's own, not the window's: an iPad sheet floats
+/// above the home indicator without one and gets exactly the height asked for (taking the window's inset off cut its
+/// last line).
+private struct FittedSheetDetents: ViewModifier {
+    let contentHeight: CGFloat
+    let maxHeight: CGFloat
+    let pinnedFooter: Bool
+    @State private var bottomInset: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        let height = contentHeight > 0 ? max(contentHeight - (pinnedFooter ? 0 : bottomInset), 1) : 0
+        content
+            .onGeometryChange(for: CGFloat.self, of: { $0.safeAreaInsets.bottom }) { bottomInset = $0 }
+            .presentationDetents([.height(min(height, maxHeight)), .large])
     }
 }
 
