@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"github.com/Rombond/tipsarr/backend/internal/teasers"
+	"log/slog"
 	"net/http"
 	"regexp"
 
@@ -102,7 +103,11 @@ func registerUsers(api huma.API, d Deps) {
 			return nil, err
 		}
 		if u.Language != before && d.Suggestions != nil {
-			d.Suggestions.QueueRefresh(u.ID) // stored suggestion rows hold titles in the old language
+			// stored suggestion rows hold titles in the old language: drop them, the next read builds them in the new one
+			if err := d.Suggestions.Forget(ctx, u.ID); err != nil {
+				slog.Warn("suggestions: forget after a language change", "user", u.ID, "err", err)
+				d.Suggestions.QueueRefresh(u.ID)
+			}
 		}
 		return &meOutput{Body: u}, nil
 	})

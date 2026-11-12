@@ -18,6 +18,12 @@ To try the apps without a server, use the [demo](demo.md) address `https://tipsa
 as `admin` / `demo` (admin rights) or `user` / `demo` (plain user). Signing in starts your own sandbox; when it ends
 (30 minutes idle, 60 minutes at most) the app returns to its sign-in screen. Push notifications are off in the demo.
 
+## Language and region
+
+The apps show titles and descriptions in the phone's language. The iOS app also takes the phone's region (release
+dates, box office) until you pick one in Settings > Region: after you change the phone's language and region, the
+next launch uses the new ones. A region you picked (in the app, on the web or on Android) is kept.
+
 ## Notifications
 
 See [push notifications](push-notifications.md). The admin turns push on for the server; each person then allows

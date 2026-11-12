@@ -92,6 +92,19 @@ func TestSuggestions(t *testing.T) {
 		t.Fatal("reading stored suggestions must not call TMDB")
 	}
 
+	// a new language drops the stored rows (they hold titles in the old one): the next read builds them again at once
+	if resp, body := call(t, e.app, "PATCH", "/api/v1/me", `{"language":"fr"}`, admin); resp.StatusCode != 200 {
+		t.Fatalf("language change = %d %s", resp.StatusCode, body)
+	}
+	if stored, _, _ := e.st.SuggestionRows(ctx, alice); len(stored) != 0 {
+		t.Fatalf("rows kept after a language change: %d", len(stored))
+	}
+	if again, _ := getSuggestions(t, e, admin); len(again.Rows) != 3 || again.Generating {
+		t.Fatalf("read after a language change = %+v", again)
+	}
+	call(t, e.app, "PATCH", "/api/v1/me", `{"language":""}`, admin)
+	getSuggestions(t, e, admin)
+
 	// bob has no history: seeded from what the server watches, no "because" rows
 	bres, _ := getSuggestions(t, e, bob)
 	if len(bres.Rows) != 1 || bres.Rows[0].Title != "Popular on this server" || bres.Rows[0].Personal {
