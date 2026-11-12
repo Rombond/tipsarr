@@ -144,6 +144,24 @@ func (s *Store) CreateRequest(ctx context.Context, r *Request, seasons []int) er
 	})
 }
 
+// ReplaceRequestSeasons swaps the seasons of a request (a TMDB-numbered request translated to Sonarr's numbering).
+func (s *Store) ReplaceRequestSeasons(ctx context.Context, id string, seasons []int) error {
+	return s.DB.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		if _, err := tx.NewDelete().Model((*RequestSeason)(nil)).Where("request_id = ?", id).Exec(ctx); err != nil {
+			return err
+		}
+		if len(seasons) == 0 {
+			return nil
+		}
+		rows := make([]RequestSeason, len(seasons))
+		for i, n := range seasons {
+			rows[i] = RequestSeason{RequestID: id, SeasonNumber: n}
+		}
+		_, err := tx.NewInsert().Model(&rows).Exec(ctx)
+		return err
+	})
+}
+
 func (s *Store) GetRequest(ctx context.Context, id string) (*Request, error) {
 	r := new(Request)
 	err := s.DB.NewSelect().Model(r).Where("id = ?", id).Scan(ctx)
