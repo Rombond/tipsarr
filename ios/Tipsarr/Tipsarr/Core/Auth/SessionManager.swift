@@ -118,8 +118,16 @@ final class SessionManager {
         }
     }
 
-    /// Removes the account from the phone; the next one (or Connect) takes over.
+    /// True from the sign-out confirmation until the account is gone: the tabs close their sheets first.
+    private(set) var signingOut = false
+
+    /// Removes the account from the device; the next one (or Connect) takes over.
     func signOut(_ account: Account) async {
+        // The Settings (or Profile) sheet is closed before the tabs go away: on iPad a sheet whose tabs were replaced
+        // under it stayed on screen over Connect, showing zero accounts.
+        signingOut = true
+        defer { signingOut = false }
+        try? await Task.sleep(for: .milliseconds(400))
         CredentialStore.delete(accountID: account.id)
         await PushManager.shared.detach(account: account)
         await TipsarrAPI(serverURL: account.serverURL, token: account.token).logout()

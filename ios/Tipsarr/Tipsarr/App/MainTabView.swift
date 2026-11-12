@@ -87,6 +87,11 @@ struct MainTabView: View {
             for teaser in teasersModel.items.prefix(2) { _ = teaserVideos.video(for: teaser) }
         }
         .onChange(of: profile.ratingSource) { _, new in ratings.setSource(RatingSource(rawValue: new) ?? .tmdb) }
+        .onChange(of: session.signingOut) { _, leaving in
+            guard leaving else { return }
+            router.settingsOpen = false
+            router.profileOpen = false
+        }
         .task(id: router.tab) { await refreshPending() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await refreshPending(); await session.refreshStatus() } }
@@ -117,7 +122,11 @@ struct MainTabView: View {
         }
         .task {
             // People who manage requests see their pending count on the icon, so they are asked at once (alerts, sounds and the badge together).
-            if profile.can(.manageRequests) { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) }
+            // Never while signing out: the system prompt would then show over Connect.
+            if profile.can(.manageRequests), !session.signingOut, case .ready = session.phase, !Task.isCancelled {
+                _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+            }
+            guard !Task.isCancelled, !session.signingOut else { return }
             await PushManager.shared.attach(account: account, pushAvailable: session.serverStatus?.pushAvailable ?? false)
         }
         // A new language, region or account rebuilds the tabs, so every list is fetched again with them. The profile
