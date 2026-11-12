@@ -153,8 +153,9 @@ struct StatsView: View {
     private func buckets(_ list: [StatsBucket], byHours: Bool) -> some View {
         let top = Array(list.prefix(8))
         return Chart(top) { item in
-            BarMark(x: .value("v", byHours && item.hours > 0 ? item.hours : Double(item.titles)), y: .value("Name", item.name))
+            BarMark(x: .value("v", byHours && item.hours > 0 ? item.hours : Double(item.titles)), y: .value("Name", item.name), height: .fixed(16))
                 .foregroundStyle(Tokens.palette.primary)
+                .clipShape(.rect(cornerRadius: 3))
                 .annotation(position: .trailing) {
                     Text(verbatim: byHours && item.hours > 0 ? StatsFormat.hours(item.hours) : Plural.text("m.stats.n_titles", count: item.titles))
                         .font(.caption2).foregroundStyle(Tokens.palette.mutedFg)
@@ -162,7 +163,16 @@ struct StatsView: View {
         }
         .chartYScale(domain: top.map(\.name))
         .chartXAxis(.hidden)
-        .frame(height: CGFloat(top.count) * 30 + 20)
+        // Labels only: the default category marks draw a gridline through each label
+        // and can wrap the label above its bar.
+        .chartYAxis {
+            AxisMarks(position: .leading) { _ in
+                AxisValueLabel(horizontalSpacing: Tokens.Spacing.sm, verticalSpacing: 0)
+                    .font(.caption).foregroundStyle(Tokens.palette.fg)
+            }
+        }
+        .chartPlotStyle { $0.padding(.trailing, 56) }
+        .frame(height: CGFloat(top.count) * 30 + 8)
     }
 
     private func monthsChart(_ months: [StatsMonth]) -> some View {
