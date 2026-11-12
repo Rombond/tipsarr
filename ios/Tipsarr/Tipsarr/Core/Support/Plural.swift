@@ -33,6 +33,14 @@ enum L10n {
         return String(format: format, arguments: args.map { $0 as NSString })
     }
 
+    /// TMDB department names ("Acting", "Directing") are English whatever the request language: the translated
+    /// name for the ones the catalog knows (`dept.<name>`, shared with the web app), else TMDB's text.
+    static func department(_ raw: String) -> String {
+        let key = "dept.\(raw)"
+        let text = AppLanguage.bundle.localizedString(forKey: key, value: nil, table: nil)
+        return text == key ? raw : text
+    }
+
     /// Localized string for a dynamic key with `%@` / `%1$@` arguments (SwiftUI cannot do this with a runtime key).
     /// Arguments are turned into text first: a number passed as a C vararg to `%@` crashes.
     static func string(_ key: String, _ args: CustomStringConvertible...) -> String {

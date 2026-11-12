@@ -10,7 +10,10 @@ struct RequestSheet: View {
     @State private var profileID: Int?
     @State private var folder: String?
     @State private var errorText: String?
-    @State private var contentHeight: CGFloat = 560
+    @State private var formHeight: CGFloat = 460
+    @State private var actionsHeight: CGFloat = 100
+    /// The sheet's bottom safe area (iPhone home indicator): the buttons need less padding above it.
+    @State private var bottomInset: CGFloat = 0
 
     private var detail: MediaDetail? { model.detail }
 
@@ -37,26 +40,39 @@ struct RequestSheet: View {
                     .font(.footnote)
                     .foregroundStyle(Tokens.palette.mutedFg)
                 if let errorText { Banner(kind: .error, title: LText.verbatim(errorText)) }
-                VStack(spacing: Tokens.Spacing.sm) {
-                    Button { Task { await submit() } } label: {
-                        Label {
-                            if model.busy { Text("media.requesting") } else { Text("media.request") }
-                        } icon: { Image(systemName: "plus") }
-                    }
-                    .buttonStyle(.tipsarr(.primary, fullWidth: true))
-                    .disabled(model.busy || (isTV && selectedSeasons.isEmpty))
-                    Button("common.cancel") { dismiss() }
-                        .buttonStyle(.tipsarr(.tonal, fullWidth: true))
-                }
             }
             .padding(Tokens.Spacing.xl)
             .padding(.top, Tokens.Spacing.md)
-            .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { contentHeight = $0 }
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { formHeight = $0 }
         }
         .scrollBounceBehavior(.basedOnSize)
+        // Pinned under the form: whatever height the sheet gets (a shorter detent, a long list of seasons, an iPad
+        // window), Request and Cancel stay on screen and the form scrolls above them.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            actions
+                .padding(.horizontal, Tokens.Spacing.xl)
+                .padding(.bottom, bottomInset > 0 ? Tokens.Spacing.sm : Tokens.Spacing.xl)
+                .background(Tokens.palette.bg)
+                .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { actionsHeight = $0 }
+        }
+        .onGeometryChange(for: CGFloat.self, of: { $0.safeAreaInsets.bottom }) { bottomInset = $0 }
         // Only as tall as the form needs (a movie), up to the full height (a long list of seasons).
-        .fittedSheetDetents(contentHeight)
+        .fittedSheetDetents(formHeight + actionsHeight, pinnedFooter: true)
         .onAppear(perform: setDefaults)
+    }
+
+    private var actions: some View {
+        VStack(spacing: Tokens.Spacing.sm) {
+            Button { Task { await submit() } } label: {
+                Label {
+                    if model.busy { Text("media.requesting") } else { Text("media.request") }
+                } icon: { Image(systemName: "plus") }
+            }
+            .buttonStyle(.tipsarr(.primary, fullWidth: true))
+            .disabled(model.busy || (isTV && selectedSeasons.isEmpty))
+            Button("common.cancel") { dismiss() }
+                .buttonStyle(.tipsarr(.tonal, fullWidth: true))
+        }
     }
 
     private var header: some View {

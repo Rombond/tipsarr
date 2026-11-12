@@ -470,7 +470,16 @@
     <string name="m_settings_theme_system">System</string>
     <string name="m_settings_theme_system_hint">Follows your phone</string>
     <string name="m_settings_title">Settings</string>
+    <string name="m_stats_n_available">%1$s available | %1$s available</string>
+    <string name="m_stats_n_declined">%1$s declined | %1$s declined</string>
+    <string name="m_stats_n_episodes">%1$s episode watched | %1$s episodes watched</string>
+    <string name="m_stats_n_movies">%1$s movie | %1$s movies</string>
+    <string name="m_stats_n_plays">%1$s play | %1$s plays</string>
+    <string name="m_stats_n_shows">%1$s TV show | %1$s TV shows</string>
+    <string name="m_stats_n_titles">%1$s title | %1$s titles</string>
+    <string name="m_stats_never_hint">%1$s title in the library that nobody ever played, oldest first (admins only). | %1$s titles in the library that nobody ever played, oldest first (admins only).</string>
     <string name="m_stats_open">Statistics</string>
+    <string name="m_stats_unwatched_more">and %1$s more | and %1$s more</string>
     <string name="m_sync_counts">%1$s movies and %2$s TV shows known in the library.</string>
     <string name="m_sync_every">Runs every %s</string>
     <string name="m_sync_last">Last run %s</string>

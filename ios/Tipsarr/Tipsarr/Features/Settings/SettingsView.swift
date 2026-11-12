@@ -255,6 +255,8 @@ struct RegionPickerScreen: View {
 
     private func pick(_ code: String) {
         if popsOnPick { dismiss() }
+        // A region picked here (even the current one) is the person's: the app no longer follows the iPhone's.
+        if let account = session.accounts.active { AutoRegion.markPicked(for: account.id) }
         guard let api = context?.api, code != selection else { return }
         Task { await savePreference(session: session, toast: toast) { try await api.updatePreferences(region: code) } }
     }

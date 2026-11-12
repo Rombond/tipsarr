@@ -114,11 +114,12 @@ struct StatsView: View {
         Grid(horizontalSpacing: Tokens.Spacing.md, verticalSpacing: Tokens.Spacing.md) {
             GridRow {
                 tile(r.exact ? "stats.tile_hours" : "stats.tile_hours_est", StatsFormat.hours(r.hours), L10n.string("stats.unit_hours_long"))
-                tile("stats.tile_titles", String(r.titles), L10n.string("stats.tile_titles_sub", String(r.movies), String(r.shows)))
+                tile("stats.tile_titles", String(r.titles), "\(Plural.text("m.stats.n_movies", count: r.movies)) · \(Plural.text("m.stats.n_shows", count: r.shows))")
             }
             GridRow {
                 tile("stats.tile_plays", String(r.plays), r.genres.first.map { L10n.string("stats.tile_plays_sub", $0.name) })
-                tile("stats.tile_requests", String(r.requestsMade), L10n.string("stats.tile_requests_sub", String(r.requestsAvailable), String(r.requestsDeclined)))
+                tile("stats.tile_requests", String(r.requestsMade),
+                     "\(Plural.text("m.stats.n_available", count: r.requestsAvailable)) · \(Plural.text("m.stats.n_declined", count: r.requestsDeclined))")
             }
         }
     }
@@ -155,7 +156,7 @@ struct StatsView: View {
             BarMark(x: .value("v", byHours && item.hours > 0 ? item.hours : Double(item.titles)), y: .value("Name", item.name))
                 .foregroundStyle(Tokens.palette.primary)
                 .annotation(position: .trailing) {
-                    Text(verbatim: byHours && item.hours > 0 ? StatsFormat.hours(item.hours) : L10n.string("stats.n_titles", String(item.titles)))
+                    Text(verbatim: byHours && item.hours > 0 ? StatsFormat.hours(item.hours) : Plural.text("m.stats.n_titles", count: item.titles))
                         .font(.caption2).foregroundStyle(Tokens.palette.mutedFg)
                 }
         }
@@ -203,7 +204,7 @@ struct StatsView: View {
                     Text(who == nil || !isAdmin ? "stats.unwatched_mine" : "stats.unwatched_others")
                         .font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                     if unwatched.total > unwatched.items.count {
-                        Text(verbatim: L10n.string("stats.unwatched_more", String(unwatched.total - unwatched.items.count)))
+                        Text(verbatim: Plural.text("m.stats.unwatched_more", count: unwatched.total - unwatched.items.count))
                             .font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                     }
                 }
@@ -220,7 +221,7 @@ struct StatsView: View {
                     Text("stats.never_none").font(.subheadline).foregroundStyle(Tokens.palette.mutedFg)
                 } else {
                     PosterCarousel(title: "stats.never_title", titleKey: "stats.never_title", rows: neverWatched.items.map(\.row))
-                    Text(verbatim: L10n.string("stats.never_hint", String(neverWatched.total))).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+                    Text(verbatim: Plural.text("m.stats.never_hint", count: neverWatched.total)).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                 }
             }
         }

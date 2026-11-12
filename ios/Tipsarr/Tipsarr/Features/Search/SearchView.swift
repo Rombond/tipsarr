@@ -62,8 +62,11 @@ struct SearchView: View {
     private var splitBody: some View {
         NavigationSplitView(columnVisibility: .constant(.all)) {
             searchable(pane, placement: .sidebar)
-                .navigationSplitViewColumnWidth(min: 340, ideal: 400, max: 460)
                 .mediaDestinations()
+                .toolbar(removing: .sidebarToggle)
+                // Last: put before `.navigationDestination` it was ignored, the column stayed at the 320 pt system
+                // width and the scope segments were cut ("Perso…").
+                .navigationSplitViewColumnWidth(min: 360, ideal: 400, max: 460)
         } detail: {
             NavigationStack {
                 if let selection {
@@ -346,7 +349,7 @@ struct PersonBubble: View {
             PersonPhoto(path: person.profilePath).frame(width: 72, height: 72)
             Text(verbatim: person.name).font(.caption.weight(.medium)).lineLimit(1)
             if let department = person.department, !department.isEmpty {
-                Text(verbatim: department).font(.caption2).foregroundStyle(Tokens.palette.mutedFg).lineLimit(1)
+                Text(verbatim: L10n.department(department)).font(.caption2).foregroundStyle(Tokens.palette.mutedFg).lineLimit(1)
             }
         }
         .frame(width: 88)
@@ -363,7 +366,7 @@ struct PersonRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: person.name).font(.body.weight(.medium))
                 if let department = person.department, !department.isEmpty {
-                    Text(verbatim: department).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
+                    Text(verbatim: L10n.department(department)).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
                 }
             }
             Spacer()

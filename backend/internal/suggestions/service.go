@@ -292,6 +292,17 @@ func (s *Service) Force(ctx context.Context, userID string) error {
 	return nil
 }
 
+// Forget drops the stored rows of one user, so the next read builds them again (synchronously, like a first visit).
+// Used when their language changed: the rows hold titles, posters and overviews in the old one, and a background
+// refresh would leave them on screen until a suggestions.updated event reached the app. It waits for a running
+// Generate, which would otherwise store rows in the old language after this.
+func (s *Service) Forget(ctx context.Context, userID string) error {
+	lock := s.userLock(userID)
+	lock.Lock()
+	defer lock.Unlock()
+	return s.store.ReplaceSuggestions(ctx, userID, nil, nil)
+}
+
 // QueueRefresh schedules a debounced background regeneration (used when history changed), for the person and for
 // everyone whose recommendations borrow from them. The version check already refreshes those rows when they are next
 // read; this only makes it sooner.

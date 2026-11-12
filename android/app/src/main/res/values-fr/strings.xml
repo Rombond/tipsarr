@@ -470,7 +470,16 @@
     <string name="m_settings_theme_system">Système</string>
     <string name="m_settings_theme_system_hint">Suit ton téléphone</string>
     <string name="m_settings_title">Réglages</string>
+    <string name="m_stats_n_available">%1$s disponible | %1$s disponibles</string>
+    <string name="m_stats_n_declined">%1$s refusée | %1$s refusées</string>
+    <string name="m_stats_n_episodes">%1$s épisode regardé | %1$s épisodes regardés</string>
+    <string name="m_stats_n_movies">%1$s film | %1$s films</string>
+    <string name="m_stats_n_plays">%1$s lecture | %1$s lectures</string>
+    <string name="m_stats_n_shows">%1$s série | %1$s séries</string>
+    <string name="m_stats_n_titles">%1$s titre | %1$s titres</string>
+    <string name="m_stats_never_hint">%1$s titre de la bibliothèque que personne n’a jamais lu, les plus anciens d’abord (admins uniquement). | %1$s titres de la bibliothèque que personne n’a jamais lus, les plus anciens d’abord (admins uniquement).</string>
     <string name="m_stats_open">Statistiques</string>
+    <string name="m_stats_unwatched_more">et %1$s autre | et %1$s autres</string>
     <string name="m_sync_counts">%1$s films et %2$s séries connus dans la bibliothèque.</string>
     <string name="m_sync_every">Toutes les %s</string>
     <string name="m_sync_last">Dernier lancement %s</string>

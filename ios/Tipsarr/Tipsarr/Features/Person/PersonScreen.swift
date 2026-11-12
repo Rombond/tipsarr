@@ -41,7 +41,7 @@ struct PersonScreen: View {
                     VStack(alignment: .leading, spacing: Tokens.Spacing.xs) {
                         Text(verbatim: person.name).font(.title2.weight(.bold)).accessibilityAddTraits(.isHeader)
                         if let department = person.department, !department.isEmpty {
-                            Text(verbatim: department).font(.subheadline).foregroundStyle(Tokens.palette.mutedFg)
+                            Text(verbatim: L10n.department(department)).font(.subheadline).foregroundStyle(Tokens.palette.mutedFg)
                         }
                         if let born = person.birthday.flatMap(Self.date) {
                             Text(verbatim: L10n.string("m.person.born", born)).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)

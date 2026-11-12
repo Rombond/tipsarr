@@ -51,7 +51,8 @@ struct MainTabView: View {
                 router.profileOpen = false
                 router.tab = .requests
             }
-            .tipsarrSheet(detents: [.large])
+            // Page size on iPad: the form size cut the most-watched posters and their captions, and a form sheet does not grow.
+            .tipsarrSheet(detents: [.large], sizing: .page)
         }
         .sheet(isPresented: $router.settingsOpen) {
             SettingsScreen(account: account, profile: profile, path: $router.settingsPath) { router.settingsOpen = false }
@@ -86,6 +87,11 @@ struct MainTabView: View {
             for teaser in teasersModel.items.prefix(2) { _ = teaserVideos.video(for: teaser) }
         }
         .onChange(of: profile.ratingSource) { _, new in ratings.setSource(RatingSource(rawValue: new) ?? .tmdb) }
+        .onChange(of: session.signingOut) { _, leaving in
+            guard leaving else { return }
+            router.settingsOpen = false
+            router.profileOpen = false
+        }
         .task(id: router.tab) { await refreshPending() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await refreshPending(); await session.refreshStatus() } }
@@ -103,27 +109,30 @@ struct MainTabView: View {
             Task { try? await UNUserNotificationCenter.current().setBadgeCount(count) }
         }
         .task {
-            // The server knows the language the app shows (titles and descriptions follow it).
+            // The server knows the language the app shows (titles and descriptions follow it) and the region (release
+            // dates, box office): no region yet, or the one the app took from the iPhone earlier, becomes the iPhone's
+            // current one; a region the person picked is kept (see `AutoRegion`). One call, so the tabs below are
+            // rebuilt once and no second update is cancelled by that rebuild.
             let code = Bundle.main.preferredLocalizations.first ?? "en"
-            if !profile.language.lowercased().hasPrefix(code), !(profile.language.isEmpty && code == "en"),
-               let updated = try? await api.updatePreferences(language: code) {
-                session.update(profile: updated)
-            }
-        }
-        .task {
-            // No region yet: the iPhone's one, which the person can change in Settings.
-            if profile.region.isEmpty, let code = Locale.current.region?.identifier, code.count == 2,
-               let updated = try? await api.updatePreferences(region: code.uppercased()) {
-                session.update(profile: updated)
-            }
+            let language = !profile.language.lowercased().hasPrefix(code) && !(profile.language.isEmpty && code == "en") ? code : nil
+            let region = AutoRegion.pending(profileRegion: profile.region, deviceRegion: Locale.current.region?.identifier, accountID: account.id)
+            guard language != nil || region != nil, let updated = try? await api.updatePreferences(language: language, region: region) else { return }
+            if let region { AutoRegion.record(region, for: account.id) }
+            session.update(profile: updated)
         }
         .task {
             // People who manage requests see their pending count on the icon, so they are asked at once (alerts, sounds and the badge together).
-            if profile.can(.manageRequests) { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) }
+            // Never while signing out: the system prompt would then show over Connect.
+            if profile.can(.manageRequests), !session.signingOut, case .ready = session.phase, !Task.isCancelled {
+                _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+            }
+            guard !Task.isCancelled, !session.signingOut else { return }
             await PushManager.shared.attach(account: account, pushAvailable: session.serverStatus?.pushAvailable ?? false)
         }
-        // A new language or account rebuilds the tabs, so every list is fetched again in that language.
-        .id("\(account.id)|\(settings.language ?? "")|\(profile.region)")
+        // A new language, region or account rebuilds the tabs, so every list is fetched again with them. The profile
+        // language counts too: it is updated above after the iPhone's language changed, and Discover was loaded
+        // with the old one in the meantime.
+        .id("\(account.id)|\(settings.language ?? "")|\(profile.language)|\(profile.region)")
     }
 
     /// The four tabs inside the system bar (iPhone, narrow windows), or with our own bar: a sidebar on a

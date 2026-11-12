@@ -60,7 +60,10 @@ struct PosterCarousel: View {
                 .background(Tokens.palette.muted)
                 .clipShape(.rect(cornerRadius: Tokens.Radius.md))
             Text(verbatim: row.title).font(.subheadline.weight(.medium)).lineLimit(1)
-            Text(verbatim: row.note).font(.caption).foregroundStyle(Tokens.palette.mutedFg).lineLimit(1)
+            // Two lines: "6,9 h · 8 épisodes regardés" does not fit a poster's width on one. Space for both is kept so the cards line up.
+            Text(verbatim: row.note).font(.caption).foregroundStyle(Tokens.palette.mutedFg)
+                .lineLimit(2, reservesSpace: true)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(width: posterWidth)
         .accessibilityElement(children: .ignore)
@@ -124,9 +127,9 @@ enum StatsFormat {
         return value >= 100 ? "\(Int(value.rounded())) \(unit)" : "\(value.formatted(.number.precision(.fractionLength(1)))) \(unit)"
     }
 
-    /// "12.5 h · 8 episodes watched" for shows, "3.2 h · 2 plays" for movies.
+    /// "12.5 h · 8 episodes watched" for shows, "3.2 h · 1 play" for movies.
     static func note(_ item: StatsTop) -> String {
-        let count = item.type == .tv ? L10n.string("stats.n_episodes", String(item.plays)) : L10n.string("stats.n_plays", String(item.plays))
+        let count = Plural.text(item.type == .tv ? "m.stats.n_episodes" : "m.stats.n_plays", count: item.plays)
         return "\(hours(item.hours)) · \(count)"
     }
 }

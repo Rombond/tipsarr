@@ -64,7 +64,8 @@ final class PushManager {
     /// Before sign-out: stop alerts for this account on this device.
     func detach(account: Account) async {
         _ = try? await TipsarrAPI(serverURL: account.serverURL, token: account.token).unregisterDevice()
-        if self.account?.id == account.id { registered = false }
+        // Signed out: nothing may ask for permission or register for this account any more.
+        if self.account?.id == account.id { registered = false; self.account = nil }
     }
 
     func didRegister(deviceToken data: Data) {
