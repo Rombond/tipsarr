@@ -104,7 +104,7 @@ func (s *Service) importCandidates(ctx context.Context, inst *store.ServarrInsta
 		}
 		looked++
 		title, poster, release := c.title, "", ""
-		d, derr := s.media.Detail(ctx, media.Opts{}, c.mediaType, c.tmdbID)
+		d, derr := s.media.Detail(ctx, media.Opts{Seasons: true}, c.mediaType, c.tmdbID)
 		switch {
 		case derr == nil:
 			if d.Availability == media.AvailabilityAvailable {
@@ -120,6 +120,9 @@ func (s *Service) importCandidates(ctx context.Context, inst *store.ServarrInsta
 		r := &store.Request{
 			ID: store.NewID(), MediaType: c.mediaType, TMDBID: int64(c.tmdbID), Title: title, PosterPath: poster, ReleaseDate: release,
 			Status: store.StatusApproved, InstanceID: inst.ID, ServarrID: int64(c.servarrID), SentAt: nowUnix(), Source: inst.Kind,
+		}
+		if c.mediaType == "tv" {
+			r.SeasonNumbering = media.NumberingTVDB // the seasons Sonarr monitors, in its own numbering
 		}
 		if err := s.store.CreateRequest(ctx, r, c.seasons); err != nil {
 			return imported, looked, err

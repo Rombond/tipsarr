@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sort"
 	"strconv"
 	"sync"
@@ -102,6 +103,7 @@ type View struct {
 	UHD              bool             `json:"uhd,omitempty" doc:"The quality profile allows 4K (2160p); absent when not (and from servers older than 4K requests)"`
 	RootFolder       string           `json:"rootFolder,omitempty" doc:"Chosen root folder (absent = the instance default)"`
 	Source           string           `json:"source,omitempty" doc:"Set when the request was imported from what Radarr/Sonarr already monitor"`
+	SeasonNumbering  string           `json:"seasonNumbering,omitempty" enum:"tvdb,tmdb" doc:"Shows only: numbering of seasons, tvdb (Sonarr) or tmdb (made while Sonarr could not tell; translated when it is sent)"`
 	Progress         *Progress        `json:"progress,omitempty"`
 	SeasonProgress   []SeasonProgress `json:"seasonProgress,omitempty" doc:"Shows only: completion per season"`
 	Events           []Event          `json:"events,omitempty" doc:"What happened to the request and when, oldest first. Requests older than this history show an approximate one"`
@@ -177,7 +179,7 @@ func (s *Service) views(ctx context.Context, rows []store.Request) ([]View, erro
 			ID: r.ID, Type: r.MediaType, TMDBID: int(r.TMDBID), Title: r.Title, PosterPath: r.PosterPath,
 			ReleaseDate: r.ReleaseDate, Seasons: seasons[r.ID], Status: r.Status, Stage: stage,
 			RequestedBy: UserRef{ID: r.RequestedBy, Name: names[r.RequestedBy]}, DeclineReason: r.DeclineReason,
-			DryRun: r.DryRun == 1, Error: r.Error, Source: r.Source, QualityProfileID: r.ProfileID, UHD: r.UHD == 1, RootFolder: r.RootFolder, Progress: prog, SeasonProgress: s.seasonProgress(r.ID), CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+			DryRun: r.DryRun == 1, Error: r.Error, Source: r.Source, SeasonNumbering: r.SeasonNumbering, QualityProfileID: r.ProfileID, UHD: r.UHD == 1, RootFolder: r.RootFolder, Progress: prog, SeasonProgress: s.seasonProgress(r.ID), CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
 		}
 		if r.Status == store.StatusAvailable && r.MediaType == "tv" {
 			// nothing is downloading any more: every requested season is complete (the live percentages are gone)
@@ -340,6 +342,9 @@ type CreateParams struct {
 	Seasons []int // TV only; empty = every regular season
 	// Send with this quality profile / root folder instead of the instance defaults.
 	Overrides *Overrides
+	// SeasonNumbering is the numbering the person picked Seasons in (the detail's seasonNumbering); empty = not said.
+	// A different one than the server's current numbering is ErrNumberingChanged.
+	SeasonNumbering string
 }
 
 // Create records a request from a user. Requests from people who auto-approve (admins, managers, the
@@ -354,9 +359,12 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 	if p.Overrides != nil && p.Overrides.RootFolder != "" && !u.Can(perms.RequestAdvanced) {
 		return nil, ErrForbidden // the quality profile is everyone's choice, the folder needs the advanced-requests right
 	}
-	d, err := s.media.Detail(ctx, media.Opts{Language: u.Language, Region: u.Region}, p.Type, p.TMDBID)
+	d, err := s.media.Detail(ctx, media.Opts{Language: u.Language, Region: u.Region, Seasons: true}, p.Type, p.TMDBID)
 	if err != nil {
 		return nil, err // media.ErrNotFound / ErrNotConfigured pass through
+	}
+	if p.Type == "tv" && p.SeasonNumbering != "" && p.SeasonNumbering != d.SeasonNumbering {
+		return nil, ErrNumberingChanged
 	}
 	if d.Availability == media.AvailabilityAvailable {
 		return nil, ErrAlreadyAvailable
@@ -424,6 +432,9 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*V
 	r := &store.Request{
 		ID: store.NewID(), MediaType: p.Type, TMDBID: int64(p.TMDBID), Title: d.Title, PosterPath: d.PosterPath,
 		ReleaseDate: d.ReleaseDate, RequestedBy: u.ID, Status: store.StatusPending,
+	}
+	if p.Type == "tv" {
+		r.SeasonNumbering = d.SeasonNumbering // 'tmdb' while Sonarr cannot tell: checked again when it is sent
 	}
 	if p.Overrides != nil {
 		if p.Overrides.ProfileID != nil {
@@ -631,18 +642,30 @@ func (s *Service) send(ctx context.Context, c *servarr.Client, r *store.Request,
 	if r.MediaType == "movie" {
 		return c.AddMovie(ctx, int(r.TMDBID), profile, root)
 	}
-	d, err := s.media.Detail(ctx, media.Opts{}, "tv", int(r.TMDBID))
+	d, err := s.media.Detail(ctx, media.Opts{Seasons: true}, "tv", int(r.TMDBID))
 	if err != nil {
 		return 0, err
 	}
 	if d.TVDBID == 0 {
 		return 0, errors.New("TMDB has no TVDB id for this show, so Sonarr cannot add it")
 	}
-	seasons, err := s.store.RequestSeasons(ctx, []string{r.ID})
+	stored, err := s.store.RequestSeasons(ctx, []string{r.ID})
 	if err != nil {
 		return 0, err
 	}
-	return c.AddSeries(ctx, d.TVDBID, profile, root, seasons[r.ID], seriesType)
+	seasons, err := s.sonarrSeasonsFor(ctx, r, stored[r.ID])
+	if err != nil {
+		return 0, err
+	}
+	if r.SeasonNumbering == media.NumberingTMDB && d.SeasonNumbering == media.NumberingTVDB {
+		if !slices.Equal(seasons, stored[r.ID]) {
+			if err := s.store.ReplaceRequestSeasons(ctx, r.ID, seasons); err != nil {
+				return 0, err
+			}
+		}
+		r.SeasonNumbering = media.NumberingTVDB // saved with the rest of the request by approve
+	}
+	return c.AddSeries(ctx, d.TVDBID, profile, root, seasons, seriesType)
 }
 
 func (s *Service) Decline(ctx context.Context, by *store.User, id, reason string) (*View, error) {

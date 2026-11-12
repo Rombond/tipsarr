@@ -208,6 +208,7 @@ func registerDiscover(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
+		o.Seasons = true // TV seasons numbered like Sonarr (TVDB)
 		r, err := d.Media.Detail(ctx, o, in.Type, in.ID)
 		if err == nil {
 			d.Requests.Annotate(ctx, r) // what Radarr/Sonarr already monitor
@@ -217,7 +218,7 @@ func registerDiscover(api huma.API, d Deps) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "tvSeason", Method: http.MethodGet, Path: "/media/tv/{id}/seasons/{season}",
-		Summary: "Episodes of a season", Tags: []string{"media"}, Security: sec, Errors: append(errs, http.StatusNotFound),
+		Summary: "Episodes of a season", Description: "`season` follows the numbering of the show's detail (`seasonNumbering`): Sonarr's (TVDB) when it can tell. A season no source can list yet has no episodes.", Tags: []string{"media"}, Security: sec, Errors: append(errs, http.StatusNotFound),
 	}, func(ctx context.Context, in *struct {
 		ID     int `path:"id" minimum:"1"`
 		Season int `path:"season" minimum:"0"`
@@ -226,10 +227,7 @@ func registerDiscover(api huma.API, d Deps) {
 		if err != nil {
 			return nil, err
 		}
-		r, err := d.Media.Season(ctx, o, in.ID, in.Season)
-		if err == nil {
-			d.Requests.AnnotateEpisodes(ctx, o, in.ID, r) // which episodes Sonarr already has
-		}
+		r, err := d.Requests.SeasonDetail(ctx, o, in.ID, in.Season) // season numbered like Sonarr, episodes marked
 		return &struct{ Body *media.SeasonDetail }{r}, mediaErr(err)
 	})
 

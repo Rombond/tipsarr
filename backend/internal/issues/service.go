@@ -113,7 +113,7 @@ func (s *Service) Create(ctx context.Context, u *store.User, p CreateParams) (*I
 	if p.Type == "movie" {
 		p.Season, p.Episode = 0, 0
 	}
-	d, err := s.media.Detail(ctx, media.Opts{Language: u.Language, Region: u.Region}, p.Type, p.TMDBID)
+	d, err := s.media.Detail(ctx, media.Opts{Language: u.Language, Region: u.Region, Seasons: true}, p.Type, p.TMDBID)
 	if err != nil {
 		return nil, err
 	}
