@@ -1,6 +1,6 @@
 import java.util.Properties
 
-val appVersion = "1.0.1"
+val appVersion = "1.0.0"
 
 // Release signing: `keystore.properties` (not committed) points at the keystore; without it the release build is left unsigned.
 val keystoreProps = Properties().apply {
