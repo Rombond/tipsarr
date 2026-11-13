@@ -16,8 +16,12 @@
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/Rombond/tipsarr"></a>
 </p>
 
-<!-- TODO: screenshots. Add docs/images/web-discover.png, web-request.png, ios-*.png, android-*.png and replace this comment
-     with an image row (no real account, library or server address visible). -->
+<p align="center">
+  <img alt="Discover" src="fastlane/screenshots/en-US/iphone69_01_discover.png" width="200">
+  <img alt="Title page" src="fastlane/screenshots/en-US/iphone69_02_title.png" width="200">
+  <img alt="Requests" src="fastlane/screenshots/en-US/iphone69_04_requests.png" width="200">
+  <img alt="Stats" src="fastlane/screenshots/en-US/iphone69_06_profile.png" width="200">
+</p>
 
 **[Try the live demo](https://tipsarr-demo.brebond.com)**: every visitor gets a private, throwaway Tipsarr with sample
 data and admin access. Nothing you do there is seen by anyone else; the sandbox is deleted after 30 minutes without
@@ -115,9 +119,10 @@ Radarr and Sonarr. The full walkthrough is in [docs/installation.md](docs/instal
 The iOS and Android apps connect to your own Tipsarr server (several servers or accounts are supported) and use the
 same API as the web interface.
 
-<!-- TODO: store links once published. -->
-- iOS (App Store): *coming soon*
-- Android (Google Play): *coming soon*
+- **iOS and iPadOS** (App Store): in review, link coming with the approval.
+- **Android**: signed APK attached to each [GitHub release](https://github.com/Rombond/tipsarr/releases/latest)
+  (`tipsarr-<version>.apk`). Add this repository to [Obtainium](https://github.com/ImranR98/Obtainium) to get updates.
+  Not on Google Play for now (internal testing only).
 
 Apple and Google only deliver notifications signed with the app publisher's credentials, so your server cannot push to
 a store app directly. Tipsarr goes through a small relay run by the publisher,
