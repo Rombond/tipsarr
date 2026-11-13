@@ -4,9 +4,10 @@ Native apps for iOS/iPadOS (SwiftUI) and Android (Kotlin, Jetpack Compose), with
 discovery, search, requests (including 4K), request progress, issues, watchlist, profiles and stats, admin approval,
 and the Teasers tab when enabled on the server.
 
-<!-- TODO: store links once published. -->
-- App Store: *coming soon*
-- Google Play: *coming soon*
+- **iOS and iPadOS** (App Store): in review, link coming with the approval.
+- **Android**: signed APK attached to each [GitHub release](https://github.com/Rombond/tipsarr/releases/latest)
+  (`tipsarr-<version>.apk`). Add this repository to [Obtainium](https://github.com/ImranR98/Obtainium) to get updates.
+  Not on Google Play for now (internal testing only).
 
 ## Connecting
 
