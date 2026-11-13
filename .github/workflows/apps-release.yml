@@ -1,0 +1,124 @@
+name: Apps release
+
+# Publishes the mobile apps from an app tag. DISABLED for now: only a manual run is possible, and every job
+# also checks it runs on a tag. To enable, replace `on:` with:
+#
+#   on:
+#     push:
+#       tags: ['android-v*', 'ios-v*']
+#
+# Server tags `vX.Y.Z` stay in release.yml (Docker images only). For a joint release, put the three tags on one commit.
+#
+# Secrets:
+#   Android: GOOGLE_SERVICES_JSON, ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS,
+#            ANDROID_KEY_PASSWORD, PLAY_SERVICE_ACCOUNT_JSON (Google Cloud service account linked to the Play Console)
+#   iOS:     ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (App Store Connect API key, App Manager role)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write # attach the APK to the GitHub release
+
+jobs:
+  android:
+    if: startsWith(github.ref, 'refs/tags/android-v')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - name: Tag matches the app version
+        run: |
+          tag="${GITHUB_REF_NAME#android-v}"
+          version=$(sed -n 's/^val appVersion = "\(.*\)"/\1/p' app/build.gradle.kts)
+          [ "$tag" = "$version" ] || { echo "tag $tag != appVersion $version"; exit 1; }
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - name: Secrets to files
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON" | base64 -d > app/google-services.json
+          echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.jks"
+          printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$RUNNER_TEMP/release.jks" "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > keystore.properties
+      - run: ./gradlew --no-daemon assembleRelease bundleRelease
+      - name: Rename
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk "tipsarr-$VERSION.apk"
+          cp app/build/outputs/bundle/release/app-release.aab "tipsarr-$VERSION.aab"
+      - name: GitHub release (APK, for Obtainium)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --title "Tipsarr Android $VERSION" --notes "Android $VERSION"
+          gh release upload "$GITHUB_REF_NAME" "tipsarr-$VERSION.apk" --clobber
+      - name: Play internal testing
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          echo "$PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/play.json"
+          gem install fastlane --no-document
+          fastlane run upload_to_play_store package_name:com.brebond.tipsarr track:internal \
+            aab:"tipsarr-$VERSION.aab" json_key:"$RUNNER_TEMP/play.json" \
+            skip_upload_metadata:true skip_upload_images:true skip_upload_screenshots:true skip_upload_changelogs:true
+
+  ios:
+    if: startsWith(github.ref, 'refs/tags/ios-v')
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Xcode
+        run: sudo xcode-select -s /Applications/Xcode_27.2.app && xcodebuild -version
+      - name: Tag matches the app version
+        run: |
+          tag="${GITHUB_REF_NAME#ios-v}"
+          version=$(sed -n 's/.*"MARKETING_VERSION" *: *"\([^"]*\)".*/\1/p' ios/Tipsarr/Tipsarr.xcodeproj/project.xcproj | head -1)
+          [ "$tag" = "$version" ] || { echo "tag $tag != MARKETING_VERSION $version"; exit 1; }
+      - name: App Store Connect key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/asc"
+          echo "$ASC_KEY_P8" > "$RUNNER_TEMP/asc/AuthKey_$ASC_KEY_ID.p8"
+      - name: Archive (automatic signing through the API key)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          xcodebuild archive \
+            -project ios/Tipsarr/Tipsarr.xcodeproj -scheme Tipsarr -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Tipsarr.xcarchive" \
+            -allowProvisioningUpdates -skipPackagePluginValidation -skipMacroValidation \
+            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_$ASC_KEY_ID.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+      - name: Upload to TestFlight (review stays manual)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Tipsarr.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_$ASC_KEY_ID.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
