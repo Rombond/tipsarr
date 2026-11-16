@@ -109,5 +109,5 @@ struct UpdateRequiredView: View {
 
 enum AppStore {
     /// Set once the App Store listing exists (`https://apps.apple.com/app/id<ID>`); the button stays hidden until then.
-    static let url: URL? = nil
+    static let url: URL? = URL(string: "https://apps.apple.com/app/id6821344803")
 }
