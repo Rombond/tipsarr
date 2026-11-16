@@ -119,7 +119,7 @@ Radarr and Sonarr. The full walkthrough is in [docs/installation.md](docs/instal
 The iOS and Android apps connect to your own Tipsarr server (several servers or accounts are supported) and use the
 same API as the web interface.
 
-- **iOS and iPadOS** (App Store): in review, link coming with the approval.
+- **iOS and iPadOS**: [App Store](https://apps.apple.com/app/id6821344803).
 - **Android**: signed APK attached to each [GitHub release](https://github.com/Rombond/tipsarr/releases/latest)
   (`tipsarr-<version>.apk`). Add this repository to [Obtainium](https://github.com/ImranR98/Obtainium) to get updates.
   Not on Google Play for now (internal testing only).
