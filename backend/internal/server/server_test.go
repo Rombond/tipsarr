@@ -35,6 +35,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/server"
 	"github.com/Rombond/tipsarr/backend/internal/stats"
 	"github.com/Rombond/tipsarr/backend/internal/store"
+	"github.com/Rombond/tipsarr/backend/internal/store/storetest"
 	"github.com/Rombond/tipsarr/backend/internal/suggestions"
 	"github.com/Rombond/tipsarr/backend/internal/teasers"
 	"github.com/Rombond/tipsarr/backend/internal/trailers"
@@ -401,11 +402,7 @@ func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 func newEnvOpts(t *testing.T, dryRun bool, setupToken string, demoMode bool) *env {
 	t.Helper()
 	tm, im := fakeTMDB(t), fakeImages(t)
-	st, err := store.Open(context.Background(), "sqlite:"+filepath.Join(t.TempDir(), "t.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = st.Close() })
+	st := storetest.Open(t)
 	lib := library.New(st)
 	lib.SetDebounce(20 * time.Millisecond)
 	jm := jobs.New(st)

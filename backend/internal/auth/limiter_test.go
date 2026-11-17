@@ -2,21 +2,16 @@ package auth
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/Rombond/tipsarr/backend/internal/store"
+	"github.com/Rombond/tipsarr/backend/internal/store/storetest"
 )
 
 func openStore(t *testing.T) *store.Store {
 	t.Helper()
-	st, err := store.Open(context.Background(), "sqlite:"+filepath.Join(t.TempDir(), "a.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { st.Close() })
-	return st
+	return storetest.Open(t)
 }
 
 func TestLimiterEscalatesAndPersists(t *testing.T) {
