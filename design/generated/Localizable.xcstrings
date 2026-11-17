@@ -15553,6 +15553,72 @@
         }
       }
     },
+    "version.current": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running version"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version installée"
+          }
+        }
+      }
+    },
+    "version.dev": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Development build"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version de développement"
+          }
+        }
+      }
+    },
+    "version.update": {
+      "comment": "placeholders: version",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ available"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ disponible"
+          }
+        }
+      }
+    },
+    "version.update_hint": {
+      "comment": "placeholders: version",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipsarr %@ is out: see the release notes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipsarr %@ est sortie : voir les notes de version"
+          }
+        }
+      }
+    },
     "watchlist.empty": {
       "localizations": {
         "en": {

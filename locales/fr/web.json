@@ -958,5 +958,9 @@
   "profile.chat_title": "Notifications par messagerie",
   "profile.chat_hint": "Facultatif : permet aux webhooks de te mentionner ou de t’écrire directement.",
   "profile.discord_id": "Identifiant utilisateur Discord",
-  "profile.telegram_chat_id": "Identifiant de conversation Telegram"
+  "profile.telegram_chat_id": "Identifiant de conversation Telegram",
+  "version.current": "Version installée",
+  "version.dev": "Version de développement",
+  "version.update": "{version} disponible",
+  "version.update_hint": "Tipsarr {version} est sortie : voir les notes de version"
 }

@@ -958,5 +958,9 @@
   "profile.chat_title": "Chat notifications",
   "profile.chat_hint": "Optional: lets webhooks mention or message you directly.",
   "profile.discord_id": "Discord user id",
-  "profile.telegram_chat_id": "Telegram chat id"
+  "profile.telegram_chat_id": "Telegram chat id",
+  "version.current": "Running version",
+  "version.dev": "Development build",
+  "version.update": "{version} available",
+  "version.update_hint": "Tipsarr {version} is out: see the release notes"
 }

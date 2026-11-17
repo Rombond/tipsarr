@@ -24,6 +24,9 @@
 	import MonitorIcon from '@lucide/svelte/icons/monitor';
 	import LibraryIcon from '@lucide/svelte/icons/library-big';
 	import StatsIcon from '@lucide/svelte/icons/chart-column';
+	import ArrowUpCircleIcon from '@lucide/svelte/icons/circle-arrow-up';
+
+	const releasesUrl = 'https://github.com/Rombond/tipsarr/releases';
 
 	type NavItem = { href: string; key: Key; icon: typeof CompassIcon; needs?: 'users' | 'settings' };
 	const browse: NavItem[] = [
@@ -132,5 +135,30 @@
 				</DropdownMenu.Item>
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
+		{#if auth.version}
+			<div class="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 pb-1 text-[11px] text-muted-foreground">
+				<a
+					href={auth.version === 'dev' ? releasesUrl : `${releasesUrl}/tag/${auth.version}`}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="hover:underline"
+					title={t('version.current')}
+				>
+					{auth.version === 'dev' ? t('version.dev') : auth.version}
+				</a>
+				{#if auth.updateAvailable}
+					<a
+						href={`${releasesUrl}/tag/${auth.latestVersion}`}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+						title={t('version.update_hint', { version: auth.latestVersion })}
+					>
+						<ArrowUpCircleIcon class="size-3.5" />
+						{t('version.update', { version: auth.latestVersion })}
+					</a>
+				{/if}
+			</div>
+		{/if}
 	</Sidebar.Footer>
 </Sidebar.Root>
