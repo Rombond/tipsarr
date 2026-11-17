@@ -9,9 +9,10 @@ on:
 permissions:
   contents: read
 
-# A new push to a pull request cancels its run still in progress; pushes to master/develop always finish.
+# A new push to a pull request cancels its run still in progress. Other runs get a group of their own
+# (run_id): a shared group would queue pushes to master/develop and drop all but the newest pending one.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -43,18 +44,28 @@ jobs:
           go-version-file: backend/go.mod
           cache: false
       # setup-go's cache key is go.sum only: once saved it never refreshes and the -race build cache goes stale.
-      # A key per commit saves a fresh cache each run; restore-keys picks the newest one for this go.sum.
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # Restore the newest cache (same go.sum first); save a new one only on pushes to master/develop, whose
+      # caches every PR can read (a PR's own cache is visible to that PR only, not worth its size).
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
           key: go-race-${{ runner.os }}-${{ hashFiles('backend/go.sum') }}-${{ github.sha }}
-          restore-keys: go-race-${{ runner.os }}-${{ hashFiles('backend/go.sum') }}-
+          restore-keys: |
+            go-race-${{ runner.os }}-${{ hashFiles('backend/go.sum') }}-
+            go-race-${{ runner.os }}-
       - run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
       - run: go vet ./...
       # SQLite always; PostgreSQL and MySQL through the service containers above.
       - run: go test -race -count=1 ./...
+      - if: github.event_name == 'push'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-race-${{ runner.os }}-${{ hashFiles('backend/go.sum') }}-${{ github.sha }}
 
   frontend:
     runs-on: ubuntu-latest
@@ -103,7 +114,8 @@ jobs:
           context: .
           push: false
           tags: tipsarr:ci
-          # read the caches of preview.yml and release.yml; writing one here cost ~30 s per run
+          # read the caches of preview.yml and release.yml (not visible from master, whose build stays cold but off
+          # the critical path); writing one here cost ~30 s per run
           cache-from: |
             type=gha,scope=preview
             type=gha,scope=tipsarr

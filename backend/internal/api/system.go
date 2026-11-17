@@ -24,7 +24,7 @@ type statusFeatures struct {
 type statusOutput struct {
 	Body struct {
 		Version       string `json:"version"`
-		LatestVersion string `json:"latestVersion" doc:"Newest release tag published on GitHub (checked every 6 hours); empty while unknown or in the demo"`
+		LatestVersion string `json:"latestVersion" doc:"Newest release tag published on GitHub (checked every 6 hours); empty while unknown, in the demo and for a dev build"`
 		DB            string `json:"db" doc:"Database engine: sqlite, postgres or mysql"`
 		DryRun        bool   `json:"dryRun" doc:"When true nothing is ever sent to Radarr/Sonarr"`
 		Demo          bool   `json:"demo" doc:"This server is a throwaway public demo sandbox: one-click sign-in, actions that reach other services are refused (demo_disabled)"`
@@ -56,7 +56,7 @@ func registerSystem(api huma.API, d Deps) {
 	}, func(ctx context.Context, _ *struct{}) (*statusOutput, error) {
 		out := &statusOutput{}
 		out.Body.Version = Version
-		if !d.Demo {
+		if !d.Demo && Version != "dev" { // a local build never shows an update link, so it does not ask GitHub
 			out.Body.LatestVersion = latestRelease.Get()
 		}
 		out.Body.DB = d.Store.Dialect

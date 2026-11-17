@@ -2706,7 +2706,7 @@ components:
         features:
           $ref: "#/components/schemas/StatusFeatures"
         latestVersion:
-          description: Newest release tag published on GitHub (checked every 6 hours); empty while unknown or in the demo
+          description: Newest release tag published on GitHub (checked every 6 hours); empty while unknown, in the demo and for a dev build
           type: string
         minAppVersion:
           type: string
