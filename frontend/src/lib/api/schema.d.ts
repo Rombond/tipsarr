@@ -2978,6 +2978,8 @@ export interface components {
             /** @description When true nothing is ever sent to Radarr/Sonarr */
             dryRun: boolean;
             features: components["schemas"]["StatusFeatures"];
+            /** @description Newest release tag published on GitHub (checked every 6 hours); empty while unknown or in the demo */
+            latestVersion: string;
             minAppVersion: string;
             version: string;
         };

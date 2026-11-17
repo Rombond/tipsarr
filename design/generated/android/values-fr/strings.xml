@@ -965,6 +965,10 @@
     <string name="users_teasers_history_title">Historique des Teasers de %1$s</string>
     <string name="users_teasers_history_wiped">Historique des Teasers effacé</string>
     <string name="users_title">Utilisateurs</string>
+    <string name="version_current">Version installée</string>
+    <string name="version_dev">Version de développement</string>
+    <string name="version_update">%1$s disponible</string>
+    <string name="version_update_hint">Tipsarr %1$s est sortie : voir les notes de version</string>
     <string name="watchlist_empty">Rien ici pour l’instant. Ouvre un film ou une série et appuie sur « Ma liste ».</string>
     <string name="watchlist_hint">Survole une affiche et appuie sur ✕ pour la retirer de la liste.</string>
     <string name="watchlist_title">Ma liste</string>

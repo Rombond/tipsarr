@@ -2705,12 +2705,16 @@ components:
           type: boolean
         features:
           $ref: "#/components/schemas/StatusFeatures"
+        latestVersion:
+          description: Newest release tag published on GitHub (checked every 6 hours); empty while unknown or in the demo
+          type: string
         minAppVersion:
           type: string
         version:
           type: string
       required:
         - version
+        - latestVersion
         - db
         - dryRun
         - demo

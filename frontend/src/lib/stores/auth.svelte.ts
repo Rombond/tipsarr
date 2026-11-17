@@ -3,6 +3,16 @@ import { api, unwrap, type User } from '$lib/api/client';
 import { i18n } from '$lib/i18n/index.svelte';
 import { P, has } from '$lib/permissions';
 
+/** true when tag a (v1.2.3) is a later release than b; false if either is not a version. */
+export function isNewer(a: string, b: string): boolean {
+	const parse = (v: string) => /^v?(\d+)\.(\d+)\.(\d+)$/.exec(v.trim())?.slice(1).map(Number);
+	const x = parse(a);
+	const y = parse(b);
+	if (!x || !y) return false;
+	for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i];
+	return false;
+}
+
 class AuthState {
 	user: User | null = $state(null);
 	status: 'unknown' | 'checking' | 'authenticated' | 'unauthenticated' = $state('unknown');
@@ -11,6 +21,9 @@ class AuthState {
 	dryRun = $state(false);
 	/** a throwaway public demo sandbox: one-click sign-in, banner */
 	demo = $state(false);
+	/** the server release ("dev" for a local build) and the newest one on GitHub ("" while unknown) */
+	version = $state('');
+	latestVersion = $state('');
 	/** bumped when a picture changes so browsers refetch it */
 	avatarV = $state(0);
 	/** the setup call needs the token from the server log (opt-in on the server) */
@@ -62,6 +75,11 @@ class AuthState {
 		return this.canManageUsers || this.canManageSettings;
 	}
 
+	/** a newer release than the running one is published (never for a dev build) */
+	get updateAvailable() {
+		return isNewer(this.latestVersion, this.version);
+	}
+
 	get username() {
 		return this.user?.name ?? null;
 	}
@@ -78,6 +96,8 @@ class AuthState {
 			this.setupTokenRequired = setup.tokenRequired;
 			this.dryRun = st.dryRun;
 			this.demo = st.demo;
+			this.version = st.version;
+			this.latestVersion = st.latestVersion;
 			i18n.setAppDefault(st.defaultLanguage);
 		} catch {
 			this.configured = null;
