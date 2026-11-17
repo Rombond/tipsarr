@@ -13,6 +13,7 @@ import (
 // The IMDb / Metacritic / Rotten Tomatoes scores come from the default Radarr; a score Radarr does
 // not have is left out, and without Radarr the answer is simply empty.
 func TestMovieRatingsFromRadarr(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 
@@ -38,6 +39,7 @@ func TestMovieRatingsFromRadarr(t *testing.T) {
 
 // Posters ask for many movies at once; the answer is keyed by TMDB id.
 func TestRatingsOfSeveralMovies(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	addInstance(t, e, admin, "radarr", newFakeArr(t, "radarr"))
@@ -52,6 +54,7 @@ func TestRatingsOfSeveralMovies(t *testing.T) {
 
 // Each person picks which score they see on posters; anything else is refused.
 func TestRatingSourcePreference(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, _, bob := setupUsers(t, e)
 	resp, body := call(t, e.app, "PATCH", "/api/v1/me", `{"ratingSource":"imdb"}`, bob)
@@ -74,6 +77,7 @@ func TestRatingSourcePreference(t *testing.T) {
 
 // Radarr first; when it has no Rotten Tomatoes score (or for shows) Rotten Tomatoes' own search is asked.
 func TestRottenTomatoesFallback(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	addInstance(t, e, admin, "radarr", newFakeArr(t, "radarr")) // its lookup has no Rotten Tomatoes score
@@ -119,6 +123,7 @@ func TestRottenTomatoesFallback(t *testing.T) {
 
 // Radarr's own Rotten Tomatoes score wins over the search.
 func TestRadarrRottenTomatoesWins(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	arr := newFakeArr(t, "radarr")

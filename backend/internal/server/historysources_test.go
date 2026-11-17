@@ -9,6 +9,7 @@ import (
 
 // TestHistorySources: an admin lets bob (no history) use alice's history for his recommendations.
 func TestHistorySources(t *testing.T) {
+	// not parallel: its suggestions rows came back empty under heavy parallel load (-race -cpu 2)
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	ctx := context.Background()

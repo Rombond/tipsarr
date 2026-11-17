@@ -66,6 +66,7 @@ func regular(d seasonsDetail) int {
 
 // Sonarr only knows Bleach from its lookup: 17 TVDB seasons of unknown size, nothing to list yet.
 func TestBleachSeasonsLookupOnly(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	sonarr := newFakeBleachSonarr(t)
@@ -93,6 +94,7 @@ func TestBleachSeasonsLookupOnly(t *testing.T) {
 
 // Sonarr tracks Bleach: its S17 is TMDB's S2, other arcs get Sonarr's episodes.
 func TestBleachSeasonsTracked(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	sonarr := newFakeBleachSonarr(t)
@@ -126,6 +128,7 @@ func TestBleachSeasonsTracked(t *testing.T) {
 
 // Sonarr down: TMDB seasons quickly, unless an earlier answer is cached.
 func TestBleachSeasonsSonarrDown(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	sonarr := newFakeBleachSonarr(t)
@@ -165,6 +168,7 @@ func bleachRequest(t *testing.T, e *env, id string) (*store.Request, []int) {
 
 // Asking for S17 sends Sonarr's S17, never S2 (the TMDB number).
 func TestBleachRequestLive(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, false)
 	_, admin, bob := setupUsers(t, e)
 	sonarr := newFakeBleachSonarr(t)
@@ -199,6 +203,7 @@ func TestBleachRequestLive(t *testing.T) {
 
 // Old TMDB-numbered requests: one season cannot be translated, all of them become every Sonarr season.
 func TestBleachLegacyTMDBRequests(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, false)
 	_, admin, bob := setupUsers(t, e)
 	sonarr := newFakeBleachSonarr(t)
@@ -244,6 +249,7 @@ func TestBleachLegacyTMDBRequests(t *testing.T) {
 
 // Dry-run: a request for a series Sonarr has is approved without any write.
 func TestBleachRequestDryRun(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, _ := setupUsers(t, e)
 	sonarr := newFakeBleachSonarr(t)
@@ -260,6 +266,7 @@ func TestBleachRequestDryRun(t *testing.T) {
 
 // Imported requests carry Sonarr's own numbers.
 func TestBleachImportIsTVDB(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, _ := setupUsers(t, e)
 	sonarr := newFakeBleachSonarr(t)

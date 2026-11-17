@@ -202,6 +202,7 @@ func decodeReq(t *testing.T, body string) reqView {
 }
 
 func TestServarrAdmin(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	arr := newFakeArr(t, "radarr")
@@ -228,6 +229,7 @@ func TestServarrAdmin(t *testing.T) {
 }
 
 func TestRequestFlowDryRun(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	radarr := newFakeArr(t, "radarr")
@@ -323,6 +325,7 @@ func TestRequestFlowDryRun(t *testing.T) {
 }
 
 func TestRequestFlowLive(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, false)
 	_, admin, bob := setupUsers(t, e)
 	radarr, sonarr := newFakeArr(t, "radarr"), newFakeArr(t, "sonarr")
@@ -440,6 +443,7 @@ func TestRequestFlowLive(t *testing.T) {
 }
 
 func TestWebhookNotifications(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 
@@ -511,6 +515,7 @@ func TestWebhookNotifications(t *testing.T) {
 }
 
 func TestEventStream(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, _, bob := setupUsers(t, e)
 
@@ -555,6 +560,7 @@ func TestEventStream(t *testing.T) {
 }
 
 func TestRequestOptionsAndOverrides(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, false)
 	_, admin, bob := setupUsers(t, e)
 	radarr := newFakeArr(t, "radarr")
@@ -614,6 +620,7 @@ func TestRequestOptionsAndOverrides(t *testing.T) {
 }
 
 func TestUserProfile(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	_, body := call(t, e.app, "GET", "/api/v1/me", "", bob)
@@ -652,6 +659,7 @@ func TestUserProfile(t *testing.T) {
 }
 
 func TestIssues(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	hook := make(chan string, 4)
@@ -730,6 +738,7 @@ func TestIssues(t *testing.T) {
 }
 
 func TestImportFromServarr(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, _ := setupUsers(t, e)
 	radarr := newFakeArr(t, "radarr")
@@ -763,6 +772,7 @@ func TestImportFromServarr(t *testing.T) {
 
 // A profile without a saved language follows the language the app sends, in memory only.
 func TestLanguageHint(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, _, bob := setupUsers(t, e)
 	get := func(path, lang string) string {
@@ -797,6 +807,7 @@ func TestLanguageHint(t *testing.T) {
 }
 
 func TestDefaultLanguage(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	if _, b := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(b, `"defaultLanguage":""`) {
@@ -866,6 +877,7 @@ func TestUnwatchedRequests(t *testing.T) {
 
 // A show Sonarr already monitors cannot be requested again: the seasons say so, and the server refuses them.
 func TestSonarrMonitoringBlocksRequests(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	sonarr := newFakeArr(t, "sonarr")
@@ -900,6 +912,7 @@ func TestSonarrMonitoringBlocksRequests(t *testing.T) {
 
 // A movie Radarr monitors without a file cannot be requested again.
 func TestRadarrMonitoringBlocksRequests(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	radarr := newFakeArr(t, "radarr")
@@ -917,6 +930,7 @@ func TestRadarrMonitoringBlocksRequests(t *testing.T) {
 }
 
 func TestIssueServarrActions(t *testing.T) {
+	t.Parallel()
 	for _, dry := range []bool{true, false} {
 		e := newEnv(t, dry)
 		_, admin, bob := setupUsers(t, e)

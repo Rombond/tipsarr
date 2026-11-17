@@ -11,6 +11,7 @@ import (
 )
 
 func TestWebhookTemplatesAPI(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 

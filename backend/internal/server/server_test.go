@@ -396,10 +396,10 @@ func newEnv(t *testing.T, dryRun bool) *env {
 
 func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	t.Helper()
-	return newEnvOpts(t, dryRun, setupToken, false)
+	return newEnvOpts(t, dryRun, setupToken, false, false)
 }
 
-func newEnvOpts(t *testing.T, dryRun bool, setupToken string, demoMode bool) *env {
+func newEnvOpts(t *testing.T, dryRun bool, setupToken string, demoMode, secureCookies bool) *env {
 	t.Helper()
 	tm, im := fakeTMDB(t), fakeImages(t)
 	st := storetest.Open(t)
@@ -446,7 +446,7 @@ func newEnvOpts(t *testing.T, dryRun bool, setupToken string, demoMode bool) *en
 	issueSvc.SetArr(reqs)
 	authSvc.SetRecheckEvery(0) // tests: ask the fake Jellyfin about the account on every request
 	h, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issueSvc, Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: testLimiter(st), SetupToken: setupToken, SecureCookies: envSecureCookies, Hub: hub, Notify: notifier, Push: pusher,
+		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issueSvc, Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: testLimiter(st), SetupToken: setupToken, SecureCookies: secureCookies, Hub: hub, Notify: notifier, Push: pusher,
 		DryRun: dryRun, Demo: demoMode, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)
@@ -490,6 +490,7 @@ func sessionCookie(resp *http.Response) *http.Cookie {
 }
 
 func TestSetupLoginFlow(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	app := newApp(t)
 
@@ -550,6 +551,7 @@ func TestSetupLoginFlow(t *testing.T) {
 }
 
 func TestHealthAndOpenAPI(t *testing.T) {
+	t.Parallel()
 	app := newApp(t)
 	if resp, body := call(t, app, "GET", "/api/v1/health", ""); resp.StatusCode != 200 || !strings.Contains(body, `"ok":true`) {
 		t.Fatalf("health = %d %s", resp.StatusCode, body)
@@ -662,6 +664,7 @@ func TestMediaEndpoints(t *testing.T) {
 }
 
 func TestImageProxy(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	app := newApp(t)
 	bob := loginAs(t, app, jf.URL, "bob", "hunter2")
@@ -697,6 +700,7 @@ func waitFor(t *testing.T, what string, cond func() bool) {
 }
 
 func TestLibrarySyncAndAvailability(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	app, st, _ := newAppFull(t)
 	admin := loginAs(t, app, jf.URL, "alice", "secret")
@@ -786,6 +790,7 @@ func TestLibrarySyncAndAvailability(t *testing.T) {
 }
 
 func TestHistorySyncAndWebhook(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	app, st, _ := newAppFull(t)
 	admin := loginAs(t, app, jf.URL, "alice", "secret")

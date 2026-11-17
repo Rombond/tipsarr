@@ -140,6 +140,7 @@ func TestBoxOffice(t *testing.T) {
 }
 
 func TestWeekKey(t *testing.T) {
+	t.Parallel()
 	cases := map[string]string{
 		"2026-10-06": "2026W40", // Tuesday -> Sunday Oct 4
 		"2026-10-04": "2026W40", // Sunday itself
@@ -159,6 +160,7 @@ func TestWeekKey(t *testing.T) {
 }
 
 func TestGenreRootFolder(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, false)
 	_, admin, _ := setupUsers(t, e)
 	radarr := newFakeArr(t, "radarr")
@@ -204,6 +206,7 @@ func TestGenreRootFolder(t *testing.T) {
 func parseDay(s string) (time.Time, error) { return time.Parse("2006-01-02", s) }
 
 func TestBoxOfficeAlias(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	call(t, e.app, "POST", "/api/v1/admin/sync/boxoffice-refresh", "", admin)
@@ -260,6 +263,7 @@ func TestBoxOfficeAlias(t *testing.T) {
 // Older charts are stored once and never re-read: titles that had no TMDB match then (key missing,
 // TMDB hiccup) must be matched later, or those weeks keep their grey cards for good.
 func TestBoxOfficeRematchesOlderCharts(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	refresh := func() {
