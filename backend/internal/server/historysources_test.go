@@ -9,6 +9,7 @@ import (
 
 // TestHistorySources: an admin lets bob (no history) use alice's history for his recommendations.
 func TestHistorySources(t *testing.T) {
+	// not parallel: flaky (empty suggestion rows), seen under -race -cpu 2 and once in CI; cause not found yet
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	ctx := context.Background()

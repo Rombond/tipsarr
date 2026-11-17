@@ -23,6 +23,7 @@ type libResp struct {
 }
 
 func TestLibraryBrowse(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	app := newApp(t)
 	admin := loginAs(t, app, jf.URL, "alice", "secret")

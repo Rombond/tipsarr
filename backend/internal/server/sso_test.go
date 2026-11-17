@@ -129,6 +129,7 @@ func ssoLogin(t *testing.T, e *env, idp *fakeIdP, username string, groups []stri
 }
 
 func TestSingleSignOn(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	jf := fakeJellyfin(t)
 	admin := loginAs(t, e.app, jf.URL, "alice", "secret")

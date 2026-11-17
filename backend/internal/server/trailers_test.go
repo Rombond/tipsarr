@@ -174,6 +174,7 @@ func enableFiles(t *testing.T, e *env, admin *http.Cookie, f *fakeResolver) {
 }
 
 func TestTrailerFilesSettings(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	f := newFakeResolver(t, e.files.Dir(), true)
@@ -214,6 +215,7 @@ func TestTrailerFilesSettings(t *testing.T) {
 }
 
 func TestTrailerFilesOffMeansNoResolverCalls(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	f := newFakeResolver(t, e.files.Dir(), true)
@@ -239,6 +241,7 @@ func TestTrailerFilesOffMeansNoResolverCalls(t *testing.T) {
 }
 
 func TestStatusFlagFollowsResolverHealth(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, _ := setupUsers(t, e)
 	f := newFakeResolver(t, e.files.Dir(), true)
@@ -264,6 +267,7 @@ func TestStatusFlagFollowsResolverHealth(t *testing.T) {
 }
 
 func TestTrailerFilesAdmin(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	f := newFakeResolver(t, e.files.Dir(), true)
@@ -317,6 +321,7 @@ func TestTrailerFilesAdmin(t *testing.T) {
 }
 
 func TestTrailerFileEnsureAndSync(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, _ := setupUsers(t, e)
 	f := newFakeResolver(t, e.files.Dir(), false)
@@ -434,6 +439,7 @@ func rangeGet(t *testing.T, e *env, path, rng string, c *http.Cookie) (*http.Res
 }
 
 func TestTeaserVideoEndpoint(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	f := newFakeResolver(t, e.files.Dir(), true)
@@ -497,6 +503,7 @@ func TestTeaserVideoEndpoint(t *testing.T) {
 }
 
 func TestYtdlpUpdateJob(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, _ := setupUsers(t, e)
 	f := newFakeResolver(t, filepath.Join(t.TempDir(), "trailers"), true)

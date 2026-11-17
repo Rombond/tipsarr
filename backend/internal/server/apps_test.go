@@ -61,6 +61,7 @@ func appLogin(t *testing.T, base, user, pass, device string) string {
 }
 
 func TestBearerAndDeviceSessions(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	e := newEnv(t, true)
 	loginAs(t, e.app, jf.URL, "alice", "secret") // runs setup
@@ -157,6 +158,7 @@ func TestBearerAndDeviceSessions(t *testing.T) {
 }
 
 func TestSessionSlidingRenewal(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	e := newEnv(t, true)
 	loginAs(t, e.app, jf.URL, "alice", "secret")
@@ -202,6 +204,7 @@ func TestSessionSlidingRenewal(t *testing.T) {
 }
 
 func TestWebCookieRenewedWhenUsed(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	e := newEnv(t, true)
 	web := loginAs(t, e.app, jf.URL, "alice", "secret")
@@ -218,6 +221,7 @@ func TestWebCookieRenewedWhenUsed(t *testing.T) {
 // TestAppContract signs in the way an app does and walks the endpoints the v1 screens use, so a
 // change that breaks bearer auth or one of those responses is caught here before an app is.
 func TestAppContract(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	e := newEnv(t, true)
 	admin := loginAs(t, e.app, jf.URL, "alice", "secret")
@@ -277,6 +281,7 @@ func TestAppContract(t *testing.T) {
 // TestSpecEveryProtectedOperationAcceptsBearer keeps the generated mobile spec honest: an operation
 // that needs a login must list the bearer scheme next to the cookie one.
 func TestSpecEveryProtectedOperationAcceptsBearer(t *testing.T) {
+	t.Parallel()
 	_, a := server.New(api.Deps{})
 	n := 0
 	for path, item := range a.OpenAPI().Paths {

@@ -21,6 +21,7 @@ func (r *refreshCounter) QueueLibrary() { r.n.Add(1) }
 // The "now available" webhook (and push) must not go out before the library shows the title, but must
 // never be lost: after the hold it goes out anyway, and each alert goes out once.
 func TestAvailableAlertWaitsForTheLibrary(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, false)
 	_, admin, bob := setupUsers(t, e)
 	radarr, sonarr := newFakeArr(t, "radarr"), newFakeArr(t, "sonarr")
@@ -103,6 +104,7 @@ func TestAvailableAlertWaitsForTheLibrary(t *testing.T) {
 // A season of a multi-season request is announced on its own, and the final alert is skipped when
 // every season already was.
 func TestSeasonAlerts(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, false)
 	_, admin, _ := setupUsers(t, e)
 	sonarr := newFakeArr(t, "sonarr")

@@ -80,6 +80,7 @@ const (
 )
 
 func TestPushRelayEndToEnd(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, false)
 	jfURL, admin, bobCookie := setupUsers(t, e)
 	base := e.app.URL
@@ -226,6 +227,7 @@ func TestPushRelayEndToEnd(t *testing.T) {
 }
 
 func TestPushOpenRegistration(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	var mu sync.Mutex
