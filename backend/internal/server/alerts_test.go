@@ -186,3 +186,62 @@ func TestPendingRequestClosedWhenInLibrary(t *testing.T) {
 		t.Fatalf("alert sent %d times", got)
 	}
 }
+
+// Show requests close only when the library holds every episode of every requested season, and a
+// request sent to Sonarr is left to the Sonarr poll (issue #44).
+func TestShowRequestClosedOnlyWhenSeasonsComplete(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	setup := func(t *testing.T) (*env, *http.Cookie, *http.Cookie, func(int), func(string) string) {
+		e := newEnv(t, false)
+		_, admin, bob := setupUsers(t, e)
+		addInstance(t, e, admin, "sonarr", newFakeArr(t, "sonarr"))
+		library := func(episodes int) {
+			t.Helper()
+			if err := e.st.ReplaceLibrary(ctx, []store.LibraryItem{{MediaType: "tv", TMDBID: 2, JellyfinID: "j2", Title: "Show Two"}},
+				[]store.LibrarySeason{{TMDBID: 2, SeasonNumber: 1, EpisodeCount: episodes}, {TMDBID: 2, SeasonNumber: 2, EpisodeCount: episodes}}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		status := func(id string) string {
+			r, err := e.st.GetRequest(ctx, id)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return r.Status
+		}
+		return e, admin, bob, library, status
+	}
+
+	t.Run("in flight", func(t *testing.T) {
+		e, admin, _, library, status := setup(t)
+		_, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"tv","tmdbId":2,"seasons":[2]}`, admin)
+		sent := decodeReq(t, body)
+		if r, _ := e.st.GetRequest(ctx, sent.ID); r.Status != store.StatusApproved || r.SentAt == 0 {
+			t.Fatalf("admin request = %+v", r)
+		}
+		library(1) // Sonarr imported E01 only
+		e.reqs.Poll(ctx)
+		library(10)
+		e.reqs.Poll(ctx)
+		if s := status(sent.ID); s != store.StatusApproved {
+			t.Fatalf("in-flight request closed by the library instead of Sonarr: %s", s)
+		}
+	})
+
+	t.Run("pending", func(t *testing.T) {
+		e, _, bob, library, status := setup(t)
+		_, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"tv","tmdbId":2,"seasons":[1]}`, bob)
+		pending := decodeReq(t, body)
+		library(1)
+		e.reqs.Poll(ctx)
+		if s := status(pending.ID); s != store.StatusPending {
+			t.Fatalf("pending request closed on a partial season: %s", s)
+		}
+		library(10)
+		e.reqs.Poll(ctx)
+		if s := status(pending.ID); s != store.StatusAvailable {
+			t.Fatalf("pending request not closed with complete seasons: %s", s)
+		}
+	})
+}

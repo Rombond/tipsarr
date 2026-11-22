@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/Rombond/tipsarr/backend/internal/clients/servarr"
+	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
@@ -160,45 +161,107 @@ func (s *Service) markAvailable(ctx context.Context, r *store.Request) error {
 	if err := s.store.UpdateRequest(ctx, r); err != nil {
 		return err
 	}
-	s.record(ctx, r.ID, "available", "", "")
-	s.changed(ctx, r)
-	s.hub.Publish("media.available", r.RequestedBy, map[string]any{"type": r.MediaType, "tmdbId": r.TMDBID}, false)
+	s.announceAvailable(ctx, r)
 	return nil
 }
 
-// CloseFulfilled marks available every pending or approved request whose title the synced library
-// already holds, e.g. because it was added outside Tipsarr. The requester gets the usual "now
-// available" alert (SendDueAlerts sends it at once, the library has the title). Only reads the
-// local library, never writes to Radarr/Sonarr.
+func (s *Service) announceAvailable(ctx context.Context, r *store.Request) {
+	s.record(ctx, r.ID, "available", "", "")
+	s.changed(ctx, r)
+	s.hub.Publish("media.available", r.RequestedBy, map[string]any{"type": r.MediaType, "tmdbId": r.TMDBID}, false)
+}
+
+// CloseFulfilled marks available every pending or approved-but-unsent request whose title the synced
+// library already holds completely, e.g. because it was added outside Tipsarr. Requests sent to
+// Radarr/Sonarr are left to pollOne. The requester gets the usual "now available" alert
+// (SendDueAlerts sends it at once, the library has the title). It only reads, never writes to
+// Radarr/Sonarr, and runs only when the library snapshot changed.
 func (s *Service) CloseFulfilled(ctx context.Context) error {
-	open, err := s.store.OpenRequests(ctx)
+	gen := s.store.LibraryGeneration()
+	s.mu.Lock()
+	seen := s.libGenSeen
+	s.mu.Unlock()
+	if seen == gen {
+		return nil
+	}
+	open, err := s.store.UnsentOpenRequests(ctx)
 	if err != nil {
 		return err
 	}
-	var tv []string
+	var movieIDs, showIDs []int
+	var tvReqs []string
 	for _, r := range open {
-		if r.MediaType == "tv" {
-			tv = append(tv, r.ID)
+		if r.MediaType == "movie" {
+			movieIDs = append(movieIDs, int(r.TMDBID))
+		} else {
+			showIDs = append(showIDs, int(r.TMDBID))
+			tvReqs = append(tvReqs, r.ID)
 		}
 	}
-	seasons, err := s.store.RequestSeasons(ctx, tv)
+	movies, err := s.store.LibraryIDs(ctx, "movie", movieIDs)
+	if err != nil {
+		return err
+	}
+	shows, err := s.store.LibrarySeasonsOf(ctx, showIDs)
+	if err != nil {
+		return err
+	}
+	requested, err := s.store.RequestSeasons(ctx, tvReqs)
 	if err != nil {
 		return err
 	}
 	for i := range open {
 		r := &open[i]
-		// a show request without stored seasons cannot be checked season by season: leave it to Sonarr
-		if r.MediaType == "tv" && len(seasons[r.ID]) == 0 {
+		if r.MediaType == "movie" {
+			if !movies[int(r.TMDBID)] {
+				continue
+			}
+		} else if !s.showComplete(ctx, r, requested[r.ID], shows[int(r.TMDBID)]) {
 			continue
 		}
-		if !s.inLibrary(ctx, r) {
-			continue
-		}
-		if err := s.markAvailable(ctx, r); err != nil {
+		ok, err := s.store.MarkRequestAvailable(ctx, r.ID, s.now().Unix())
+		if err != nil {
 			return err
 		}
+		if !ok {
+			continue // approved, declined or deleted meanwhile
+		}
+		r.Status, r.AvailableAt = store.StatusAvailable, s.now().Unix()
+		s.clearProgress(r.ID)
+		s.announceAvailable(ctx, r)
 	}
+	s.mu.Lock()
+	s.libGenSeen = gen
+	s.mu.Unlock()
 	return nil
+}
+
+// showComplete reports whether the library holds every episode of every requested season. The
+// library counts seasons in TVDB numbering, so requests numbered otherwise are skipped. Same rule as
+// Create: a season is complete when the library has all its episodes (media.Season.Complete).
+func (s *Service) showComplete(ctx context.Context, r *store.Request, want []int, have map[int]int) bool {
+	if len(want) == 0 || r.SeasonNumbering != media.NumberingTVDB || s.media == nil {
+		return false
+	}
+	for _, n := range want {
+		if have[n] == 0 {
+			return false // cheap check first: no media.Detail call unless the show looks present
+		}
+	}
+	d, err := s.media.Detail(ctx, media.Opts{Seasons: true}, "tv", int(r.TMDBID))
+	if err != nil || d.SeasonNumbering != media.NumberingTVDB {
+		return false
+	}
+	complete := map[int]bool{}
+	for _, sn := range d.Seasons {
+		complete[sn.Number] = sn.Complete()
+	}
+	for _, n := range want {
+		if !complete[n] {
+			return false
+		}
+	}
+	return true
 }
 
 // combine adds up the queue records of one title: sizes sum, the ETA is the longest.

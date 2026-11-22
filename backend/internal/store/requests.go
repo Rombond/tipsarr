@@ -256,10 +256,25 @@ func (s *Store) InFlightRequests(ctx context.Context) ([]Request, error) {
 	return rows, s.DB.NewSelect().Model(&rows).Where("status = ?", StatusApproved).Where("sent_at > 0").Scan(ctx)
 }
 
-// OpenRequests returns the requests still waiting to be fulfilled: pending, or approved (sent or not).
-func (s *Store) OpenRequests(ctx context.Context) ([]Request, error) {
+// UnsentOpenRequests returns the requests waiting to be fulfilled that Radarr/Sonarr does not track for
+// Tipsarr: pending, or approved but never sent (dry-run).
+func (s *Store) UnsentOpenRequests(ctx context.Context) ([]Request, error) {
 	var rows []Request
-	return rows, s.DB.NewSelect().Model(&rows).Where("status IN (?)", bun.In([]string{StatusPending, StatusApproved})).Scan(ctx)
+	return rows, s.DB.NewSelect().Model(&rows).
+		Where("status = ? OR (status = ? AND sent_at = 0)", StatusPending, StatusApproved).Scan(ctx)
+}
+
+// MarkRequestAvailable turns a request available only if it is still pending or approved, so a
+// concurrent approve, decline or delete is never overwritten. It reports whether the row changed.
+func (s *Store) MarkRequestAvailable(ctx context.Context, id string, at int64) (bool, error) {
+	res, err := s.DB.NewUpdate().Model((*Request)(nil)).
+		Set("status = ?", StatusAvailable).Set("available_at = ?", at).Set("updated_at = ?", time.Now().Unix()).
+		Where("id = ?", id).Where("status IN (?)", bun.In([]string{StatusPending, StatusApproved})).Exec(ctx)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	return n == 1, err
 }
 
 // UserNames maps user ids to display names.

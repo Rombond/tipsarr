@@ -27,6 +27,7 @@ func chunk[T any](rows []T, fn func([]T) error) error {
 
 // ReplaceLibrary atomically swaps the stored library snapshot.
 func (s *Store) ReplaceLibrary(ctx context.Context, items []LibraryItem, seasons []LibrarySeason) error {
+	defer s.libGen.Add(1)
 	return s.DB.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		if _, err := tx.NewDelete().Model((*LibraryItem)(nil)).Where("1 = 1").Exec(ctx); err != nil {
 			return err
@@ -73,6 +74,29 @@ func (s *Store) LibrarySeasons(ctx context.Context, tmdbID int) (map[int]int, er
 	out := make(map[int]int, len(rows))
 	for _, r := range rows {
 		out[r.SeasonNumber] = r.EpisodeCount
+	}
+	return out, nil
+}
+
+// LibraryGeneration changes every time the library snapshot is replaced in this process.
+func (s *Store) LibraryGeneration() int64 { return s.libGen.Load() }
+
+// LibrarySeasonsOf is LibrarySeasons for several shows at once: show tmdb id -> season -> episodes.
+func (s *Store) LibrarySeasonsOf(ctx context.Context, tmdbIDs []int) (map[int]map[int]int, error) {
+	out := map[int]map[int]int{}
+	if len(tmdbIDs) == 0 {
+		return out, nil
+	}
+	var rows []LibrarySeason
+	if err := s.DB.NewSelect().Model(&rows).Where("tmdb_id IN (?)", bun.In(tmdbIDs)).Scan(ctx); err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		id := int(r.TMDBID)
+		if out[id] == nil {
+			out[id] = map[int]int{}
+		}
+		out[id][r.SeasonNumber] = r.EpisodeCount
 	}
 	return out, nil
 }

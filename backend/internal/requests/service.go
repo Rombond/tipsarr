@@ -55,13 +55,14 @@ type Service struct {
 	titleHold  time.Duration
 	seasonHold time.Duration
 
-	mu       sync.Mutex
-	progress map[string]Progress
-	seasons  map[string][]SeasonProgress // shows: per-season completion while in flight
+	mu         sync.Mutex
+	libGenSeen int64 // library generation CloseFulfilled last checked; -1 = never
+	progress   map[string]Progress
+	seasons    map[string][]SeasonProgress // shows: per-season completion while in flight
 }
 
 func New(s *store.Store, m *media.Service, h *events.Hub, n *notify.Service, dryRun bool) *Service {
-	svc := &Service{store: s, media: m, hub: h, notify: n, dryRun: dryRun, progress: map[string]Progress{}, seasons: map[string][]SeasonProgress{}, now: time.Now, titleHold: titleHold, seasonHold: seasonHold}
+	svc := &Service{store: s, media: m, hub: h, notify: n, dryRun: dryRun, progress: map[string]Progress{}, seasons: map[string][]SeasonProgress{}, now: time.Now, titleHold: titleHold, seasonHold: seasonHold, libGenSeen: -1}
 	svc.newServarr = func(in *store.ServarrInstance) *servarr.Client {
 		return servarr.New(in.Kind, in.URL, in.APIKey, dryRun)
 	}
