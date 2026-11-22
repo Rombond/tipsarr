@@ -38,6 +38,7 @@ type fakeArr struct {
 	seriesJSON  atomic.Value // string: body of GET /series?tvdbId=... (the series Sonarr already tracks)
 	episodeJSON atomic.Value // string: body of GET /episode
 	movieByTMDB atomic.Value // string: body of GET /movie?tmdbId=...
+	beforeAdd   atomic.Value // func(): runs when Radarr receives an add, before it answers
 }
 
 func newFakeArr(t *testing.T, kind string) *fakeArr {
@@ -75,6 +76,9 @@ func newFakeArr(t *testing.T, kind string) *fakeArr {
 			out(`{"id":1}`)
 		case kind == "radarr" && r.Method == http.MethodPost && p == "/movie":
 			f.recordPost(r)
+			if fn, ok := f.beforeAdd.Load().(func()); ok {
+				fn()
+			}
 			if f.failPost.Load() {
 				w.WriteHeader(http.StatusInternalServerError)
 				out(`boom`)

@@ -147,3 +147,166 @@ func TestSeasonAlerts(t *testing.T) {
 		t.Fatal("season 2 was alerted although it is not complete")
 	}
 }
+
+// A pending request whose title shows up in the library anyway (added outside Tipsarr) turns available
+// on the next poll, and the requester gets the "now available" alert once (issue #44).
+func TestPendingRequestClosedWhenInLibrary(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t, false)
+	_, admin, bob := setupUsers(t, e)
+	addInstance(t, e, admin, "radarr", newFakeArr(t, "radarr"))
+	ctx := context.Background()
+
+	var n atomic.Int32
+	recv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { n.Add(1) }))
+	defer recv.Close()
+	call(t, e.app, "POST", "/api/v1/admin/webhooks", `{"name":"w","url":"`+recv.URL+`","events":["media.available"],"enabled":true}`, admin)
+
+	_, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5}`, bob)
+	movie := decodeReq(t, body)
+	if movie.Status != "pending" {
+		t.Fatalf("movie = %s", body)
+	}
+	e.reqs.Poll(ctx)
+	if _, b := call(t, e.app, "GET", "/api/v1/requests/"+movie.ID, "", bob); decodeReq(t, b).Status != "pending" {
+		t.Fatalf("closed before the library had it: %s", b)
+	}
+
+	if err := e.st.ReplaceLibrary(ctx, []store.LibraryItem{{MediaType: "movie", TMDBID: 5, JellyfinID: "j5", Title: "M"}}, nil); err != nil {
+		t.Fatal(err)
+	}
+	e.reqs.Poll(ctx)
+	if _, b := call(t, e.app, "GET", "/api/v1/requests/"+movie.ID, "", bob); decodeReq(t, b).Status != "available" {
+		t.Fatalf("not available after the library had it: %s", b)
+	}
+	waitFor(t, "available alert", func() bool { return n.Load() == 1 })
+	e.reqs.Poll(ctx)
+	time.Sleep(100 * time.Millisecond)
+	if got := n.Load(); got != 1 {
+		t.Fatalf("alert sent %d times", got)
+	}
+}
+
+// Show requests close only when the library holds every episode of every requested season, and a
+// request sent to Sonarr is left to the Sonarr poll (issue #44).
+func TestShowRequestClosedOnlyWhenSeasonsComplete(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	setup := func(t *testing.T) (*env, *http.Cookie, *http.Cookie, func(int), func(string) string) {
+		e := newEnv(t, false)
+		_, admin, bob := setupUsers(t, e)
+		addInstance(t, e, admin, "sonarr", newFakeArr(t, "sonarr"))
+		library := func(episodes int) {
+			t.Helper()
+			if err := e.st.ReplaceLibrary(ctx, []store.LibraryItem{{MediaType: "tv", TMDBID: 2, JellyfinID: "j2", Title: "Show Two"}},
+				[]store.LibrarySeason{{TMDBID: 2, SeasonNumber: 1, EpisodeCount: episodes}, {TMDBID: 2, SeasonNumber: 2, EpisodeCount: episodes}}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		status := func(id string) string {
+			r, err := e.st.GetRequest(ctx, id)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return r.Status
+		}
+		return e, admin, bob, library, status
+	}
+
+	t.Run("in flight", func(t *testing.T) {
+		e, admin, _, library, status := setup(t)
+		_, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"tv","tmdbId":2,"seasons":[2]}`, admin)
+		sent := decodeReq(t, body)
+		if r, _ := e.st.GetRequest(ctx, sent.ID); r.Status != store.StatusApproved || r.SentAt == 0 {
+			t.Fatalf("admin request = %+v", r)
+		}
+		library(1) // Sonarr imported E01 only
+		e.reqs.Poll(ctx)
+		library(10)
+		e.reqs.Poll(ctx)
+		if s := status(sent.ID); s != store.StatusApproved {
+			t.Fatalf("in-flight request closed by the library instead of Sonarr: %s", s)
+		}
+	})
+
+	t.Run("pending", func(t *testing.T) {
+		e, _, bob, library, status := setup(t)
+		_, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"tv","tmdbId":2,"seasons":[1]}`, bob)
+		pending := decodeReq(t, body)
+		library(1)
+		e.reqs.Poll(ctx)
+		if s := status(pending.ID); s != store.StatusPending {
+			t.Fatalf("pending request closed on a partial season: %s", s)
+		}
+		library(10)
+		e.reqs.Poll(ctx)
+		if s := status(pending.ID); s != store.StatusAvailable {
+			t.Fatalf("pending request not closed with complete seasons: %s", s)
+		}
+	})
+}
+
+// An approval that is still waiting for Radarr when the library closes the request does not overwrite
+// the close: the request stays available and the requester is told once (issue #44).
+func TestApproveLosesToLibraryClose(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t, false)
+	_, admin, bob := setupUsers(t, e)
+	arr := newFakeArr(t, "radarr")
+	addInstance(t, e, admin, "radarr", arr)
+	ctx := context.Background()
+
+	var n atomic.Int32
+	recv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { n.Add(1) }))
+	defer recv.Close()
+	call(t, e.app, "POST", "/api/v1/admin/webhooks", `{"name":"w","url":"`+recv.URL+`","events":["media.available"],"enabled":true}`, admin)
+
+	_, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5}`, bob)
+	req := decodeReq(t, body)
+	e.reqs.Poll(ctx) // the library generation is now seen
+	arr.beforeAdd.Store(func() {
+		if err := e.st.ReplaceLibrary(ctx, []store.LibraryItem{{MediaType: "movie", TMDBID: 5, JellyfinID: "j5", Title: "M"}}, nil); err != nil {
+			t.Error(err)
+		}
+		e.reqs.Poll(ctx)
+	})
+	if resp, b := call(t, e.app, "POST", "/api/v1/requests/"+req.ID+"/approve", `{}`, admin); resp.StatusCode != http.StatusConflict {
+		t.Fatalf("approve = %d %s", resp.StatusCode, b)
+	}
+	r, err := e.st.GetRequest(ctx, req.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Status != store.StatusAvailable || r.NotifiedAt == 0 {
+		t.Fatalf("request after the race = %+v", r)
+	}
+	waitFor(t, "available alert", func() bool { return n.Load() == 1 })
+	arr.hasFile.Store(true)
+	e.reqs.Poll(ctx)
+	time.Sleep(100 * time.Millisecond)
+	if got := n.Load(); got != 1 {
+		t.Fatalf("alert sent %d times", got)
+	}
+}
+
+// In dry-run an approved request is never sent, so the library closes it like a pending one.
+func TestDryRunApprovedClosedWhenInLibrary(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t, true)
+	_, admin, _ := setupUsers(t, e)
+	addInstance(t, e, admin, "radarr", newFakeArr(t, "radarr"))
+	ctx := context.Background()
+
+	_, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5}`, admin)
+	req := decodeReq(t, body)
+	if r, _ := e.st.GetRequest(ctx, req.ID); r.Status != store.StatusApproved || r.SentAt != 0 {
+		t.Fatalf("dry-run admin request = %+v", r)
+	}
+	if err := e.st.ReplaceLibrary(ctx, []store.LibraryItem{{MediaType: "movie", TMDBID: 5, JellyfinID: "j5", Title: "M"}}, nil); err != nil {
+		t.Fatal(err)
+	}
+	e.reqs.Poll(ctx)
+	if r, _ := e.st.GetRequest(ctx, req.ID); r.Status != store.StatusAvailable {
+		t.Fatalf("dry-run approved request not closed: %+v", r)
+	}
+}

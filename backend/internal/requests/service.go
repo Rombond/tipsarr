@@ -55,13 +55,14 @@ type Service struct {
 	titleHold  time.Duration
 	seasonHold time.Duration
 
-	mu       sync.Mutex
-	progress map[string]Progress
-	seasons  map[string][]SeasonProgress // shows: per-season completion while in flight
+	mu         sync.Mutex
+	libGenSeen int64 // library generation CloseFulfilled last checked; -1 = never
+	progress   map[string]Progress
+	seasons    map[string][]SeasonProgress // shows: per-season completion while in flight
 }
 
 func New(s *store.Store, m *media.Service, h *events.Hub, n *notify.Service, dryRun bool) *Service {
-	svc := &Service{store: s, media: m, hub: h, notify: n, dryRun: dryRun, progress: map[string]Progress{}, seasons: map[string][]SeasonProgress{}, now: time.Now, titleHold: titleHold, seasonHold: seasonHold}
+	svc := &Service{store: s, media: m, hub: h, notify: n, dryRun: dryRun, progress: map[string]Progress{}, seasons: map[string][]SeasonProgress{}, now: time.Now, titleHold: titleHold, seasonHold: seasonHold, libGenSeen: -1}
 	svc.newServarr = func(in *store.ServarrInstance) *servarr.Client {
 		return servarr.New(in.Kind, in.URL, in.APIKey, dryRun)
 	}
@@ -581,8 +582,17 @@ func (s *Service) approve(ctx context.Context, by *store.User, id string, ov *Ov
 	default:
 		r.Status, r.DryRun, r.SentAt, r.ServarrID = store.StatusApproved, 0, time.Now().Unix(), int64(servarrID)
 	}
-	if err := s.store.UpdateRequest(ctx, r); err != nil {
+	// Only over the state checked above: the library may have closed the request (CloseFulfilled) or
+	// someone decided it while Radarr/Sonarr answered.
+	ok, err := s.store.UpdateRequestIf(ctx, r, store.StatusPending, store.StatusFailed)
+	if err != nil {
 		return nil, err
+	}
+	if !ok {
+		if r.SentAt > 0 {
+			slog.Warn("request changed while it was sent to Radarr/Sonarr; it keeps its new state", "id", r.ID, "title", r.Title)
+		}
+		return nil, ErrBadState
 	}
 	if r.Status == store.StatusFailed {
 		s.record(ctx, r.ID, "failed", by.ID, r.Error)
@@ -680,8 +690,12 @@ func (s *Service) Decline(ctx context.Context, by *store.User, id, reason string
 		return nil, ErrBadState
 	}
 	r.Status, r.DecidedBy, r.DeclineReason = store.StatusDeclined, by.ID, truncate(reason, 500)
-	if err := s.store.UpdateRequest(ctx, r); err != nil {
+	ok, err := s.store.UpdateRequestIf(ctx, r, store.StatusPending, store.StatusFailed)
+	if err != nil {
 		return nil, err
+	}
+	if !ok {
+		return nil, ErrBadState // closed by the library or decided meanwhile
 	}
 	s.record(ctx, r.ID, "declined", by.ID, r.DeclineReason)
 	s.changed(ctx, r)
