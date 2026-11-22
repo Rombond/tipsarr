@@ -34,7 +34,8 @@ func main() {
 	w := NewWorker(cfg, st, execRunner{cfg: cfg}, time.Now)
 	st.SweepWork(10 * time.Minute)
 	go w.Run(ctx)
-	go housekeeping(ctx, cfg, st)
+	go w.versions.Refresh()
+	go housekeeping(ctx, cfg, st, w)
 
 	srv := &http.Server{Addr: cfg.Addr, Handler: NewServer(cfg, st, w).Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
@@ -51,7 +52,7 @@ func main() {
 }
 
 // housekeeping evicts old videos every 10 minutes and updates yt-dlp once a day (YouTube changes often).
-func housekeeping(ctx context.Context, cfg Config, st *Store) {
+func housekeeping(ctx context.Context, cfg Config, st *Store, w *Worker) {
 	evict := time.NewTicker(10 * time.Minute)
 	update := time.NewTicker(24 * time.Hour)
 	defer evict.Stop()
@@ -75,6 +76,7 @@ func housekeeping(ctx context.Context, cfg Config, st *Store) {
 			if err != nil {
 				slog.Warn("yt-dlp update failed", "err", oneLine(string(out)))
 			}
+			w.versions.Refresh()
 		}
 	}
 }

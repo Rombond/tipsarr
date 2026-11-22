@@ -793,6 +793,9 @@ components:
       properties:
         breaker:
           $ref: "#/components/schemas/Breaker"
+        breakerError:
+          description: The last failure that counted toward the breaker
+          type: string
         cacheBytes:
           format: int64
           type: integer
@@ -1496,7 +1499,7 @@ components:
       additionalProperties: false
       properties:
         available:
-          description: The resolver answered its health check
+          description: The resolver answered its health check and reports no problem (the Teasers tab only needs an answer)
           type: boolean
         configured:
           description: An address and a key are saved

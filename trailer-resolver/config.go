@@ -27,30 +27,33 @@ type Config struct {
 	AutoUpdate   bool
 	BreakerAfter int
 	BreakerFor   time.Duration
-	UnusedAfter  time.Duration
+	// BreakerWindow: the breaker opens when BreakerAfter different keys fail within this time
+	BreakerWindow time.Duration
+	UnusedAfter   time.Duration
 }
 
 func loadConfig() (Config, error) {
 	c := Config{
-		Addr:         env("RESOLVER_ADDR", ":8090"),
-		APIKey:       os.Getenv("RESOLVER_API_KEY"),
-		CacheDir:     env("RESOLVER_CACHE_DIR", "/cache"),
-		CacheLimit:   int64(envFloat("RESOLVER_CACHE_GB", 20) * (1 << 30)),
-		MaxHeight:    envInt("RESOLVER_MAX_HEIGHT", 720),
-		HourlyCap:    envInt("RESOLVER_HOURLY_CAP", 60),
-		PauseMin:     time.Duration(envInt("RESOLVER_PAUSE_MIN_SECONDS", 5)) * time.Second,
-		PauseMax:     time.Duration(envInt("RESOLVER_PAUSE_MAX_SECONDS", 15)) * time.Second,
-		Timeout:      time.Duration(envInt("RESOLVER_TIMEOUT_SECONDS", 120)) * time.Second,
-		Workers:      envInt("RESOLVER_WORKERS", 1),
-		YtDlp:        env("RESOLVER_YTDLP", "yt-dlp"),
-		FFmpeg:       env("RESOLVER_FFMPEG", "ffmpeg"),
-		FFprobe:      env("RESOLVER_FFPROBE", "ffprobe"),
-		Deno:         env("RESOLVER_DENO", "deno"),
-		AutoUpdate:   env("RESOLVER_AUTO_UPDATE", "false") == "true",
-		MaxDuration:  time.Duration(envInt("RESOLVER_MAX_SECONDS", 300)) * time.Second,
-		BreakerAfter: envInt("RESOLVER_BREAKER_AFTER", 5),
-		BreakerFor:   time.Duration(envInt("RESOLVER_BREAKER_HOURS", 6)) * time.Hour,
-		UnusedAfter:  time.Duration(envInt("RESOLVER_UNUSED_DAYS", 30)) * 24 * time.Hour,
+		Addr:          env("RESOLVER_ADDR", ":8090"),
+		APIKey:        os.Getenv("RESOLVER_API_KEY"),
+		CacheDir:      env("RESOLVER_CACHE_DIR", "/cache"),
+		CacheLimit:    int64(envFloat("RESOLVER_CACHE_GB", 20) * (1 << 30)),
+		MaxHeight:     envInt("RESOLVER_MAX_HEIGHT", 720),
+		HourlyCap:     envInt("RESOLVER_HOURLY_CAP", 60),
+		PauseMin:      time.Duration(envInt("RESOLVER_PAUSE_MIN_SECONDS", 5)) * time.Second,
+		PauseMax:      time.Duration(envInt("RESOLVER_PAUSE_MAX_SECONDS", 15)) * time.Second,
+		Timeout:       time.Duration(envInt("RESOLVER_TIMEOUT_SECONDS", 120)) * time.Second,
+		Workers:       envInt("RESOLVER_WORKERS", 1),
+		YtDlp:         env("RESOLVER_YTDLP", "yt-dlp"),
+		FFmpeg:        env("RESOLVER_FFMPEG", "ffmpeg"),
+		FFprobe:       env("RESOLVER_FFPROBE", "ffprobe"),
+		Deno:          env("RESOLVER_DENO", "deno"),
+		AutoUpdate:    env("RESOLVER_AUTO_UPDATE", "false") == "true",
+		MaxDuration:   time.Duration(envInt("RESOLVER_MAX_SECONDS", 300)) * time.Second,
+		BreakerAfter:  envInt("RESOLVER_BREAKER_AFTER", 5),
+		BreakerFor:    time.Duration(envInt("RESOLVER_BREAKER_HOURS", 6)) * time.Hour,
+		BreakerWindow: time.Duration(envInt("RESOLVER_BREAKER_WINDOW_MINUTES", 30)) * time.Minute,
+		UnusedAfter:   time.Duration(envInt("RESOLVER_UNUSED_DAYS", 30)) * 24 * time.Hour,
 	}
 	if c.APIKey == "" {
 		return c, errors.New("RESOLVER_API_KEY is required")
