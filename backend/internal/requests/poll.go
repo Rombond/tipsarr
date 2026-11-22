@@ -224,7 +224,7 @@ func (s *Service) CloseFulfilled(ctx context.Context) error {
 			return err
 		}
 		if !ok {
-			continue // approved, declined or deleted meanwhile
+			continue // sent, declined or deleted meanwhile
 		}
 		r.Status, r.AvailableAt = store.StatusAvailable, s.now().Unix()
 		s.clearProgress(r.ID)

@@ -582,8 +582,17 @@ func (s *Service) approve(ctx context.Context, by *store.User, id string, ov *Ov
 	default:
 		r.Status, r.DryRun, r.SentAt, r.ServarrID = store.StatusApproved, 0, time.Now().Unix(), int64(servarrID)
 	}
-	if err := s.store.UpdateRequest(ctx, r); err != nil {
+	// Only over the state checked above: the library may have closed the request (CloseFulfilled) or
+	// someone decided it while Radarr/Sonarr answered.
+	ok, err := s.store.UpdateRequestIf(ctx, r, store.StatusPending, store.StatusFailed)
+	if err != nil {
 		return nil, err
+	}
+	if !ok {
+		if r.SentAt > 0 {
+			slog.Warn("request changed while it was sent to Radarr/Sonarr; it keeps its new state", "id", r.ID, "title", r.Title)
+		}
+		return nil, ErrBadState
 	}
 	if r.Status == store.StatusFailed {
 		s.record(ctx, r.ID, "failed", by.ID, r.Error)
@@ -681,8 +690,12 @@ func (s *Service) Decline(ctx context.Context, by *store.User, id, reason string
 		return nil, ErrBadState
 	}
 	r.Status, r.DecidedBy, r.DeclineReason = store.StatusDeclined, by.ID, truncate(reason, 500)
-	if err := s.store.UpdateRequest(ctx, r); err != nil {
+	ok, err := s.store.UpdateRequestIf(ctx, r, store.StatusPending, store.StatusFailed)
+	if err != nil {
 		return nil, err
+	}
+	if !ok {
+		return nil, ErrBadState // closed by the library or decided meanwhile
 	}
 	s.record(ctx, r.ID, "declined", by.ID, r.DeclineReason)
 	s.changed(ctx, r)
