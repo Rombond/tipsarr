@@ -147,3 +147,42 @@ func TestSeasonAlerts(t *testing.T) {
 		t.Fatal("season 2 was alerted although it is not complete")
 	}
 }
+
+// A pending request whose title shows up in the library anyway (added outside Tipsarr) turns available
+// on the next poll, and the requester gets the "now available" alert once (issue #44).
+func TestPendingRequestClosedWhenInLibrary(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t, false)
+	_, admin, bob := setupUsers(t, e)
+	addInstance(t, e, admin, "radarr", newFakeArr(t, "radarr"))
+	ctx := context.Background()
+
+	var n atomic.Int32
+	recv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { n.Add(1) }))
+	defer recv.Close()
+	call(t, e.app, "POST", "/api/v1/admin/webhooks", `{"name":"w","url":"`+recv.URL+`","events":["media.available"],"enabled":true}`, admin)
+
+	_, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"movie","tmdbId":5}`, bob)
+	movie := decodeReq(t, body)
+	if movie.Status != "pending" {
+		t.Fatalf("movie = %s", body)
+	}
+	e.reqs.Poll(ctx)
+	if _, b := call(t, e.app, "GET", "/api/v1/requests/"+movie.ID, "", bob); decodeReq(t, b).Status != "pending" {
+		t.Fatalf("closed before the library had it: %s", b)
+	}
+
+	if err := e.st.ReplaceLibrary(ctx, []store.LibraryItem{{MediaType: "movie", TMDBID: 5, JellyfinID: "j5", Title: "M"}}, nil); err != nil {
+		t.Fatal(err)
+	}
+	e.reqs.Poll(ctx)
+	if _, b := call(t, e.app, "GET", "/api/v1/requests/"+movie.ID, "", bob); decodeReq(t, b).Status != "available" {
+		t.Fatalf("not available after the library had it: %s", b)
+	}
+	waitFor(t, "available alert", func() bool { return n.Load() == 1 })
+	e.reqs.Poll(ctx)
+	time.Sleep(100 * time.Millisecond)
+	if got := n.Load(); got != 1 {
+		t.Fatalf("alert sent %d times", got)
+	}
+}

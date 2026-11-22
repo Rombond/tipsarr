@@ -17,6 +17,9 @@ import (
 // is safe in dry-run mode (and in dry-run no request is ever "sent", so there is nothing to poll).
 // It returns the number of in-flight requests it looked at.
 func (s *Service) Poll(ctx context.Context) (int, error) {
+	if err := s.CloseFulfilled(ctx); err != nil {
+		slog.Warn("close fulfilled requests", "err", err)
+	}
 	if err := s.SendDueAlerts(ctx); err != nil {
 		slog.Warn("send due alerts", "err", err)
 	}
@@ -100,16 +103,9 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 	}
 
 	if done {
-		r.Status = store.StatusAvailable
-		r.AvailableAt = s.now().Unix()
-		s.clearProgress(r.ID)
-		if err := s.store.UpdateRequest(ctx, r); err != nil {
+		if err := s.markAvailable(ctx, r); err != nil {
 			return err
 		}
-		s.record(ctx, r.ID, "available", "", "")
-		s.changed(ctx, r)
-		s.hub.Publish("media.available", r.RequestedBy, map[string]any{"type": r.MediaType, "tmdbId": r.TMDBID}, false)
-		// The webhook and the push wait in SendDueAlerts until the library shows the title.
 		s.refreshLibrary()
 		return nil
 	}
@@ -151,6 +147,56 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 	}
 	if seasonsChanged && !(downloading && !had) {
 		s.changed(ctx, r) // clients refetch the per-season percentages
+	}
+	return nil
+}
+
+// markAvailable turns a request available. The webhook and the push wait in SendDueAlerts until the
+// library shows the title.
+func (s *Service) markAvailable(ctx context.Context, r *store.Request) error {
+	r.Status = store.StatusAvailable
+	r.AvailableAt = s.now().Unix()
+	s.clearProgress(r.ID)
+	if err := s.store.UpdateRequest(ctx, r); err != nil {
+		return err
+	}
+	s.record(ctx, r.ID, "available", "", "")
+	s.changed(ctx, r)
+	s.hub.Publish("media.available", r.RequestedBy, map[string]any{"type": r.MediaType, "tmdbId": r.TMDBID}, false)
+	return nil
+}
+
+// CloseFulfilled marks available every pending or approved request whose title the synced library
+// already holds, e.g. because it was added outside Tipsarr. The requester gets the usual "now
+// available" alert (SendDueAlerts sends it at once, the library has the title). Only reads the
+// local library, never writes to Radarr/Sonarr.
+func (s *Service) CloseFulfilled(ctx context.Context) error {
+	open, err := s.store.OpenRequests(ctx)
+	if err != nil {
+		return err
+	}
+	var tv []string
+	for _, r := range open {
+		if r.MediaType == "tv" {
+			tv = append(tv, r.ID)
+		}
+	}
+	seasons, err := s.store.RequestSeasons(ctx, tv)
+	if err != nil {
+		return err
+	}
+	for i := range open {
+		r := &open[i]
+		// a show request without stored seasons cannot be checked season by season: leave it to Sonarr
+		if r.MediaType == "tv" && len(seasons[r.ID]) == 0 {
+			continue
+		}
+		if !s.inLibrary(ctx, r) {
+			continue
+		}
+		if err := s.markAvailable(ctx, r); err != nil {
+			return err
+		}
 	}
 	return nil
 }

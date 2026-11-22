@@ -256,6 +256,12 @@ func (s *Store) InFlightRequests(ctx context.Context) ([]Request, error) {
 	return rows, s.DB.NewSelect().Model(&rows).Where("status = ?", StatusApproved).Where("sent_at > 0").Scan(ctx)
 }
 
+// OpenRequests returns the requests still waiting to be fulfilled: pending, or approved (sent or not).
+func (s *Store) OpenRequests(ctx context.Context) ([]Request, error) {
+	var rows []Request
+	return rows, s.DB.NewSelect().Model(&rows).Where("status IN (?)", bun.In([]string{StatusPending, StatusApproved})).Scan(ctx)
+}
+
 // UserNames maps user ids to display names.
 func (s *Store) UserNames(ctx context.Context, ids []string) (map[string]string, error) {
 	out := map[string]string{}
