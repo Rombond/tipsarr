@@ -2068,6 +2068,8 @@ export interface components {
         };
         Health: {
             breaker: components["schemas"]["Breaker"];
+            /** @description The last failure that counted toward the breaker */
+            breakerError?: string;
             /** Format: int64 */
             cacheBytes: number;
             /** Format: int64 */
@@ -2392,7 +2394,7 @@ export interface components {
             rootFolders: components["schemas"]["RootFolder"][];
         };
         Overview: {
-            /** @description The resolver answered its health check */
+            /** @description The resolver answered its health check and reports no problem (the Teasers tab only needs an answer) */
             available: boolean;
             /** @description An address and a key are saved */
             configured: boolean;

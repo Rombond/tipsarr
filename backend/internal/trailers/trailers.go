@@ -30,8 +30,10 @@ const (
 
 const (
 	healthTTL    = 30 * time.Second
+	healthGrace  = 10 * time.Minute // a failed health check keeps the last good answer this long (a slow or restarting resolver)
 	maxAttempts  = 8
-	retryWindow  = 24 * time.Hour // a failed key is retried only if the feed asked for it within this time
+	finalFor     = 7 * 24 * time.Hour // a permanent failure is asked again after this (when the resolver gives no time)
+	retryWindow  = 24 * time.Hour     // a failed key is retried only if the feed asked for it within this time
 	touchWindow  = 2 * time.Minute
 	syncBatch    = 60
 	requestedGap = 10 * time.Minute // how often an already known key refreshes its "asked for" time
@@ -57,6 +59,11 @@ type Service struct {
 	healthErr  string
 	healthAt   time.Time
 	healthBase string
+	goodHealth *Health // last answer from the resolver, for healthGrace
+	goodAt     time.Time
+	goodBase   string // address and key that answered goodHealth
+
+	fetchMu sync.Mutex // one health call at a time when the cache expires
 }
 
 // New builds the service. dir is the shared folder the resolver writes <key>.mp4 files into (mounted read-only here).
@@ -136,13 +143,22 @@ func (s *Service) CachedHealth(ctx context.Context) (*Health, string) {
 	if !ok {
 		return nil, ErrDisabled.Error()
 	}
-	s.mu.Lock()
-	if s.healthBase == cfg.url && s.now().Sub(s.healthAt) < healthTTL {
-		h, e := s.health, s.healthErr
-		s.mu.Unlock()
+	cached := func() (*Health, string, bool) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.healthBase == cfg.url && s.now().Sub(s.healthAt) < healthTTL {
+			return s.health, s.healthErr, true
+		}
+		return nil, "", false
+	}
+	if h, e, ok := cached(); ok {
 		return h, e
 	}
-	s.mu.Unlock()
+	s.fetchMu.Lock()
+	defer s.fetchMu.Unlock()
+	if h, e, ok := cached(); ok { // another caller refreshed it while this one waited
+		return h, e
+	}
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 	h, err := NewClient(cfg.url, cfg.key).Health(ctx)
@@ -150,6 +166,11 @@ func (s *Service) CachedHealth(ctx context.Context) (*Health, string) {
 	switch {
 	case err != nil:
 		h, msg = nil, err.Error()
+		s.mu.Lock()
+		if s.goodHealth != nil && s.goodBase == cfg.url+"\x00"+cfg.key && s.now().Sub(s.goodAt) < healthGrace {
+			h = s.goodHealth // one slow answer must not hide the Teasers tab
+		}
+		s.mu.Unlock()
 	case !h.OK:
 		msg = "the resolver reports a problem"
 		if h.LastError != "" {
@@ -157,20 +178,24 @@ func (s *Service) CachedHealth(ctx context.Context) (*Health, string) {
 		}
 	}
 	s.mu.Lock()
+	if err == nil {
+		s.goodHealth, s.goodAt, s.goodBase = h, s.now(), cfg.url+"\x00"+cfg.key
+	}
 	s.health, s.healthErr, s.healthAt, s.healthBase = h, msg, s.now(), cfg.url
 	s.mu.Unlock()
 	return h, msg
 }
 
-// Available is Enabled and the resolver answered its health check in the last 30 seconds (/status features.teasers).
+// Available is Enabled and the resolver answered its health check lately (/status features.teasers): in the last
+// 30 seconds, or within healthGrace when the latest check failed.
 // Its own verdict (h.OK) is not needed: with the circuit breaker open or yt-dlp broken it cannot download, but the
 // files it already holds still play, so the Teasers tab stays.
 func (s *Service) Available(ctx context.Context) bool {
 	if !s.Enabled(ctx) {
 		return false
 	}
-	h, msg := s.CachedHealth(ctx)
-	return h != nil && msg == ""
+	h, _ := s.CachedHealth(ctx)
+	return h != nil
 }
 
 // ResetHealth forgets the cached health (settings changed, tests).
@@ -207,7 +232,10 @@ func (s *Service) Pending(ctx context.Context, key string) bool {
 	if err != nil {
 		return false
 	}
-	return row == nil || !(row.Status == store.TrailerFailed && row.Permanent == 1)
+	if row == nil || !(row.Status == store.TrailerFailed && row.Permanent == 1) {
+		return true
+	}
+	return s.now().Unix() >= row.NextTryAt // a final failure whose time is over: Ensure starts it afresh
 }
 
 // KeepWarm tells the resolver these files were just used, so its cache clean-up deletes other files first.
@@ -250,14 +278,29 @@ func clip(s string) string {
 	return s
 }
 
-func (s *Service) markFailed(row *store.TrailerFile, msg string, permanent bool) {
+// markFailed records a failure. count false leaves Attempts alone (a problem on this side, not the video's).
+// A permanent failure waits until retryAt (from the resolver) or finalFor, then Ensure may ask again.
+func (s *Service) markFailed(row *store.TrailerFile, msg string, permanent, count bool, retryAt int64) {
+	now := s.now()
 	row.Status = store.TrailerFailed
 	row.Error = clip(msg)
-	row.Attempts++
+	if count {
+		row.Attempts++
+	}
 	if permanent || row.Attempts >= maxAttempts {
 		row.Permanent = 1
+		switch {
+		case permanent && retryAt > now.Unix():
+			row.NextTryAt = retryAt
+		case permanent && retryAt > 0:
+			// the resolver's time is already over here (clocks a little apart): ask again soon, not in 7 days
+			row.NextTryAt = now.Add(backoff(1)).Unix()
+		default:
+			row.NextTryAt = now.Add(finalFor).Unix()
+		}
+		return
 	}
-	row.NextTryAt = s.now().Add(backoff(row.Attempts)).Unix()
+	row.NextTryAt = now.Add(backoff(max(row.Attempts, 1))).Unix()
 }
 
 // apply copies what the resolver reported into the row.
@@ -265,13 +308,14 @@ func (s *Service) apply(row *store.TrailerFile, st *Status) {
 	switch st.Status {
 	case store.TrailerReady:
 		if !s.fileOK(row.YoutubeKey) {
-			s.markFailed(row, "the file is not visible in the shared folder", false)
+			// a mount problem on this side: not the video's fault, so it never makes the key final
+			s.markFailed(row, "the file is not visible in the shared folder", false, false, 0)
 			return
 		}
 		row.Status, row.Bytes, row.Height, row.Duration = store.TrailerReady, st.Bytes, st.Height, st.Duration
-		row.Error, row.Permanent, row.ReadyAt = "", 0, s.now().Unix()
+		row.Error, row.Permanent, row.Attempts, row.ReadyAt = "", 0, 0, s.now().Unix()
 	case store.TrailerFailed:
-		s.markFailed(row, st.Error, st.Permanent)
+		s.markFailed(row, st.Error, st.Permanent, true, st.RetryAt)
 	case store.TrailerRunning:
 		row.Status = store.TrailerRunning
 	default:
@@ -309,12 +353,15 @@ func (s *Service) Ensure(ctx context.Context, key string) error {
 		if s.fileOK(key) {
 			return s.refreshRequested(ctx, row, now)
 		}
-		// evicted by the resolver or not visible: fetch it again
-		row.Status, row.Attempts = store.TrailerQueued, row.Attempts+1
+		// evicted by the resolver or not visible: fetch it again (an eviction is no failure, Attempts stays)
+		row.Status = store.TrailerQueued
 		askAgain = true
 	case store.TrailerFailed:
-		if row.Permanent == 1 || now < row.NextTryAt {
+		if now < row.NextTryAt {
 			return nil
+		}
+		if row.Permanent == 1 { // its time is over: a fresh start
+			row.Permanent, row.Attempts = 0, 0
 		}
 		row.Status = store.TrailerQueued
 		askAgain = true
@@ -403,7 +450,7 @@ func (s *Service) Sync(ctx context.Context) (i18n.Msg, error) {
 	}
 	for i := range retry {
 		row := &retry[i]
-		row.Status, row.RequestedAt = store.TrailerQueued, now
+		row.Status = store.TrailerQueued // RequestedAt stays: only the feed asking renews the retry window
 		st, err := c.Resolve(ctx, row.YoutubeKey, cfg.maxHeight)
 		if err != nil {
 			row.NextTryAt = now + 60
@@ -435,7 +482,7 @@ func (s *Service) Sync(ctx context.Context) (i18n.Msg, error) {
 type Overview struct {
 	Enabled    bool           `json:"enabled"`
 	Configured bool           `json:"configured" doc:"An address and a key are saved"`
-	Available  bool           `json:"available" doc:"The resolver answered its health check"`
+	Available  bool           `json:"available" doc:"The resolver answered its health check and reports no problem (the Teasers tab only needs an answer)"`
 	Error      string         `json:"error,omitempty" doc:"Why the resolver is not available"`
 	Health     *Health        `json:"health,omitempty"`
 	Files      map[string]int `json:"files" doc:"Rows per state in Tipsarr's own table: queued, running, ready, failed"`
@@ -461,7 +508,10 @@ func (s *Service) Overview(ctx context.Context) (*Overview, error) {
 			o.Error = err.Error()
 		case !h.OK:
 			o.Health, o.Error = h, "the resolver reports a problem"
-			if h.LastError != "" {
+			switch {
+			case h.Breaker.State == "open" && h.BreakerError != "":
+				o.Error = h.BreakerError // why it paused, not the last video that failed
+			case h.LastError != "":
 				o.Error = h.LastError
 			}
 		default:

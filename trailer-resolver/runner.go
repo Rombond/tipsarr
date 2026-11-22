@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 // Result describes a finished video.
@@ -30,6 +32,8 @@ type DownloadError struct {
 	// Video marks a problem with this video only (a retry may help): it does not count toward the circuit breaker,
 	// which is about the server's address being blocked.
 	Video bool
+	// RetryIn is how long a Permanent failure stands before the key may be tried again (0: the default, 7 days).
+	RetryIn time.Duration
 }
 
 func (e *DownloadError) Error() string { return e.Msg }
@@ -80,7 +84,7 @@ func (r execRunner) Download(ctx context.Context, key string, maxHeight int, dst
 	}
 	if err != nil {
 		if ctx.Err() != nil {
-			return Result{}, &DownloadError{Msg: "timeout", Permanent: false}
+			return Result{}, &DownloadError{Msg: "timeout", Video: true} // a big or slow video, not a blocked address
 		}
 		return Result{}, classify(stderr, err)
 	}
@@ -90,11 +94,12 @@ func (r execRunner) Download(ctx context.Context, key string, maxHeight int, dst
 		if strings.Contains(stderr, "does not pass filter") {
 			return Result{}, &DownloadError{Msg: "longer than " + r.cfg.MaxDuration.String() + ", not a trailer", Permanent: true}
 		}
-		return Result{}, &DownloadError{Msg: "yt-dlp produced no mp4 file (probably over the size limit)", Video: true}
+		// over --max-filesize at this height: the same thing happens on every try
+		return Result{}, &DownloadError{Msg: "yt-dlp produced no mp4 file (probably over the size limit)", Permanent: true}
 	}
 	out := filepath.Join(work, "out.mp4")
 	if b, err := exec.CommandContext(ctx, r.cfg.FFmpeg, "-y", "-v", "error", "-i", in, "-c", "copy", "-movflags", "+faststart", out).CombinedOutput(); err != nil {
-		return Result{}, &DownloadError{Msg: "ffmpeg: " + oneLine(string(b))}
+		return Result{}, &DownloadError{Msg: "ffmpeg: " + oneLine(string(b)), Video: true}
 	}
 	res := r.probe(ctx, out)
 	if err := os.Rename(out, dst); err != nil {
@@ -146,12 +151,27 @@ func (r execRunner) probe(ctx context.Context, file string) Result {
 	return res
 }
 
-// permanentHints are yt-dlp messages that no retry will fix.
+// temporaryHints are about the server's address (rate limit, bot check). They are checked first: YouTube can join
+// them to a "Video unavailable" reason, and they must never mark a key as final.
+var temporaryHints = []string{
+	"try again later", "rate-limit", "rate limit", "not a bot", "captcha", "ip is likely being blocked", "http error 429",
+}
+
+// laterHints are videos that do not exist yet (a scheduled premiere or live): final for a few hours only.
+var laterHints = []string{
+	"premieres in", "premiere will begin", "live event will begin", "this live event will", "is upcoming",
+}
+
+// laterRetry is how long a not-yet-published video waits before it is tried again.
+const laterRetry = 6 * time.Hour
+
+// permanentHints are yt-dlp messages that no retry will fix (for a while: final failures still expire).
+// "Requested format is not available" is not one: it usually means yt-dlp could not solve YouTube's challenge
+// (broken JS runtime, outdated solver, missing PO token), which is the server's problem, not the video's.
 var permanentHints = []string{
 	"video unavailable", "video is unavailable", "this video is not available", "private video", "has been removed", "who has blocked it",
-	"copyright", "terminated", "members-only", "join this channel", "this video is no longer available",
-	"not available in your country", "age-restricted", "confirm your age", "premieres in", "live event will begin",
-	"requested format is not available", "is not a valid url", "unsupported url",
+	"copyright claim", "has been terminated", "members-only", "join this channel", "this video is no longer available",
+	"available in your country", "age-restricted", "confirm your age", "is not a valid url", "unsupported url",
 }
 
 func classify(stderr string, err error) error {
@@ -160,12 +180,25 @@ func classify(stderr string, err error) error {
 		msg = err.Error()
 	}
 	low := strings.ToLower(msg)
-	for _, h := range permanentHints {
-		if strings.Contains(low, h) {
-			return &DownloadError{Msg: trim(msg, 240), Permanent: true}
-		}
+	if containsAny(low, temporaryHints) {
+		return &DownloadError{Msg: trim(msg, 240)}
+	}
+	if containsAny(low, laterHints) {
+		return &DownloadError{Msg: trim(msg, 240), Permanent: true, RetryIn: laterRetry}
+	}
+	if containsAny(low, permanentHints) {
+		return &DownloadError{Msg: trim(msg, 240), Permanent: true}
 	}
 	return &DownloadError{Msg: trim(msg, 240)}
+}
+
+func containsAny(s string, hints []string) bool {
+	for _, h := range hints {
+		if strings.Contains(s, h) {
+			return true
+		}
+	}
+	return false
 }
 
 func oneLine(s string) string {
@@ -187,6 +220,55 @@ func trim(s string, n int) string {
 		return s[:n]
 	}
 	return s
+}
+
+// Versions keeps the tool versions, read at start and after each yt-dlp update, so a health check runs no program.
+type Versions struct {
+	cfg Config
+
+	refreshMu           sync.Mutex
+	mu                  sync.Mutex
+	loaded              bool
+	ytdlp, deno, ffmpeg string
+}
+
+func NewVersions(cfg Config) *Versions { return &Versions{cfg: cfg} }
+
+// Refresh reads the versions again. It never uses a caller's context: a health request that gives up must not
+// leave empty versions behind. A tool that answered before and fails now keeps its old version (a broken yt-dlp
+// then shows up as download failures and the breaker, not in the version). One read runs at a time.
+func (v *Versions) Refresh() {
+	v.refreshMu.Lock()
+	defer v.refreshMu.Unlock()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	yt, deno, ff := version(ctx, v.cfg.YtDlp, "--version"), version(ctx, v.cfg.Deno, "--version"), version(ctx, v.cfg.FFmpeg, "-version")
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	keep := func(old *string, now string) {
+		if now != "" {
+			*old = now
+		}
+	}
+	keep(&v.ytdlp, yt)
+	keep(&v.deno, deno)
+	keep(&v.ffmpeg, ff)
+	if yt != "" {
+		v.loaded = true // until yt-dlp answers once, Get tries again
+	}
+}
+
+// Get returns yt-dlp, Deno and ffmpeg versions ("" for a tool that does not run), reading them until yt-dlp answers.
+func (v *Versions) Get() (ytdlp, deno, ffmpeg string) {
+	v.mu.Lock()
+	loaded := v.loaded
+	v.mu.Unlock()
+	if !loaded {
+		v.Refresh()
+	}
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	return v.ytdlp, v.deno, v.ffmpeg
 }
 
 // version runs "<bin> <arg>" and returns the first line, or "" if it fails.

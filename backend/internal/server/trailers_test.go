@@ -249,15 +249,22 @@ func TestStatusFlagFollowsResolverHealth(t *testing.T) {
 	if _, body := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(body, `"teasers":true`) {
 		t.Fatalf("status with a healthy resolver = %s", body)
 	}
-	// a resolver that reports a problem hides the tab (once the 30 s health cache is refreshed)
+	// a resolver that reports a problem (circuit breaker open, yt-dlp broken) keeps the tab: cached files still play
 	f.mu.Lock()
 	f.health.OK = false
 	f.mu.Unlock()
 	e.files.ResetHealth()
-	if _, body := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(body, `"teasers":false`) {
+	if _, body := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(body, `"teasers":true`) {
 		t.Fatalf("status with a sick resolver = %s", body)
 	}
 	f.srv.Close()
+	e.files.ResetHealth()
+	// one failed check keeps the last answer for a while (a slow or restarting resolver must not hide the tab)
+	if _, body := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(body, `"teasers":true`) {
+		t.Fatalf("status with a resolver that just died = %s", body)
+	}
+	later := time.Now().Add(11 * time.Minute)
+	e.files.SetNow(func() time.Time { return later })
 	e.files.ResetHealth()
 	if _, body := call(t, e.app, "GET", "/api/v1/status", ""); !strings.Contains(body, `"teasers":false`) {
 		t.Fatalf("status with a dead resolver = %s", body)
@@ -533,4 +540,138 @@ func (f *fakeResolver) touchedKeys() []string {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return append([]string(nil), f.touched...)
+}
+
+// A permanent failure is final for a while only: after its time (the resolver's retryAt, else 7 days) the feed
+// asking for the key again starts it afresh.
+func TestPermanentTrailerFailureExpires(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t, true)
+	_, admin, _ := setupUsers(t, e)
+	f := newFakeResolver(t, e.files.Dir(), false)
+	enableFiles(t, e, admin, f)
+	ctx := t.Context()
+	const key = "premiere001"
+	now := time.Now()
+	e.files.SetNow(func() time.Time { return now })
+
+	_ = e.files.Ensure(ctx, key)
+	f.mu.Lock()
+	f.status[key] = &trailers.Status{Status: "failed", Error: "Premieres in 5 hours", Permanent: true, RetryAt: now.Add(6 * time.Hour).Unix()}
+	f.mu.Unlock()
+	if _, err := e.files.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	r, _ := e.st.TrailerFileByKey(ctx, key)
+	if r.Permanent != 1 || r.NextTryAt != now.Add(6*time.Hour).Unix() {
+		t.Fatalf("row = %+v", r)
+	}
+	n := len(f.resolvedKeys())
+	_ = e.files.Ensure(ctx, key)
+	if len(f.resolvedKeys()) != n {
+		t.Fatal("asked again before its time")
+	}
+	if e.files.Pending(ctx, key) { // the feed skips it for now
+		t.Fatal("pending before its time")
+	}
+	later := now.Add(7 * time.Hour)
+	e.files.SetNow(func() time.Time { return later })
+	if !e.files.Pending(ctx, key) { // the feed will Ensure it again (recommendation keys only come back this way)
+		t.Fatal("not pending after its time")
+	}
+	f.mu.Lock()
+	delete(f.status, key)
+	f.mu.Unlock()
+	if err := e.files.Ensure(ctx, key); err != nil {
+		t.Fatal(err)
+	}
+	r, _ = e.st.TrailerFileByKey(ctx, key)
+	if len(f.resolvedKeys()) != n+1 || r.Permanent != 0 || r.Attempts != 0 || r.Status != "queued" {
+		t.Fatalf("not asked again after its time: %+v", r)
+	}
+
+	// a resolver time already over here (clocks apart) means soon, not 7 days
+	f.mu.Lock()
+	f.status[key] = &trailers.Status{Status: "failed", Error: "Premieres in 5 hours", Permanent: true, RetryAt: later.Add(-time.Second).Unix()}
+	f.mu.Unlock()
+	if _, err := e.files.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	r, _ = e.st.TrailerFileByKey(ctx, key)
+	if r.Permanent != 1 || r.NextTryAt != later.Add(5*time.Minute).Unix() {
+		t.Fatalf("skewed row = %+v", r)
+	}
+	r.Status, r.Permanent = "queued", 0
+	_ = e.st.SaveTrailerFile(ctx, r)
+
+	// without a time from the resolver, a permanent failure lasts 7 days
+	f.fail(key, "Private video", true)
+	if _, err := e.files.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	r, _ = e.st.TrailerFileByKey(ctx, key)
+	if r.Permanent != 1 || r.NextTryAt != later.Add(7*24*time.Hour).Unix() {
+		t.Fatalf("row = %+v", r)
+	}
+}
+
+// The sync retries do not renew the "asked for" time (only the feed does), Attempts resets once a file is ready,
+// and a file missing from the shared folder never counts as an attempt.
+func TestTrailerRetryBookkeeping(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t, true)
+	_, admin, _ := setupUsers(t, e)
+	f := newFakeResolver(t, e.files.Dir(), false)
+	enableFiles(t, e, admin, f)
+	ctx := t.Context()
+	const key = "retrykey001"
+	now := time.Now()
+	e.files.SetNow(func() time.Time { return now })
+
+	_ = e.files.Ensure(ctx, key)
+	f.mu.Lock()
+	f.status[key] = &trailers.Status{Status: "failed", Error: "HTTP 403"}
+	f.mu.Unlock()
+	if _, err := e.files.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	r, _ := e.st.TrailerFileByKey(ctx, key)
+	asked := r.RequestedAt
+	if r.Attempts != 1 {
+		t.Fatalf("row = %+v", r)
+	}
+	later := now.Add(time.Hour)
+	e.files.SetNow(func() time.Time { return later })
+	if _, err := e.files.Sync(ctx); err != nil { // the retry pass asks the resolver again
+		t.Fatal(err)
+	}
+	r, _ = e.st.TrailerFileByKey(ctx, key)
+	if r.RequestedAt != asked {
+		t.Fatalf("the retry renewed requested_at: %d -> %d", asked, r.RequestedAt)
+	}
+
+	// ready, but not visible here: not the video's fault
+	f.mu.Lock()
+	f.status[key] = &trailers.Status{Status: "ready", Bytes: 1000, Height: 720}
+	f.mu.Unlock()
+	r.Status, r.Attempts = "queued", 3
+	_ = e.st.SaveTrailerFile(ctx, r)
+	if _, err := e.files.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	r, _ = e.st.TrailerFileByKey(ctx, key)
+	if r.Status != "failed" || r.Attempts != 3 || r.Permanent != 0 {
+		t.Fatalf("missing file row = %+v", r)
+	}
+	// ready and visible: attempts start over
+	f.finish(t, key)
+	r.Status = "queued"
+	_ = e.st.SaveTrailerFile(ctx, r)
+	if _, err := e.files.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	r, _ = e.st.TrailerFileByKey(ctx, key)
+	if r.Status != "ready" || r.Attempts != 0 {
+		t.Fatalf("ready row = %+v", r)
+	}
 }

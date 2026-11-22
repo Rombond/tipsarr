@@ -46,6 +46,7 @@ type Status struct {
 	Duration  int    `json:"duration"`
 	Error     string `json:"error,omitempty"`
 	Permanent bool   `json:"permanent"`
+	RetryAt   int64  `json:"retryAt,omitempty" doc:"A permanent failure may be tried again after this unix time"`
 }
 
 // Counts are the resolver's queue and cache sizes.
@@ -73,6 +74,7 @@ type Health struct {
 	Counts          Counts  `json:"counts"`
 	Breaker         Breaker `json:"breaker"`
 	LastError       string  `json:"lastError,omitempty"`
+	BreakerError    string  `json:"breakerError,omitempty" doc:"The last failure that counted toward the breaker"`
 }
 
 // Client is a small HTTP client for the resolver API. Every call carries the shared key as a bearer token.
