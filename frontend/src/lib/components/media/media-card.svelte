@@ -73,7 +73,7 @@
 
 <div class={fluid ? 'min-w-0' : 'w-32 shrink-0 snap-start sm:w-40'}>
 	<div
-		class="group relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-muted shadow-sm ring-1 ring-border/50 transition hover:shadow-lg hover:ring-border focus-within:ring-2 focus-within:ring-ring"
+		class="group @container relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-muted shadow-sm ring-1 ring-border/50 transition hover:shadow-lg hover:ring-border focus-within:ring-2 focus-within:ring-ring"
 	>
 		<button
 			type="button"
@@ -116,20 +116,23 @@
 			{#if canQuickRequest}
 				<button
 					type="button"
-					class="flex cursor-pointer items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-black shadow hover:bg-white disabled:opacity-60"
+					class="flex h-7 min-w-0 cursor-pointer items-center gap-1 rounded-full bg-white/90 px-2 text-xs font-medium text-black shadow hover:bg-white disabled:opacity-60"
+					aria-label={t('card.quick_request')}
+					title={t('card.quick_request')}
 					disabled={requesting}
 					onclick={(e) => {
 						e.stopPropagation();
 						flow?.start();
 					}}
 				>
-					<PlusIcon class="size-3.5" />
-					{requesting ? '…' : t('card.quick_request')}
+					<PlusIcon class="size-3.5 shrink-0" />
+					<!-- label only when the poster is wide enough: the dismiss button takes room (#45) -->
+					<span class="hidden truncate {onDismiss ? '@[11rem]:inline' : '@[8rem]:inline'}">{requesting ? '…' : t('card.quick_request')}</span>
 				</button>
 			{:else}
 				<span></span>
 			{/if}
-			<span class="flex gap-1">
+			<span class="flex shrink-0 gap-1">
 				{#if onDismiss}
 					<button
 						type="button"
