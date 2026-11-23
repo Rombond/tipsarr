@@ -42,6 +42,8 @@ DNS lookup, so a name that resolves to a private address is refused too, and so 
 
 Titles added outside Tipsarr: when the library sync finds every requested title (a movie, or every episode of each requested season of a show) while its request is still pending, or approved but not sent (dry-run), the request turns available and `media.available` goes out once. Requests already sent to Radarr/Sonarr follow Radarr/Sonarr instead. The library does not know the quality: a 1080p copy added by hand also closes a pending 4K request.
 
+Seasons still airing: a show request turns available only when every episode of each requested season is on disk, including the episodes that have not aired yet. Until then it stays open and its season shows the real count (for example "3/8 · airing"), so `media.available` goes out when the season is complete, not when the aired episodes are.
+
 Compatibility: a webhook subscribed to `request.approved` also receives `request.auto_approved`.
 No events ticked = all events. The event name is also sent in the `X-Tipsarr-Event` header.
 

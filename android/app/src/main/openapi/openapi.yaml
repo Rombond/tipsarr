@@ -2185,11 +2185,22 @@ components:
     SeasonProgress:
       additionalProperties: false
       properties:
+        airing:
+          description: The season still has episodes to air; the request stays open until they are on disk
+          type: boolean
+        episodes:
+          description: Episodes of the season on disk
+          format: int64
+          type: integer
         percent:
           description: Episodes Sonarr has plus what is being downloaded, as a percentage of the season
           format: int64
           type: integer
         season:
+          format: int64
+          type: integer
+        total:
+          description: "Episodes the season is measured against: the aired ones, or the whole season while it is airing"
           format: int64
           type: integer
       required:

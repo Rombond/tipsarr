@@ -2732,6 +2732,13 @@ export interface components {
             posterPath?: string;
         };
         SeasonProgress: {
+            /** @description The season still has episodes to air; the request stays open until they are on disk */
+            airing?: boolean;
+            /**
+             * Format: int64
+             * @description Episodes of the season on disk
+             */
+            episodes?: number;
             /**
              * Format: int64
              * @description Episodes Sonarr has plus what is being downloaded, as a percentage of the season
@@ -2739,6 +2746,11 @@ export interface components {
             percent: number;
             /** Format: int64 */
             season: number;
+            /**
+             * Format: int64
+             * @description Episodes the season is measured against: the aired ones, or the whole season while it is airing
+             */
+            total?: number;
         };
         SecretOutputBody: {
             /** @description The secret; empty when it is not set (the dashboard key is off) */

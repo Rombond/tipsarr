@@ -27,10 +27,30 @@ type SeriesSeason struct {
 	SeasonNumber int  `json:"seasonNumber"`
 	Monitored    bool `json:"monitored"`
 	Statistics   struct {
-		EpisodeFileCount  int `json:"episodeFileCount"`
-		EpisodeCount      int `json:"episodeCount"`
-		TotalEpisodeCount int `json:"totalEpisodeCount"` // whole season, monitored or not (episodeCount is 0 when unmonitored)
+		EpisodeFileCount  int    `json:"episodeFileCount"`
+		EpisodeCount      int    `json:"episodeCount"`
+		TotalEpisodeCount int    `json:"totalEpisodeCount"` // whole season, monitored or not (episodeCount is 0 when unmonitored)
+		NextAiring        string `json:"nextAiring"`        // RFC 3339, set while a monitored episode has yet to air
 	} `json:"statistics"`
+}
+
+// Airing is true while the season still has a monitored episode to air. Sonarr's episodeCount only
+// counts aired episodes, so an airing season looks complete as soon as the aired ones are on disk.
+func (sn SeriesSeason) Airing() bool { return sn.Statistics.NextAiring != "" }
+
+// Size is the number of episodes the season is measured against: the aired, monitored ones, or the
+// whole season while it is still airing.
+func (sn SeriesSeason) Size() int {
+	if sn.Airing() {
+		return max(sn.Statistics.EpisodeCount, sn.Statistics.TotalEpisodeCount)
+	}
+	return sn.Statistics.EpisodeCount
+}
+
+// Done is true when every episode of the season is on disk: aired, monitored episodes all have a
+// file and nothing is left to air.
+func (sn SeriesSeason) Done() bool {
+	return !sn.Airing() && sn.Statistics.EpisodeCount > 0 && sn.Statistics.EpisodeFileCount >= sn.Statistics.EpisodeCount
 }
 
 // MissingSeasons lists the monitored seasons that still lack episode files.
@@ -138,9 +158,40 @@ func (c *Client) AllSeries(ctx context.Context) ([]Series, error) {
 	return out, c.get(ctx, "/series", &out)
 }
 
-// Complete is true when every monitored, aired episode has a file.
+// Complete is true when every monitored, aired episode has a file and no monitored season is still
+// airing.
 func (s Series) Complete() bool {
-	return s.Statistics.EpisodeCount > 0 && s.Statistics.EpisodeFileCount >= s.Statistics.EpisodeCount
+	if s.Statistics.EpisodeCount == 0 || s.Statistics.EpisodeFileCount < s.Statistics.EpisodeCount {
+		return false
+	}
+	for _, sn := range s.Seasons {
+		if sn.SeasonNumber > 0 && sn.Monitored && sn.Airing() {
+			return false
+		}
+	}
+	return true
+}
+
+// SeasonsDone is true when every listed season (Sonarr numbering) is Done. With no seasons listed, or
+// one Sonarr does not know (numbered otherwise), it falls back to Complete.
+func (s Series) SeasonsDone(want []int) bool {
+	if len(want) == 0 {
+		return s.Complete()
+	}
+	byNum := map[int]SeriesSeason{}
+	for _, sn := range s.Seasons {
+		byNum[sn.SeasonNumber] = sn
+	}
+	for _, n := range want {
+		sn, ok := byNum[n]
+		if !ok {
+			return s.Complete()
+		}
+		if !sn.Done() {
+			return false
+		}
+	}
+	return true
 }
 
 func (c *Client) SeriesByTVDB(ctx context.Context, tvdbID int) (*Series, error) {

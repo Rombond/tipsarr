@@ -614,6 +614,7 @@
   "req.requested_by_link": "Demandé par",
   "req.decided_by_link": "décidé par",
   "req.season_badge": "Saison {n}",
+  "req.season_airing": "{have}/{total} · en diffusion",
   "req.uhd_badge": "4K",
   "req.profile_uhd": "{name} (4K)",
   "detail.crew": "Équipe",

@@ -70,8 +70,11 @@ func New(s *store.Store, m *media.Service, h *events.Hub, n *notify.Service, dry
 }
 
 type SeasonProgress struct {
-	Season  int `json:"season"`
-	Percent int `json:"percent" doc:"Episodes Sonarr has plus what is being downloaded, as a percentage of the season"`
+	Season   int  `json:"season"`
+	Percent  int  `json:"percent" doc:"Episodes Sonarr has plus what is being downloaded, as a percentage of the season"`
+	Episodes int  `json:"episodes,omitempty" doc:"Episodes of the season on disk"`
+	Total    int  `json:"total,omitempty" doc:"Episodes the season is measured against: the aired ones, or the whole season while it is airing"`
+	Airing   bool `json:"airing,omitempty" doc:"The season still has episodes to air; the request stays open until they are on disk"`
 }
 
 type Progress struct {
