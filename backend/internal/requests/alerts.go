@@ -39,13 +39,12 @@ func (s *Service) refreshLibrary() {
 
 // noteSeasons stamps the requested seasons of a show that are complete, so each can be announced
 // before the whole request is. Only requests with more than one season get season alerts.
-func (s *Service) noteSeasons(ctx context.Context, r *store.Request, progress []SeasonProgress) {
-	requested, err := s.store.RequestSeasons(ctx, []string{r.ID})
-	if err != nil || len(requested[r.ID]) < 2 {
+func (s *Service) noteSeasons(ctx context.Context, r *store.Request, requested []int, progress []SeasonProgress) {
+	if len(requested) < 2 {
 		return
 	}
 	want := map[int]bool{}
-	for _, n := range requested[r.ID] {
+	for _, n := range requested {
 		want[n] = true
 	}
 	for _, p := range progress {

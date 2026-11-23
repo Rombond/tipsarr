@@ -69,6 +69,7 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 	recs := queue[int(r.ServarrID)]
 	total := combine(recs) // percent / ETA of what the download client is transferring
 	var seasons []SeasonProgress
+	var want []int // requested seasons of a show, Sonarr numbering
 	var err error
 	if r.MediaType == "movie" {
 		var m *servarr.Movie
@@ -78,12 +79,20 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 	} else {
 		var sr *servarr.Series
 		if sr, err = c.Series(ctx, int(r.ServarrID)); err == nil {
-			var want []int
 			if rs, rerr := s.store.RequestSeasons(ctx, []string{r.ID}); rerr == nil {
 				want = rs[r.ID]
 			} else {
 				slog.Warn("poll request seasons", "id", r.ID, "err", rerr)
 				return nil // transient; try again next tick
+			}
+			if sr.NeedsEpisodes(want) {
+				// only when a requested season looks finished: its undated episodes are still to come
+				eps, eerr := c.SeriesEpisodes(ctx, int(r.ServarrID))
+				if eerr != nil {
+					slog.Warn("poll episodes", "id", r.ID, "err", eerr)
+					return nil // transient; try again next tick
+				}
+				sr.NoteUnscheduled(eps)
 			}
 			done = sr.SeasonsDone(want)
 			var pct int
@@ -138,7 +147,7 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 	}
 	s.mu.Unlock()
 	if r.MediaType == "tv" {
-		s.noteSeasons(ctx, r, seasons)
+		s.noteSeasons(ctx, r, want, seasons)
 	}
 	seasonsChanged := r.MediaType == "tv" && !slices.Equal(prevSeasons, seasons)
 	if downloading && (!had || prev != cur) {

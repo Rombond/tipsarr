@@ -30,13 +30,25 @@ type SeriesSeason struct {
 		EpisodeFileCount  int    `json:"episodeFileCount"`
 		EpisodeCount      int    `json:"episodeCount"`
 		TotalEpisodeCount int    `json:"totalEpisodeCount"` // whole season, monitored or not (episodeCount is 0 when unmonitored)
-		NextAiring        string `json:"nextAiring"`        // RFC 3339, set while a monitored episode has yet to air
+		NextAiring        string `json:"nextAiring"`        // RFC 3339, set while a monitored episode with an air date has yet to air
 	} `json:"statistics"`
+	// Unscheduled counts the monitored episodes with no air date yet (TBA) and no file. Sonarr's
+	// statistics leave them out of both episodeCount and nextAiring, so only the episode list tells
+	// (NoteUnscheduled fills it). Not part of Sonarr's JSON.
+	Unscheduled int `json:"-"`
 }
 
-// Airing is true while the season still has a monitored episode to air. Sonarr's episodeCount only
-// counts aired episodes, so an airing season looks complete as soon as the aired ones are on disk.
-func (sn SeriesSeason) Airing() bool { return sn.Statistics.NextAiring != "" }
+// Airing is true while the season still has a monitored episode to air, dated or not. Sonarr's
+// episodeCount only counts aired episodes, so an airing season looks complete as soon as the aired
+// ones are on disk.
+func (sn SeriesSeason) Airing() bool { return sn.Statistics.NextAiring != "" || sn.Unscheduled > 0 }
+
+// mayHideUnscheduled: by its statistics the season has nothing left to air and every counted episode
+// on disk, yet Sonarr lists episodes it does not count (undated ones, or unmonitored ones).
+func (sn SeriesSeason) mayHideUnscheduled() bool {
+	st := sn.Statistics
+	return st.NextAiring == "" && st.TotalEpisodeCount > st.EpisodeCount && st.EpisodeFileCount >= st.EpisodeCount
+}
 
 // Size is the number of episodes the season is measured against: the aired, monitored ones, or the
 // whole season while it is still airing.
@@ -192,6 +204,34 @@ func (s Series) SeasonsDone(want []int) bool {
 		}
 	}
 	return true
+}
+
+// NeedsEpisodes reports whether the episode list is needed to judge the listed seasons (every
+// monitored season when none is listed): one of them may hide undated episodes (see NoteUnscheduled).
+func (s Series) NeedsEpisodes(want []int) bool {
+	listed := map[int]bool{}
+	for _, n := range want {
+		listed[n] = true
+	}
+	for _, sn := range s.Seasons {
+		if (listed[sn.SeasonNumber] || len(want) == 0 && sn.SeasonNumber > 0 && sn.Monitored) && sn.mayHideUnscheduled() {
+			return true
+		}
+	}
+	return false
+}
+
+// NoteUnscheduled counts, per season, the monitored episodes that have neither an air date nor a file.
+func (s *Series) NoteUnscheduled(eps []Episode) {
+	n := map[int]int{}
+	for _, e := range eps {
+		if e.Monitored && !e.HasFile && e.AirDate == "" {
+			n[e.SeasonNumber]++
+		}
+	}
+	for i := range s.Seasons {
+		s.Seasons[i].Unscheduled = n[s.Seasons[i].SeasonNumber]
+	}
 }
 
 func (c *Client) SeriesByTVDB(ctx context.Context, tvdbID int) (*Series, error) {
