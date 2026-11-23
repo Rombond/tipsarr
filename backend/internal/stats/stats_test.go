@@ -1,6 +1,12 @@
 package stats
 
-import "testing"
+import (
+	"context"
+	"path/filepath"
+	"testing"
+
+	"github.com/Rombond/tipsarr/backend/internal/store"
+)
 
 // "Most watched" is ranked by time spent: a show with many short episode plays must not beat a
 // movie that took longer in total, and a title never played is not listed.
@@ -50,5 +56,57 @@ func TestGenresAreTranslated(t *testing.T) {
 	aggregate(res, titles)
 	if len(res.Genres) != 2 || res.Genres[0].Name != "Science-Fiction" || res.Genres[0].Titles != 2 || res.Genres[1].Name != "Aventure" {
 		t.Fatalf("genres = %+v", res.Genres)
+	}
+}
+
+// Account mapping: a person's watch numbers include the accounts an admin mapped to them, like the suggestions do,
+// while an unrelated account stays out and "all" still counts everyone (#55).
+func TestComputeIncludesHistorySources(t *testing.T) {
+	ctx := context.Background()
+	st, err := store.Open(ctx, "sqlite:"+filepath.Join(t.TempDir(), "t.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { st.Close() })
+	for _, id := range []string{"me", "tv", "other"} {
+		if _, err := st.DB.NewInsert().Model(&store.User{ID: id, Name: id, Role: "user"}).Exec(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	hist := []store.WatchHistory{
+		{UserID: "me", MediaType: "movie", TMDBID: 1, PlayCount: 1},
+		{UserID: "tv", MediaType: "movie", TMDBID: 2, PlayCount: 1},
+		{UserID: "other", MediaType: "movie", TMDBID: 3, PlayCount: 1},
+	}
+	if _, err := st.DB.NewInsert().Model(&hist).Exec(ctx); err != nil {
+		t.Fatal(err)
+	}
+	svc := New(st)
+
+	res, err := svc.Compute(ctx, "me", "all", false, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Totals.Titles != 1 || res.HistorySources != 0 {
+		t.Fatalf("before mapping: titles=%d sources=%d", res.Totals.Titles, res.HistorySources)
+	}
+
+	if err := st.SetHistorySources(ctx, "me", []string{"tv"}); err != nil {
+		t.Fatal(err)
+	}
+	res, err = svc.Compute(ctx, "me", "all", false, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Totals.Titles != 2 || res.HistorySources != 1 {
+		t.Fatalf("after mapping: titles=%d sources=%d, want 2 and 1", res.Totals.Titles, res.HistorySources)
+	}
+
+	res, err = svc.Compute(ctx, "", "all", true, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Totals.Titles != 3 || res.HistorySources != 0 {
+		t.Fatalf("all: titles=%d sources=%d", res.Totals.Titles, res.HistorySources)
 	}
 }
