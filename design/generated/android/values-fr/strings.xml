@@ -817,6 +817,7 @@
     <string name="stats_empty">Rien de regardé sur cette période.</string>
     <string name="stats_everyone">Tout le monde</string>
     <string name="stats_genres">Genres</string>
+    <string name="stats_history_sources">Les chiffres de visionnage incluent l’historique de %1$s autre(s) compte(s) lié(s) par un admin. Les demandes restent les siennes.</string>
     <string name="stats_hours_of_day">Visionnage par heure de la journée</string>
     <string name="stats_me">Moi</string>
     <string name="stats_months">Visionnage par mois</string>

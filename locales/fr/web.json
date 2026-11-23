@@ -316,6 +316,7 @@
   "stats.n_titles": "{count} titres",
   "stats.n_plays": "{count} lectures",
   "stats.empty": "Rien de regardé sur cette période.",
+  "stats.history_sources": "Les chiffres de visionnage incluent l’historique de {count} autre(s) compte(s) lié(s) par un admin. Les demandes restent les siennes.",
   "stats.plugin_title": "Envie du temps de visionnage exact et de graphiques dans le temps ?",
   "stats.plugin_text": "Seuls les admins voient ce message. Tipsarr peut importer le plugin Playback Reporting de Jellyfin : vrai temps de visionnage, par mois, jour de la semaine et heure, au lieu d’estimations.",
   "stats.plugin_step1": "Dans Jellyfin : Tableau de bord → Plugins → Catalogue → Playback Reporting → Installer, puis redémarre Jellyfin.",

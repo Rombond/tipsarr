@@ -316,6 +316,7 @@
   "stats.n_titles": "{count} titles",
   "stats.n_plays": "{count} plays",
   "stats.empty": "Nothing watched yet in this period.",
+  "stats.history_sources": "Watch numbers include the history of {count} other account(s) linked to this person by an admin. Requests are their own.",
   "stats.plugin_title": "Want exact watch time and timelines?",
   "stats.plugin_text": "Only you, as an admin, see this. Tipsarr can import Jellyfin’s Playback Reporting plugin: real watch time, per month, weekday and hour, instead of estimates.",
   "stats.plugin_step1": "In Jellyfin: Dashboard → Plugins → Catalog → Playback Reporting → Install, then restart Jellyfin.",
