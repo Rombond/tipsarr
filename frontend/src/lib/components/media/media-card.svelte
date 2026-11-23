@@ -7,6 +7,7 @@
 	import { itemStatus } from '$lib/status';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import XIcon from '@lucide/svelte/icons/x';
+	import BookmarkMinusIcon from '@lucide/svelte/icons/bookmark-minus';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import StarIcon from '@lucide/svelte/icons/star';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -21,6 +22,7 @@
 		inRadarr = false,
 		radarrHasFile = false,
 		onDismiss,
+		onRemove,
 		fluid = false,
 		posterUrl,
 		hideStatus = false,
@@ -38,6 +40,8 @@
 		radarrHasFile?: boolean;
 		/** Shows a "not interested" button on hover (used by suggestion rows). */
 		onDismiss?: (item: MediaItem) => void;
+		/** Shows a "remove from my list" button on hover (Watchlist page). */
+		onRemove?: (item: MediaItem) => void;
 		/** Fill the grid cell instead of a fixed poster width. */
 		fluid?: boolean;
 		/** A ready poster address (a Jellyfin poster in the Library and Stats pages) instead of the TMDB path. */
@@ -127,12 +131,26 @@
 				>
 					<PlusIcon class="size-3.5 shrink-0" />
 					<!-- label only when the poster is wide enough: the dismiss button takes room (#45) -->
-					<span class="hidden truncate {onDismiss ? '@[11rem]:inline' : '@[8rem]:inline'}">{requesting ? '…' : t('card.quick_request')}</span>
+					<span class="hidden truncate {onDismiss || onRemove ? '@[11rem]:inline' : '@[8rem]:inline'}">{requesting ? '…' : t('card.quick_request')}</span>
 				</button>
 			{:else}
 				<span></span>
 			{/if}
 			<span class="flex shrink-0 gap-1">
+				{#if onRemove}
+					<button
+						type="button"
+						aria-label={t('watchlist.remove')}
+						title={t('watchlist.remove')}
+						class="flex size-7 cursor-pointer items-center justify-center rounded-full bg-white/90 text-black shadow hover:bg-white"
+						onclick={(e) => {
+							e.stopPropagation();
+							onRemove(item);
+						}}
+					>
+						<BookmarkMinusIcon class="size-4" />
+					</button>
+				{/if}
 				{#if onDismiss}
 					<button
 						type="button"

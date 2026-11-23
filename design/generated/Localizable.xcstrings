@@ -15674,13 +15674,29 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hover a poster and press ✕ to remove it from the list."
+            "value": "Hover a poster and press the bookmark button to remove it from the list."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Survole une affiche et appuie sur ✕ pour la retirer de la liste."
+            "value": "Survole une affiche et appuie sur le marque-page pour la retirer de la liste."
+          }
+        }
+      }
+    },
+    "watchlist.remove": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from my list"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer de ma liste"
           }
         }
       }
