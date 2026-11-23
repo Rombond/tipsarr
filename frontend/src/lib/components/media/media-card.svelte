@@ -7,6 +7,7 @@
 	import { itemStatus } from '$lib/status';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import XIcon from '@lucide/svelte/icons/x';
+	import BookmarkMinusIcon from '@lucide/svelte/icons/bookmark-minus';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import LoaderIcon from '@lucide/svelte/icons/loader-circle';
 	import StarIcon from '@lucide/svelte/icons/star';
@@ -80,7 +81,7 @@
 
 <div class={fluid ? 'min-w-0' : 'w-32 shrink-0 snap-start sm:w-40'}>
 	<div
-		class="group @container relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-muted shadow-sm ring-1 ring-border/50 transition hover:shadow-lg hover:ring-border focus-within:ring-2 focus-within:ring-ring"
+		class="group @container relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-muted shadow-sm ring-1 ring-border/50 transition hover:shadow-lg hover:ring-border has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
 	>
 		<button
 			type="button"
@@ -119,7 +120,7 @@
 		{/if}
 
 		<!-- hover / focus actions (always reachable by keyboard; on touch the card opens the details) -->
-		<div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1.5 pt-8 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:hidden">
+		<div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1.5 pt-8 opacity-0 transition-opacity group-hover:opacity-100 group-has-[:focus-visible]:opacity-100 [@media(hover:none)]:hidden">
 			{#if canQuickRequest}
 				<button
 					type="button"
@@ -146,6 +147,20 @@
 				<span></span>
 			{/if}
 			<span class="flex shrink-0 gap-1">
+				{#if onRemove}
+					<button
+						type="button"
+						aria-label={t('watchlist.remove')}
+						title={t('watchlist.remove')}
+						class="flex size-7 cursor-pointer items-center justify-center rounded-full bg-white/90 text-black shadow hover:bg-white"
+						onclick={(e) => {
+							e.stopPropagation();
+							onRemove(item);
+						}}
+					>
+						<BookmarkMinusIcon class="size-4" />
+					</button>
+				{/if}
 				{#if onDismiss}
 					<button
 						type="button"
@@ -160,6 +175,8 @@
 						<XIcon class="size-4" />
 					</button>
 				{/if}
+				<!-- without a popup the poster itself opens the details: the info button would duplicate it (#54) -->
+				{#if onSelect}
 				<button
 					type="button"
 					aria-label={t('media.view_details')}
@@ -171,6 +188,7 @@
 				>
 					<InfoIcon class="size-4" />
 				</button>
+				{/if}
 			</span>
 		</div>
 	</div>

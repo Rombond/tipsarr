@@ -44,7 +44,7 @@ Choose the regions in Settings, then run `boxoffice-refresh` once.
 Install Jellyfin's Playback Reporting plugin for exact watch time.
 
 **Push notifications stopped.**
-Settings → Push notifications shows if the daily quota is reached (push resumes at UTC midnight). Check that the phone
+Webhooks → Push notifications shows if the daily quota is reached (push resumes at UTC midnight). Check that the phone
 allows notifications for the app and that the category is on in the app. Nothing is sent while dry-run is on.
 
 **Permission errors on `/config` at start.**

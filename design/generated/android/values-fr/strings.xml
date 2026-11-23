@@ -817,6 +817,7 @@
     <string name="stats_empty">Rien de regardé sur cette période.</string>
     <string name="stats_everyone">Tout le monde</string>
     <string name="stats_genres">Genres</string>
+    <string name="stats_history_sources">Les chiffres de visionnage incluent l’historique de %1$s autre(s) compte(s) lié(s) par un admin. Les demandes restent les siennes.</string>
     <string name="stats_hours_of_day">Visionnage par heure de la journée</string>
     <string name="stats_me">Moi</string>
     <string name="stats_months">Visionnage par mois</string>
@@ -971,7 +972,8 @@
     <string name="version_update">%1$s disponible</string>
     <string name="version_update_hint">Tipsarr %1$s est sortie : voir les notes de version</string>
     <string name="watchlist_empty">Rien ici pour l’instant. Ouvre un film ou une série et appuie sur « Ma liste ».</string>
-    <string name="watchlist_hint">Survole une affiche et appuie sur ✕ pour la retirer de la liste.</string>
+    <string name="watchlist_hint">Survole une affiche et appuie sur le marque-page pour la retirer de la liste.</string>
+    <string name="watchlist_remove">Retirer de ma liste</string>
     <string name="watchlist_title">Ma liste</string>
     <string name="webhook_issue_commented_message">%1$s : %2$s</string>
     <string name="webhook_issue_commented_subject">Nouveau commentaire sur un signalement : %1$s</string>

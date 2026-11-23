@@ -817,6 +817,7 @@
     <string name="stats_empty">Nothing watched yet in this period.</string>
     <string name="stats_everyone">Everyone</string>
     <string name="stats_genres">Genres</string>
+    <string name="stats_history_sources">Watch numbers include the history of %1$s other account(s) linked to this person by an admin. Requests are their own.</string>
     <string name="stats_hours_of_day">Watching per hour of the day</string>
     <string name="stats_me">Me</string>
     <string name="stats_months">Watching per month</string>
@@ -971,7 +972,8 @@
     <string name="version_update">%1$s available</string>
     <string name="version_update_hint">Tipsarr %1$s is out: see the release notes</string>
     <string name="watchlist_empty">Nothing here yet. Open a movie or show and press “Watchlist”.</string>
-    <string name="watchlist_hint">Hover a poster and press ✕ to remove it from the list.</string>
+    <string name="watchlist_hint">Hover a poster and press the bookmark button to remove it from the list.</string>
+    <string name="watchlist_remove">Remove from my list</string>
     <string name="watchlist_title">Watchlist</string>
     <string name="webhook_issue_commented_message">%1$s: %2$s</string>
     <string name="webhook_issue_commented_subject">New comment on an issue: %1$s</string>
