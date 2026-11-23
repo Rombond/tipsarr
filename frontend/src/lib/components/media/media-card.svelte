@@ -9,6 +9,7 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import BookmarkMinusIcon from '@lucide/svelte/icons/bookmark-minus';
 	import PlusIcon from '@lucide/svelte/icons/plus';
+	import LoaderIcon from '@lucide/svelte/icons/loader-circle';
 	import StarIcon from '@lucide/svelte/icons/star';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -40,7 +41,7 @@
 		radarrHasFile?: boolean;
 		/** Shows a "not interested" button on hover (used by suggestion rows). */
 		onDismiss?: (item: MediaItem) => void;
-		/** Shows a "remove from my list" button on hover (Watchlist page). */
+		/** Shows a "remove from my list" button on hover (watchlist). */
 		onRemove?: (item: MediaItem) => void;
 		/** Fill the grid cell instead of a fixed poster width. */
 		fluid?: boolean;
@@ -60,6 +61,9 @@
 	const year = $derived(item.releaseDate?.slice(0, 4));
 	const shown = $derived(itemStatus({ availability: item.availability, requestStatus: requested ?? item.requestStatus }, { tracked: inRadarr, hasFile: radarrHasFile }));
 	const canQuickRequest = $derived(item.availability !== 'available' && shown === null);
+	// buttons on the right of the action bar: with two or more, Request shrinks to a round + (#57)
+	const rightCount = $derived((onDismiss ? 1 : 0) + (onRemove ? 1 : 0) + (onSelect ? 1 : 0));
+	const compactRequest = $derived(rightCount > 1);
 
 	// the score on the poster follows the person's choice (movies only; shows keep TMDB)
 	const source = $derived((auth.user?.ratingSource || 'tmdb') as RatingSource);
@@ -120,18 +124,24 @@
 			{#if canQuickRequest}
 				<button
 					type="button"
-					class="flex h-7 min-w-0 cursor-pointer items-center gap-1 rounded-full bg-white/90 px-2 text-xs font-medium text-black shadow hover:bg-white disabled:opacity-60"
+					class={compactRequest
+						? 'flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/90 text-black shadow hover:bg-white disabled:opacity-60'
+						: 'flex h-7 min-w-0 flex-1 cursor-pointer items-center justify-center gap-1 rounded-full bg-white/90 px-2 text-xs font-medium text-black shadow hover:bg-white disabled:opacity-60'}
 					aria-label={t('card.quick_request')}
 					title={t('card.quick_request')}
 					disabled={requesting}
+					aria-busy={requesting}
 					onclick={(e) => {
 						e.stopPropagation();
 						flow?.start();
 					}}
 				>
-					<PlusIcon class="size-3.5 shrink-0" />
-					<!-- label only when the poster is wide enough: the dismiss button takes room (#45) -->
-					<span class="hidden truncate {onDismiss || onRemove ? '@[11rem]:inline' : '@[8rem]:inline'}">{requesting ? '…' : t('card.quick_request')}</span>
+					{#if compactRequest}
+						{#if requesting}<LoaderIcon class="size-4 animate-spin" />{:else}<PlusIcon class="size-4" />{/if}
+					{:else}
+						<PlusIcon class="size-3.5 shrink-0" />
+						<span class="truncate">{requesting ? '…' : t('card.quick_request')}</span>
+					{/if}
 				</button>
 			{:else}
 				<span></span>
