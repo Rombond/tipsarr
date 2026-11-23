@@ -3,10 +3,12 @@ import { SvelteSet } from 'svelte/reactivity';
 import { t } from '$lib/i18n/index.svelte';
 import { api, unwrap, expectOk, errorText } from '$lib/api/client';
 import { toast } from '$lib/toast.svelte';
+import { auth } from '$lib/stores/auth.svelte';
 
 type MediaType = 'movie' | 'tv';
 
-const key = (type: MediaType, tmdbId: number) => `${type}:${tmdbId}`;
+// keyed by person too: signing out and in as someone else keeps the page (no reload), not their hidden titles
+const key = (type: MediaType, tmdbId: number) => `${auth.user?.id ?? ''}:${type}:${tmdbId}`;
 
 /** Titles hidden during this session: Discover rows drop them right away instead of waiting for a reload. */
 export const hiddenTitles = new SvelteSet<string>();
