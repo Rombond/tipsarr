@@ -118,6 +118,9 @@
 	{:else if loading && !report}
 		<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">{#each { length: 4 } as _, i (i)}<Skeleton class="h-24 rounded-xl" />{/each}</div>
 	{:else if report}
+		{#if report.historySources > 0}
+			<p class="text-sm text-muted-foreground">{t('stats.history_sources', { count: report.historySources })}</p>
+		{/if}
 		{#if report.plugin.hint}
 			<Card class="border-primary/40">
 				<CardHeader>

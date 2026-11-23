@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import type { MediaItem } from '$lib/api/client';
 	import Carousel from '$lib/components/media/carousel.svelte';
+	import { isHidden } from '$lib/media-flags.svelte';
 
 	type Page = { page: number; totalPages: number; items: MediaItem[] };
 
@@ -18,6 +19,8 @@
 	let totalPages = $state(1);
 	let loading = $state(false);
 	let error: Error | null = $state(null);
+	// titles hidden from the popup leave the row at once
+	const visible = $derived(items.filter((i) => !isHidden(i)));
 
 	async function loadNext() {
 		if (loading) return;
@@ -43,4 +46,4 @@
 	});
 </script>
 
-<Carousel {title} {href} {description} {items} {loading} {error} hasMore={page < totalPages} onLoadMore={loadNext} {onSelect} onRetry={loadNext} />
+<Carousel {title} {href} {description} items={visible} {loading} {error} hasMore={page < totalPages} onLoadMore={loadNext} {onSelect} onRetry={loadNext} />

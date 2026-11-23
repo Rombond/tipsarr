@@ -2933,6 +2933,11 @@ export interface components {
         StatsReport: {
             decades: components["schemas"]["StatsBucket"][];
             genres: components["schemas"]["StatsBucket"][];
+            /**
+             * Format: int64
+             * @description Other accounts whose watch history is included (account mapping); 0 for all
+             */
+            historySources: number;
             /** @description Hours per hour of the day (plugin source only) */
             hoursOfDay: number[];
             /** @description Last 12 months, oldest first (plugin source only) */

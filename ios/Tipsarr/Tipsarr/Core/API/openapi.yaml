@@ -2444,6 +2444,10 @@ components:
           items:
             $ref: "#/components/schemas/StatsBucket"
           type: array
+        historySources:
+          description: Other accounts whose watch history is included (account mapping); 0 for all
+          format: int64
+          type: integer
         hoursOfDay:
           description: Hours per hour of the day (plugin source only)
           items:
@@ -2512,6 +2516,7 @@ components:
         - topShows
         - requests
         - plugin
+        - historySources
       type: object
     StatsRequests:
       properties:
