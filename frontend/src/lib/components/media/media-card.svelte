@@ -147,6 +147,8 @@
 						<XIcon class="size-4" />
 					</button>
 				{/if}
+				<!-- without a popup the poster itself opens the details: the info button would duplicate it (#54) -->
+				{#if onSelect}
 				<button
 					type="button"
 					aria-label={t('media.view_details')}
@@ -158,6 +160,7 @@
 				>
 					<InfoIcon class="size-4" />
 				</button>
+				{/if}
 			</span>
 		</div>
 	</div>
