@@ -717,6 +717,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/collection/{id}/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request the missing movies of a collection
+         * @description One normal request per part (same rights, quota, 4K and approval rules as POST /requests; nothing is bypassed). Without tmdbIds: every released part that is neither in the library nor requested. Once the quota or a right stops one part, the rest are skipped with the same code.
+         */
+        post: operations["requestCollection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/discover/genres/{type}": {
         parameters: {
             query?: never;
@@ -1787,6 +1807,20 @@ export interface components {
             parts: components["schemas"]["Item"][];
             posterPath?: string;
         };
+        CollectionRequestResult: {
+            /** @description The requests made, in release order */
+            requested: components["schemas"]["View"][];
+            /** @description Parts that were not requested, with the reason */
+            skipped: components["schemas"]["CollectionSkip"][];
+        };
+        CollectionSkip: {
+            /** @description Same codes as a refused POST /requests (quota_reached, duplicate_request, already_available, already_monitored, forbidden, 4k_not_allowed...), or not_in_collection */
+            code: string;
+            message: string;
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+        };
         CommentIssueRequest: {
             message: string;
         };
@@ -2622,6 +2656,17 @@ export interface components {
         RegisterPushRequest: {
             /** @description Relay address; empty = the publisher's relay (pushDefaultRelayUrl) */
             relayUrl?: string;
+        };
+        RequestCollectionRequest: {
+            /**
+             * Format: int64
+             * @description Radarr quality profile for every part (omit for the default); see /requests/options
+             */
+            qualityProfileId?: number;
+            /** @description Root folder for every part (omit for the default) */
+            rootFolder?: string;
+            /** @description Parts to request; omit for every released missing part */
+            tmdbIds?: number[];
         };
         RequestCountsResponse: {
             /** Format: int64 */
@@ -6261,6 +6306,77 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    requestCollection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestCollectionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionRequestResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

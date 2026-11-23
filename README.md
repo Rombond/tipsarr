@@ -48,6 +48,8 @@ popular, see what your server already has, ask for what it lacks, and let [Radar
   decline with a reason, quality profile and folder choice, anime folder, per-genre movie folders, **4K requests** (a
   request is 4K when its quality profile allows 2160p). Progress (requested, downloading per season, available) is
   pushed live to the browser and the apps.
+- **Whole sagas**: a movie collection page shows which films are in the library or requested, and "Request missing"
+  asks for the rest in one go (web app; one normal request per film, same rights, limits and approval).
 - **Import** of what Radarr and Sonarr already monitor, so the Requests page shows everything that is on its way.
 - **Jellyfin integration**: login with Jellyfin accounts, availability badges from your library, watch history sync,
   optional Jellyfin webhook for instant updates, user import, "Play" links to Jellyfin.

@@ -580,6 +580,106 @@
         }
       }
     },
+    "collection.close": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermer"
+          }
+        }
+      }
+    },
+    "collection.count_available": {
+      "comment": "placeholders: count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in the library"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ dans la bibliothèque"
+          }
+        }
+      }
+    },
+    "collection.count_missing": {
+      "comment": "placeholders: count, count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ missing | %1$@ missing"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ manquant | %1$@ manquants"
+          }
+        }
+      }
+    },
+    "collection.count_requested": {
+      "comment": "placeholders: count, count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ requested | %1$@ requested"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ demandé | %1$@ demandés"
+          }
+        }
+      }
+    },
+    "collection.dialog_desc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each movie is a separate request, with your usual rights and request limit. Films not released yet are only requested if you tick them."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaque film est une demande à part, avec tes droits et ta limite de demandes habituels. Les films pas encore sortis ne sont demandés que si tu les coches."
+          }
+        }
+      }
+    },
+    "collection.dialog_title": {
+      "comment": "placeholders: name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request the missing movies of %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander les films manquants de %@"
+          }
+        }
+      }
+    },
     "collection.fallback": {
       "localizations": {
         "en": {
@@ -608,6 +708,105 @@
           "stringUnit": {
             "state": "translated",
             "value": "Films de cette collection"
+          }
+        }
+      }
+    },
+    "collection.request_missing": {
+      "comment": "placeholders: count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request missing (%@)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander les manquants (%@)"
+          }
+        }
+      }
+    },
+    "collection.request_n": {
+      "comment": "placeholders: count, count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request %1$@ movie | Request %1$@ movies"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander %1$@ film | Demander %1$@ films"
+          }
+        }
+      }
+    },
+    "collection.skipped_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not requested"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non demandés"
+          }
+        }
+      }
+    },
+    "collection.toast_none": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing was requested."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien n’a été demandé."
+          }
+        }
+      }
+    },
+    "collection.toast_requested": {
+      "comment": "placeholders: count, count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ movie requested | %1$@ movies requested"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ film demandé | %1$@ films demandés"
+          }
+        }
+      }
+    },
+    "collection.unreleased": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not released yet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore sorti"
           }
         }
       }
@@ -2066,6 +2265,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Introuvable."
+          }
+        }
+      }
+    },
+    "error.not_in_collection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This title is not part of the collection."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce titre ne fait pas partie de la collection."
           }
         }
       }

@@ -316,6 +316,14 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 		_, _ = w.Write([]byte(`{"season_number":2,"name":"Thousand-Year Blood War","air_date":"2022-10-11","episodes":[
 			{"episode_number":1,"name":"The Blood Warfare"},{"episode_number":2,"name":"Foundation Stones"},{"episode_number":3,"name":"March of the Starcross"}]}`))
 	}))
+	// a saga: one released part (1), one released part (5), one announced (7), one without a date
+	mux.HandleFunc("/collection/9", hit(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"id":9,"name":"Saga","overview":"All of it.","backdrop_path":"/sagab.jpg","parts":[
+			{"id":7,"title":"Coming Soon","release_date":"2099-01-01","poster_path":"/cs.jpg"},
+			{"id":5,"title":"Request Me","release_date":"2025-05-05","poster_path":"/rm.jpg"},
+			{"id":1,"title":"Movie One","release_date":"2024-01-02","poster_path":"/p1.jpg"},
+			{"id":8,"title":"Rumoured","release_date":""}]}`))
+	}))
 	mux.HandleFunc("/movie/404", hit(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotFound) }))
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
