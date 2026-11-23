@@ -135,8 +135,8 @@ your Tipsarr server ──(event + id)──► push.brebond.com ──► APNs 
 - The relay receives the device token, the event name (`request.approved`…), an id, the language and the server's host
   name, and builds a **generic text** from its own templates ("Your request was approved"). Titles, user names and
   posters never go through it; the app fetches the details from your server when you open the notification.
-- Device tokens are not stored by the relay. Admins turn push on with one click (Settings → Push notifications), which
-  gets the server its own key; a key from the public relay has a daily quota of alerts, shown in Settings.
+- Device tokens are not stored by the relay. Admins turn push on with one click (Webhooks → Push notifications), which
+  gets the server its own key; a key from the public relay has a daily quota of alerts, shown there.
 - Prefer not to use it? Leave push off and use [webhooks](docs/notifications.md) (ntfy, Gotify, Pushover…).
 
 Details: [docs/push-notifications.md](docs/push-notifications.md) and [PRIVACY.md](PRIVACY.md).
