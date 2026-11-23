@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"slices"
 	"time"
 
 	"github.com/uptrace/bun"
@@ -177,6 +178,30 @@ func (s *Store) UpdateRequest(ctx context.Context, r *Request) error {
 	return err
 }
 
+// UpdateRequestIf is UpdateRequest applied only while the stored status is still one of from, so a
+// change made meanwhile (the library closing the request, another decision) is not overwritten. It
+// reports whether the row was written.
+func (s *Store) UpdateRequestIf(ctx context.Context, r *Request, from ...string) (bool, error) {
+	r.UpdatedAt = time.Now().Unix()
+	res, err := s.DB.NewUpdate().Model(r).WherePK().Where("status IN (?)", bun.In(from)).Exec(ctx)
+	if err != nil {
+		return false, err
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		return true, nil
+	}
+	// MySQL does not count a row that matched but whose values did not change: tell that apart from a
+	// lost race (the row no longer has one of the expected statuses).
+	cur, err := s.GetRequest(ctx, r.ID)
+	if errors.Is(err, ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return cur.Status == r.Status && slices.Contains(from, cur.Status), nil
+}
+
 func (s *Store) DeleteRequest(ctx context.Context, id string) error {
 	return s.DB.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		if _, err := tx.NewDelete().Model((*RequestSeason)(nil)).Where("request_id = ?", id).Exec(ctx); err != nil {
@@ -254,6 +279,28 @@ func (s *Store) RequestCounts(ctx context.Context, userID string) (map[string]in
 func (s *Store) InFlightRequests(ctx context.Context) ([]Request, error) {
 	var rows []Request
 	return rows, s.DB.NewSelect().Model(&rows).Where("status = ?", StatusApproved).Where("sent_at > 0").Scan(ctx)
+}
+
+// UnsentOpenRequests returns the requests waiting to be fulfilled that Radarr/Sonarr does not track for
+// Tipsarr: pending, or approved but never sent (dry-run).
+func (s *Store) UnsentOpenRequests(ctx context.Context) ([]Request, error) {
+	var rows []Request
+	return rows, s.DB.NewSelect().Model(&rows).
+		Where("status = ? OR (status = ? AND sent_at = 0)", StatusPending, StatusApproved).Scan(ctx)
+}
+
+// MarkRequestAvailable turns a request available only if it is still pending or approved but unsent, so
+// a concurrent decline or delete is never overwritten and a request just sent to Radarr/Sonarr is left
+// to the poll. It reports whether the row changed.
+func (s *Store) MarkRequestAvailable(ctx context.Context, id string, at int64) (bool, error) {
+	res, err := s.DB.NewUpdate().Model((*Request)(nil)).
+		Set("status = ?", StatusAvailable).Set("available_at = ?", at).Set("updated_at = ?", time.Now().Unix()).
+		Where("id = ?", id).Where("status = ? OR (status = ? AND sent_at = 0)", StatusPending, StatusApproved).Exec(ctx)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	return n == 1, err
 }
 
 // UserNames maps user ids to display names.

@@ -33,12 +33,16 @@ DNS lookup, so a name that resolves to a private address is refused too, and so 
 | `request.auto_approved` | the requester's rights approved it at once (sent instead of `request.approved`) | the requester and the admins |
 | `request.declined` | an admin declines (the reason is appended to `message`) | the requester |
 | `request.failed` | sending to Radarr/Sonarr failed, or the item vanished there | the requester |
-| `media.available` | the title can be watched | the requester |
+| `media.available` | the title can be watched, including when it reached the library outside Tipsarr while the request was pending (see below) | the requester |
 | `issue.created` | a problem is reported | admins and people who manage issues, minus the reporter |
 | `issue.commented` | a comment on an issue | reporter, participants and issue managers, minus the commenter |
 | `issue.resolved` | an issue is resolved | reporter and participants, minus who resolved it |
 | `issue.reopened` | a resolved issue is reopened | reporter and participants, minus who reopened it |
 | `test` | the Test button (ignores subscriptions; sample data: *Dune (2021)*) | the admin pressing it |
+
+Titles added outside Tipsarr: when the library sync finds every requested title (a movie, or every episode of each requested season of a show) while its request is still pending, or approved but not sent (dry-run), the request turns available and `media.available` goes out once. Requests already sent to Radarr/Sonarr follow Radarr/Sonarr instead. The library does not know the quality: a 1080p copy added by hand also closes a pending 4K request.
+
+Seasons still airing: a show request turns available only when every episode of each requested season is on disk, including the episodes that have not aired yet, dated or not (an episode Sonarr lists without an air date counts until it airs; unmonitor it in Sonarr if it will never come). Until then it stays open and its season shows the real count (for example "3/8 · airing"), so `media.available` goes out when the season is complete, not when the aired episodes are, and once the library shows the whole season.
 
 Compatibility: a webhook subscribed to `request.approved` also receives `request.auto_approved`.
 No events ticked = all events. The event name is also sent in the `X-Tipsarr-Event` header.

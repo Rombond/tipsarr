@@ -12,6 +12,7 @@ import (
 )
 
 func TestSetupNeedsTheToken(t *testing.T) {
+	t.Parallel()
 	e := newEnvWith(t, true, "tok-123")
 	jf := fakeJellyfin(t)
 	body := func(tok string) string { return `{"setupToken":"` + tok + `","jellyfinUrl":"` + jf.URL + `"}` }
@@ -108,6 +109,7 @@ func TestSecurityHeadersAndLimits(t *testing.T) {
 }
 
 func TestStreamsPerUserAreCapped(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, _, bob := setupUsers(t, e)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -135,6 +137,7 @@ func TestStreamsPerUserAreCapped(t *testing.T) {
 }
 
 func TestRequestErrorsAreAdminOnly(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, false)
 	_, admin, bob := setupUsers(t, e)
 	radarr := newFakeArr(t, "radarr")
@@ -160,6 +163,7 @@ func TestRequestErrorsAreAdminOnly(t *testing.T) {
 }
 
 func TestProbeDoesNotSendTheSavedKeyElsewhere(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, _ := setupUsers(t, e)
 	radarr := newFakeArr(t, "radarr")
@@ -185,6 +189,7 @@ func TestProbeDoesNotSendTheSavedKeyElsewhere(t *testing.T) {
 }
 
 func TestWebhookCannotTargetRadarr(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, false)
 	_, admin, _ := setupUsers(t, e)
 	radarr := newFakeArr(t, "radarr")
@@ -212,6 +217,7 @@ func TestWebhookCannotTargetRadarr(t *testing.T) {
 }
 
 func TestRoleChangeEndsSessions(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	_, body := call(t, e.app, "GET", "/api/v1/admin/users", "", admin)
@@ -233,6 +239,7 @@ func TestRoleChangeEndsSessions(t *testing.T) {
 }
 
 func TestSetupTokenIsOptional(t *testing.T) {
+	t.Parallel()
 	// default: no token, the setup call works as before and the UI is told not to ask for one
 	e := newEnv(t, true)
 	if _, b := call(t, e.app, "GET", "/api/v1/setup/status", ""); !strings.Contains(b, `"tokenRequired":false`) {
@@ -251,6 +258,7 @@ func TestSetupTokenIsOptional(t *testing.T) {
 
 // Errors carry a stable code next to the English text so the UI can translate them.
 func TestErrorsCarryCodes(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	jf := fakeJellyfin(t)
 	call(t, e.app, "POST", "/api/v1/setup", `{"jellyfinUrl":"`+jf.URL+`"}`)

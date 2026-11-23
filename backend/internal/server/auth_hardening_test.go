@@ -10,6 +10,7 @@ import (
 
 // A delegated ManageSettings cannot touch sign-in, directory or API key settings (only the admin role can).
 func TestIdentitySettingsNeedAdminRole(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	jf := fakeJellyfin(t)
 	admin := loginAs(t, e.app, jf.URL, "alice", "secret")
@@ -80,7 +81,8 @@ func TestJellyfinAdminDemotion(t *testing.T) {
 
 // TIPSARR_COOKIE_SECURE forces the Secure flag even without X-Forwarded-Proto.
 func TestCookieSecureForced(t *testing.T) {
-	e := newEnvOpts(t, true, "", false)
+	t.Parallel()
+	e := newEnvOpts(t, true, "", false, false)
 	jf := fakeJellyfin(t)
 	call(t, e.app, "POST", "/api/v1/setup", `{"jellyfinUrl":"`+jf.URL+`"}`)
 	resp, _ := call(t, e.app, "POST", "/api/v1/auth/login", `{"username":"bob","password":"hunter2"}`)
@@ -95,11 +97,7 @@ func TestCookieSecureForced(t *testing.T) {
 	}
 }
 
-// envSecureCookies: the next newEnv forces the Secure cookie flag (TIPSARR_COOKIE_SECURE=true).
-var envSecureCookies bool
-
+// newEnvSecure forces the Secure cookie flag (TIPSARR_COOKIE_SECURE=true).
 func newEnvSecure(t *testing.T) *env {
-	envSecureCookies = true
-	defer func() { envSecureCookies = false }()
-	return newEnvOpts(t, true, "", false)
+	return newEnvOpts(t, true, "", false, true)
 }

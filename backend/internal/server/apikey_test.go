@@ -37,6 +37,7 @@ func keyCall(t *testing.T, base, method, path, body, key string) (*http.Response
 // TestAPIKey checks the read-only dashboard key: off by default, reads what an admin reads, never writes, and
 // replacing or switching it off stops the old one at once.
 func TestAPIKey(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	e := newEnv(t, true)
 	admin := loginAs(t, e.app, jf.URL, "alice", "secret")

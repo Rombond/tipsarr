@@ -26,12 +26,12 @@ type TrailerFile struct {
 	Height      int    `bun:"height"`
 	Duration    int    `bun:"duration"`
 	Error       string `bun:"error"`
-	Permanent   int    `bun:"permanent"` // 1: never retry
+	Permanent   int    `bun:"permanent"` // 1: final until next_try_at (days), then asked again only when the feed wants it
 	Attempts    int    `bun:"attempts"`
 	RequestedAt int64  `bun:"requested_at"`
 	ReadyAt     int64  `bun:"ready_at"`
 	LastUsedAt  int64  `bun:"last_used_at"`
-	NextTryAt   int64  `bun:"next_try_at"` // a temporary failure is retried after this unix time
+	NextTryAt   int64  `bun:"next_try_at"` // a failure is retried after this unix time
 }
 
 // TrailerFileByKey returns nil when the key has no row.

@@ -7,6 +7,13 @@ docker compose pull && docker compose up -d
 Database migrations run automatically at start. Read the [release notes](https://github.com/Rombond/tipsarr/releases)
 before a major version.
 
+## Which version am I running?
+
+The running version shows at the bottom of the sidebar, under your account. Tipsarr asks GitHub for the newest release
+every 6 hours (one request to `api.github.com`, nothing about your server is sent); when a newer one is out, an
+"available" link to its release notes appears next to it. A local build shows "Development build". `GET /api/v1/status`
+returns both as `version` and `latestVersion`.
+
 ## Back up first
 
 - **SQLite** (default): stop the container and copy the `/config` folder (it holds `tipsarr.db` and the caches), or copy
@@ -24,6 +31,10 @@ does not check the schema version and may misbehave on a database migrated by a 
 
 `:latest` follows the newest release. Each release is also tagged `X.Y.Z` and `X.Y` (for example
 `ghcr.io/rombond/tipsarr:1.0.0` or `:1.0`), to choose when to upgrade.
+
+To try what is coming before a release: `:develop` is the next release in progress (rebuilt on every change,
+linux/amd64 only, may break), and each open pull request has `:pr-<number>` (removed when the pull request closes).
+Stay on `:latest` or a version tag for normal use.
 
 ## Mobile apps
 

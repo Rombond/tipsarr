@@ -56,10 +56,18 @@ type statusBody struct {
 	Duration  int    `json:"duration,omitempty"`
 	Error     string `json:"error,omitempty"`
 	Permanent bool   `json:"permanent,omitempty"`
+	RetryAt   int64  `json:"retryAt,omitempty"` // a permanent failure may be tried again after this unix time
 }
 
 func body(e Entry) statusBody {
-	return statusBody{Status: e.Status, Bytes: e.Bytes, Height: e.Height, Duration: e.Duration, Error: e.Error, Permanent: e.Permanent}
+	return statusBody{Status: e.Status, Bytes: e.Bytes, Height: e.Height, Duration: e.Duration, Error: e.Error, Permanent: e.Permanent, RetryAt: permanentRetryAt(e)}
+}
+
+func permanentRetryAt(e Entry) int64 {
+	if e.Status == stFailed && e.Permanent {
+		return e.RetryAt
+	}
+	return 0
 }
 
 func (s *Server) resolve(w http.ResponseWriter, r *http.Request) {
@@ -80,8 +88,8 @@ func (s *Server) resolve(w http.ResponseWriter, r *http.Request) {
 		case e.Status == stReady:
 			writeJSON(w, http.StatusOK, body(e))
 			return
-		case e.Status == stFailed && e.Permanent:
-			writeJSON(w, http.StatusOK, body(e)) // asking again will not help
+		case e.Status == stFailed && e.Permanent && e.RetryAt > s.store.now().Unix():
+			writeJSON(w, http.StatusOK, body(e)) // asking again will not help (yet); entries saved before retryAt existed expire
 			return
 		case e.Status == stQueued || e.Status == stRunning:
 			writeJSON(w, http.StatusAccepted, body(e))
@@ -123,21 +131,20 @@ func (s *Server) touch(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
 	counts, bytes := s.store.Stats()
 	state, until := s.worker.BreakerState()
-	yt := version(ctx, s.cfg.YtDlp, "--version")
+	yt, deno, ff := s.worker.versions.Get()
 	writeJSON(w, http.StatusOK, map[string]any{
 		"ok":              yt != "" && state == "closed",
 		"ytdlpVersion":    yt,
-		"denoVersion":     version(ctx, s.cfg.Deno, "--version"),
-		"ffmpegVersion":   version(ctx, s.cfg.FFmpeg, "-version"),
+		"denoVersion":     deno,
+		"ffmpegVersion":   ff,
 		"cacheBytes":      bytes,
 		"cacheLimitBytes": s.cfg.CacheLimit,
 		"counts":          counts,
 		"breaker":         map[string]any{"state": state, "until": until},
 		"lastError":       s.worker.LastError(),
+		"breakerError":    s.worker.BreakerError(),
 	})
 }
 
@@ -148,6 +155,7 @@ func (s *Server) update(w http.ResponseWriter, r *http.Request) {
 	before := version(ctx, s.cfg.YtDlp, "--version")
 	out, err := exec.CommandContext(ctx, s.cfg.YtDlp, "-U").CombinedOutput()
 	after := version(ctx, s.cfg.YtDlp, "--version")
+	s.worker.versions.Refresh()
 	if err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]any{"error": oneLine(string(out)), "before": before, "after": after})
 		return

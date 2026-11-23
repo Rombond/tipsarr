@@ -45,6 +45,7 @@ func effective(t *testing.T, e *env, who *http.Cookie) perms.Mask {
 }
 
 func TestDefaultPermissionsAndTheCatalog(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	if got := effective(t, e, bob); got != perms.Default {
@@ -76,6 +77,7 @@ func TestDefaultPermissionsAndTheCatalog(t *testing.T) {
 }
 
 func TestPermissionEditingRules(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	bobID := userID(t, e, bob)
@@ -116,6 +118,7 @@ func TestPermissionEditingRules(t *testing.T) {
 }
 
 func TestApprovalFollowsPermissions(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	addInstance(t, e, admin, "radarr", newFakeArr(t, "radarr"))
@@ -148,6 +151,7 @@ func TestApprovalFollowsPermissions(t *testing.T) {
 }
 
 func TestRequestRights(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	grantPermissions(t, e, admin, bob, perms.CreateIssues) // may not request at all
@@ -174,6 +178,7 @@ func TestRequestRights(t *testing.T) {
 }
 
 func TestQuota(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	now := time.Now() // requests are stamped with the real time, so the fake clock starts from it
@@ -265,6 +270,7 @@ func TestQuota(t *testing.T) {
 }
 
 func TestIssueRights(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	grantPermissions(t, e, admin, bob, perms.Request) // no issue rights
@@ -294,6 +300,7 @@ func TestIssueRights(t *testing.T) {
 
 // A request is 4K when its quality profile allows 2160p: requesting it and having it auto-approved are rights of their own.
 func TestRequest4K(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	radarr := newFakeArr(t, "radarr")
@@ -365,6 +372,7 @@ func TestRequest4K(t *testing.T) {
 
 // Seeing everyone's requests does not mean deleting them: only the requester or a request manager may.
 func TestDeleteOthersRequest(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	addInstance(t, e, admin, "radarr", newFakeArr(t, "radarr"))

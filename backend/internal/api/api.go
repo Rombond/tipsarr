@@ -81,9 +81,12 @@ type userCtxKey struct{}
 type ipCtxKey struct{}
 type sessionCtxKey struct{}
 
+// Services always return non-nil slices; keeps generated TS types free of `| null`. Set once here: it is a huma
+// package global, and writing it from NewHuma raced when several servers start at once (parallel tests).
+func init() { huma.DefaultArrayNullable = false }
+
 // NewHuma mounts the API on r under /api/v1 and returns the huma API (used to export the spec).
 func NewHuma(r chi.Router, d Deps) huma.API {
-	huma.DefaultArrayNullable = false // services always return non-nil slices; keeps generated TS types free of `| null`
 	cfg := huma.DefaultConfig("Tipsarr", specVersion)
 	cfg.Servers = []*huma.Server{{URL: "/api/v1"}}
 	cfg.CreateHooks = nil // no "$schema" link fields in responses

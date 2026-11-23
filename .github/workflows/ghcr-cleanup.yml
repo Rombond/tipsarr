@@ -1,0 +1,39 @@
+name: GHCR cleanup
+
+# Weekly: deletes container versions that no tag uses any more (old :develop and :pr-<n> builds, their
+# per-platform and attestation manifests), older than 2 days. Tagged images and everything they reference
+# (multi-arch platforms, attestations) are kept. Logic in .github/scripts/ghcr-cleanup.sh.
+on:
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: List only, delete nothing
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ghcr-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [tipsarr, tipsarr-demo, trailer-resolver]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Delete unused versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          PACKAGE: ${{ matrix.package }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
+        run: .github/scripts/ghcr-cleanup.sh | tee -a "$GITHUB_STEP_SUMMARY"

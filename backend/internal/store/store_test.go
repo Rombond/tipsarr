@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 )
@@ -198,9 +199,33 @@ func TestRequestQueriesAllEngines(t *testing.T) {
 			if act, _ := s.ActiveRequestStatuses(ctx, "tv", []int{424242, 1}); act[424242] != StatusPending || len(act) != 1 {
 				t.Fatalf("active = %v", act)
 			}
+			// conditional writes: only over the expected state, and a write that changes nothing still counts
+			r.DeclineReason = "x"
+			if ok, err := s.UpdateRequestIf(ctx, r, StatusPending); err != nil || !ok {
+				t.Fatalf("update if pending = %v %v", ok, err)
+			}
+			if ok, err := s.UpdateRequestIf(ctx, r, StatusPending); err != nil || !ok {
+				t.Fatalf("unchanged update if pending = %v %v", ok, err)
+			}
+			if ok, err := s.UpdateRequestIf(ctx, r, StatusFailed); err != nil || ok {
+				t.Fatalf("update if failed on a pending request = %v %v", ok, err)
+			}
+			r.DeclineReason = ""
+			if err := s.UpdateRequest(ctx, r); err != nil {
+				t.Fatal(err)
+			}
+			if open, _ := s.UnsentOpenRequests(ctx); !slices.ContainsFunc(open, func(o Request) bool { return o.ID == r.ID }) {
+				t.Fatal("pending request not in the unsent open requests")
+			}
 			r.Status, r.SentAt, r.ServarrID = StatusApproved, 100, 7
 			if err := s.UpdateRequest(ctx, r); err != nil {
 				t.Fatal(err)
+			}
+			if open, _ := s.UnsentOpenRequests(ctx); slices.ContainsFunc(open, func(o Request) bool { return o.ID == r.ID }) {
+				t.Fatal("sent request in the unsent open requests")
+			}
+			if ok, err := s.MarkRequestAvailable(ctx, r.ID, 200); err != nil || ok {
+				t.Fatalf("sent request closed by the library: %v %v", ok, err)
 			}
 			rows, total, err := s.ListRequests(ctx, RequestFilter{RequestedBy: uid, Statuses: []string{StatusApproved}, Take: 10})
 			if err != nil || total != 1 || len(rows) != 1 || rows[0].ServarrID != 7 {

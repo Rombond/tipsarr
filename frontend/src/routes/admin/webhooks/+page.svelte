@@ -11,6 +11,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import SimpleSelect from '$lib/components/ui/simple-select.svelte';
 	import TemplateHelp from './TemplateHelp.svelte';
+	import PushCard from '$lib/components/admin/push-card.svelte';
 	import { tick } from 'svelte';
 
 	type Hook = Schemas['WebhookView'];
@@ -401,4 +402,6 @@
 			{/if}
 		</CardContent>
 	</Card>
+
+	<PushCard />
 </div>

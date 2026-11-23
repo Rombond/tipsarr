@@ -37,6 +37,7 @@ func TestSessionEndsWhenJellyfinAccountDisabled(t *testing.T) {
 
 // When Jellyfin cannot be reached the session keeps working (fail open).
 func TestSessionSurvivesJellyfinOutage(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	app := newApp(t)
 	admin := loginAs(t, app, jf.URL, "alice", "secret")
@@ -48,6 +49,7 @@ func TestSessionSurvivesJellyfinOutage(t *testing.T) {
 
 // Linking Jellyfin prefills the LDAP settings from its LDAP plugin; the button can redo it.
 func TestLDAPImportFromJellyfin(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	app := newApp(t)
 	admin := loginAs(t, app, jf.URL, "alice", "secret")

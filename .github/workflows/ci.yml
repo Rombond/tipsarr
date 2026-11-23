@@ -2,12 +2,18 @@ name: CI
 
 on:
   push:
-    branches: [master, rewrite]
+    branches: [master, develop]
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
+
+# A new push to a pull request cancels its run still in progress. Other runs get a group of their own
+# (run_id): a shared group would queue pushes to master/develop and drop all but the newest pending one.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   backend:
@@ -36,11 +42,30 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
+          cache: false
+      # setup-go's cache key is go.sum only: once saved it never refreshes and the -race build cache goes stale.
+      # Restore the newest cache (same go.sum first); save a new one only on pushes to master/develop, whose
+      # caches every PR can read (a PR's own cache is visible to that PR only, not worth its size).
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-race-${{ runner.os }}-${{ hashFiles('backend/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-race-${{ runner.os }}-${{ hashFiles('backend/go.sum') }}-
+            go-race-${{ runner.os }}-
       - run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
       - run: go vet ./...
       # SQLite always; PostgreSQL and MySQL through the service containers above.
       - run: go test -race -count=1 ./...
+      - if: github.event_name == 'push'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-race-${{ runner.os }}-${{ hashFiles('backend/go.sum') }}-${{ github.sha }}
 
   frontend:
     runs-on: ubuntu-latest
@@ -75,8 +100,12 @@ jobs:
       - run: git diff --exit-code -- frontend/src/lib/api api design/generated ios/Tipsarr/Tipsarr/Core/API/openapi.yaml ios/Tipsarr/Tipsarr/DesignSystem/Tokens.swift backend/internal/i18n/locales android/app/src/main/res android/app/src/main/java/com/brebond/tipsarr/core/support/GeneratedLanguages.kt
 
   docker:
+    # Checks the Dockerfile builds, in parallel with the tests. preview.yml already builds (and pushes) it for
+    # develop and for pull requests from this repository, so here only master and pull requests from forks.
+    if: >-
+      github.ref == 'refs/heads/master' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -85,5 +114,8 @@ jobs:
           context: .
           push: false
           tags: tipsarr:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # read the caches of preview.yml and release.yml (not visible from master, whose build stays cold but off
+          # the critical path); writing one here cost ~30 s per run
+          cache-from: |
+            type=gha,scope=preview
+            type=gha,scope=tipsarr

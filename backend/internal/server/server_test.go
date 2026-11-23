@@ -35,6 +35,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/server"
 	"github.com/Rombond/tipsarr/backend/internal/stats"
 	"github.com/Rombond/tipsarr/backend/internal/store"
+	"github.com/Rombond/tipsarr/backend/internal/store/storetest"
 	"github.com/Rombond/tipsarr/backend/internal/suggestions"
 	"github.com/Rombond/tipsarr/backend/internal/teasers"
 	"github.com/Rombond/tipsarr/backend/internal/trailers"
@@ -315,6 +316,14 @@ func fakeTMDB(t *testing.T) *httptest.Server {
 		_, _ = w.Write([]byte(`{"season_number":2,"name":"Thousand-Year Blood War","air_date":"2022-10-11","episodes":[
 			{"episode_number":1,"name":"The Blood Warfare"},{"episode_number":2,"name":"Foundation Stones"},{"episode_number":3,"name":"March of the Starcross"}]}`))
 	}))
+	// a saga: one released part (1), one released part (5), one announced (7), one without a date
+	mux.HandleFunc("/collection/9", hit(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"id":9,"name":"Saga","overview":"All of it.","backdrop_path":"/sagab.jpg","parts":[
+			{"id":7,"title":"Coming Soon","release_date":"2099-01-01","poster_path":"/cs.jpg"},
+			{"id":5,"title":"Request Me","release_date":"2025-05-05","poster_path":"/rm.jpg"},
+			{"id":1,"title":"Movie One","release_date":"2024-01-02","poster_path":"/p1.jpg"},
+			{"id":8,"title":"Rumoured","release_date":""}]}`))
+	}))
 	mux.HandleFunc("/movie/404", hit(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotFound) }))
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -395,17 +404,13 @@ func newEnv(t *testing.T, dryRun bool) *env {
 
 func newEnvWith(t *testing.T, dryRun bool, setupToken string) *env {
 	t.Helper()
-	return newEnvOpts(t, dryRun, setupToken, false)
+	return newEnvOpts(t, dryRun, setupToken, false, false)
 }
 
-func newEnvOpts(t *testing.T, dryRun bool, setupToken string, demoMode bool) *env {
+func newEnvOpts(t *testing.T, dryRun bool, setupToken string, demoMode, secureCookies bool) *env {
 	t.Helper()
 	tm, im := fakeTMDB(t), fakeImages(t)
-	st, err := store.Open(context.Background(), "sqlite:"+filepath.Join(t.TempDir(), "t.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = st.Close() })
+	st := storetest.Open(t)
 	lib := library.New(st)
 	lib.SetDebounce(20 * time.Millisecond)
 	jm := jobs.New(st)
@@ -449,7 +454,7 @@ func newEnvOpts(t *testing.T, dryRun bool, setupToken string, demoMode bool) *en
 	issueSvc.SetArr(reqs)
 	authSvc.SetRecheckEvery(0) // tests: ask the fake Jellyfin about the account on every request
 	h, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issueSvc, Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: testLimiter(st), SetupToken: setupToken, SecureCookies: envSecureCookies, Hub: hub, Notify: notifier, Push: pusher,
+		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issueSvc, Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: testLimiter(st), SetupToken: setupToken, SecureCookies: secureCookies, Hub: hub, Notify: notifier, Push: pusher,
 		DryRun: dryRun, Demo: demoMode, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)
@@ -493,6 +498,7 @@ func sessionCookie(resp *http.Response) *http.Cookie {
 }
 
 func TestSetupLoginFlow(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	app := newApp(t)
 
@@ -553,6 +559,7 @@ func TestSetupLoginFlow(t *testing.T) {
 }
 
 func TestHealthAndOpenAPI(t *testing.T) {
+	t.Parallel()
 	app := newApp(t)
 	if resp, body := call(t, app, "GET", "/api/v1/health", ""); resp.StatusCode != 200 || !strings.Contains(body, `"ok":true`) {
 		t.Fatalf("health = %d %s", resp.StatusCode, body)
@@ -665,6 +672,7 @@ func TestMediaEndpoints(t *testing.T) {
 }
 
 func TestImageProxy(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	app := newApp(t)
 	bob := loginAs(t, app, jf.URL, "bob", "hunter2")
@@ -700,6 +708,7 @@ func waitFor(t *testing.T, what string, cond func() bool) {
 }
 
 func TestLibrarySyncAndAvailability(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	app, st, _ := newAppFull(t)
 	admin := loginAs(t, app, jf.URL, "alice", "secret")
@@ -789,6 +798,7 @@ func TestLibrarySyncAndAvailability(t *testing.T) {
 }
 
 func TestHistorySyncAndWebhook(t *testing.T) {
+	t.Parallel()
 	jf := fakeJellyfin(t)
 	app, st, _ := newAppFull(t)
 	admin := loginAs(t, app, jf.URL, "alice", "secret")

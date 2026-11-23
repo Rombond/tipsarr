@@ -348,3 +348,63 @@ func TestMonitorSeasonsDryRun(t *testing.T) {
 		t.Fatalf("dry-run wrote: %v %v", puts, cmds)
 	}
 }
+
+// Season statistics as Sonarr sends them: nextAiring is a date while a dated, monitored episode has yet
+// to air, null (or absent) otherwise.
+func TestSeasonAiringFromJSON(t *testing.T) {
+	var s Series
+	body := `{"seasons":[` +
+		`{"seasonNumber":1,"monitored":true,"statistics":{"episodeFileCount":3,"episodeCount":3,"totalEpisodeCount":8,"nextAiring":"2026-11-27T05:00:00Z"}},` +
+		`{"seasonNumber":2,"monitored":true,"statistics":{"episodeFileCount":8,"episodeCount":8,"totalEpisodeCount":8,"nextAiring":null}},` +
+		`{"seasonNumber":3,"monitored":true,"statistics":{"episodeFileCount":7,"episodeCount":8,"totalEpisodeCount":8}}]}`
+	if err := json.Unmarshal([]byte(body), &s); err != nil {
+		t.Fatal(err)
+	}
+	s1, s2, s3 := s.Seasons[0], s.Seasons[1], s.Seasons[2]
+	if !s1.Airing() || s1.Done() || s1.Size() != 8 {
+		t.Fatalf("airing season = %+v", s1)
+	}
+	if s2.Airing() || !s2.Done() || s2.Size() != 8 {
+		t.Fatalf("finished season = %+v", s2)
+	}
+	if s3.Airing() || s3.Done() || s3.Size() != 8 { // aired out, last episode never downloaded
+		t.Fatalf("season missing its last episode = %+v", s3)
+	}
+}
+
+// Undated (TBA) episodes are invisible in Sonarr's statistics: the episode list is read only when a
+// season looks finished while Sonarr lists more episodes than it counts, and only monitored episodes
+// without a file still to air count.
+func TestNoteUnscheduled(t *testing.T) {
+	var s Series
+	s.Statistics.EpisodeCount, s.Statistics.EpisodeFileCount = 13, 13
+	s.Seasons = []SeriesSeason{{SeasonNumber: 1, Monitored: true}, {SeasonNumber: 2, Monitored: true}}
+	s1, s2 := &s.Seasons[0].Statistics, &s.Seasons[1].Statistics
+	s1.EpisodeCount, s1.EpisodeFileCount, s1.TotalEpisodeCount = 10, 10, 10 // complete, nothing hidden
+	s2.EpisodeCount, s2.EpisodeFileCount, s2.TotalEpisodeCount = 3, 3, 8    // 5 not counted
+	if s.NeedsEpisodes([]int{1}) || !s.NeedsEpisodes([]int{2}) || !s.NeedsEpisodes(nil) {
+		t.Fatal("NeedsEpisodes picked the wrong seasons")
+	}
+	s2.EpisodeFileCount = 2 // an aired episode is still missing: no need to look further yet
+	if s.NeedsEpisodes([]int{2}) {
+		t.Fatal("episode list read for a season still missing aired episodes")
+	}
+	s2.EpisodeFileCount = 3
+
+	eps := []Episode{
+		{SeasonNumber: 2, EpisodeNumber: 4, Monitored: false},                       // unmonitored: never coming
+		{SeasonNumber: 2, EpisodeNumber: 5, Monitored: true, AirDate: "2026-01-01"}, // dated: Sonarr counts it already
+		{SeasonNumber: 2, EpisodeNumber: 6, Monitored: true, HasFile: true},         // on disk
+	}
+	s.NoteUnscheduled(eps)
+	if s.Seasons[1].Airing() || !s.Seasons[1].Done() || !s.SeasonsDone([]int{2}) || !s.Complete() {
+		t.Fatalf("season without undated monitored episodes held open: %+v", s.Seasons[1])
+	}
+	s.NoteUnscheduled(append(eps, Episode{SeasonNumber: 2, EpisodeNumber: 7, Monitored: true}))
+	if !s.Seasons[1].Airing() || s.Seasons[1].Done() || s.Seasons[1].Size() != 8 || s.SeasonsDone([]int{2}) || s.Complete() {
+		t.Fatalf("undated monitored episode ignored: %+v", s.Seasons[1])
+	}
+	if !s.SeasonsDone([]int{1}) {
+		t.Fatal("season 1 held back by season 2")
+	}
+}

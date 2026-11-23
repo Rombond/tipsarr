@@ -48,6 +48,8 @@
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 	let sentinel = $state<HTMLElement | undefined>();
+	// bumped on every fresh list: an answer to an older request is dropped, even for the same filters
+	let gen = 0;
 
 	// what the server is asked, as one string: a change starts a fresh list
 	const query = $derived.by(() => {
@@ -81,7 +83,7 @@
 		if (loading || pageNo >= totalPages) return;
 		loading = true;
 		error = null;
-		const mine = debounced;
+		const mine = gen;
 		try {
 			const res = await unwrap(
 				api.GET('/library', {
@@ -104,15 +106,16 @@
 					},
 				}),
 			);
-			if (mine !== debounced) return; // the filters changed meanwhile
+			if (mine !== gen) return; // the filters changed meanwhile
 			items = [...items, ...res.items];
 			total = res.total;
 			pageNo = res.page;
 			totalPages = Math.max(1, res.totalPages);
 		} catch (e) {
-			error = errorText(e);
+			if (mine === gen) error = errorText(e);
 		} finally {
-			loading = false;
+			// a stale answer must not end the loading state of the request that replaced it
+			if (mine === gen) loading = false;
 		}
 	}
 
@@ -120,6 +123,7 @@
 	$effect(() => {
 		const key = debounced;
 		untrack(() => {
+			gen++;
 			items = [];
 			pageNo = 0;
 			totalPages = 1;

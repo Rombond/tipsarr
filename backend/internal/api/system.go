@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/Rombond/tipsarr/backend/internal/clients/github"
 	"github.com/Rombond/tipsarr/backend/internal/media"
 	"net/http"
 
@@ -22,10 +23,11 @@ type statusFeatures struct {
 
 type statusOutput struct {
 	Body struct {
-		Version string `json:"version"`
-		DB      string `json:"db" doc:"Database engine: sqlite, postgres or mysql"`
-		DryRun  bool   `json:"dryRun" doc:"When true nothing is ever sent to Radarr/Sonarr"`
-		Demo    bool   `json:"demo" doc:"This server is a throwaway public demo sandbox: one-click sign-in, actions that reach other services are refused (demo_disabled)"`
+		Version       string `json:"version"`
+		LatestVersion string `json:"latestVersion" doc:"Newest release tag published on GitHub (checked every 6 hours); empty while unknown, in the demo and for a dev build"`
+		DB            string `json:"db" doc:"Database engine: sqlite, postgres or mysql"`
+		DryRun        bool   `json:"dryRun" doc:"When true nothing is ever sent to Radarr/Sonarr"`
+		Demo          bool   `json:"demo" doc:"This server is a throwaway public demo sandbox: one-click sign-in, actions that reach other services are refused (demo_disabled)"`
 		// The app-wide default language (a TMDB tag such as fr-FR); empty means the browser decides.
 		DefaultLanguage string `json:"defaultLanguage"`
 		// APIVersion counts breaking changes of /api/v1: it only grows when an app must be updated.
@@ -35,6 +37,8 @@ type statusOutput struct {
 		Features      statusFeatures `json:"features"`
 	}
 }
+
+var latestRelease = github.NewLatest(Version)
 
 func registerSystem(api huma.API, d Deps) {
 	huma.Register(api, huma.Operation{
@@ -52,6 +56,9 @@ func registerSystem(api huma.API, d Deps) {
 	}, func(ctx context.Context, _ *struct{}) (*statusOutput, error) {
 		out := &statusOutput{}
 		out.Body.Version = Version
+		if !d.Demo && Version != "dev" { // a local build never shows an update link, so it does not ask GitHub
+			out.Body.LatestVersion = latestRelease.Get()
+		}
 		out.Body.DB = d.Store.Dialect
 		out.Body.DryRun = d.DryRun
 		out.Body.Demo = d.Demo

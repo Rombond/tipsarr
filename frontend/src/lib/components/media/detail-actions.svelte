@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.svelte';
-	import { api, unwrap, expectOk, errorText, type MediaDetail } from '$lib/api/client';
-	import { toast } from '$lib/toast.svelte';
+	import { untrack } from 'svelte';
+	import type { MediaDetail } from '$lib/api/client';
+	import { MediaFlags } from '$lib/media-flags.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -19,43 +20,14 @@
 
 	let { details, type, tmdbId }: { details: MediaDetail; type: 'movie' | 'tv'; tmdbId: number } = $props();
 
-	let watchlisted = $state(false);
-	let blocklisted = $state(false);
-	let busy = $state(false);
 	let reporting = $state(false);
 
+	// recreated when the page moves to another title
+	const flags = $derived(new MediaFlags(type, tmdbId));
 	$effect(() => {
-		const t = type;
-		const id = tmdbId;
-		unwrap(api.GET('/media/{type}/{id}/flags', { params: { path: { type: t, id } } }))
-			.then((f) => {
-				watchlisted = f.watchlisted;
-				blocklisted = f.blocklisted;
-			})
-			.catch(() => {});
+		const f = flags;
+		untrack(() => f.load());
 	});
-
-	async function toggle(kind: 'watchlist' | 'blocklist') {
-		busy = true;
-		const on = kind === 'watchlist' ? watchlisted : blocklisted;
-		try {
-			if (kind === 'watchlist') {
-				if (on) await expectOk(api.DELETE('/watchlist/{type}/{id}', { params: { path: { type, id: tmdbId } } }));
-				else await expectOk(api.POST('/watchlist', { body: { type, tmdbId } }));
-				watchlisted = !on;
-				toast.success(t(on ? 'actions.toast_watch_removed' : 'actions.toast_watch_added'));
-			} else {
-				if (on) await expectOk(api.DELETE('/blocklist/{type}/{id}', { params: { path: { type, id: tmdbId } } }));
-				else await expectOk(api.POST('/blocklist', { body: { type, tmdbId } }));
-				blocklisted = !on;
-				toast.success(t(on ? 'actions.toast_unhidden' : 'actions.toast_hidden'));
-			}
-		} catch (e) {
-			toast.error(errorText(e));
-		} finally {
-			busy = false;
-		}
-	}
 </script>
 
 <div class="flex flex-wrap items-center gap-2">
@@ -87,8 +59,8 @@
 		</Button>
 	{/if}
 
-	<Button variant="outline" disabled={busy} onclick={() => toggle('watchlist')} aria-pressed={watchlisted}>
-		{#if watchlisted}<BookmarkCheckIcon class="size-4" /> {t('actions.on_watchlist')}{:else}<BookmarkIcon class="size-4" /> {t('actions.watchlist')}{/if}
+	<Button variant="outline" disabled={flags.busy} onclick={() => flags.toggle('watchlist')} aria-pressed={flags.watchlisted}>
+		{#if flags.watchlisted}<BookmarkCheckIcon class="size-4" /> {t('actions.on_watchlist')}{:else}<BookmarkIcon class="size-4" /> {t('actions.watchlist')}{/if}
 	</Button>
 
 	{#if auth.canCreateIssues && details.availability !== 'none'}
@@ -105,8 +77,8 @@
 			{/snippet}
 		</DropdownMenu.Trigger>
 		<DropdownMenu.Content align="start" class="w-64">
-			<DropdownMenu.Item onclick={() => toggle('blocklist')}>
-				{#if blocklisted}<EyeIcon /> {t('actions.show_again')}{:else}<EyeOffIcon /> {t('actions.hide')}{/if}
+			<DropdownMenu.Item onclick={() => flags.toggle('blocklist')}>
+				{#if flags.blocklisted}<EyeIcon /> {t('actions.show_again')}{:else}<EyeOffIcon /> {t('actions.hide')}{/if}
 			</DropdownMenu.Item>
 			<DropdownMenu.Separator />
 			{#if details.imdbId}

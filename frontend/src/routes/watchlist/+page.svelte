@@ -3,6 +3,7 @@
 	import { api, unwrap, expectOk, errorText, type Schemas } from '$lib/api/client';
 	import MediaCard from '$lib/components/media/media-card.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { toast } from '$lib/toast.svelte';
 
 	let items = $state<Schemas['Item'][]>([]);
 	let loading = $state(true);
@@ -20,8 +21,10 @@
 		items = items.filter((i) => !(i.type === item.type && i.tmdbId === item.tmdbId));
 		try {
 			await expectOk(api.DELETE('/watchlist/{type}/{id}', { params: { path: { type: item.type, id: item.tmdbId } } }));
-		} catch {
+			toast.success(t('actions.toast_watch_removed'));
+		} catch (e) {
 			items = before;
+			toast.error(errorText(e));
 		}
 	}
 </script>
@@ -41,7 +44,7 @@
 	{:else}
 		<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
 			{#each items as item (`${item.type}:${item.tmdbId}`)}
-				<MediaCard {item} onDismiss={remove} fluid />
+				<MediaCard {item} onRemove={remove} fluid />
 			{/each}
 		</div>
 		<p class="text-xs text-muted-foreground">{t('watchlist.hint')}</p>

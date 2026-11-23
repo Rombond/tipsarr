@@ -14,6 +14,7 @@ import (
 // server-side: users see their own request events, admins see everything. Events are a
 // "something changed" nudge; clients refetch over REST (and always after a reconnect).
 func eventsHandler(d Deps) http.HandlerFunc {
+	streams := &streamCounter{n: map[string]int{}}
 	return func(w http.ResponseWriter, r *http.Request) {
 		u := userFrom(r.Context())
 		if u == nil {
@@ -25,11 +26,11 @@ func eventsHandler(d Deps) http.HandlerFunc {
 			http.Error(w, "streaming unsupported", http.StatusInternalServerError)
 			return
 		}
-		if !acquireStream(u.ID) {
+		if !streams.acquire(u.ID) {
 			http.Error(w, "too many open event streams", http.StatusTooManyRequests)
 			return
 		}
-		defer releaseStream(u.ID)
+		defer streams.release(u.ID)
 		// a stream lives longer than the server's WriteTimeout: no write deadline for it
 		_ = http.NewResponseController(w).SetWriteDeadline(time.Time{})
 		var last int64
@@ -82,27 +83,29 @@ func eventsHandler(d Deps) http.HandlerFunc {
 
 const maxStreamsPerUser = 6
 
-var (
-	streamMu sync.Mutex
-	streams  = map[string]int{}
-)
+// streamCounter counts the open event streams per user of one server (one per eventsHandler, so two servers in
+// one process, as in parallel tests, do not share a cap).
+type streamCounter struct {
+	mu sync.Mutex
+	n  map[string]int
+}
 
-func acquireStream(userID string) bool {
-	streamMu.Lock()
-	defer streamMu.Unlock()
-	if streams[userID] >= maxStreamsPerUser {
+func (c *streamCounter) acquire(userID string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.n[userID] >= maxStreamsPerUser {
 		return false
 	}
-	streams[userID]++
+	c.n[userID]++
 	return true
 }
 
-func releaseStream(userID string) {
-	streamMu.Lock()
-	defer streamMu.Unlock()
-	if streams[userID] <= 1 {
-		delete(streams, userID)
+func (c *streamCounter) release(userID string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.n[userID] <= 1 {
+		delete(c.n, userID)
 		return
 	}
-	streams[userID]--
+	c.n[userID]--
 }
