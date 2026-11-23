@@ -73,7 +73,7 @@
 
 <div class={fluid ? 'min-w-0' : 'w-32 shrink-0 snap-start sm:w-40'}>
 	<div
-		class="group @container relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-muted shadow-sm ring-1 ring-border/50 transition hover:shadow-lg hover:ring-border focus-within:ring-2 focus-within:ring-ring"
+		class="group @container relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-muted shadow-sm ring-1 ring-border/50 transition hover:shadow-lg hover:ring-border has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
 	>
 		<button
 			type="button"
@@ -112,7 +112,7 @@
 		{/if}
 
 		<!-- hover / focus actions (always reachable by keyboard; on touch the card opens the details) -->
-		<div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1.5 pt-8 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:hidden">
+		<div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1.5 pt-8 opacity-0 transition-opacity group-hover:opacity-100 group-has-[:focus-visible]:opacity-100 [@media(hover:none)]:hidden">
 			{#if canQuickRequest}
 				<button
 					type="button"
