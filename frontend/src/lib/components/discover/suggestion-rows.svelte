@@ -3,6 +3,7 @@
 	import { api, unwrap, expectOk, errorText, type Schemas } from '$lib/api/client';
 	import { onEvent, stream } from '$lib/events.svelte';
 	import Carousel from '$lib/components/media/carousel.svelte';
+	import { isHidden } from '$lib/media-flags.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
@@ -106,7 +107,7 @@
 	<div class="grid grid-cols-1 gap-8">
 		{#each sequence as part, i (i)}
 			{#if 'row' in part}
-				<Carousel title={rowTitle(part.row)} items={part.row.items} {onSelect} onDismiss={dismiss} />
+				<Carousel title={rowTitle(part.row)} items={part.row.items.filter((i) => !isHidden(i))} {onSelect} onDismiss={dismiss} />
 			{:else}
 				{@render part.filler()}
 			{/if}

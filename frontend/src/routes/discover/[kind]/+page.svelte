@@ -5,6 +5,7 @@
 	import { api, unwrap, errorText, type MediaItem } from '$lib/api/client';
 	import MediaCard from '$lib/components/media/media-card.svelte';
 	import MediaDetailModal from '$lib/components/media/media-detail-modal.svelte';
+	import { isHidden } from '$lib/media-flags.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Button } from '$lib/components/ui/button';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
@@ -90,7 +91,7 @@
 		<p class="text-sm text-muted-foreground">{t('common.no_results')}</p>
 	{:else}
 		<div class="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-6">
-			{#each items as item (item.type + item.tmdbId)}
+			{#each items.filter((i) => !isHidden(i)) as item (item.type + item.tmdbId)}
 				<MediaCard {item} fluid onSelect={(i) => (selected = i)} />
 			{/each}
 			{#if loading}
