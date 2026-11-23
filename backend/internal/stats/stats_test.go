@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
@@ -108,5 +109,30 @@ func TestComputeIncludesHistorySources(t *testing.T) {
 	}
 	if res.Totals.Titles != 3 || res.HistorySources != 0 {
 		t.Fatalf("all: titles=%d sources=%d", res.Totals.Titles, res.HistorySources)
+	}
+
+	// plugin mode (Playback Reporting events): same scope, and the 30-day window still applies
+	now := time.Now().Unix()
+	events := []store.WatchEvent{
+		{SourceRowID: 1, UserID: "me", MediaType: "movie", TMDBID: 1, Title: "One", PlayedAt: now, Seconds: 3600},
+		{SourceRowID: 2, UserID: "tv", MediaType: "movie", TMDBID: 2, Title: "Two", PlayedAt: now, Seconds: 3600},
+		{SourceRowID: 3, UserID: "other", MediaType: "movie", TMDBID: 3, Title: "Three", PlayedAt: now, Seconds: 3600},
+	}
+	if err := st.InsertWatchEvents(ctx, events); err != nil {
+		t.Fatal(err)
+	}
+	res, err = svc.Compute(ctx, "me", "30d", false, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Source != "plugin" || res.Totals.Titles != 2 || res.HistorySources != 1 {
+		t.Fatalf("plugin: source=%s titles=%d sources=%d, want plugin, 2 and 1", res.Source, res.Totals.Titles, res.HistorySources)
+	}
+	res, err = svc.Compute(ctx, "", "30d", true, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Totals.Titles != 3 {
+		t.Fatalf("plugin all: titles=%d, want 3", res.Totals.Titles)
 	}
 }

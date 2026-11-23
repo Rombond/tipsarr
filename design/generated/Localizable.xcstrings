@@ -13154,6 +13154,23 @@
         }
       }
     },
+    "stats.history_sources": {
+      "comment": "placeholders: count",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Watch numbers include the history of %@ other account(s) linked to this person by an admin. Requests are their own."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les chiffres de visionnage incluent l’historique de %@ autre(s) compte(s) lié(s) par un admin. Les demandes restent les siennes."
+          }
+        }
+      }
+    },
     "stats.hours_of_day": {
       "localizations": {
         "en": {
