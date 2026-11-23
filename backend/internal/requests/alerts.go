@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
@@ -141,5 +142,10 @@ func (s *Service) inLibrary(ctx context.Context, r *store.Request) bool {
 			return false
 		}
 	}
-	return true
+	if r.SeasonNumbering != media.NumberingTVDB || s.media == nil {
+		return true // the library's seasons cannot be sized: showing up is enough
+	}
+	// A season that was airing was already in the library before its last episodes arrived: wait until
+	// the library holds all of them.
+	return s.showComplete(ctx, r, requested[r.ID], have)
 }
