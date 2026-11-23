@@ -69,6 +69,7 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 	recs := queue[int(r.ServarrID)]
 	total := combine(recs) // percent / ETA of what the download client is transferring
 	var seasons []SeasonProgress
+	var want []int // requested seasons of a show, Sonarr numbering
 	var err error
 	if r.MediaType == "movie" {
 		var m *servarr.Movie
@@ -78,7 +79,22 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 	} else {
 		var sr *servarr.Series
 		if sr, err = c.Series(ctx, int(r.ServarrID)); err == nil {
-			done = sr.Complete()
+			if rs, rerr := s.store.RequestSeasons(ctx, []string{r.ID}); rerr == nil {
+				want = rs[r.ID]
+			} else {
+				slog.Warn("poll request seasons", "id", r.ID, "err", rerr)
+				return nil // transient; try again next tick
+			}
+			if sr.NeedsEpisodes(want) {
+				// only when a requested season looks finished: its undated episodes are still to come
+				eps, eerr := c.SeriesEpisodes(ctx, int(r.ServarrID))
+				if eerr != nil {
+					slog.Warn("poll episodes", "id", r.ID, "err", eerr)
+					return nil // transient; try again next tick
+				}
+				sr.NoteUnscheduled(eps)
+			}
+			done = sr.SeasonsDone(want)
 			var pct int
 			pct, seasons = showProgress(sr, recs)
 			if len(recs) > 0 {
@@ -131,7 +147,7 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 	}
 	s.mu.Unlock()
 	if r.MediaType == "tv" {
-		s.noteSeasons(ctx, r, seasons)
+		s.noteSeasons(ctx, r, want, seasons)
 	}
 	seasonsChanged := r.MediaType == "tv" && !slices.Equal(prevSeasons, seasons)
 	if downloading && (!had || prev != cur) {
@@ -296,19 +312,25 @@ func showProgress(sr *servarr.Series, recs []servarr.QueueItem) (int, []SeasonPr
 	}
 	var out []SeasonProgress
 	for _, sn := range sr.Seasons {
-		n := sn.Statistics.EpisodeCount
+		n := sn.Size()
 		if sn.SeasonNumber <= 0 || n <= 0 {
 			continue
 		}
 		have := float64(sn.Statistics.EpisodeFileCount) + frac[sn.SeasonNumber]
 		pct := min(100, int(have*100/float64(n)))
-		if sn.Statistics.EpisodeFileCount < n {
+		if !sn.Done() {
 			pct = min(99, pct)
 		}
-		out = append(out, SeasonProgress{Season: sn.SeasonNumber, Percent: pct})
+		out = append(out, SeasonProgress{Season: sn.SeasonNumber, Percent: pct, Episodes: sn.Statistics.EpisodeFileCount, Total: n, Airing: sn.Airing()})
 	}
 	total := 0
-	if n := sr.Statistics.EpisodeCount; n > 0 {
+	n := sr.Statistics.EpisodeCount
+	for _, sn := range sr.Seasons {
+		if sn.SeasonNumber > 0 && sn.Monitored && sn.Airing() {
+			n += sn.Size() - sn.Statistics.EpisodeCount // count the episodes still to air
+		}
+	}
+	if n > 0 {
 		total = min(99, int((float64(sr.Statistics.EpisodeFileCount)+fracAll)*100/float64(n)))
 	}
 	return total, out

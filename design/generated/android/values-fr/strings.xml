@@ -710,6 +710,7 @@
     <string name="req_requested_by_link">Demandé par</string>
     <string name="req_retry">Réessayer</string>
     <string name="req_root_folder">Dossier</string>
+    <string name="req_season_airing">%1$s/%2$s · en diffusion</string>
     <string name="req_season_badge">Saison %1$s</string>
     <string name="req_season_range">Saisons %1$s à %2$s</string>
     <string name="req_seasons">Saison %1$s | Saisons %1$s</string>

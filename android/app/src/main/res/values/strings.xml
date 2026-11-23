@@ -710,6 +710,7 @@
     <string name="req_requested_by_link">Requested by</string>
     <string name="req_retry">Retry</string>
     <string name="req_root_folder">Folder</string>
+    <string name="req_season_airing">%1$s/%2$s · airing</string>
     <string name="req_season_badge">Season %1$s</string>
     <string name="req_season_range">Seasons %1$s–%2$s</string>
     <string name="req_seasons">Season %1$s | Seasons %1$s</string>

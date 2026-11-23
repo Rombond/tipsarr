@@ -11406,6 +11406,23 @@
         }
       }
     },
+    "req.season_airing": {
+      "comment": "placeholders: have, total",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@/%2$@ · airing"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@/%2$@ · en diffusion"
+          }
+        }
+      }
+    },
     "req.season_badge": {
       "comment": "placeholders: n",
       "localizations": {

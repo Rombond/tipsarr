@@ -37,6 +37,7 @@ type fakeArr struct {
 	moviesJSON  atomic.Value // string: body of GET /movie without a tmdbId filter
 	seriesJSON  atomic.Value // string: body of GET /series?tvdbId=... (the series Sonarr already tracks)
 	episodeJSON atomic.Value // string: body of GET /episode
+	series77    atomic.Value // string: body of GET /series/77, instead of the hasFile one
 	movieByTMDB atomic.Value // string: body of GET /movie?tmdbId=...
 	beforeAdd   atomic.Value // func(): runs when Radarr receives an add, before it answers
 }
@@ -127,7 +128,9 @@ func newFakeArr(t *testing.T, kind string) *fakeArr {
 		case kind == "sonarr" && p == "/languageprofile":
 			w.WriteHeader(http.StatusNotFound)
 		case kind == "sonarr" && p == "/series/77":
-			if f.hasFile.Load() {
+			if v, ok := f.series77.Load().(string); ok {
+				out(v)
+			} else if f.hasFile.Load() {
 				out(`{"id":77,"tvdbId":81189,"statistics":{"episodeFileCount":20,"episodeCount":20}}`)
 			} else {
 				out(`{"id":77,"tvdbId":81189,"statistics":{"episodeFileCount":3,"episodeCount":20}}`)

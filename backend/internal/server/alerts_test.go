@@ -3,9 +3,11 @@ package server_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -309,4 +311,106 @@ func TestDryRunApprovedClosedWhenInLibrary(t *testing.T) {
 	if r, _ := e.st.GetRequest(ctx, req.ID); r.Status != store.StatusAvailable {
 		t.Fatalf("dry-run approved request not closed: %+v", r)
 	}
+}
+
+// A season still airing (issue #50): Sonarr's episodeCount only counts the aired episodes, so the
+// request stays open with the real count until the whole season is on disk, undated episodes included,
+// and the "now available" alert waits until the library holds the last episode.
+func TestAiringSeasonStaysOpen(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t, false)
+	_, admin, _ := setupUsers(t, e)
+	sonarr := newFakeArr(t, "sonarr")
+	addInstance(t, e, admin, "sonarr", sonarr)
+	ctx := context.Background()
+
+	var alerts atomic.Int32
+	recv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { alerts.Add(1) }))
+	defer recv.Close()
+	call(t, e.app, "POST", "/api/v1/admin/webhooks", `{"name":"w","url":"`+recv.URL+`","events":["media.available"],"enabled":true}`, admin)
+
+	series := func(files, count int, nextAiring string) string {
+		na := ""
+		if nextAiring != "" {
+			na = `,"nextAiring":"` + nextAiring + `"`
+		}
+		return fmt.Sprintf(`{"id":77,"tvdbId":81189,"monitored":true,"statistics":{"episodeFileCount":%d,"episodeCount":%d},`+
+			`"seasons":[{"seasonNumber":1,"monitored":true,"statistics":{"episodeFileCount":%d,"episodeCount":%d,"totalEpisodeCount":8%s}}]}`,
+			files, count, files, count, na)
+	}
+	episodes := func(withFile int, undatedMonitored bool) string {
+		var eps []string
+		for i := 1; i <= 8; i++ {
+			switch {
+			case i <= withFile:
+				eps = append(eps, fmt.Sprintf(`{"id":%d,"seasonNumber":1,"episodeNumber":%d,"airDate":"2026-11-0%d","monitored":true,"hasFile":true}`, i, i, i))
+			default:
+				eps = append(eps, fmt.Sprintf(`{"id":%d,"seasonNumber":1,"episodeNumber":%d,"monitored":%t,"hasFile":false}`, i, i, undatedMonitored))
+			}
+		}
+		return "[" + strings.Join(eps, ",") + "]"
+	}
+	library := func(n int) {
+		t.Helper()
+		if err := e.st.ReplaceLibrary(ctx, []store.LibraryItem{{MediaType: "tv", TMDBID: 2, JellyfinID: "j2", Title: "Show Two"}},
+			[]store.LibrarySeason{{TMDBID: 2, SeasonNumber: 1, EpisodeCount: n}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	type seasonProgress struct {
+		Season, Percent, Episodes, Total int
+		Airing                           bool
+	}
+	view := func(id string) (string, string, []seasonProgress) {
+		t.Helper()
+		_, b := call(t, e.app, "GET", "/api/v1/requests/"+id, "", admin)
+		var v struct {
+			Status, Stage  string
+			SeasonProgress []seasonProgress
+		}
+		if err := json.Unmarshal([]byte(b), &v); err != nil {
+			t.Fatal(err)
+		}
+		return v.Status, v.Stage, v.SeasonProgress
+	}
+
+	sonarr.series77.Store(series(3, 3, "2026-11-27T05:00:00Z"))
+	_, body := call(t, e.app, "POST", "/api/v1/requests", `{"type":"tv","tmdbId":2,"seasons":[1]}`, admin)
+	req := decodeReq(t, body)
+	if req.Status != "approved" {
+		t.Fatalf("request = %s", body)
+	}
+	// Sonarr tracks it now: the detail sizes season 1 with its 8 episodes
+	sonarr.seriesJSON.Store(`[{"id":77,"tvdbId":81189,"monitored":true,"seasons":[{"seasonNumber":1,"monitored":true,"statistics":{"totalEpisodeCount":8}}]}]`)
+	library(3)
+
+	// 3 aired, 3 on disk, 5 to air
+	e.reqs.Poll(ctx)
+	if st, stage, sp := view(req.ID); st != "approved" || stage != "searching" || len(sp) != 1 || sp[0] != (seasonProgress{1, 37, 3, 8, true}) {
+		t.Fatalf("airing season = %s %s %+v", st, stage, sp)
+	}
+
+	// the 5 others have no air date yet: Sonarr's statistics forget them, the episode list does not
+	sonarr.series77.Store(series(3, 3, ""))
+	sonarr.episodeJSON.Store(episodes(3, true))
+	e.reqs.Poll(ctx)
+	if st, _, sp := view(req.ID); st != "approved" || len(sp) != 1 || sp[0] != (seasonProgress{1, 37, 3, 8, true}) {
+		t.Fatalf("season with undated episodes = %s %+v", st, sp)
+	}
+
+	// every episode on disk: available, but the alert waits until the library has the last one
+	sonarr.series77.Store(series(8, 8, ""))
+	sonarr.episodeJSON.Store(episodes(8, true))
+	e.reqs.Poll(ctx)
+	if st, _, _ := view(req.ID); st != "available" {
+		t.Fatalf("finished season not available: %s", st)
+	}
+	e.reqs.Poll(ctx)
+	time.Sleep(100 * time.Millisecond)
+	if n := alerts.Load(); n != 0 {
+		t.Fatalf("alert sent while the library had 3 of 8 episodes (%d)", n)
+	}
+	library(8)
+	e.reqs.Poll(ctx)
+	waitFor(t, "alert once the library has the season", func() bool { return alerts.Load() == 1 })
 }
