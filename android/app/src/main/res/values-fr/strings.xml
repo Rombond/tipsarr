@@ -971,7 +971,8 @@
     <string name="version_update">%1$s disponible</string>
     <string name="version_update_hint">Tipsarr %1$s est sortie : voir les notes de version</string>
     <string name="watchlist_empty">Rien ici pour l’instant. Ouvre un film ou une série et appuie sur « Ma liste ».</string>
-    <string name="watchlist_hint">Survole une affiche et appuie sur ✕ pour la retirer de la liste.</string>
+    <string name="watchlist_hint">Survole une affiche et appuie sur le marque-page pour la retirer de la liste.</string>
+    <string name="watchlist_remove">Retirer de ma liste</string>
     <string name="watchlist_title">Ma liste</string>
     <string name="webhook_issue_commented_message">%1$s : %2$s</string>
     <string name="webhook_issue_commented_subject">Nouveau commentaire sur un signalement : %1$s</string>
