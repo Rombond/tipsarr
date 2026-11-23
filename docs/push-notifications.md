@@ -17,13 +17,13 @@ Tipsarr server ──HTTPS, server key──► push-relay ──► APNs (iOS) 
 
 ## Turning it on
 
-Settings → Push notifications → **Turn on mobile notifications**. The server registers once with the relay and gets a
+Webhooks → Push notifications → **Turn on mobile notifications** (no address to type: the official relay is used). The server registers once with the relay and gets a
 key of its own (it identifies itself with a random install id it generates and keeps). Then each person allows
 notifications in the app and chooses which kinds they want (their requests, requests to approve, issues).
 
 Nothing is sent while `TIPSARR_DRY_RUN` is on: the log only says which push would have gone out.
 
-You can also paste a key given by a relay operator instead of registering.
+You can also paste a key given by a relay operator instead of registering, under **Advanced** in the same section.
 
 ## What goes through the relay
 
@@ -41,8 +41,8 @@ counters, the install id, the optional server address and version, and a keyed h
 
 ## Quota
 
-A key from the public relay has a **daily quota** of notifications (shown in Settings). When it is reached, Tipsarr
-pauses push until the next UTC midnight and Settings shows until when; webhooks keep working. A key unused for 90 days
+A key from the public relay has a **daily quota** of notifications (shown in Webhooks → Push notifications). When it is reached, Tipsarr
+pauses push until the next UTC midnight and Webhooks → Push notifications shows until when; webhooks keep working. A key unused for 90 days
 is deleted by the relay; Tipsarr registers again on its own when the relay refuses its key.
 <!-- TODO: confirm the public relay's actual quota and unused-key settings (relay defaults: 200 per day, 90 days, 30 days). -->
 
@@ -51,7 +51,7 @@ is deleted by the relay; Tipsarr registers again on its own when the relay refus
 You can run push-relay yourself (see its README), but **the apps from the App Store and Google Play only work with the
 official relay**: a notification for those apps must be signed with the publisher's Apple key and Firebase project.
 Your own relay is useful only with your own build of the apps (your bundle id, Apple push key and Firebase project), or
-for other apps. In Tipsarr, set the relay address and key under Settings → Push notifications.
+for other apps. In Tipsarr, set the relay address and key under Webhooks → Push notifications → Advanced.
 
 With your own relay and a manually issued key, you can turn on "Name the title in alerts" if the relay allows free text
 for the app: the title then goes through the relay and Apple/Google.
