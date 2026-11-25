@@ -1,12 +1,19 @@
 name: Apps CI
 
-# Builds the iOS and Android apps without signing or publishing anything, on every PR that touches them.
+# Builds the iOS and Android apps without signing or publishing anything, on PRs and on pushes to develop/master
+# that touch them.
 #
 # Needs the secret GOOGLE_SERVICES_JSON (base64 of android/app/google-services.json): the google-services
-# Gradle plugin is always applied. iOS needs Xcode 27.2 on the macOS runner image (check actions/runner-images);
-# otherwise use a self-hosted runner on the Mac.
+# Gradle plugin is always applied.
+# iOS needs Xcode 27 (the project file is its JSON format):
+#   - pushes to develop/master and manual runs use the self-hosted runner on the owner's Mac (labels
+#     self-hosted, macOS, xcode27). Never PRs: the repo is public, a fork's PR would run its code on that Mac.
+#   - PRs use GitHub's macOS image, and skip the iOS build with a warning while it has no Xcode 27.
 on:
   pull_request:
+    paths: ['ios/**', 'android/**', 'locales/**', 'api/**', 'design/**', '.github/workflows/apps-ci.yml']
+  push:
+    branches: [develop, master]
     paths: ['ios/**', 'android/**', 'locales/**', 'api/**', 'design/**', '.github/workflows/apps-ci.yml']
   workflow_dispatch:
 
@@ -38,14 +45,21 @@ jobs:
       - run: ./gradlew --no-daemon assembleRelease lint testDebugUnitTest
 
   ios:
-    runs-on: macos-latest
+    runs-on: ${{ github.event_name == 'pull_request' && 'macos-latest' || fromJSON('["self-hosted", "macOS", "xcode27"]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Xcode version
         id: xcode
         run: |
-          # The project file is Xcode 27's JSON format. GitHub's macOS images stop at Xcode 26 for now (2026-11-25):
-          # skip with a notice instead of failing every PR, and build as soon as an image has it.
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            # the owner's Mac: no sudo, pick the stable Xcode for this job only
+            echo "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer" >> "$GITHUB_ENV"
+            DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -version
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # GitHub's macOS images stop at Xcode 26 for now (2026-11-25): skip with a warning instead of failing
+          # every PR, and build as soon as an image has Xcode 27.
           xc=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)
           if [ -z "$xc" ]; then
             echo "::warning::No Xcode 27 on $ImageOS ($(ls -d /Applications/Xcode_*.app | sort -V | tail -1 | xargs basename)): iOS build skipped"
@@ -61,5 +75,6 @@ jobs:
           xcodebuild build \
             -project ios/Tipsarr/Tipsarr.xcodeproj -scheme Tipsarr -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
             -skipPackagePluginValidation -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO
