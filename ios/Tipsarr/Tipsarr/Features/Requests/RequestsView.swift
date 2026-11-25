@@ -155,12 +155,12 @@ struct RequestsView: View {
                                 Button { Task { await follows.unfollow(record.id) } } label: {
                                     Label("m.requests.unfollow_swipe", systemImage: "bell.slash")
                                 }
-                                .tint(Tokens.palette.mutedFg)
+                                .tint(.gray)
                             } else if follows.canFollow(record) {
                                 Button { Task { await follow(record) } } label: {
                                     Label("m.requests.follow_swipe", systemImage: "dot.radiowaves.left.and.right")
                                 }
-                                .tint(Tokens.palette.primary)
+                                .tint(Tokens.Status.downloading) // primary is near white in dark mode: the white icon vanished
                             }
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
