@@ -77,13 +77,13 @@ func TestThrottling(t *testing.T) {
 	if g := fs.take(); len(g) != 0 {
 		t.Fatalf("too soon: %+v", g)
 	}
-	// 60 s later, small change: no
+	// 60 s later, same percent: no
 	*now = now.Add(40 * time.Second)
-	run(s, event{kind: evProgress, id: "r1", stage: "downloading", percent: 3})
+	run(s, event{kind: evProgress, id: "r1", stage: "downloading", percent: 1})
 	if g := fs.take(); len(g) != 0 {
-		t.Fatalf("small change: %+v", g)
+		t.Fatalf("unchanged: %+v", g)
 	}
-	// >= 5 %: low priority send
+	// any move after a minute: low priority send
 	run(s, event{kind: evProgress, id: "r1", stage: "downloading", percent: 7})
 	if g := fs.take(); len(g) != 1 || g[0].High || g[0].Percent != 7 {
 		t.Fatalf("%+v", g)
