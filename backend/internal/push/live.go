@@ -18,7 +18,7 @@ import (
 // quota_exceeded for one. Alerts have their own quota and keep going.
 const SettingLivePausedUntil = "push.live_paused_until"
 
-// LiveItem is one live update for a followed request: an enum and numbers, never text (push-relay v0.5.0).
+// LiveItem is one live update for a followed request: an enum and numbers, never text (push-relay v1.0.0).
 type LiveItem struct {
 	Platform     string
 	Token        string
@@ -63,7 +63,7 @@ type liveState struct {
 
 var liveOff struct {
 	mu    sync.Mutex
-	until time.Time // a relay older than v0.5.0 answered 400: no live update before this
+	until time.Time // a relay older than v1.0.0 answered 400: no live update before this
 }
 
 // SendLive posts live updates to the relay, synchronously, and answers one result per item.
@@ -166,7 +166,7 @@ func (s *Service) postLiveOnce(ctx context.Context, cfg config, items []LiveItem
 		io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
 		liveOff.mu.Lock()
 		if time.Now().After(liveOff.until) {
-			slog.Warn("push relay does not support live updates (needs push-relay v0.5.0)")
+			slog.Warn("push relay does not support live updates (needs push-relay v1.0.0)")
 		}
 		liveOff.until = time.Now().Add(time.Hour)
 		liveOff.mu.Unlock()
