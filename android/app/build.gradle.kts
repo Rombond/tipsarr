@@ -16,6 +16,10 @@ plugins {
 }
 
 android {
+    lint {
+        // Errors that existed when the apps CI started (2026-11-25); only new ones fail the build.
+        baseline = file("lint-baseline.xml")
+    }
     namespace = "com.brebond.tipsarr"
     compileSdk = 37
 
