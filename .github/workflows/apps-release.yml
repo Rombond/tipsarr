@@ -1,11 +1,8 @@
 name: Apps release
 
-# Publishes the mobile apps from an app tag. DISABLED for now: only a manual run is possible, and every job
-# also checks it runs on a tag. To enable, replace `on:` with:
-#
-#   on:
-#     push:
-#       tags: ['android-v*', 'ios-v*']
+# Publishes the mobile apps from an app tag: `android-vX.Y.Z` (signed APK in a GitHub release, AAB to Play
+# internal testing) and `ios-vX.Y.Z` (archive and upload to TestFlight). Every job checks the tag matches the
+# app version. Store review and promotion stay manual.
 #
 # Server tags `vX.Y.Z` stay in release.yml (Docker images only). For a joint release, put the three tags on one commit.
 #
@@ -16,7 +13,8 @@ name: Apps release
 #            and signs and uploads with the Apple account signed in to Xcode there (no App Store Connect API key:
 #            the account is not an admin). The Mac must be on, signed in, with the runner service started.
 on:
-  workflow_dispatch:
+  push:
+    tags: ['android-v*', 'ios-v*']
 
 permissions:
   contents: write # attach the APK to the GitHub release
