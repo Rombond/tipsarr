@@ -71,7 +71,7 @@ jobs:
           sudo gem install fastlane --no-document  # system gems: the user gem bin dir is not on PATH (exit 127)
           fastlane run upload_to_play_store package_name:com.brebond.tipsarr track:internal \
             aab:"tipsarr-$VERSION.aab" json_key:"$RUNNER_TEMP/play.json" \
-            skip_upload_metadata:true skip_upload_images:true skip_upload_screenshots:true skip_upload_changelogs:true
+            skip_upload_apk:true skip_upload_metadata:true skip_upload_images:true skip_upload_screenshots:true skip_upload_changelogs:true
 
   ios:
     if: startsWith(github.ref, 'refs/tags/ios-v')
