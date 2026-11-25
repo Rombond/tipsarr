@@ -46,6 +46,11 @@ func TestFollowRequest(t *testing.T) {
 	if resp, _ := follow("nope", tokBody); resp.StatusCode != 404 {
 		t.Fatalf("unknown = %d", resp.StatusCode)
 	}
+	// an admin who can see the request may follow it too
+	alice := appLogin(t, base, "alice", "secret", "Alice's iPhone")
+	if resp, body := bearerCall(t, base, "PUT", "/api/v1/requests/"+v.ID+"/follow", tokBody, alice); resp.StatusCode != 200 {
+		t.Fatalf("admin follow = %d %s", resp.StatusCode, body)
+	}
 	resp, body = follow(v.ID, tokBody)
 	if resp.StatusCode != 200 || !strings.Contains(body, `"stage":"requested"`) || !strings.Contains(body, `"platform":"ios"`) || strings.Contains(body, iosTok) {
 		t.Fatalf("follow = %d %s", resp.StatusCode, body)
