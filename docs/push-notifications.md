@@ -59,7 +59,7 @@ the request id, the host name of your server, and the state: stage (`requested`,
 `downloading`, `available`, `declined`, `failed`), percent, time left and a timestamp. **No title or poster**: the app
 keeps them on the phone.
 
-Stage changes are sent at once. Download progress is sent at most once a minute, when it moved by 5% or more, or every
+Stage changes are sent at once. Download progress is sent at most once a minute, when it moved, or every
 5 minutes. A follow ends when the request is available, declined, failed or deleted, after 8 hours on iOS (Apple's
 limit for a Live Activity) and 24 hours on Android.
 

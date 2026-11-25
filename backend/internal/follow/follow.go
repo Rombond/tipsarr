@@ -21,7 +21,7 @@ const (
 	MaxPerSession = 10
 
 	minGap        = 60 * time.Second  // between two sends to one follow, except stage changes
-	stepPercent   = 5                 // progress change worth a send
+	stepPercent   = 1                 // any move is worth a send, at most once a minute (minGap)
 	refreshGap    = 300 * time.Second // progress sent anyway after this long
 	finalDismiss  = 3600              // seconds an ended Live Activity stays on the lock screen
 	queueSize     = 256
