@@ -1,17 +1,13 @@
 name: Apps CI
 
-# Builds the iOS and Android apps without signing or publishing anything.
-# DISABLED for now: only a manual run is possible. To enable on PRs, replace `on:` with:
-#
-#   on:
-#     pull_request:
-#       paths: ['ios/**', 'android/**', 'locales/**', 'api/**', 'design/**', '.github/workflows/apps-ci.yml']
-#     workflow_dispatch:
+# Builds the iOS and Android apps without signing or publishing anything, on every PR that touches them.
 #
 # Needs the secret GOOGLE_SERVICES_JSON (base64 of android/app/google-services.json): the google-services
 # Gradle plugin is always applied. iOS needs Xcode 27.2 on the macOS runner image (check actions/runner-images);
 # otherwise use a self-hosted runner on the Mac.
 on:
+  pull_request:
+    paths: ['ios/**', 'android/**', 'locales/**', 'api/**', 'design/**', '.github/workflows/apps-ci.yml']
   workflow_dispatch:
 
 permissions:
