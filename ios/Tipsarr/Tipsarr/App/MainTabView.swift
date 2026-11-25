@@ -128,6 +128,8 @@ struct MainTabView: View {
             }
             guard !Task.isCancelled, !session.signingOut else { return }
             await PushManager.shared.attach(account: account, pushAvailable: session.serverStatus?.pushAvailable ?? false)
+            ToastBridge.center = toast
+            await LiveFollowManager.shared.attach(account: account, liveFollowAvailable: session.serverStatus?.liveFollowAvailable ?? false)
         }
         // A new language, region or account rebuilds the tabs, so every list is fetched again with them. The profile
         // language counts too: it is updated above after the iPhone's language changed, and Discover was loaded

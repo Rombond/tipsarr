@@ -8,6 +8,7 @@ struct RequestsView: View {
     @Environment(ToastCenter.self) private var toast
     @Environment(\.liveUpdates) private var live
     @Environment(\.detailPane) private var pane
+    private var follows: LiveFollowManager { .shared }
     @Binding var path: NavigationPath
     /// Selected request id in the two-column layout.
     @Binding var selection: String?
@@ -149,6 +150,19 @@ struct RequestsView: View {
                                onDecline: { declining = record })
                         .listRowInsets(.init(top: Tokens.Spacing.md, leading: Tokens.Spacing.lg, bottom: Tokens.Spacing.md, trailing: Tokens.Spacing.lg))
                         .listRowBackground(Color.clear)
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            if follows.isFollowing(record.id) {
+                                Button { Task { await follows.unfollow(record.id) } } label: {
+                                    Label("m.requests.unfollow_swipe", systemImage: "bell.slash")
+                                }
+                                .tint(Tokens.palette.mutedFg)
+                            } else if follows.canFollow(record) {
+                                Button { Task { await follow(record) } } label: {
+                                    Label("m.requests.follow_swipe", systemImage: "dot.radiowaves.left.and.right")
+                                }
+                                .tint(Tokens.palette.primary)
+                            }
+                        }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             if model.canDelete(record) {
                                 Button(role: .destructive) { deleting = record } label: {
@@ -171,6 +185,11 @@ struct RequestsView: View {
             let updated = try await model.approve(record)
             toast.show(L10n.string(updated.dryRun ? "media.toast_approved_dry" : "media.toast_approved", record.title))
         }
+    }
+
+    private func follow(_ record: RequestRecord) async {
+        let result = await follows.follow(record)
+        if !result.text.isEmpty { toast.show(result.text, kind: result.failed ? .error : .success) }
     }
 
     private func run(_ work: () async throws -> Void) async {
@@ -212,6 +231,12 @@ struct RequestRow: View {
                 HStack(alignment: .top) {
                     Text(verbatim: record.title).font(.body.weight(.semibold)).lineLimit(2)
                     Spacer(minLength: Tokens.Spacing.sm)
+                    if LiveFollowManager.shared.isFollowing(record.id) {
+                        Image(systemName: "dot.radiowaves.left.and.right")
+                            .font(.footnote)
+                            .foregroundStyle(Tokens.palette.primary)
+                            .accessibilityLabel(Text("m.requests.following"))
+                    }
                     RequestBadges(record: record)
                 }
                 Text(choose(record.type == .tv, "type.tv", "type.movie")).font(.footnote).foregroundStyle(Tokens.palette.mutedFg)
