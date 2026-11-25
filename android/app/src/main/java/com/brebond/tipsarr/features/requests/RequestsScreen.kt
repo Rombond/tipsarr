@@ -25,6 +25,10 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Movie
+import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.NotificationsOff
+import androidx.compose.runtime.collectAsState
+import com.brebond.tipsarr.core.push.LiveFollow
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -107,6 +111,7 @@ fun RequestsScreen(model: RequestsModel, onOpen: (RequestRecord) -> Unit, onOpen
     var deleting by remember { mutableStateOf<RequestRecord?>(null) }
     LaunchedEffect(model.filter) { model.load(model.filter) }
     val live = LocalLive.current
+    val followed by LiveFollow.followed.collectAsState()
     OnTick(live?.requestsTick ?: 0) { model.load() }
 
     fun run(work: suspend () -> Unit) {
@@ -157,12 +162,18 @@ fun RequestsScreen(model: RequestsModel, onOpen: (RequestRecord) -> Unit, onOpen
                 } else {
                     itemsIndexed(model.items, key = { _, item -> item.id }) { index, record ->
                         LaunchedEffect(index, model.items.size) { model.loadMore(index) }
-                        SwipeRow(record, model.canDelete(record), onDelete = { deleting = record }) {
+                        val following = record.id in followed
+                        SwipeRow(
+                            record, model.canDelete(record), onDelete = { deleting = record },
+                            canFollow = LiveFollow.offered && record.canFollow, following = following,
+                            onFollow = { scope.launch { toggleFollow(context, toast, record, following) } },
+                        ) {
                             RequestRow(
                                 record.withLive(live), showRequester = model.canViewAll, canDecide = model.canManage, busy = record.id in model.busy,
                                 onClick = { onOpen(record) },
                                 onApprove = { run { val updated = model.approve(record); toast?.show(approvedText(context, updated, record.title)) } },
                                 onDecline = { declining = record },
+                                following = following,
                             )
                         }
                         HorizontalDivider(Modifier.padding(start = GUTTER), color = Tokens.palette.border)
@@ -200,18 +211,40 @@ internal fun approvedText(context: android.content.Context, record: RequestRecor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SwipeRow(record: RequestRecord, canDelete: Boolean, onDelete: () -> Unit, content: @Composable () -> Unit) {
-    if (!canDelete) { content(); return }
+private fun SwipeRow(
+    record: RequestRecord,
+    canDelete: Boolean,
+    onDelete: () -> Unit,
+    canFollow: Boolean = false,
+    following: Boolean = false,
+    onFollow: () -> Unit = {},
+    content: @Composable () -> Unit,
+) {
+    if (!canDelete && !canFollow) { content(); return }
     val state = rememberSwipeToDismissBoxState(confirmValueChange = {
-        if (it == SwipeToDismissBoxValue.EndToStart) onDelete()
-        false // the row stays until the confirmation removes it
+        when (it) {
+            SwipeToDismissBoxValue.EndToStart -> onDelete()
+            SwipeToDismissBoxValue.StartToEnd -> onFollow()
+            else -> {}
+        }
+        false // the row stays: the confirmation removes it, a follow only changes its indicator
     })
     SwipeToDismissBox(
         state = state,
-        enableDismissFromStartToEnd = false,
+        enableDismissFromStartToEnd = canFollow,
+        enableDismissFromEndToStart = canDelete,
         backgroundContent = {
-            Box(Modifier.fillMaxSize().background(Tokens.palette.destructive).padding(horizontal = Tokens.Spacing.xl), contentAlignment = Alignment.CenterEnd) {
-                Icon(Icons.Outlined.Delete, stringResource(R.string.m_requests_cancel_swipe), tint = Tokens.palette.bg)
+            if (state.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
+                Box(Modifier.fillMaxSize().background(Tokens.palette.primary).padding(horizontal = Tokens.Spacing.xl), contentAlignment = Alignment.CenterStart) {
+                    Icon(
+                        if (following) Icons.Outlined.NotificationsOff else Icons.Outlined.NotificationsActive,
+                        stringResource(if (following) R.string.m_requests_unfollow_swipe else R.string.m_requests_follow_swipe), tint = Tokens.palette.bg,
+                    )
+                }
+            } else {
+                Box(Modifier.fillMaxSize().background(Tokens.palette.destructive).padding(horizontal = Tokens.Spacing.xl), contentAlignment = Alignment.CenterEnd) {
+                    Icon(Icons.Outlined.Delete, stringResource(R.string.m_requests_cancel_swipe), tint = Tokens.palette.bg)
+                }
             }
         },
     ) { Box(Modifier.background(Tokens.palette.bg)) { content() } }
@@ -242,6 +275,8 @@ fun RequestRow(
     onClick: () -> Unit,
     onApprove: () -> Unit,
     onDecline: () -> Unit,
+    /** Followed outside the app: a small indicator next to the badge. */
+    following: Boolean = false,
 ) {
     val context = LocalContext.current
     val whenText = relativeTime(context, record.createdAt).let { ago ->
@@ -259,6 +294,7 @@ fun RequestRow(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.xs)) {
             Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), verticalAlignment = Alignment.Top) {
                 Text(record.title, fontSize = Tokens.FontSize.body, fontWeight = FontWeight.SemiBold, color = Tokens.palette.fg, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                if (following) Icon(Icons.Outlined.NotificationsActive, stringResource(R.string.m_requests_following), Modifier.size(18.dp), tint = Tokens.palette.mutedFg)
                 StatusBadge(record.state)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {

@@ -102,6 +102,7 @@ class SessionManager(val accounts: AccountStore) {
     /** Removes the account from the phone; the next one (or Connect) takes over. */
     suspend fun signOut(account: Account) {
         PushManager.detach(account)
+        com.brebond.tipsarr.core.push.LiveFollow.detach(account)
         TipsarrApi(account.serverUrl, account.token).logout()
         accounts.remove(account)
         start()

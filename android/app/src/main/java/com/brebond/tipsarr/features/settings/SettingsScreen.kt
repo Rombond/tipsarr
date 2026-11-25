@@ -1,5 +1,7 @@
 package com.brebond.tipsarr.features.settings
 
+import com.brebond.tipsarr.core.push.LiveFollow
+import androidx.compose.material.icons.outlined.Timelapse
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -243,6 +245,9 @@ private fun NotificationsSection(profile: Profile) {
     LifecycleResumeEffect(Unit) { PushManager.refresh(); onPauseOrDispose {} }
     Column(verticalArrangement = Arrangement.spacedBy(Tokens.Spacing.sm)) {
         Group(stringResource(R.string.m_settings_notifications)) {
+            if (LiveFollow.available) {
+                SwitchRow(Icons.Outlined.Timelapse, stringResource(R.string.m_settings_live_follow), LiveFollow.enabled) { LiveFollow.updateEnabled(it) }
+            }
             SwitchRow(
                 Icons.Outlined.NotificationsActive, stringResource(R.string.m_settings_notifications_toggle),
                 checked = PushManager.isOn, enabled = !PushManager.isDenied,
@@ -268,6 +273,12 @@ private fun NotificationsSection(profile: Profile) {
             stringResource(if (PushManager.isDenied) R.string.m_settings_notifications_denied else R.string.m_settings_notifications_footer),
             fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg, modifier = Modifier.padding(horizontal = Tokens.Spacing.xs),
         )
+        if (LiveFollow.available) {
+            Text(
+                stringResource(R.string.m_settings_live_follow_footer),
+                fontSize = Tokens.FontSize.footnote, color = Tokens.palette.mutedFg, modifier = Modifier.padding(horizontal = Tokens.Spacing.xs),
+            )
+        }
     }
 }
 

@@ -15,9 +15,17 @@ import com.google.firebase.messaging.RemoteMessage
 
 /** Receives the FCM token and alerts. While the app is closed the system shows the alert itself; here it is shown while the app is open. */
 class TipsarrMessagingService : FirebaseMessagingService() {
-    override fun onNewToken(token: String) = PushManager.onNewToken(token)
+    override fun onNewToken(token: String) {
+        PushManager.onNewToken(token)
+        LiveFollow.onNewToken(token)
+    }
 
     override fun onMessageReceived(message: RemoteMessage) {
+        // Live follow (data-only): updates the ongoing notification of a followed request, no network.
+        if (message.data["event"] == "live") {
+            LiveState.parse(message.data)?.let { LiveFollow.onPush(this, it) }
+            return
+        }
         val event = message.data["event"] ?: return
         val id = message.data["id"] ?: return
         val title = message.notification?.title ?: return
