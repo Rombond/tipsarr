@@ -91,9 +91,6 @@ func registerFollows(api huma.API, d Deps) {
 		if err != nil {
 			return nil, reqErr(err)
 		}
-		if r.RequestedBy != u.ID { // only one's own requests, even for managers who can see the others
-			return nil, reqErr(store.ErrNotFound)
-		}
 		v, err := d.Requests.Get(ctx, u, in.ID)
 		if err != nil {
 			return nil, reqErr(err)
