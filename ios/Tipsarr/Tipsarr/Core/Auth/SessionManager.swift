@@ -130,6 +130,7 @@ final class SessionManager {
         try? await Task.sleep(for: .milliseconds(400))
         CredentialStore.delete(accountID: account.id)
         await PushManager.shared.detach(account: account)
+        await LiveFollowManager.shared.detach(account: account)
         await TipsarrAPI(serverURL: account.serverURL, token: account.token).logout()
         accounts.remove(account)
         try? await UNUserNotificationCenter.current().setBadgeCount(0)

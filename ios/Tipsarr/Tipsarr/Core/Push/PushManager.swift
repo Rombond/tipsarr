@@ -157,10 +157,14 @@ final class PushManager {
     /// Xcode runs are signed with a development profile and get sandbox tokens; TestFlight and App Store
     /// builds have no embedded profile and get production tokens. The relay needs to know which.
     static var usesSandbox: Bool {
+        #if targetEnvironment(simulator)
+        return true // the simulator has no provisioning profile and only gets sandbox tokens
+        #else
         guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
               let data = try? Data(contentsOf: url) else { return false }
         let text = String(decoding: data, as: UTF8.self)
         guard let range = text.range(of: "<key>aps-environment</key>") else { return false }
         return text[range.upperBound...].prefix(60).contains("development")
+        #endif
     }
 }

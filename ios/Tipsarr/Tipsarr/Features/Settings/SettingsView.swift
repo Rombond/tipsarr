@@ -89,6 +89,15 @@ struct SettingsView: View {
             if session.serverStatus?.pushAvailable == true {
                 notificationsSection
             }
+            if session.serverStatus?.liveFollowAvailable == true {
+                Section {
+                    Toggle(isOn: Binding(get: { LiveFollowManager.shared.enabled }, set: { LiveFollowManager.shared.enabled = $0 })) {
+                        Label { Text("m.settings.live_follow") } icon: { Image(systemName: "dot.radiowaves.left.and.right") }
+                    }
+                } footer: {
+                    Text("m.settings.live_follow_footer")
+                }
+            }
             Section {
                 if DeviceAuth.isAvailable {
                     Toggle(isOn: Binding(get: { faceIDSignIn }, set: { on in

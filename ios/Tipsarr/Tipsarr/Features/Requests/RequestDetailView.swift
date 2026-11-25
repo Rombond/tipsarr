@@ -180,6 +180,22 @@ struct RequestDetailView: View {
 
     @ViewBuilder private var actions: some View {
         VStack(spacing: Tokens.Spacing.sm) {
+            if LiveFollowManager.shared.isFollowing(record.id) {
+                Button { Task { await LiveFollowManager.shared.unfollow(record.id) } } label: {
+                    Label { Text("m.requests.unfollow_action") } icon: { Image(systemName: "bell.slash") }
+                }
+                .buttonStyle(.tipsarr(.secondary, fullWidth: true))
+            } else if LiveFollowManager.shared.canFollow(record) {
+                Button {
+                    Task {
+                        let result = await LiveFollowManager.shared.follow(record)
+                        if !result.text.isEmpty { toast.show(result.text, kind: result.failed ? .error : .success) }
+                    }
+                } label: {
+                    Label { Text("m.requests.follow_action") } icon: { Image(systemName: "dot.radiowaves.left.and.right") }
+                }
+                .buttonStyle(.tipsarr(.secondary, fullWidth: true))
+            }
             if model.canManage && record.state == .requested {
                 HStack(spacing: Tokens.Spacing.md) {
                     Button { Task { await run { record = try await model.approve(record) } } } label: {
