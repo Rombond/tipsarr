@@ -64,7 +64,7 @@ Stage changes are sent at once. Download progress is sent at most once a minute,
 limit for a Live Activity) and 24 hours on Android.
 
 Live updates count against their own daily quota at the relay (2000 per day on a key from the public relay), so a long
-download never uses up the quota of regular notifications. Following needs push-relay 1.0.0 or later: with an older
+download never uses up the quota of regular notifications. Following needs push-relay 1.1.0 or later: with an older
 relay, Tipsarr logs a warning and sends no live updates.
 
 ## Running your own relay
