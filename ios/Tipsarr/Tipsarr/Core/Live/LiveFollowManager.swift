@@ -104,7 +104,17 @@ final class LiveFollowManager {
         let state = Self.contentState(record)
         do {
             let activity = try Activity.request(attributes: attributes, content: ActivityContent(state: state, staleDate: nil), pushType: .token)
-            observe(Ref(id: activity.id, requestId: record.id, accountId: account.id, server: attributes.server))
+            let ref = Ref(id: activity.id, requestId: record.id, accountId: account.id, server: attributes.server)
+            // Say "following" only once the server took the token: otherwise the activity would never move.
+            guard let token = await Self.firstToken(activity.id) else {
+                await end(ref, unfollow: false)
+                return (L10n.string("m.requests.follow_live_off"), true)
+            }
+            if let failure = await register(ref, token: token) {
+                await end(ref, unfollow: false)
+                return (failure, true)
+            }
+            observe(ref)
             return (L10n.string("m.requests.follow_started", record.title), false)
         } catch {
             removePoster(record.id)
@@ -202,7 +212,7 @@ final class LiveFollowManager {
         followed.insert(id)
         let tokens = Task { [weak self] in
             for await token in Self.pushTokens(activity.id) {
-                await self?.register(activity, token: token)
+                await self?.refresh(activity, token: token)
             }
         }
         observers[id] = Task { [weak self] in
@@ -213,7 +223,23 @@ final class LiveFollowManager {
         }
     }
 
-    private func register(_ activity: Ref, token: String) async {
+    /// Sends a token to the server. Returns the error text when the follow cannot work (404, 409, 422) or the
+    /// server could not be reached; nil when it is registered.
+    @discardableResult
+    private func register(_ activity: Ref, token: String) async -> String? {
+        guard let api, activity.accountId == account?.id else { return nil }
+        do {
+            let state = try await api.followRequest(id: activity.requestId, pushToken: token, activityId: activity.id,
+                                                    sandbox: PushManager.usesSandbox, server: activity.server)
+            await Self.updateActivity(activity.id, state: state.contentState)
+            return nil
+        } catch {
+            return APIError.from(error).localizedMessage
+        }
+    }
+
+    /// A token refresh in the background: on a refusal the activity would never update, so it is ended.
+    private func refresh(_ activity: Ref, token: String) async {
         guard let api, activity.accountId == account?.id else { return }
         do {
             let state = try await api.followRequest(id: activity.requestId, pushToken: token, activityId: activity.id,
@@ -226,6 +252,23 @@ final class LiveFollowManager {
                 await end(activity, unfollow: false)
                 ToastBridge.show(apiError.localizedMessage)
             }
+        }
+    }
+
+    /// The activity's first push token, or nil when none comes within the timeout.
+    private nonisolated static func firstToken(_ id: String, timeout: Duration = .seconds(15)) async -> String? {
+        await withTaskGroup(of: String?.self) { group in
+            group.addTask {
+                for await token in pushTokens(id) { return token }
+                return nil
+            }
+            group.addTask {
+                try? await Task.sleep(for: timeout)
+                return nil
+            }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
         }
     }
 
