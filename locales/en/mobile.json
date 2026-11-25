@@ -251,5 +251,17 @@
   "m.job.ytdlp-update": "yt-dlp update",
   "m.job.ytdlp-update.desc": "Checks for a new yt-dlp release and replaces the binary of the trailer resolver right away. Only runs while trailer files are on.",
   "m.job.teaser-pool": "Teasers pool",
-  "m.job.teaser-pool.desc": "Rebuilds the list of about 75 movies and 25 shows whose trailers are always kept ready for the Teasers feed (per language), asks the resolver for the missing files and keeps them from being cleaned up. Only runs while trailer files are on."
+  "m.job.teaser-pool.desc": "Rebuilds the list of about 75 movies and 25 shows whose trailers are always kept ready for the Teasers feed (per language), asks the resolver for the missing files and keeps them from being cleaned up. Only runs while trailer files are on.",
+  "m.requests.follow_swipe": "Follow",
+  "m.requests.unfollow_swipe": "Unfollow",
+  "m.requests.following": "Following",
+  "m.requests.follow_action": "Follow progress",
+  "m.requests.unfollow_action": "Stop following",
+  "m.requests.follow_started": "Following %@",
+  "m.requests.follow_live_off": "Live Activities are off for Tipsarr. Turn them on in Settings.",
+  "m.requests.follow_notif_off": "Notifications are off for Tipsarr. Turn them on to follow a request.",
+  "m.settings.live_follow": "Follow requests outside the app",
+  "m.settings.live_follow_footer": "Swipe a request to see its progress outside the app until it is available.",
+  "m.follow.eta": "%@ left",
+  "m.follow.open_app": "Open Tipsarr for the latest"
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/Rombond/tipsarr/backend/internal/config"
 	"github.com/Rombond/tipsarr/backend/internal/demo"
 	"github.com/Rombond/tipsarr/backend/internal/events"
+	"github.com/Rombond/tipsarr/backend/internal/follow"
 	"github.com/Rombond/tipsarr/backend/internal/i18n"
 	"github.com/Rombond/tipsarr/backend/internal/issues"
 	"github.com/Rombond/tipsarr/backend/internal/jobs"
@@ -156,6 +157,12 @@ func run(cfg config.Config) error {
 	jm.Register(jobs.Job{Name: "boxoffice-refresh", Every: 12 * time.Hour, InitialDelay: time.Minute, Run: box.Refresh})
 	reqSvc := requests.New(st, mediaSvc, hub, notifier, cfg.DryRun)
 	reqSvc.SetLibrary(lib)
+	var followSvc *follow.Service
+	if !dm.Enabled { // a demo sandbox never pushes
+		followSvc = follow.New(st, pusher)
+		reqSvc.SetLive(followSvc)
+		followSvc.Start(ctx)
+	}
 	mediaSvc.SetSeasonSource(reqSvc.SeasonSource()) // TV seasons numbered like Sonarr (TVDB)
 	issueSvc := issues.New(st, mediaSvc, hub, notifier)
 	issueSvc.SetArr(reqSvc)
@@ -205,7 +212,7 @@ func run(cfg config.Config) error {
 	authSvc.SetSessionTTL(cfg.SessionTTL)
 	authSvc.SetRecheckGrace(cfg.RecheckGrace)
 	handler, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: authSvc, ClientIP: trusted, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issueSvc, Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(st), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier, Push: pusher,
+		Store: st, Stats: stats.New(st), Ratings: ratings.New(st), Auth: authSvc, ClientIP: trusted, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqSvc, Issues: issueSvc, Avatars: avatars.New(cfg.ConfigDir, st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: auth.NewLimiter(st), SetupToken: setupToken, SecureCookies: cfg.SecureCookies, Hub: hub, Notify: notifier, Push: pusher, Follow: followSvc,
 		DryRun: cfg.DryRun, Demo: dm.Enabled, ConfigDir: cfg.ConfigDir, ImageBaseURL: os.Getenv("TIPSARR_TMDB_IMAGE_URL"),
 	})
 	if cfg.DryRun {

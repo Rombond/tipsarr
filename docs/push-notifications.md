@@ -46,6 +46,27 @@ pauses push until the next UTC midnight and Webhooks → Push notifications show
 is deleted by the relay; Tipsarr registers again on its own when the relay refuses its key.
 <!-- TODO: confirm the public relay's actual quota and unused-key settings (relay defaults: 200 per day, 90 days, 30 days). -->
 
+## Following a request
+
+In the iOS and Android apps, swipe a request and tap **Follow** (or use the button on the request). Its progress then
+shows outside the app, updated on its own: a Live Activity on the iOS lock screen and Dynamic Island, an ongoing
+notification on Android (a Live Update on Android 16 and later). It moves from requested to approved, downloading with
+its percentage, then available, and ends by itself. Swipe again (**Unfollow**) to stop. The apps have a setting to turn
+the feature off.
+
+What goes through the relay for a followed request: the Live Activity token (iOS) or the device's push token (Android),
+the request id, the host name of your server, and the state: stage (`requested`, `approved`, `searching`,
+`downloading`, `available`, `declined`, `failed`), percent, time left and a timestamp. **No title or poster**: the app
+keeps them on the phone.
+
+Stage changes are sent at once. Download progress is sent at most once a minute, when it moved by 5% or more, or every
+5 minutes. A follow ends when the request is available, declined, failed or deleted, after 8 hours on iOS (Apple's
+limit for a Live Activity) and 24 hours on Android.
+
+Live updates count against their own daily quota at the relay (2000 per day on a key from the public relay), so a long
+download never uses up the quota of regular notifications. Following needs push-relay 0.5.0 or later: with an older
+relay, Tipsarr logs a warning and sends no live updates.
+
 ## Running your own relay
 
 You can run push-relay yourself (see its README), but **the apps from the App Store and Google Play only work with the

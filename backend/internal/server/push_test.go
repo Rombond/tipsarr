@@ -18,6 +18,13 @@ type pushItem struct {
 	ID       string `json:"id"`
 	Lang     string `json:"lang"`
 	Server   string `json:"server"`
+	Live     *struct {
+		Stage        string `json:"stage"`
+		Percent      int    `json:"percent"`
+		End          bool   `json:"end"`
+		DismissAfter int    `json:"dismissAfter"`
+		Priority     string `json:"priority"`
+	} `json:"live"`
 }
 
 // fakeRelay records what Tipsarr sends to the push relay.

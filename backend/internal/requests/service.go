@@ -51,6 +51,7 @@ type Service struct {
 	newServarr func(in *store.ServarrInstance) *servarr.Client
 
 	lib        LibraryRefresher
+	live       LiveNotifier // followed requests (Live Activity / ongoing notification); nil = off
 	now        func() time.Time
 	titleHold  time.Duration
 	seasonHold time.Duration
@@ -76,6 +77,17 @@ type SeasonProgress struct {
 	Total    int  `json:"total,omitempty" doc:"Episodes the season is measured against: the aired ones, or the whole season while it is airing"`
 	Airing   bool `json:"airing,omitempty" doc:"The season still has episodes to air; the request stays open until they are on disk"`
 }
+
+// LiveNotifier hears about the stage and progress of every request, for the ones followed from a phone.
+// Calls must not block.
+type LiveNotifier interface {
+	Stage(id, stage string, percent, eta int)
+	Progress(id string, percent, eta int)
+	Removed(id string)
+}
+
+// SetLive plugs the follow service in.
+func (s *Service) SetLive(l LiveNotifier) { s.live = l }
 
 type Progress struct {
 	Percent    int `json:"percent"`
@@ -730,6 +742,9 @@ func (s *Service) Delete(ctx context.Context, u *store.User, id string) error {
 	}
 	s.clearProgress(id)
 	s.hub.Publish("request.updated", r.RequestedBy, map[string]any{"id": id, "status": "deleted", "stage": "deleted"}, false)
+	if s.live != nil {
+		s.live.Removed(id)
+	}
 	return nil
 }
 
@@ -740,8 +755,23 @@ func (s *Service) Progress(ctx context.Context, u *store.User, id string) (*View
 // ---- events / notifications ----------------------------------------------------------------
 
 func (s *Service) changed(ctx context.Context, r *store.Request) {
-	stage, _ := s.stage(r)
+	stage, percent, eta := s.LiveState(r)
 	s.hub.Publish("request.updated", r.RequestedBy, map[string]any{"id": r.ID, "status": r.Status, "stage": stage}, false)
+	if s.live != nil {
+		s.live.Stage(r.ID, stage, percent, eta)
+	}
+}
+
+// LiveState is the stage and progress of a request as the follow service pushes them.
+func (s *Service) LiveState(r *store.Request) (stage string, percent, eta int) {
+	stage, p := s.stage(r)
+	if p != nil {
+		percent, eta = p.Percent, p.ETASeconds
+	}
+	if stage == "available" {
+		percent = 100
+	}
+	return stage, percent, eta
 }
 
 type payload struct {

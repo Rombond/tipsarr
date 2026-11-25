@@ -126,7 +126,10 @@
     <string name="error_demo_disabled">Disabled in the demo: this would contact another service.</string>
     <string name="error_demo_expired">Your demo session has ended. Reload the page to start a new one.</string>
     <string name="error_duplicate_request">This title already has an active request.</string>
+    <string name="error_follow_final">This request is finished: there is nothing left to follow.</string>
+    <string name="error_follow_limit">Too many requests are followed on this device.</string>
     <string name="error_forbidden">You are not allowed to do this.</string>
+    <string name="error_invalid_activity_id">The Live Activity could not be identified.</string>
     <string name="error_invalid_credentials">Invalid username or password.</string>
     <string name="error_invalid_push_token">That is not a valid push token.</string>
     <string name="error_invalid_push_url">The relay address must start with http:// or https://.</string>
@@ -347,6 +350,9 @@
     <string name="m_faceid_usage">Tipsarr uses Face ID to unlock the app.</string>
     <string name="m_failed_settings">Settings and accounts</string>
     <string name="m_fold_hint">Controls move to the lower half when the device is partly folded.</string>
+    <string name="m_follow_channel">Followed requests</string>
+    <string name="m_follow_eta">%s left</string>
+    <string name="m_follow_open_app">Open Tipsarr for the latest</string>
     <string name="m_icon_dark">Dark</string>
     <string name="m_icon_default">Automatic</string>
     <string name="m_icon_footer">Automatic follows the light, dark and tinted looks of your home screen.</string>
@@ -425,6 +431,12 @@
     <string name="m_requests_details">Details</string>
     <string name="m_requests_dry_run">Dry run</string>
     <string name="m_requests_empty_cta">Browse Discover</string>
+    <string name="m_requests_follow_action">Follow progress</string>
+    <string name="m_requests_follow_live_off">Live Activities are off for Tipsarr. Turn them on in Settings.</string>
+    <string name="m_requests_follow_notif_off">Notifications are off for Tipsarr. Turn them on to follow a request.</string>
+    <string name="m_requests_follow_started">Following %s</string>
+    <string name="m_requests_follow_swipe">Follow</string>
+    <string name="m_requests_following">Following</string>
     <string name="m_requests_imported">Imported from Radarr/Sonarr</string>
     <string name="m_requests_open_title">Open the title</string>
     <string name="m_requests_progress">Progress</string>
@@ -434,6 +446,8 @@
     <string name="m_requests_root_folder">Folder</string>
     <string name="m_requests_select">Select a request</string>
     <string name="m_requests_sent_to_only">sent to %s</string>
+    <string name="m_requests_unfollow_action">Stop following</string>
+    <string name="m_requests_unfollow_swipe">Unfollow</string>
     <string name="m_search_avail">Availability</string>
     <string name="m_search_avail_in">In library</string>
     <string name="m_search_avail_missing">Not in library</string>
@@ -463,6 +477,8 @@
     <string name="m_settings_faceid_signin_footer">Your password is kept encrypted on the phone, protected by your fingerprint, face or screen lock. It is only used to sign you back in when your session ends.</string>
     <string name="m_settings_hidden">Hidden content</string>
     <string name="m_settings_language_default">Default (phone language)</string>
+    <string name="m_settings_live_follow">Follow requests outside the app</string>
+    <string name="m_settings_live_follow_footer">Swipe a request to see its progress outside the app until it is available.</string>
     <string name="m_settings_notifications">Notifications</string>
     <string name="m_settings_notifications_admin">New requests to approve</string>
     <string name="m_settings_notifications_denied">Notifications are turned off for Tipsarr in Android settings.</string>

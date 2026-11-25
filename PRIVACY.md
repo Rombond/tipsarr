@@ -49,7 +49,10 @@ Run by the app publisher, only used when your server's administrator turns push 
 - **At registration** of a server: a random install id, optionally the server's public address and Tipsarr version, and
   a keyed hash (HMAC) of the client IP address. These are kept for abuse handling; the IP hash is deleted after 30 days,
   and a key unused for 90 days is deleted with its data.
-- Usage counters per key (for the daily quota).
+- **Per live update** of a followed request: the Live Activity token (iOS) or the device push token (Android), the
+  request id, the host name of the Tipsarr server, and the stage, percent, time left and a timestamp. No title or
+  poster: the app keeps them on the phone.
+- Usage counters per key (for the daily quotas).
 - The relay's reverse proxy keeps standard access logs (IP address, time, path), rotated and deleted after at most
   90 days.
 

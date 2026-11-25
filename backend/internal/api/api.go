@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	"github.com/Rombond/tipsarr/backend/internal/follow"
 	"net"
 	"net/http"
 	"strings"
@@ -67,7 +68,8 @@ type Deps struct {
 	ClientIP  *clientip.Resolver
 	Hub       *events.Hub
 	Notify    *notify.Service
-	Push      *push.Service // optional
+	Push      *push.Service   // optional
+	Follow    *follow.Service // optional: requests followed from the apps (off in the demo)
 	Jobs      *jobs.Manager
 	DryRun    bool   // global: nothing is ever sent to Radarr/Sonarr
 	ConfigDir string // image cache lives under here
@@ -115,6 +117,7 @@ func NewHuma(r chi.Router, d Deps) huma.API {
 		registerProfile(api, d)
 		registerSessions(api, d)
 		registerDevices(api, d)
+		registerFollows(api, d)
 		registerIssues(api, d)
 		registerOIDC(api, d)
 		registerMarks(api, d)

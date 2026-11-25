@@ -2013,6 +2013,38 @@
         }
       }
     },
+    "error.follow_final": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This request is finished: there is nothing left to follow."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette demande est terminée : il n’y a plus rien à suivre."
+          }
+        }
+      }
+    },
+    "error.follow_limit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many requests are followed on this device."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trop de demandes sont suivies sur cet appareil."
+          }
+        }
+      }
+    },
     "error.forbidden": {
       "localizations": {
         "en": {
@@ -2025,6 +2057,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu n’as pas le droit de faire ça."
+          }
+        }
+      }
+    },
+    "error.invalid_activity_id": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Live Activity could not be identified."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’activité en direct n’a pas pu être identifiée."
           }
         }
       }
@@ -5568,6 +5616,38 @@
         }
       }
     },
+    "m.follow.eta": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ left"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "encore %@"
+          }
+        }
+      }
+    },
+    "m.follow.open_app": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Tipsarr for the latest"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre Tipsarr pour la dernière mise à jour"
+          }
+        }
+      }
+    },
     "m.icon.dark": {
       "localizations": {
         "en": {
@@ -6821,6 +6901,102 @@
         }
       }
     },
+    "m.requests.follow_action": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow progress"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suivre la progression"
+          }
+        }
+      }
+    },
+    "m.requests.follow_live_off": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live Activities are off for Tipsarr. Turn them on in Settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les Activités en direct sont désactivées pour Tipsarr. Active-les dans Réglages."
+          }
+        }
+      }
+    },
+    "m.requests.follow_notif_off": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications are off for Tipsarr. Turn them on to follow a request."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les notifications sont désactivées pour Tipsarr. Active-les pour suivre une demande."
+          }
+        }
+      }
+    },
+    "m.requests.follow_started": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Following %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu suis %@"
+          }
+        }
+      }
+    },
+    "m.requests.follow_swipe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suivre"
+          }
+        }
+      }
+    },
+    "m.requests.following": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Following"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suivie"
+          }
+        }
+      }
+    },
     "m.requests.imported": {
       "localizations": {
         "en": {
@@ -6961,6 +7137,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "envoyé à %@"
+          }
+        }
+      }
+    },
+    "m.requests.unfollow_action": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop following"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêter le suivi"
+          }
+        }
+      }
+    },
+    "m.requests.unfollow_swipe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unfollow"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ne plus suivre"
           }
         }
       }
@@ -7425,6 +7633,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Par défaut (langue de l’appareil)"
+          }
+        }
+      }
+    },
+    "m.settings.live_follow": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow requests outside the app"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suivre les demandes hors de l’app"
+          }
+        }
+      }
+    },
+    "m.settings.live_follow_footer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe a request to see its progress outside the app until it is available."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balaie une demande pour voir sa progression hors de l’app jusqu’à ce qu’elle soit disponible."
           }
         }
       }
