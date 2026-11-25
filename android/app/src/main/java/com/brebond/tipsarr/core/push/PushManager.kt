@@ -216,6 +216,7 @@ object PushManager {
         ).forEach { (id, name) ->
             manager.createNotificationChannel(NotificationChannel(id, context.getString(name), NotificationManager.IMPORTANCE_DEFAULT))
         }
+        LiveFollowNotification.createChannel(context)
     }
 
     /** The channel an event posts on (the same mapping as the relay's templates). */
