@@ -251,5 +251,17 @@
   "m.job.ytdlp-update": "Mise à jour de yt-dlp",
   "m.job.ytdlp-update.desc": "Cherche une nouvelle version de yt-dlp et remplace aussitôt le binaire du résolveur de bandes-annonces. Ne tourne que lorsque les fichiers de bandes-annonces sont activés.",
   "m.job.teaser-pool": "Réserve Teasers",
-  "m.job.teaser-pool.desc": "Reconstruit la liste d’environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue), demande les fichiers manquants au résolveur et les protège du nettoyage. Ne tourne que lorsque les fichiers de bandes-annonces sont activés."
+  "m.job.teaser-pool.desc": "Reconstruit la liste d’environ 75 films et 25 séries dont les bandes-annonces sont toujours prêtes pour le fil Teasers (par langue), demande les fichiers manquants au résolveur et les protège du nettoyage. Ne tourne que lorsque les fichiers de bandes-annonces sont activés.",
+  "m.requests.follow_swipe": "Suivre",
+  "m.requests.unfollow_swipe": "Ne plus suivre",
+  "m.requests.following": "Suivie",
+  "m.requests.follow_action": "Suivre la progression",
+  "m.requests.unfollow_action": "Arrêter le suivi",
+  "m.requests.follow_started": "Tu suis %@",
+  "m.requests.follow_live_off": "Les Activités en direct sont désactivées pour Tipsarr. Active-les dans Réglages.",
+  "m.requests.follow_notif_off": "Les notifications sont désactivées pour Tipsarr. Active-les pour suivre une demande.",
+  "m.settings.live_follow": "Suivre les demandes hors de l’app",
+  "m.settings.live_follow_footer": "Balaie une demande pour voir sa progression hors de l’app jusqu’à ce qu’elle soit disponible.",
+  "m.follow.eta": "encore %@",
+  "m.follow.open_app": "Ouvre Tipsarr pour la dernière mise à jour"
 }

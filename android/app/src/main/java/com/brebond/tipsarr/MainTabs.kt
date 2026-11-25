@@ -155,6 +155,7 @@ fun MainTabs(account: Account, profile: Profile, serverVersion: String?, session
     // Alerts: register this device for the account (managers are asked for the permission at once, like on iOS).
     LaunchedEffect(account.id) {
         PushManager.attach(account, session.serverStatus?.features?.push == true, askNow = profile.can(Permission.MANAGE_REQUESTS))
+        com.brebond.tipsarr.core.push.LiveFollow.attach(account, session.serverStatus?.features?.liveFollow == true)
     }
     LaunchedEffect(profile.ratingSource) { model.ratings.changeSource(RatingSource.from(profile.ratingSource)) }
     var showPicture by remember { mutableStateOf(false) }

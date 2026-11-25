@@ -67,6 +67,7 @@ final class LiveUpdates {
         case "request.progress":
             if let id = event.itemID, let percent = event.percent {
                 progress[id] = LiveProgress(percent: percent, etaSeconds: event.etaSeconds ?? 0)
+                LiveFollowManager.shared.localProgress(id, percent: percent, eta: event.etaSeconds ?? 0)
             }
         case "request.updated":
             if let id = event.itemID { progress[id] = nil }

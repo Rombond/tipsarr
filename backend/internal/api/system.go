@@ -17,8 +17,9 @@ type healthOutput struct {
 
 // statusFeatures tells an app which optional parts this server has.
 type statusFeatures struct {
-	Push    bool `json:"push" doc:"Push notifications are set up on this server"`
-	Teasers bool `json:"teasers" doc:"The Teasers feed is available: trailer files are on and the resolver answers. Apps hide the Teasers tab otherwise"`
+	Push       bool `json:"push" doc:"Push notifications are set up on this server"`
+	LiveFollow bool `json:"liveFollow,omitempty" doc:"Requests can be followed from the apps (Live Activity / ongoing notification). Absent on older servers"`
+	Teasers    bool `json:"teasers" doc:"The Teasers feed is available: trailer files are on and the resolver answers. Apps hide the Teasers tab otherwise"`
 }
 
 type statusOutput struct {
@@ -66,6 +67,7 @@ func registerSystem(api huma.API, d Deps) {
 		out.Body.APIVersion = APIVersion
 		out.Body.MinAppVersion, _ = d.Store.GetSetting(ctx, SettingMinAppVersion)
 		out.Body.Features.Push = d.Push != nil && d.Push.Configured(ctx)
+		out.Body.Features.LiveFollow = !d.Demo && d.Follow != nil && out.Body.Features.Push
 		out.Body.Features.Teasers = d.Trailers.Available(ctx)
 		return out, nil
 	})

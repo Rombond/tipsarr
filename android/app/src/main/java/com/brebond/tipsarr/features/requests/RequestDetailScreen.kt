@@ -1,5 +1,7 @@
 package com.brebond.tipsarr.features.requests
 
+import com.brebond.tipsarr.core.push.LiveFollow
+import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -103,6 +105,7 @@ fun RequestDetailScreen(
     LaunchedEffect(initial.type, model.canManage) { if (model.canManage) options = model.options(initial.type) }
     var refreshing by remember { mutableStateOf(false) }
     val busy = record.id in model.busy
+    val followed by LiveFollow.followed.collectAsState()
 
     suspend fun reload() { model.fresh(record.id)?.let { record = it } }
     fun run(work: suspend () -> Unit) {
@@ -146,6 +149,14 @@ fun RequestDetailScreen(
                         Timeline(steps(context, record))
                     }
                     Facts(record, currentUserName, model.canManage, options)
+                    if (LiveFollow.offered && record.canFollow) {
+                        val following = record.id in followed
+                        TipsarrButton(
+                            stringResource(if (following) R.string.m_requests_unfollow_action else R.string.m_requests_follow_action),
+                            { scope.launch { toggleFollow(context, toast, record, following) } },
+                            Modifier.fillMaxWidth(), kind = ButtonKind.Secondary,
+                        )
+                    }
                     Actions(
                         record, model, busy,
                         onApprove = { run { record = model.approve(record) } },

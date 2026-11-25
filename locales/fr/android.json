@@ -12,5 +12,6 @@
   "m.settings.faceid_signin": "Se connecter par biométrie",
   "m.settings.faceid_signin_footer": "Ton mot de passe est conservé chiffré sur le téléphone, protégé par ton empreinte, ton visage ou le verrouillage de l’écran. Il sert uniquement à te reconnecter quand ta session se termine.",
   "m.settings.notifications_denied": "Les notifications sont désactivées pour Tipsarr dans les réglages d’Android.",
-  "m.settings.notifications_open_settings": "Ouvrir les réglages Android"
+  "m.settings.notifications_open_settings": "Ouvrir les réglages Android",
+  "m.follow.channel": "Demandes suivies"
 }

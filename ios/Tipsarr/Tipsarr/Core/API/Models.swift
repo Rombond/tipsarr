@@ -10,6 +10,8 @@ struct ServerStatus: Sendable, Equatable {
     var pushAvailable: Bool
     /// The Teasers feed works on this server (trailer files are on and the resolver answers): the tab shows only then.
     var teasersAvailable: Bool = false
+    /// The server can follow a request as a Live Activity (`PUT /requests/{id}/follow`).
+    var liveFollowAvailable: Bool = false
 }
 
 struct Profile: Sendable, Equatable, Codable {

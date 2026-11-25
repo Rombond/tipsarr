@@ -1,6 +1,6 @@
 name: Preview image
 
-# Testable images before a release (amd64 only, unsigned):
+# Testable images before a release (amd64 and arm64, unsigned):
 #   push to develop          -> ghcr.io/<owner>/tipsarr:develop
 #   pull request (this repo) -> ghcr.io/<owner>/tipsarr:pr-<number>, deleted when the PR is closed
 # Releases stay in release.yml: tags vX.Y.Z on master publish :X.Y.Z, :X.Y and :latest.
@@ -48,7 +48,7 @@ jobs:
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           build-args: VERSION=${{ steps.tag.outputs.version }}
           push: true
           tags: ${{ steps.tag.outputs.image }}

@@ -982,5 +982,8 @@
   "version.current": "Running version",
   "version.dev": "Development build",
   "version.update": "{version} available",
-  "version.update_hint": "Tipsarr {version} is out: see the release notes"
+  "version.update_hint": "Tipsarr {version} is out: see the release notes",
+  "error.follow_final": "This request is finished: there is nothing left to follow.",
+  "error.follow_limit": "Too many requests are followed on this device.",
+  "error.invalid_activity_id": "The Live Activity could not be identified."
 }

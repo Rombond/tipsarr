@@ -152,6 +152,9 @@ func (s *Service) pollOne(ctx context.Context, c *servarr.Client, r *store.Reque
 	seasonsChanged := r.MediaType == "tv" && !slices.Equal(prevSeasons, seasons)
 	if downloading && (!had || prev != cur) {
 		s.hub.Publish("request.progress", r.RequestedBy, map[string]any{"id": r.ID, "percent": cur.Percent, "etaSeconds": cur.ETASeconds}, false)
+		if s.live != nil {
+			s.live.Progress(r.ID, cur.Percent, cur.ETASeconds)
+		}
 		if !had {
 			// the first time only: after a restart the progress is forgotten and the transfer looks new again
 			if seen, err := s.store.HasRequestEvent(ctx, r.ID, "downloading"); err == nil && !seen {

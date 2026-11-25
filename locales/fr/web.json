@@ -982,5 +982,8 @@
   "version.current": "Version installée",
   "version.dev": "Version de développement",
   "version.update": "{version} disponible",
-  "version.update_hint": "Tipsarr {version} est sortie : voir les notes de version"
+  "version.update_hint": "Tipsarr {version} est sortie : voir les notes de version",
+  "error.follow_final": "Cette demande est terminée : il n’y a plus rien à suivre.",
+  "error.follow_limit": "Trop de demandes sont suivies sur cet appareil.",
+  "error.invalid_activity_id": "L’activité en direct n’a pas pu être identifiée."
 }
