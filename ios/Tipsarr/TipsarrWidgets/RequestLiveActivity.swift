@@ -29,7 +29,7 @@ struct RequestLiveActivity: Widget {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    ProgressLine(state: state)
+                    IslandProgress(state: state)
                 }
             } compactLeading: {
                 StageSymbol(stage: state.stage)
@@ -97,6 +97,29 @@ private struct ProgressLine: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
+        }
+    }
+}
+
+/// The expanded Dynamic Island's bottom row: bar and figures on one line, kept off the rounded corners
+/// (a second line under the bar was clipped by them).
+private struct IslandProgress: View {
+    let state: RequestActivityAttributes.ContentState
+
+    var body: some View {
+        if state.stage == "downloading" {
+            HStack(spacing: 8) {
+                ProgressView(value: Double(state.percent), total: 100)
+                Text(verbatim: "\(state.percent)%").monospacedDigit()
+                if state.etaSeconds >= 60 {
+                    Text(verbatim: Duration.seconds(state.etaSeconds)
+                        .formatted(.units(allowed: [.hours, .minutes], width: .abbreviated)))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .font(.caption)
+            .padding(.horizontal, 12)
         }
     }
 }
