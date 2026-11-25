@@ -86,8 +86,11 @@ private struct ProgressLine: View {
                 HStack {
                     Text(verbatim: "\(state.percent)%").monospacedDigit()
                     Spacer()
-                    if state.etaSeconds > 0 {
-                        Text(Date(timeIntervalSince1970: TimeInterval(state.updatedAt + state.etaSeconds)), style: .relative)
+                    // Time left as of the last update, not a running clock: between two pushes a countdown
+                    // drifts and then counts up once the estimate is past.
+                    if state.etaSeconds >= 60 {
+                        Text(verbatim: Duration.seconds(state.etaSeconds)
+                            .formatted(.units(allowed: [.hours, .minutes], width: .abbreviated)))
                             .monospacedDigit()
                     }
                 }
