@@ -51,6 +51,10 @@ func TestFollowRequest(t *testing.T) {
 	if resp, body := bearerCall(t, base, "PUT", "/api/v1/requests/"+v.ID+"/follow", tokBody, alice); resp.StatusCode != 200 {
 		t.Fatalf("admin follow = %d %s", resp.StatusCode, body)
 	}
+	// a Live Activity token from the simulator: 128 bytes
+	if resp, body := follow(v.ID, `{"pushToken":"`+strings.Repeat("ab", 128)+`"}`); resp.StatusCode != 200 {
+		t.Fatalf("long token = %d %s", resp.StatusCode, body)
+	}
 	resp, body = follow(v.ID, tokBody)
 	if resp.StatusCode != 200 || !strings.Contains(body, `"stage":"requested"`) || !strings.Contains(body, `"platform":"ios"`) || strings.Contains(body, iosTok) {
 		t.Fatalf("follow = %d %s", resp.StatusCode, body)
