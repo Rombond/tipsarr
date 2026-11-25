@@ -37,8 +37,20 @@
     <string name="card_quick_request">Demander</string>
     <string name="card_rating_hint">Note des utilisateurs TMDB (0–10)</string>
     <string name="card_rating_source_hint">Note %1$s</string>
+    <string name="collection_close">Fermer</string>
+    <string name="collection_count_available">%1$s dans la bibliothèque</string>
+    <string name="collection_count_missing">%1$s manquant | %1$s manquants</string>
+    <string name="collection_count_requested">%1$s demandé | %1$s demandés</string>
+    <string name="collection_dialog_desc">Chaque film est une demande à part, avec tes droits et ta limite de demandes habituels. Les films pas encore sortis ne sont demandés que si tu les coches.</string>
+    <string name="collection_dialog_title">Demander les films manquants de %1$s</string>
     <string name="collection_fallback">Collection</string>
     <string name="collection_movies">Films de cette collection</string>
+    <string name="collection_request_missing">Demander les manquants (%1$s)</string>
+    <string name="collection_request_n">Demander %1$s film | Demander %1$s films</string>
+    <string name="collection_skipped_title">Non demandés</string>
+    <string name="collection_toast_none">Rien n’a été demandé.</string>
+    <string name="collection_toast_requested">%1$s film demandé | %1$s films demandés</string>
+    <string name="collection_unreleased">Pas encore sorti</string>
     <string name="common_back">Retour</string>
     <string name="common_cancel">Annuler</string>
     <string name="common_delete">Supprimer</string>
@@ -114,7 +126,10 @@
     <string name="error_demo_disabled">Désactivé dans la démo : cette action contacterait un autre service.</string>
     <string name="error_demo_expired">Ta session de démo est terminée. Recharge la page pour en commencer une nouvelle.</string>
     <string name="error_duplicate_request">Ce titre a déjà une demande en cours.</string>
+    <string name="error_follow_final">Cette demande est terminée : il n’y a plus rien à suivre.</string>
+    <string name="error_follow_limit">Trop de demandes sont suivies sur cet appareil.</string>
     <string name="error_forbidden">Tu n’as pas le droit de faire ça.</string>
+    <string name="error_invalid_activity_id">L’activité en direct n’a pas pu être identifiée.</string>
     <string name="error_invalid_credentials">Nom d’utilisateur ou mot de passe incorrect.</string>
     <string name="error_invalid_push_token">Ce n’est pas un jeton push valide.</string>
     <string name="error_invalid_push_url">L’adresse du relais doit commencer par http:// ou https://.</string>
@@ -130,6 +145,7 @@
     <string name="error_no_instance">Aucune instance Radarr ou Sonarr n’est configurée pour ce type de titre.</string>
     <string name="error_not_an_app">Les notifications push ne sont disponibles que dans les apps iOS et Android.</string>
     <string name="error_not_found">Introuvable.</string>
+    <string name="error_not_in_collection">Ce titre ne fait pas partie de la collection.</string>
     <string name="error_not_in_library">Ce titre n’est pas encore dans la bibliothèque, il n’y a rien à signaler.</string>
     <string name="error_not_in_servarr">Radarr ou Sonarr ne suit pas ce titre.</string>
     <string name="error_not_set_up">Tipsarr n’est pas encore configuré.</string>
@@ -334,6 +350,9 @@
     <string name="m_faceid_usage">Tipsarr utilise Face ID pour déverrouiller l’app.</string>
     <string name="m_failed_settings">Réglages et comptes</string>
     <string name="m_fold_hint">Les commandes passent dans la moitié basse quand l’appareil est partiellement plié.</string>
+    <string name="m_follow_channel">Demandes suivies</string>
+    <string name="m_follow_eta">encore %s</string>
+    <string name="m_follow_open_app">Ouvre Tipsarr pour la dernière mise à jour</string>
     <string name="m_icon_dark">Sombre</string>
     <string name="m_icon_default">Automatique</string>
     <string name="m_icon_footer">Automatique suit les modes clair, sombre et teinté de ton écran d’accueil.</string>
@@ -412,6 +431,12 @@
     <string name="m_requests_details">Détails</string>
     <string name="m_requests_dry_run">Simulation</string>
     <string name="m_requests_empty_cta">Parcourir Découvrir</string>
+    <string name="m_requests_follow_action">Suivre la progression</string>
+    <string name="m_requests_follow_live_off">Les Activités en direct sont désactivées pour Tipsarr. Active-les dans Réglages.</string>
+    <string name="m_requests_follow_notif_off">Les notifications sont désactivées pour Tipsarr. Active-les pour suivre une demande.</string>
+    <string name="m_requests_follow_started">Tu suis %s</string>
+    <string name="m_requests_follow_swipe">Suivre</string>
+    <string name="m_requests_following">Suivie</string>
     <string name="m_requests_imported">Importée depuis Radarr/Sonarr</string>
     <string name="m_requests_open_title">Ouvrir le titre</string>
     <string name="m_requests_progress">Progression</string>
@@ -421,6 +446,8 @@
     <string name="m_requests_root_folder">Dossier</string>
     <string name="m_requests_select">Choisis une demande</string>
     <string name="m_requests_sent_to_only">envoyé à %s</string>
+    <string name="m_requests_unfollow_action">Arrêter le suivi</string>
+    <string name="m_requests_unfollow_swipe">Ne plus suivre</string>
     <string name="m_search_avail">Disponibilité</string>
     <string name="m_search_avail_in">Dans la bibliothèque</string>
     <string name="m_search_avail_missing">Hors bibliothèque</string>
@@ -450,6 +477,8 @@
     <string name="m_settings_faceid_signin_footer">Ton mot de passe est conservé chiffré sur le téléphone, protégé par ton empreinte, ton visage ou le verrouillage de l’écran. Il sert uniquement à te reconnecter quand ta session se termine.</string>
     <string name="m_settings_hidden">Contenu masqué</string>
     <string name="m_settings_language_default">Par défaut (langue du téléphone)</string>
+    <string name="m_settings_live_follow">Suivre les demandes hors de l’app</string>
+    <string name="m_settings_live_follow_footer">Balaie une demande pour voir sa progression hors de l’app jusqu’à ce qu’elle soit disponible.</string>
     <string name="m_settings_notifications">Notifications</string>
     <string name="m_settings_notifications_admin">Nouvelles demandes à approuver</string>
     <string name="m_settings_notifications_denied">Les notifications sont désactivées pour Tipsarr dans les réglages d’Android.</string>
@@ -710,6 +739,7 @@
     <string name="req_requested_by_link">Demandé par</string>
     <string name="req_retry">Réessayer</string>
     <string name="req_root_folder">Dossier</string>
+    <string name="req_season_airing">%1$s/%2$s · en diffusion</string>
     <string name="req_season_badge">Saison %1$s</string>
     <string name="req_season_range">Saisons %1$s à %2$s</string>
     <string name="req_seasons">Saison %1$s | Saisons %1$s</string>
@@ -816,6 +846,7 @@
     <string name="stats_empty">Rien de regardé sur cette période.</string>
     <string name="stats_everyone">Tout le monde</string>
     <string name="stats_genres">Genres</string>
+    <string name="stats_history_sources">Les chiffres de visionnage incluent l’historique de %1$s autre(s) compte(s) lié(s) par un admin. Les demandes restent les siennes.</string>
     <string name="stats_hours_of_day">Visionnage par heure de la journée</string>
     <string name="stats_me">Moi</string>
     <string name="stats_months">Visionnage par mois</string>
@@ -970,7 +1001,8 @@
     <string name="version_update">%1$s disponible</string>
     <string name="version_update_hint">Tipsarr %1$s est sortie : voir les notes de version</string>
     <string name="watchlist_empty">Rien ici pour l’instant. Ouvre un film ou une série et appuie sur « Ma liste ».</string>
-    <string name="watchlist_hint">Survole une affiche et appuie sur ✕ pour la retirer de la liste.</string>
+    <string name="watchlist_hint">Survole une affiche et appuie sur le marque-page pour la retirer de la liste.</string>
+    <string name="watchlist_remove">Retirer de ma liste</string>
     <string name="watchlist_title">Ma liste</string>
     <string name="webhook_issue_commented_message">%1$s : %2$s</string>
     <string name="webhook_issue_commented_subject">Nouveau commentaire sur un signalement : %1$s</string>

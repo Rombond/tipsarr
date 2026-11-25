@@ -7,7 +7,6 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { fmtDateTime } from '$lib/i18n/format';
 	import TrailerFilesCard from '$lib/components/admin/trailer-files-card.svelte';
 	import ApiKeyCard from '$lib/components/admin/api-key-card.svelte';
 
@@ -17,16 +16,9 @@
 	let publicUrl = $state('');
 	let message = $state<string | null>(null);
 	let saving = $state(false);
-	let pushUrl = $state('');
-	let pushKey = $state('');
-	let registering = $state(false);
-	let registerError = $state<string | null>(null);
 
 	$effect(() => {
-		if (settings) {
-			publicUrl = settings.jellyfinPublicUrl;
-			pushUrl = settings.pushRelayUrl || settings.pushDefaultRelayUrl;
-		}
+		if (settings) publicUrl = settings.jellyfinPublicUrl;
 	});
 
 	async function save(e: SubmitEvent) {
@@ -61,45 +53,6 @@
 			toast.success(t('common.saved'));
 		} catch (err) {
 			toast.error(errorText(err));
-		}
-	}
-
-	async function savePush(e: SubmitEvent) {
-		e.preventDefault();
-		admin.error = null;
-		try {
-			admin.settings = await unwrap(
-				api.PUT('/admin/settings', {
-					body: { pushRelayUrl: pushUrl.trim(), ...(pushKey.trim() ? { pushRelayKey: pushKey.trim() } : {}) },
-				}),
-			);
-			pushKey = '';
-			toast.success(t('common.saved'));
-		} catch (err) {
-			toast.error(errorText(err));
-		}
-	}
-
-	async function registerPush() {
-		registering = true;
-		registerError = null;
-		try {
-			admin.settings = await unwrap(api.POST('/admin/push/register', { body: { relayUrl: pushUrl.trim() } }));
-			toast.success(t('settings.push_registered'));
-		} catch (err) {
-			registerError = errorText(err);
-		} finally {
-			registering = false;
-		}
-	}
-
-	async function togglePush(on: boolean, key: 'pushEnabled' | 'pushText' = 'pushEnabled') {
-		try {
-			admin.settings = await unwrap(api.PUT('/admin/settings', { body: { [key]: on } }));
-			toast.success(t('common.saved'));
-		} catch (err) {
-			toast.error(errorText(err));
-			admin.settings = await unwrap(api.GET('/admin/settings'));
 		}
 	}
 </script>
@@ -155,58 +108,6 @@
 				<Input bind:value={publicUrl} placeholder="https://jellyfin.example.org" type="url" autocomplete="off" />
 				<Button type="submit" variant="outline">{t('common.save')}</Button>
 			</form>
-		</CardContent>
-	</Card>
-
-	<Card>
-		<CardHeader>
-			<CardTitle>{t('settings.push_title')}</CardTitle>
-			<CardDescription>{t('settings.push_desc')}</CardDescription>
-		</CardHeader>
-		<CardContent class="grid gap-3">
-			{#if settings.pushPausedUntil > 0}
-				<p class="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-sm" role="status">
-					{t('settings.push_paused', { time: fmtDateTime(settings.pushPausedUntil) })}
-				</p>
-			{/if}
-			<form class="grid gap-2" onsubmit={savePush}>
-				<Input bind:value={pushUrl} placeholder={settings.pushDefaultRelayUrl} type="url" autocomplete="off" />
-				<div class="grid gap-1">
-					<Button type="button" disabled={registering} onclick={registerPush}>{t('settings.push_register')}</Button>
-					<p class="text-xs text-muted-foreground">{t('settings.push_register_hint')}</p>
-					{#if registerError}<p class="text-sm text-destructive" role="alert">{registerError}</p>{/if}
-				</div>
-				{#if settings.pushKeyPublic}
-					<Badge variant="secondary" class="w-fit">
-						{settings.pushDailyQuota > 0
-							? t('settings.push_key_public', { count: settings.pushDailyQuota })
-							: t('settings.push_key_public_unlimited')}
-					</Badge>
-				{/if}
-				<Input
-					bind:value={pushKey}
-					placeholder={settings.pushRelayKeyConfigured ? t('settings.push_key_saved') : t('settings.push_key_placeholder')}
-					type="password"
-					autocomplete="off"
-				/>
-				<Button type="submit" variant="outline">{t('common.save')}</Button>
-			</form>
-			<label class="flex cursor-pointer items-center gap-2 text-sm">
-				<input type="checkbox" checked={settings.pushEnabled} onchange={(e) => togglePush(e.currentTarget.checked)} />
-				{t('settings.push_toggle')}
-			</label>
-			<label class="flex items-center gap-2 text-sm {settings.pushKeyPublic ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}">
-				<input
-					type="checkbox"
-					checked={settings.pushText && !settings.pushKeyPublic}
-					disabled={settings.pushKeyPublic}
-					onchange={(e) => togglePush(e.currentTarget.checked, 'pushText')}
-				/>
-				{t('settings.push_text')}
-			</label>
-			<p class="text-xs text-muted-foreground">
-				{settings.pushKeyPublic ? t('settings.push_text_public') : t('settings.push_text_hint')}
-			</p>
 		</CardContent>
 	</Card>
 

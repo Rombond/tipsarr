@@ -32,6 +32,7 @@ func getTeasers(t *testing.T, e *env, query string, c *http.Cookie) teaserFeed {
 }
 
 func TestTeasersFeed(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	f := newFakeResolver(t, e.files.Dir(), false)
@@ -131,6 +132,7 @@ func TestTeasersFeed(t *testing.T) {
 
 // The pool job keeps the files of the pool warm and asks again for a file the resolver lost.
 func TestTeaserPoolJob(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, _ := setupUsers(t, e)
 	f := newFakeResolver(t, e.files.Dir(), true)
@@ -154,6 +156,7 @@ func TestTeaserPoolJob(t *testing.T) {
 
 // With the resolver down the feed answers, with nothing to play yet.
 func TestTeasersFeedSurvivesADeadResolver(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	f := newFakeResolver(t, e.files.Dir(), true)
@@ -166,6 +169,7 @@ func TestTeasersFeedSurvivesADeadResolver(t *testing.T) {
 
 // Everyone sees their own Teasers history and can forget one title or all of them.
 func TestTeaserHistory(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	history := func(c *http.Cookie) (int, []int) {
@@ -238,6 +242,7 @@ func TestTeaserHistory(t *testing.T) {
 
 // Whoever manages users can look at a person's Teasers history, forget a title or wipe it.
 func TestAdminTeaserHistory(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	const bobID = "bbbbbbbbbbbbccccddddeeeeeeeeeeee"

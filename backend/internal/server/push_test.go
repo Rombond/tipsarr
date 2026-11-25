@@ -18,6 +18,13 @@ type pushItem struct {
 	ID       string `json:"id"`
 	Lang     string `json:"lang"`
 	Server   string `json:"server"`
+	Live     *struct {
+		Stage        string `json:"stage"`
+		Percent      int    `json:"percent"`
+		End          bool   `json:"end"`
+		DismissAfter int    `json:"dismissAfter"`
+		Priority     string `json:"priority"`
+	} `json:"live"`
 }
 
 // fakeRelay records what Tipsarr sends to the push relay.
@@ -80,6 +87,7 @@ const (
 )
 
 func TestPushRelayEndToEnd(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, false)
 	jfURL, admin, bobCookie := setupUsers(t, e)
 	base := e.app.URL
@@ -226,6 +234,7 @@ func TestPushRelayEndToEnd(t *testing.T) {
 }
 
 func TestPushOpenRegistration(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	var mu sync.Mutex

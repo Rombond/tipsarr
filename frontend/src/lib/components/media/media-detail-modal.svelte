@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.svelte';
-		import { api, unwrap, imageUrl, type MediaItem } from '$lib/api/client';
+	import { api, unwrap, imageUrl, type MediaItem } from '$lib/api/client';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import RequestFlow from '$lib/components/requests/request-flow.svelte';
 	import { Badge } from '$lib/components/ui/badge';
@@ -8,6 +8,12 @@
 	import { itemStatus } from '$lib/status';
 	import { Button } from '$lib/components/ui/button';
 	import StarIcon from '@lucide/svelte/icons/star';
+	import BookmarkIcon from '@lucide/svelte/icons/bookmark';
+	import BookmarkCheckIcon from '@lucide/svelte/icons/bookmark-check';
+	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
+	import EyeIcon from '@lucide/svelte/icons/eye';
+	import { untrack } from 'svelte';
+	import { MediaFlags } from '$lib/media-flags.svelte';
 
 	let {
 		open = false,
@@ -20,12 +26,16 @@
 	let fetchedOverview = $state('');
 	let busy = $state(false);
 	let flow: { start: () => void } | undefined = $state();
+	// watchlist / hidden flags of the open title, same logic as the detail page
+	const flags = $derived(item ? new MediaFlags(item.type, item.tmdbId) : null);
 
 	$effect(() => {
 		if (!open) return;
 		requested = null;
 		fetchedOverview = '';
 		const it = item;
+		const f = flags;
+		if (f) untrack(() => f.load());
 		if (it && !it.overview) {
 			unwrap(api.GET('/media/{type}/{id}', { params: { path: { type: it.type, id: it.tmdbId } } }))
 				.then((d) => (fetchedOverview = d.overview ?? ''))
@@ -38,6 +48,14 @@
 
 	function handleOpenChange(next: boolean) {
 		if (!next) onclose?.();
+	}
+
+	// hiding closes the popup; Discover lists drop the title through `hiddenTitles`
+	async function toggleHidden() {
+		const f = flags;
+		if (!f) return;
+		const hiding = !f.blocklisted;
+		if ((await f.toggle('blocklist')) && hiding) onclose?.();
 	}
 
 	const detailsUrl = $derived(item ? `/media/${item.type}/${item.tmdbId}` : '#');
@@ -66,6 +84,31 @@
 				</Dialog.Header>
 				{#if item.overview || fetchedOverview}<p class="line-clamp-6 text-sm text-muted-foreground">{item.overview || fetchedOverview}</p>{/if}
 				<Dialog.Footer class="gap-2">
+					{#if flags}
+						<div class="flex gap-2 sm:mr-auto">
+							<Button
+								variant="outline"
+								size="icon"
+								disabled={flags.busy}
+								aria-pressed={flags.watchlisted}
+								aria-label={flags.watchlisted ? t('actions.on_watchlist') : t('actions.watchlist')}
+								title={flags.watchlisted ? t('actions.on_watchlist') : t('actions.watchlist')}
+								onclick={() => flags.toggle('watchlist')}
+							>
+								{#if flags.watchlisted}<BookmarkCheckIcon class="size-4" />{:else}<BookmarkIcon class="size-4" />{/if}
+							</Button>
+							<Button
+								variant="outline"
+								size="icon"
+								disabled={flags.busy}
+								aria-label={flags.blocklisted ? t('actions.show_again') : t('actions.hide')}
+								title={flags.blocklisted ? t('actions.show_again') : t('actions.hide')}
+								onclick={toggleHidden}
+							>
+								{#if flags.blocklisted}<EyeIcon class="size-4" />{:else}<EyeOffIcon class="size-4" />{/if}
+							</Button>
+						</div>
+					{/if}
 					<Button variant="outline" href={detailsUrl} onclick={() => onclose?.()}>{t('modal.more_details')}</Button>
 					{#if item.availability !== 'available' && status === null}
 						<Button disabled={busy} onclick={() => flow?.start()}>{busy ? t('media.requesting') : t('media.request')}</Button>

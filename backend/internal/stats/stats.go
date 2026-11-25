@@ -85,6 +85,9 @@ type StatsReport struct {
 	TopShows  []StatsTop    `json:"topShows" doc:"Most watched shows"`
 	Requests  StatsRequests `json:"requests"`
 	Plugin    StatsPlugin   `json:"plugin"`
+	// HistorySources counts the accounts an admin mapped to this person (account mapping): their plays are included
+	// in the watch numbers, like in the suggestions. Requests stay the person's own.
+	HistorySources int `json:"historySources" doc:"Other accounts whose watch history is included (account mapping); 0 for all"`
 }
 
 type title struct {
@@ -131,13 +134,22 @@ func (s *Service) Compute(ctx context.Context, userID, period string, adminViewe
 	if err != nil {
 		return nil, err
 	}
+	// whose plays count: the person plus the accounts mapped to them (same scope as the suggestions), or everyone
+	var watchers []string
+	if userID != "" {
+		watchers, err = s.watchScope(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+		res.HistorySources = len(watchers) - 1
+	}
 	titles := map[string]*title{}
 	if events > 0 {
 		res.Source = "plugin"
-		err = s.fromPlugin(ctx, res, userID, since, now, meta, titles)
+		err = s.fromPlugin(ctx, res, watchers, since, now, meta, titles)
 	} else {
 		res.Source = "estimate"
-		err = s.fromHistory(ctx, userID, meta, titles)
+		err = s.fromHistory(ctx, watchers, meta, titles)
 	}
 	if err != nil {
 		return nil, err
@@ -187,8 +199,23 @@ func key(typ string, tmdb int64, jf, name string) string {
 	return typ + ":?" + jf + name
 }
 
-func (s *Service) fromPlugin(ctx context.Context, res *StatsReport, userID string, since, now time.Time, meta map[string]store.LibraryItem, titles map[string]*title) error {
-	rows, err := s.store.WatchEvents(ctx, userID, since.Unix())
+// watchScope returns the person first, then the accounts an admin mapped to them (one level, no chains).
+func (s *Service) watchScope(ctx context.Context, userID string) ([]string, error) {
+	sources, err := s.store.HistorySources(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	ids := []string{userID}
+	for _, id := range sources {
+		if id != userID {
+			ids = append(ids, id)
+		}
+	}
+	return ids, nil
+}
+
+func (s *Service) fromPlugin(ctx context.Context, res *StatsReport, userIDs []string, since, now time.Time, meta map[string]store.LibraryItem, titles map[string]*title) error {
+	rows, err := s.store.WatchEvents(ctx, userIDs, since.Unix())
 	if err != nil {
 		return err
 	}
@@ -252,8 +279,8 @@ func fill(t *title, it store.LibraryItem) {
 
 // fromHistory estimates from the synced history: plays x the library's runtime (a movie's length,
 // or a show's typical episode length).
-func (s *Service) fromHistory(ctx context.Context, userID string, meta map[string]store.LibraryItem, titles map[string]*title) error {
-	rows, err := s.store.WatchHistoryOf(ctx, userID)
+func (s *Service) fromHistory(ctx context.Context, userIDs []string, meta map[string]store.LibraryItem, titles map[string]*title) error {
+	rows, err := s.store.WatchHistoryOf(ctx, userIDs)
 	if err != nil {
 		return err
 	}

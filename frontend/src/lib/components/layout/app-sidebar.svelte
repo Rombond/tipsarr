@@ -27,6 +27,13 @@
 	import ArrowUpCircleIcon from '@lucide/svelte/icons/circle-arrow-up';
 
 	const releasesUrl = 'https://github.com/Rombond/tipsarr/releases';
+	// the server reports 1.2.3 (or develop-<sha>), GitHub tags are v1.2.3
+	function versionUrl(v: string): string {
+		const dev = /^develop-([0-9a-f]{7,40})$/.exec(v);
+		if (dev) return `https://github.com/Rombond/tipsarr/commit/${dev[1]}`;
+		if (/^v?\d+\.\d+\.\d+/.test(v)) return `${releasesUrl}/tag/${v.startsWith('v') ? v : `v${v}`}`;
+		return releasesUrl;
+	}
 
 	type NavItem = { href: string; key: Key; icon: typeof CompassIcon; needs?: 'users' | 'settings' };
 	const browse: NavItem[] = [
@@ -138,7 +145,7 @@
 		{#if auth.version}
 			<div class="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 pb-1 text-[11px] text-muted-foreground">
 				<a
-					href={auth.version === 'dev' ? releasesUrl : `${releasesUrl}/tag/${auth.version}`}
+					href={versionUrl(auth.version)}
 					target="_blank"
 					rel="noopener noreferrer"
 					class="hover:underline"
@@ -148,7 +155,7 @@
 				</a>
 				{#if auth.updateAvailable}
 					<a
-						href={`${releasesUrl}/tag/${auth.latestVersion}`}
+						href={versionUrl(auth.latestVersion)}
 						target="_blank"
 						rel="noopener noreferrer"
 						class="inline-flex items-center gap-1 font-medium text-primary hover:underline"

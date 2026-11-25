@@ -8,6 +8,7 @@ import (
 )
 
 func TestAnimeFolder(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, false)
 	_, admin, bob := setupUsers(t, e)
 	sonarr := newFakeArr(t, "sonarr")
@@ -39,6 +40,7 @@ func TestAnimeFolder(t *testing.T) {
 }
 
 func TestAnimeFolderNeedsConfig(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, false)
 	_, admin, _ := setupUsers(t, e)
 	sonarr := newFakeArr(t, "sonarr")
@@ -50,6 +52,7 @@ func TestAnimeFolderNeedsConfig(t *testing.T) {
 }
 
 func TestWatchlistAndBlocklist(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 
@@ -145,6 +148,7 @@ func getRows(t *testing.T, e *env, c *http.Cookie) []struct {
 }
 
 func TestUsersAdminAndProfile(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	if resp, _ := call(t, e.app, "GET", "/api/v1/admin/users", "", bob); resp.StatusCode != http.StatusForbidden {
@@ -213,6 +217,7 @@ func TestUsersAdminAndProfile(t *testing.T) {
 }
 
 func TestLoginRateLimit(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	jf := fakeJellyfin(t)
 	call(t, e.app, "POST", "/api/v1/setup", `{"jellyfinUrl":"`+jf.URL+`"}`)

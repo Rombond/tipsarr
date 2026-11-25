@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -481,10 +482,21 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.proxy.ServeHTTP(w, r)
 		return
 	}
-	ok := false
+	ok, ended := false, false
 	p := *s.proxy
 	p.ModifyResponse = func(resp *http.Response) error {
 		if resp.StatusCode/100 != 2 {
+			if fresh {
+				// End the session before the refusal reaches the client (so a retry finds the sandbox already
+				// freed); buffer the body first, since ending stops the sandbox that is sending it.
+				b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+				resp.Body.Close()
+				resp.Body = io.NopCloser(bytes.NewReader(b))
+				resp.ContentLength = int64(len(b))
+				resp.Header.Set("Content-Length", strconv.Itoa(len(b)))
+				g.end(s)
+				ended = true
+			}
 			return nil
 		}
 		ok = true
@@ -504,7 +516,7 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return nil
 	}
 	p.ServeHTTP(w, r)
-	if fresh && !ok {
+	if fresh && !ok && !ended { // no answer at all (sandbox unreachable)
 		g.end(s)
 	}
 }

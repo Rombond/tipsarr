@@ -14,7 +14,8 @@ import (
 // In demo mode every call that exists only to reach another service answers 403 demo_disabled, and the locked
 // settings cannot be changed.
 func TestDemoRefusals(t *testing.T) {
-	e := newEnvOpts(t, true, "", true)
+	t.Parallel()
+	e := newEnvOpts(t, true, "", true, false)
 	jf := fakeJellyfin(t)
 	admin := loginAs(t, e.app, jf.URL, "alice", "secret")
 
@@ -59,6 +60,7 @@ func TestDemoRefusals(t *testing.T) {
 
 // One-click sign-in exists only on a demo server.
 func TestDemoLoginOnlyInDemo(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	if resp, _ := call(t, e.app, "POST", "/api/v1/auth/demo", `{"role":"admin"}`); resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("demo login outside a demo = %d", resp.StatusCode)
@@ -67,7 +69,8 @@ func TestDemoLoginOnlyInDemo(t *testing.T) {
 
 // A demo admin may add a Radarr and approve a request: dry-run is on for good, so nothing is written to it.
 func TestDemoServarrNeverWritten(t *testing.T) {
-	e := newEnvOpts(t, true, "", true)
+	t.Parallel()
+	e := newEnvOpts(t, true, "", true, false)
 	_, admin, bob := setupUsers(t, e)
 	_ = e.st.SetSetting(context.Background(), auth.SettingTMDBKey, "k123") // locked in the API: set it as main does
 	radarr := newFakeArr(t, "radarr")

@@ -8,6 +8,7 @@ import (
 )
 
 func TestWebhookEgressPolicyAPI(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 
@@ -42,6 +43,7 @@ func TestWebhookEgressPolicyAPI(t *testing.T) {
 }
 
 func TestServarrProbeAndKeyGuards(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, _ := setupUsers(t, e)
 
@@ -77,6 +79,7 @@ func TestServarrProbeAndKeyGuards(t *testing.T) {
 }
 
 func TestInternalErrorsHiddenFromUsers(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, admin, bob := setupUsers(t, e)
 	arr := newFakeArr(t, "radarr")

@@ -122,7 +122,11 @@ func (s *Store) DevicesForManagers(ctx context.Context, userIDs []string, admins
 
 // pruneDevices drops devices whose session no longer exists (signed out, revoked, expired, purged).
 func (s *Store) pruneDevices(ctx context.Context) error {
-	_, err := s.DB.NewDelete().Model((*Device)(nil)).
+	if _, err := s.DB.NewDelete().Model((*Device)(nil)).
+		Where("session_id NOT IN (SELECT id FROM sessions)").Exec(ctx); err != nil {
+		return err
+	}
+	_, err := s.DB.NewDelete().Model((*Follow)(nil)).
 		Where("session_id NOT IN (SELECT id FROM sessions)").Exec(ctx)
 	return err
 }

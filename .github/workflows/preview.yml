@@ -1,0 +1,76 @@
+name: Preview image
+
+# Testable images before a release (amd64 and arm64, unsigned):
+#   push to develop          -> ghcr.io/<owner>/tipsarr:develop
+#   pull request (this repo) -> ghcr.io/<owner>/tipsarr:pr-<number>, deleted when the PR is closed
+# Releases stay in release.yml: tags vX.Y.Z on master publish :X.Y.Z, :X.Y and :latest.
+# Fork PRs get no image (their token cannot write packages).
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag and version
+        id: tag
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          if [ -n "$PR" ]; then tag="pr-$PR"; else tag=develop; fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          # shown in the web sidebar; not a vX.Y.Z, so no "update available" link
+          echo "version=$tag-${SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${OWNER,,}/tipsarr:$tag" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          build-args: VERSION=${{ steps.tag.outputs.version }}
+          push: true
+          tags: ${{ steps.tag.outputs.image }}
+          cache-from: |
+            type=gha,scope=preview
+            type=gha,scope=tipsarr
+          cache-to: type=gha,mode=max,scope=preview
+      - name: Summary
+        run: echo "Image \`${{ steps.tag.outputs.image }}\` (version ${{ steps.tag.outputs.version }})" >> "$GITHUB_STEP_SUMMARY"
+
+  cleanup:
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete the pr-<number> image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: pr-${{ github.event.pull_request.number }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          kind=$(gh api "users/$OWNER" --jq .type)
+          [ "$kind" = Organization ] && base="orgs/$OWNER" || base="users/$OWNER"
+          ids=$(gh api --paginate "$base/packages/container/tipsarr/versions" \
+            --jq ".[] | select(.metadata.container.tags | index(\"$TAG\")) | .id")
+          for id in $ids; do gh api -X DELETE "$base/packages/container/tipsarr/versions/$id"; echo "deleted $TAG ($id)"; done

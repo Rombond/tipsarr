@@ -717,6 +717,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/collection/{id}/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request the missing movies of a collection
+         * @description One normal request per part (same rights, quota, 4K and approval rules as POST /requests; nothing is bypassed). Without tmdbIds: every released part that is neither in the library nor requested. Once the quota or a right stops one part, the rest are skipped with the same code.
+         */
+        post: operations["requestCollection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/discover/genres/{type}": {
         parameters: {
             query?: never;
@@ -1080,6 +1100,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/follows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Requests followed from this app
+         * @description Lets the app match its Live Activities or notifications with the server at launch.
+         */
+        get: operations["listFollows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/history-sources": {
         parameters: {
             query?: never;
@@ -1392,6 +1432,30 @@ export interface paths {
         /** Decline a request (admin) */
         post: operations["declineRequest"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests/{id}/follow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Follow a request from this app
+         * @description Pushes the request's stage and download progress to a Live Activity (iOS) or an ongoing notification (Android) until it is available, declined or failed. Call it again whenever the token changes. Answers the current state.
+         */
+        put: operations["followRequest"];
+        post?: never;
+        /**
+         * Stop following a request from this app
+         * @description Sends nothing: the app ends its Live Activity or notification itself.
+         */
+        delete: operations["unfollowRequest"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1787,6 +1851,20 @@ export interface components {
             parts: components["schemas"]["Item"][];
             posterPath?: string;
         };
+        CollectionRequestResult: {
+            /** @description The requests made, in release order */
+            requested: components["schemas"]["View"][];
+            /** @description Parts that were not requested, with the reason */
+            skipped: components["schemas"]["CollectionSkip"][];
+        };
+        CollectionSkip: {
+            /** @description Same codes as a refused POST /requests (quota_reached, duplicate_request, already_available, already_monitored, forbidden, 4k_not_allowed...), or not_in_collection */
+            code: string;
+            message: string;
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+        };
         CommentIssueRequest: {
             message: string;
         };
@@ -2048,6 +2126,19 @@ export interface components {
             blocklisted: boolean;
             watchlisted: boolean;
         };
+        FollowList: {
+            items: components["schemas"]["RequestFollow"][];
+        };
+        FollowRequestInputBody: {
+            /** @description iOS only: the ActivityKit activity id. A new one restarts the follow */
+            activityId?: string;
+            /** @description iOS: the Live Activity push token (hex). Android: the current FCM registration token */
+            pushToken: string;
+            /** @description iOS only: the token comes from a development build (APNs sandbox) */
+            sandbox?: boolean;
+            /** @description Host (and port) the app uses to reach this server */
+            server?: string;
+        };
         Genre: {
             /** Format: int64 */
             id: number;
@@ -2068,6 +2159,8 @@ export interface components {
         };
         Health: {
             breaker: components["schemas"]["Breaker"];
+            /** @description The last failure that counted toward the breaker */
+            breakerError?: string;
             /** Format: int64 */
             cacheBytes: number;
             /** Format: int64 */
@@ -2392,7 +2485,7 @@ export interface components {
             rootFolders: components["schemas"]["RootFolder"][];
         };
         Overview: {
-            /** @description The resolver answered its health check */
+            /** @description The resolver answered its health check and reports no problem (the Teasers tab only needs an answer) */
             available: boolean;
             /** @description An address and a key are saved */
             configured: boolean;
@@ -2621,6 +2714,17 @@ export interface components {
             /** @description Relay address; empty = the publisher's relay (pushDefaultRelayUrl) */
             relayUrl?: string;
         };
+        RequestCollectionRequest: {
+            /**
+             * Format: int64
+             * @description Radarr quality profile for every part (omit for the default); see /requests/options
+             */
+            qualityProfileId?: number;
+            /** @description Root folder for every part (omit for the default) */
+            rootFolder?: string;
+            /** @description Parts to request; omit for every released missing part */
+            tmdbIds?: number[];
+        };
         RequestCountsResponse: {
             /** Format: int64 */
             approved: number;
@@ -2632,6 +2736,30 @@ export interface components {
             failed: number;
             /** Format: int64 */
             pending: number;
+        };
+        RequestFollow: {
+            /**
+             * Format: int64
+             * @description 0 = unknown
+             */
+            etaSeconds: number;
+            /**
+             * Format: int64
+             * @description Unix seconds the follow ends on its own
+             */
+            expiresAt: number;
+            /** Format: int64 */
+            percent: number;
+            /** @enum {string} */
+            platform: "ios" | "android";
+            requestId: string;
+            /** @enum {string} */
+            stage: "requested" | "approved" | "searching" | "downloading" | "available" | "declined" | "failed";
+            /**
+             * Format: int64
+             * @description Unix seconds the state was computed
+             */
+            updatedAt: number;
         };
         RequestList: {
             items: components["schemas"]["View"][];
@@ -2730,6 +2858,13 @@ export interface components {
             posterPath?: string;
         };
         SeasonProgress: {
+            /** @description The season still has episodes to air; the request stays open until they are on disk */
+            airing?: boolean;
+            /**
+             * Format: int64
+             * @description Episodes of the season on disk
+             */
+            episodes?: number;
             /**
              * Format: int64
              * @description Episodes Sonarr has plus what is being downloaded, as a percentage of the season
@@ -2737,6 +2872,11 @@ export interface components {
             percent: number;
             /** Format: int64 */
             season: number;
+            /**
+             * Format: int64
+             * @description Episodes the season is measured against: the aired ones, or the whole season while it is airing
+             */
+            total?: number;
         };
         SecretOutputBody: {
             /** @description The secret; empty when it is not set (the dashboard key is off) */
@@ -2874,6 +3014,11 @@ export interface components {
         StatsReport: {
             decades: components["schemas"]["StatsBucket"][];
             genres: components["schemas"]["StatsBucket"][];
+            /**
+             * Format: int64
+             * @description Other accounts whose watch history is included (account mapping); 0 for all
+             */
+            historySources: number;
             /** @description Hours per hour of the day (plugin source only) */
             hoursOfDay: number[];
             /** @description Last 12 months, oldest first (plugin source only) */
@@ -2962,6 +3107,8 @@ export interface components {
             status: string;
         };
         StatusFeatures: {
+            /** @description Requests can be followed from the apps (Live Activity / ongoing notification). Absent on older servers */
+            liveFollow?: boolean;
             /** @description Push notifications are set up on this server */
             push: boolean;
             /** @description The Teasers feed is available: trailer files are on and the resolver answers. Apps hide the Teasers tab otherwise */
@@ -2978,7 +3125,7 @@ export interface components {
             /** @description When true nothing is ever sent to Radarr/Sonarr */
             dryRun: boolean;
             features: components["schemas"]["StatusFeatures"];
-            /** @description Newest release tag published on GitHub (checked every 6 hours); empty while unknown or in the demo */
+            /** @description Newest release tag published on GitHub (checked every 6 hours); empty while unknown, in the demo and for a dev build */
             latestVersion: string;
             minAppVersion: string;
             version: string;
@@ -6256,6 +6403,77 @@ export interface operations {
             };
         };
     };
+    requestCollection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestCollectionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionRequestResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     discoverGenres: {
         parameters: {
             query?: never;
@@ -7706,6 +7924,44 @@ export interface operations {
             };
         };
     };
+    listFollows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowList"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     myHistorySources: {
         parameters: {
             query?: never;
@@ -8960,6 +9216,124 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    followRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowRequestInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestFollow"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    unfollowRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

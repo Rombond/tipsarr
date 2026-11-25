@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"slices"
 
@@ -46,8 +47,38 @@ func reqErr(err error) error {
 		return fail(502, "servarr_error", err.Error())
 	case errors.Is(err, requests.ErrInvalid):
 		return fail(422, "invalid_request", err.Error())
+	case errors.Is(err, requests.ErrNotInCollection):
+		return fail(422, "not_in_collection", err.Error())
 	}
 	return err
+}
+
+// reqErrCode gives the machine-readable code and message reqErr would answer for err.
+func reqErrCode(err error) (code, message string) {
+	var em *huma.ErrorModel
+	if errors.As(reqErr(err), &em) {
+		for _, d := range em.Errors {
+			if d != nil && d.Location == "code" {
+				code, _ = d.Value.(string)
+			}
+		}
+		if code != "" {
+			return code, em.Detail
+		}
+	}
+	return "internal_error", "internal error"
+}
+
+type collectionSkip struct {
+	TMDBID  int    `json:"tmdbId"`
+	Title   string `json:"title"`
+	Code    string `json:"code" doc:"Same codes as a refused POST /requests (quota_reached, duplicate_request, already_available, already_monitored, forbidden, 4k_not_allowed...), or not_in_collection"`
+	Message string `json:"message"`
+}
+
+type collectionRequestResult struct {
+	Requested []requests.View  `json:"requested" doc:"The requests made, in release order"`
+	Skipped   []collectionSkip `json:"skipped" doc:"Parts that were not requested, with the reason"`
 }
 
 type requestOutput struct{ Body *requests.View }
@@ -142,6 +173,50 @@ func registerRequests(api huma.API, d Deps) {
 		}
 		v, err := d.Requests.Create(ctx, u, p)
 		return &requestOutput{Body: v}, reqErr(err)
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "requestCollection", Method: http.MethodPost, Path: "/collection/{id}/request",
+		Summary:     "Request the missing movies of a collection",
+		Description: "One normal request per part (same rights, quota, 4K and approval rules as POST /requests; nothing is bypassed). Without tmdbIds: every released part that is neither in the library nor requested. Once the quota or a right stops one part, the rest are skipped with the same code.",
+		Tags:        []string{"requests"}, Security: sec,
+		Errors: []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound},
+	}, func(ctx context.Context, in *struct {
+		ID   int `path:"id" minimum:"1"`
+		Body struct {
+			TMDBIDs          []int  `json:"tmdbIds,omitempty" maxItems:"100" doc:"Parts to request; omit for every released missing part"`
+			QualityProfileID *int   `json:"qualityProfileId,omitempty" doc:"Radarr quality profile for every part (omit for the default); see /requests/options"`
+			RootFolder       string `json:"rootFolder,omitempty" doc:"Root folder for every part (omit for the default)"`
+		}
+	}) (*struct{ Body collectionRequestResult }, error) {
+		u, err := requireUser(ctx)
+		if err != nil {
+			return nil, err
+		}
+		var ov *requests.Overrides
+		if in.Body.QualityProfileID != nil || in.Body.RootFolder != "" {
+			ov = &requests.Overrides{ProfileID: in.Body.QualityProfileID, RootFolder: in.Body.RootFolder}
+		}
+		parts, err := d.Requests.RequestCollection(ctx, u, media.Opts{Language: u.Language, Region: u.Region}, in.ID, in.Body.TMDBIDs, ov)
+		if err != nil {
+			if errors.Is(err, media.ErrNotFound) || errors.Is(err, media.ErrNotConfigured) {
+				return nil, mediaErr(err)
+			}
+			return nil, reqErr(err)
+		}
+		out := collectionRequestResult{Requested: []requests.View{}, Skipped: []collectionSkip{}}
+		for _, p := range parts {
+			if p.Err == nil && p.View != nil {
+				out.Requested = append(out.Requested, *p.View)
+				continue
+			}
+			code, msg := reqErrCode(p.Err)
+			if code == "internal_error" {
+				slog.Warn("collection part not requested", "collection", in.ID, "tmdbId", p.Item.TMDBID, "error", p.Err)
+			}
+			out.Skipped = append(out.Skipped, collectionSkip{TMDBID: p.Item.TMDBID, Title: p.Item.Title, Code: code, Message: msg})
+		}
+		return &struct{ Body collectionRequestResult }{out}, nil
 	})
 
 	huma.Register(api, huma.Operation{

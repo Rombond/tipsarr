@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/store"
+	"github.com/Rombond/tipsarr/backend/internal/store/storetest"
 )
 
 type relay struct {
@@ -107,11 +107,7 @@ type fixture struct {
 
 func setup(t *testing.T, dryRun bool) *fixture {
 	t.Helper()
-	st, err := store.Open(context.Background(), "sqlite:"+filepath.Join(t.TempDir(), "t.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { st.Close() })
+	st := storetest.Open(t)
 	ctx := context.Background()
 	st.EnsureUser(ctx, "alice", "alice", true)
 	st.EnsureUser(ctx, "bob", "bob", false)

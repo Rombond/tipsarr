@@ -12,6 +12,7 @@ import (
 )
 
 func TestUploadedAvatar(t *testing.T) {
+	t.Parallel()
 	e := newEnv(t, true)
 	_, _, bob := setupUsers(t, e)
 	_, body := call(t, e.app, "GET", "/api/v1/me", "", bob)

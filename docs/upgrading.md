@@ -32,6 +32,10 @@ does not check the schema version and may misbehave on a database migrated by a 
 `:latest` follows the newest release. Each release is also tagged `X.Y.Z` and `X.Y` (for example
 `ghcr.io/rombond/tipsarr:1.0.0` or `:1.0`), to choose when to upgrade.
 
+To try what is coming before a release: `:develop` is the next release in progress (rebuilt on every change,
+linux/amd64 only, may break), and each open pull request has `:pr-<number>` (removed when the pull request closes).
+Stay on `:latest` or a version tag for normal use.
+
 ## Mobile apps
 
 Update the server first, then the apps. Apps keep working with an older server but hide what it does not support.

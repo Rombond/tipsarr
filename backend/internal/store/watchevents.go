@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+
+	"github.com/uptrace/bun"
 )
 
 // MaxWatchEventRow is the highest plugin rowid already copied (0 when none).
@@ -29,11 +31,11 @@ func (s *Store) CountWatchEvents(ctx context.Context) (int, error) {
 }
 
 // WatchEvents returns the plays of one user ("" = everyone) since a unix time.
-func (s *Store) WatchEvents(ctx context.Context, userID string, since int64) ([]WatchEvent, error) {
+func (s *Store) WatchEvents(ctx context.Context, userIDs []string, since int64) ([]WatchEvent, error) {
 	var rows []WatchEvent
 	q := s.DB.NewSelect().Model(&rows).Where("played_at >= ?", since)
-	if userID != "" {
-		q = q.Where("user_id = ?", userID)
+	if len(userIDs) > 0 {
+		q = q.Where("user_id IN (?)", bun.In(userIDs))
 	}
 	return rows, q.Scan(ctx)
 }
@@ -44,12 +46,12 @@ func (s *Store) AllLibrary(ctx context.Context) ([]LibraryItem, error) {
 	return rows, s.DB.NewSelect().Model(&rows).Scan(ctx)
 }
 
-// WatchHistoryOf returns the synced watch history of one user ("" = everyone).
-func (s *Store) WatchHistoryOf(ctx context.Context, userID string) ([]WatchHistory, error) {
+// WatchHistoryOf returns the synced watch history of some users (none = everyone).
+func (s *Store) WatchHistoryOf(ctx context.Context, userIDs []string) ([]WatchHistory, error) {
 	var rows []WatchHistory
 	q := s.DB.NewSelect().Model(&rows)
-	if userID != "" {
-		q = q.Where("user_id = ?", userID)
+	if len(userIDs) > 0 {
+		q = q.Where("user_id IN (?)", bun.In(userIDs))
 	}
 	return rows, q.Scan(ctx)
 }

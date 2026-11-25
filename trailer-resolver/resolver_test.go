@@ -258,11 +258,18 @@ func TestHealthAndClear(t *testing.T) {
 
 func TestClassify(t *testing.T) {
 	cases := map[string]bool{
-		"ERROR: [youtube] abc: Video unavailable":                                    true,
-		"ERROR: [youtube] abc: This video is unavailable":                            true,
-		"ERROR: [youtube] abc: Private video. Sign in if you've been granted access": true,
-		"ERROR: unable to download video data: HTTP Error 403: Forbidden":            false,
-		"ERROR: [youtube] abc: Sign in to confirm you're not a bot":                  false,
+		"ERROR: [youtube] abc: Video unavailable":                                              true,
+		"ERROR: [youtube] abc: This video is unavailable":                                      true,
+		"ERROR: [youtube] abc: Private video. Sign in if you've been granted access":           true,
+		"ERROR: [youtube] abc: The uploader has not made this video available in your country": true,
+		"ERROR: [youtube] abc: Premieres in 5 hours":                                           true,
+		"ERROR: unable to download video data: HTTP Error 403: Forbidden":                      false,
+		"ERROR: [youtube] abc: Sign in to confirm you're not a bot":                            false,
+		// rate limit joined to the generic reason: about the address, never final
+		"ERROR: [youtube] abc: Video unavailable. This content isn't available, try again later.": false,
+		// yt-dlp could not solve the challenge: the server's problem, the breaker handles it
+		"ERROR: [youtube] abc: Requested format is not available. Use --list-formats for a list of available formats": false,
+		"ERROR: signal: terminated": false,
 	}
 	for msg, want := range cases {
 		err := classify(msg, errors.New("exit status 1"))
@@ -310,14 +317,14 @@ func TestSweepWorkRemovesOnlyOldWorkFolders(t *testing.T) {
 }
 
 // yt-dlp exits 0 without writing a file when it skips a video. Over the length limit it says so on stdout: final.
-// Otherwise (over --max-filesize) it is retried like any temporary failure, but does not feed the breaker.
+// Otherwise (over --max-filesize) the same happens on every try: final too (for a while), never the breaker.
 func TestNoFile(t *testing.T) {
 	cases := map[string]struct {
 		script           string
 		permanent, video bool
 	}{
 		"filter": {"#!/bin/sh\necho '[download] X does not pass filter (duration<=?300), skipping ..'\nexit 0\n", true, false},
-		"size":   {"#!/bin/sh\nexit 0\n", false, true},
+		"size":   {"#!/bin/sh\nexit 0\n", true, false},
 	}
 	for name, c := range cases {
 		dir := t.TempDir()
@@ -349,5 +356,118 @@ func TestVideoFailuresRetryButDoNotTripTheBreaker(t *testing.T) {
 	}
 	if state, _ := w.BreakerState(); state != "closed" {
 		t.Fatal("breaker opened on a video problem")
+	}
+}
+
+func TestClassifyUpcomingIsFinalForAFewHours(t *testing.T) {
+	var de *DownloadError
+	if !errors.As(classify("ERROR: [youtube] abc: Premieres in 5 hours", errors.New("exit status 1")), &de) || !de.Permanent || de.RetryIn != laterRetry {
+		t.Fatalf("premiere = %+v", de)
+	}
+	if !errors.As(classify("ERROR: [youtube] abc: Private video", errors.New("exit status 1")), &de) || de.RetryIn != 0 {
+		t.Fatalf("private = %+v", de)
+	}
+}
+
+// One video failing again and again (the production case: a geo-blocked trailer re-asked by Tipsarr) must not
+// open the breaker: only different keys failing close together point at a blocked address.
+func TestOneKeyFailingRepeatedlyDoesNotTripTheBreaker(t *testing.T) {
+	f := &fakeRunner{fail: map[string]error{keyA: &DownloadError{Msg: "some new YouTube error"}}}
+	s, w, st, clk := newTest(t, f)
+	for range 20 {
+		do(t, s, "POST", "/v1/resolve", `{"key":"`+keyA+`"}`, true)
+		if e, ok := st.NextQueued(); ok {
+			w.process(context.Background(), e)
+		}
+		clk.Add(time.Hour)
+	}
+	if len(f.calls) < 5 {
+		t.Fatalf("calls = %v", f.calls)
+	}
+	if state, _ := w.BreakerState(); state != "closed" {
+		t.Fatal("breaker opened on one key")
+	}
+}
+
+func TestBreakerCountsOnlyInsideTheWindow(t *testing.T) {
+	boom := &DownloadError{Msg: "HTTP Error 403: Forbidden"}
+	f := &fakeRunner{fail: map[string]error{keyA: boom, keyB: boom, keyC: boom}}
+	s, w, st, clk := newTest(t, f)
+	for _, k := range []string{keyA, keyB, keyC} {
+		do(t, s, "POST", "/v1/resolve", `{"key":"`+k+`"}`, true)
+		e, _ := st.NextQueued()
+		w.process(context.Background(), e)
+		clk.Add(20 * time.Minute) // further apart than the 30 min window
+	}
+	if state, _ := w.BreakerState(); state != "closed" {
+		t.Fatal("breaker counted failures outside its window")
+	}
+	if w.BreakerError() != "HTTP Error 403: Forbidden" {
+		t.Fatalf("breaker error = %q", w.BreakerError())
+	}
+}
+
+// A final answer about a key drops only that key from the count; the other keys keep counting.
+func TestPermanentAnswerForgetsOnlyThatKey(t *testing.T) {
+	boom := &DownloadError{Msg: "HTTP Error 403: Forbidden"}
+	const keyD = "DDDDDDDDDDD"
+	f := &fakeRunner{fail: map[string]error{keyA: boom, keyB: boom, keyC: boom, keyD: boom}}
+	_, w, st, _ := newTest(t, f)
+	run := func(k string) {
+		e := st.Update(k, func(e *Entry) { e.Status = stRunning })
+		w.process(context.Background(), e)
+	}
+	run(keyA)
+	run(keyB)
+	f.mu.Lock()
+	f.fail[keyB] = &DownloadError{Msg: "Private video", Permanent: true}
+	f.mu.Unlock()
+	run(keyB) // final answer: keyB no longer counts
+	if e, _ := st.Get(keyB); !e.Permanent {
+		t.Fatalf("keyB = %+v", e)
+	}
+	run(keyC) // counted: A and C
+	if state, _ := w.BreakerState(); state != "closed" {
+		t.Fatal("the key with a final answer still counted")
+	}
+	run(keyD) // A, C, D: three different keys
+	if state, _ := w.BreakerState(); state != "open" {
+		t.Fatal("other keys should keep counting")
+	}
+}
+
+// A health request that gives up must not leave empty versions behind, and a version read fails only until it works.
+func TestVersionsKeepGoodValues(t *testing.T) {
+	dir := t.TempDir()
+	fake := filepath.Join(dir, "yt-dlp")
+	if err := os.WriteFile(fake, []byte("#!/bin/sh\necho 2026.11.01\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cfg := Config{YtDlp: fake, Deno: "/nonexistent", FFmpeg: "/nonexistent"}
+	v := NewVersions(cfg)
+	if yt, _, _ := v.Get(); yt != "2026.11.01" {
+		t.Fatalf("yt = %q", yt)
+	}
+	_ = os.Remove(fake) // yt-dlp broken for a moment: the last good value stays
+	v.Refresh()
+	if yt, _, _ := v.Get(); yt != "2026.11.01" {
+		t.Fatalf("after a failed read yt = %q", yt)
+	}
+}
+
+func TestPermanentFailureExpires(t *testing.T) {
+	f := &fakeRunner{fail: map[string]error{keyA: &DownloadError{Msg: "Premieres in 5 hours", Permanent: true, RetryIn: laterRetry}}}
+	s, w, st, clk := newTest(t, f)
+	do(t, s, "POST", "/v1/resolve", `{"key":"`+keyA+`"}`, true)
+	e, _ := st.NextQueued()
+	w.process(context.Background(), e)
+	code, b := do(t, s, "POST", "/v1/resolve", `{"key":"`+keyA+`"}`, true)
+	if code != 200 || b["status"] != "failed" || b["retryAt"] != float64(clk.Now().Add(laterRetry).Unix()) {
+		t.Fatalf("before = %d %v", code, b)
+	}
+	clk.Add(laterRetry + time.Minute)
+	delete(f.fail, keyA)
+	if code, b = do(t, s, "POST", "/v1/resolve", `{"key":"`+keyA+`"}`, true); code != http.StatusAccepted || b["status"] != "queued" {
+		t.Fatalf("after = %d %v", code, b)
 	}
 }

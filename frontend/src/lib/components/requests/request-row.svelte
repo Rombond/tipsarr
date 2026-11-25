@@ -164,10 +164,11 @@
 		{#if request.seasons?.length}
 			<div class="flex flex-wrap items-center gap-1" aria-label={t('req.seasons', { count: request.seasons.length, list: request.seasons.join(', ') })}>
 				{#each request.seasons as n (n)}
-					{@const pct = request.seasonProgress?.find((s) => s.season === n)?.percent}
+					{@const sp = request.seasonProgress?.find((s) => s.season === n)}
+					{@const pct = sp?.percent}
 					<span
 						class="rounded-md px-1.5 py-0.5 text-[11px] font-semibold {pct === 100 ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : pct ? 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300' : 'bg-sky-500/15 text-sky-700 dark:text-sky-300'}"
-					>{t('req.season_badge', { n })}{#if pct !== undefined} · {pct}%{/if}</span>
+					>{t('req.season_badge', { n })}{#if sp?.airing} · {t('req.season_airing', { have: sp.episodes ?? 0, total: sp.total ?? 0 })}{:else if pct !== undefined} · {pct}%{/if}</span>
 				{/each}
 			</div>
 		{/if}

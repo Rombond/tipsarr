@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/Rombond/tipsarr/backend/internal/perms"
@@ -29,8 +30,9 @@ var migrationsFS embed.FS
 
 type Store struct {
 	DB      *bun.DB
-	Dialect string     // sqlite | postgres | mysql
-	secrets *secretBox // nil = secrets kept in plaintext (see EnableSecrets)
+	Dialect string       // sqlite | postgres | mysql
+	secrets *secretBox   // nil = secrets kept in plaintext (see EnableSecrets)
+	libGen  atomic.Int64 // bumped by every ReplaceLibrary (see LibraryGeneration)
 }
 
 // Open connects to the database described by dbURL and applies pending migrations.

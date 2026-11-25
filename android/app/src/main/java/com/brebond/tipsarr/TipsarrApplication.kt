@@ -7,5 +7,6 @@ class TipsarrApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         PushManager.init(this)
+        com.brebond.tipsarr.core.push.LiveFollow.init(this)
     }
 }

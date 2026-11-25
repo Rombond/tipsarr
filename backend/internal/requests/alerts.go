@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/Rombond/tipsarr/backend/internal/media"
 	"github.com/Rombond/tipsarr/backend/internal/notify"
 	"github.com/Rombond/tipsarr/backend/internal/store"
 )
@@ -39,13 +40,12 @@ func (s *Service) refreshLibrary() {
 
 // noteSeasons stamps the requested seasons of a show that are complete, so each can be announced
 // before the whole request is. Only requests with more than one season get season alerts.
-func (s *Service) noteSeasons(ctx context.Context, r *store.Request, progress []SeasonProgress) {
-	requested, err := s.store.RequestSeasons(ctx, []string{r.ID})
-	if err != nil || len(requested[r.ID]) < 2 {
+func (s *Service) noteSeasons(ctx context.Context, r *store.Request, requested []int, progress []SeasonProgress) {
+	if len(requested) < 2 {
 		return
 	}
 	want := map[int]bool{}
-	for _, n := range requested[r.ID] {
+	for _, n := range requested {
 		want[n] = true
 	}
 	for _, p := range progress {
@@ -142,5 +142,10 @@ func (s *Service) inLibrary(ctx context.Context, r *store.Request) bool {
 			return false
 		}
 	}
-	return true
+	if r.SeasonNumbering != media.NumberingTVDB || s.media == nil {
+		return true // the library's seasons cannot be sized: showing up is enough
+	}
+	// A season that was airing was already in the library before its last episodes arrived: wait until
+	// the library holds all of them.
+	return s.showComplete(ctx, r, requested[r.ID], have)
 }

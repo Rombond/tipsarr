@@ -7,7 +7,9 @@
 	import { itemStatus } from '$lib/status';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import XIcon from '@lucide/svelte/icons/x';
+	import BookmarkMinusIcon from '@lucide/svelte/icons/bookmark-minus';
 	import PlusIcon from '@lucide/svelte/icons/plus';
+	import LoaderIcon from '@lucide/svelte/icons/loader-circle';
 	import StarIcon from '@lucide/svelte/icons/star';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -21,6 +23,7 @@
 		inRadarr = false,
 		radarrHasFile = false,
 		onDismiss,
+		onRemove,
 		fluid = false,
 		posterUrl,
 		hideStatus = false,
@@ -38,6 +41,8 @@
 		radarrHasFile?: boolean;
 		/** Shows a "not interested" button on hover (used by suggestion rows). */
 		onDismiss?: (item: MediaItem) => void;
+		/** Shows a "remove from my list" button on hover (watchlist). */
+		onRemove?: (item: MediaItem) => void;
 		/** Fill the grid cell instead of a fixed poster width. */
 		fluid?: boolean;
 		/** A ready poster address (a Jellyfin poster in the Library and Stats pages) instead of the TMDB path. */
@@ -56,6 +61,9 @@
 	const year = $derived(item.releaseDate?.slice(0, 4));
 	const shown = $derived(itemStatus({ availability: item.availability, requestStatus: requested ?? item.requestStatus }, { tracked: inRadarr, hasFile: radarrHasFile }));
 	const canQuickRequest = $derived(item.availability !== 'available' && shown === null);
+	// buttons on the right of the action bar: with two or more, Request shrinks to a round + (#57)
+	const rightCount = $derived((onDismiss ? 1 : 0) + (onRemove ? 1 : 0) + (onSelect ? 1 : 0));
+	const compactRequest = $derived(rightCount > 1);
 
 	// the score on the poster follows the person's choice (movies only; shows keep TMDB)
 	const source = $derived((auth.user?.ratingSource || 'tmdb') as RatingSource);
@@ -73,7 +81,7 @@
 
 <div class={fluid ? 'min-w-0' : 'w-32 shrink-0 snap-start sm:w-40'}>
 	<div
-		class="group relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-muted shadow-sm ring-1 ring-border/50 transition hover:shadow-lg hover:ring-border focus-within:ring-2 focus-within:ring-ring"
+		class="group @container relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-muted shadow-sm ring-1 ring-border/50 transition hover:shadow-lg hover:ring-border has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
 	>
 		<button
 			type="button"
@@ -112,24 +120,47 @@
 		{/if}
 
 		<!-- hover / focus actions (always reachable by keyboard; on touch the card opens the details) -->
-		<div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1.5 pt-8 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:hidden">
+		<div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1.5 pt-8 opacity-0 transition-opacity group-hover:opacity-100 group-has-[:focus-visible]:opacity-100 [@media(hover:none)]:hidden">
 			{#if canQuickRequest}
 				<button
 					type="button"
-					class="flex cursor-pointer items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-black shadow hover:bg-white disabled:opacity-60"
+					class={compactRequest
+						? 'flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/90 text-black shadow hover:bg-white disabled:opacity-60'
+						: 'flex h-7 min-w-0 flex-1 cursor-pointer items-center justify-center gap-1 rounded-full bg-white/90 px-2 text-xs font-medium text-black shadow hover:bg-white disabled:opacity-60'}
+					aria-label={t('card.quick_request')}
+					title={t('card.quick_request')}
 					disabled={requesting}
+					aria-busy={requesting}
 					onclick={(e) => {
 						e.stopPropagation();
 						flow?.start();
 					}}
 				>
-					<PlusIcon class="size-3.5" />
-					{requesting ? '…' : t('card.quick_request')}
+					{#if compactRequest}
+						{#if requesting}<LoaderIcon class="size-4 animate-spin" />{:else}<PlusIcon class="size-4" />{/if}
+					{:else}
+						<PlusIcon class="size-3.5 shrink-0" />
+						<span class="truncate">{requesting ? '…' : t('card.quick_request')}</span>
+					{/if}
 				</button>
 			{:else}
 				<span></span>
 			{/if}
-			<span class="flex gap-1">
+			<span class="flex shrink-0 gap-1">
+				{#if onRemove}
+					<button
+						type="button"
+						aria-label={t('watchlist.remove')}
+						title={t('watchlist.remove')}
+						class="flex size-7 cursor-pointer items-center justify-center rounded-full bg-white/90 text-black shadow hover:bg-white"
+						onclick={(e) => {
+							e.stopPropagation();
+							onRemove(item);
+						}}
+					>
+						<BookmarkMinusIcon class="size-4" />
+					</button>
+				{/if}
 				{#if onDismiss}
 					<button
 						type="button"
@@ -144,6 +175,8 @@
 						<XIcon class="size-4" />
 					</button>
 				{/if}
+				<!-- without a popup the poster itself opens the details: the info button would duplicate it (#54) -->
+				{#if onSelect}
 				<button
 					type="button"
 					aria-label={t('media.view_details')}
@@ -155,6 +188,7 @@
 				>
 					<InfoIcon class="size-4" />
 				</button>
+				{/if}
 			</span>
 		</div>
 	</div>
