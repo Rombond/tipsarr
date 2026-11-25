@@ -138,6 +138,16 @@ final class LiveFollowManager {
         for activity in activities(of: account) { await end(activity, unfollow: true) }
     }
 
+    /// Progress from the live connection while the app is open: moves the activity at once, more often
+    /// than the pushes (at most one a minute). The next push carries a newer timestamp and wins.
+    func localProgress(_ requestId: String, percent: Int, eta: Int) {
+        guard let account, followed.contains(requestId),
+              let ref = activities(of: account).first(where: { $0.requestId == requestId }) else { return }
+        let state = RequestActivityAttributes.ContentState(stage: "downloading", percent: max(0, min(100, percent)),
+                                                           etaSeconds: max(0, eta), updatedAt: Int(Date.now.timeIntervalSince1970))
+        Task { await Self.updateActivity(ref.id, state: state) }
+    }
+
     // MARK: Activities
 
     /// What the manager keeps of an activity; `Activity` itself is not Sendable, so it is looked up by id
