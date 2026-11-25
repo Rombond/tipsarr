@@ -187,3 +187,32 @@ func TestUnfollowedRequestCostsNothing(t *testing.T) {
 	default:
 	}
 }
+
+func TestStaleRetryDropped(t *testing.T) {
+	s, _, now, st := setup(t)
+	ctx := context.Background()
+	put(t, s, "s1", "ios", "requested")
+	rows, _ := st.FollowsForRequest(ctx, "r1")
+	old := item(rows[0], "approved", 0, 0, *now, false, 0, true)
+
+	// still current: kept
+	if items, _ := s.stillCurrent(ctx, []push.LiveItem{old}, rows); len(items) != 1 {
+		t.Fatalf("current retry dropped")
+	}
+	// the worker sent a newer state meanwhile: dropped, and a late mark does not roll it back
+	if err := st.MarkFollowSent(ctx, rows[0].ID, "downloading", 40, now.Unix()+30); err != nil {
+		t.Fatal(err)
+	}
+	if items, _ := s.stillCurrent(ctx, []push.LiveItem{old}, rows); len(items) != 0 {
+		t.Fatalf("stale retry kept")
+	}
+	_ = st.MarkFollowSent(ctx, rows[0].ID, "approved", 0, now.Unix())
+	if cur, _ := st.FollowsForRequest(ctx, "r1"); cur[0].LastStage != "downloading" {
+		t.Fatalf("state rolled back to %s", cur[0].LastStage)
+	}
+	// the follow ended: dropped
+	_ = st.DeleteFollowByID(ctx, rows[0].ID)
+	if items, _ := s.stillCurrent(ctx, []push.LiveItem{old}, rows); len(items) != 0 {
+		t.Fatalf("retry after the end kept")
+	}
+}

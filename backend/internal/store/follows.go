@@ -92,7 +92,7 @@ func (s *Store) CountFollowsBySession(ctx context.Context, sessionID string) (in
 func (s *Store) MarkFollowSent(ctx context.Context, id, stage string, percent int, at int64) error {
 	_, err := s.DB.NewUpdate().Model((*Follow)(nil)).
 		Set("last_stage = ?", stage).Set("last_percent = ?", percent).Set("last_sent_at = ?", at).
-		Where("id = ?", id).Exec(ctx)
+		Where("id = ?", id).Where("last_sent_at <= ?", at).Exec(ctx) // a late retry never rolls a newer state back
 	return err
 }
 

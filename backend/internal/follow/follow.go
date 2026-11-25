@@ -66,6 +66,10 @@ type Service struct {
 
 	mu  sync.Mutex
 	ids map[string]bool // followed request ids, so hooks cost nothing when no one follows
+
+	// putMu orders a new follow (save, then mark) with the worker's unmark (count, then unmark): without it
+	// the worker could count no row, a follow be saved and marked, and the worker unmark it for good.
+	putMu sync.Mutex
 }
 
 func New(st *store.Store, sender Sender) *Service {
@@ -119,6 +123,15 @@ func (s *Service) mark(id string, on bool) {
 	}
 }
 
+// unmarkIfUnfollowed forgets a request id once no follow is left for it.
+func (s *Service) unmarkIfUnfollowed(ctx context.Context, id string) {
+	s.putMu.Lock()
+	defer s.putMu.Unlock()
+	if rest, err := s.store.FollowsForRequest(ctx, id); err == nil && len(rest) == 0 {
+		s.mark(id, false)
+	}
+}
+
 // enqueue never blocks the caller: a full queue drops progress, and hands stage changes to a goroutine.
 func (s *Service) enqueue(ev event) {
 	if !s.followed(ev.id) {
@@ -156,7 +169,7 @@ func (s *Service) handle(ctx context.Context, ev event) {
 		return
 	}
 	if len(follows) == 0 {
-		s.mark(ev.id, false)
+		s.unmarkIfUnfollowed(ctx, ev.id)
 		return
 	}
 	now := s.now()
@@ -226,9 +239,7 @@ func (s *Service) end(ctx context.Context, follows []store.Follow, ev *event, di
 		}
 	}
 	if len(follows) > 0 {
-		if rest, err := s.store.FollowsForRequest(ctx, follows[0].RequestID); err == nil && len(rest) == 0 {
-			s.mark(follows[0].RequestID, false)
-		}
+		s.unmarkIfUnfollowed(ctx, follows[0].RequestID)
 	}
 	s.send(ctx, items, nil, true)
 }
@@ -283,9 +294,34 @@ func (s *Service) send(ctx context.Context, items []push.LiveItem, follows []sto
 		time.AfterFunc(s.retry, func() {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel()
+			again, againF = s.stillCurrent(ctx, again, againF)
 			s.send(ctx, again, againF, false)
 		})
 	}
+}
+
+// stillCurrent drops the retries the worker made stale meanwhile: a follow ended (deleted) or sent a newer
+// state. Without it a late retry could push an update after the end, or roll the throttle state back.
+// Ended follows (follows nil) are kept: their end must still reach the phone.
+func (s *Service) stillCurrent(ctx context.Context, items []push.LiveItem, follows []store.Follow) ([]push.LiveItem, []store.Follow) {
+	if follows == nil {
+		return items, nil
+	}
+	var outI []push.LiveItem
+	var outF []store.Follow
+	for i, it := range items {
+		rows, err := s.store.FollowsForRequest(ctx, it.ID)
+		if err != nil {
+			continue
+		}
+		for _, f := range rows {
+			if f.ID == follows[i].ID && f.LastSentAt <= it.Timestamp {
+				outI, outF = append(outI, it), append(outF, f)
+				break
+			}
+		}
+	}
+	return outI, outF
 }
 
 // Expire ends the follows past their lifetime.
@@ -310,6 +346,8 @@ func (s *Service) Put(ctx context.Context, f *store.Follow, stage string, percen
 	}
 	f.CreatedAt, f.ExpiresAt = now.Unix(), now.Add(life).Unix()
 	f.LastStage, f.LastPercent, f.LastSentAt = stage, percent, now.Unix()
+	s.putMu.Lock()
+	defer s.putMu.Unlock()
 	_, err := s.store.SaveFollow(ctx, f, func(old *store.Follow) bool {
 		return f.Platform == "android" || old.ActivityID != f.ActivityID
 	})
