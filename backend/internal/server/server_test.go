@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/Rombond/tipsarr/backend/internal/follow"
 	"github.com/Rombond/tipsarr/backend/internal/web"
 	"net/http"
 	"net/http/httptest"
@@ -430,6 +431,12 @@ func newEnvOpts(t *testing.T, dryRun bool, setupToken string, demoMode, secureCo
 	pusher.SetRetryDelays(10*time.Millisecond, 10*time.Millisecond)
 	notifier.SetPusher(pusher)
 	reqs := requests.New(st, mediaSvc, hub, notifier, dryRun)
+	var followSvc *follow.Service
+	if !demoMode {
+		followSvc = follow.New(st, pusher)
+		reqs.SetLive(followSvc)
+		followSvc.Start(t.Context())
+	}
 	mediaSvc.SetSeasonSource(reqs.SeasonSource())
 	box := boxoffice.New(st, mediaSvc, fakeBOM(t).URL)
 	box.SetPause(0)
@@ -454,7 +461,7 @@ func newEnvOpts(t *testing.T, dryRun bool, setupToken string, demoMode, secureCo
 	issueSvc.SetArr(reqs)
 	authSvc.SetRecheckEvery(0) // tests: ask the fake Jellyfin about the account on every request
 	h, _ := server.New(api.Deps{
-		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issueSvc, Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: testLimiter(st), SetupToken: setupToken, SecureCookies: secureCookies, Hub: hub, Notify: notifier, Push: pusher,
+		Store: st, Stats: stats.New(st), Ratings: ratingsSvc, Auth: authSvc, Media: mediaSvc, Library: lib, Jobs: jm, Requests: reqs, Issues: issueSvc, Avatars: avatars.New(t.TempDir(), st), Suggestions: sugg, Teasers: teaserSvc, Trailers: trailerFiles, BoxOffice: box, Marks: marks.New(st, mediaSvc), LoginLimiter: testLimiter(st), SetupToken: setupToken, SecureCookies: secureCookies, Hub: hub, Notify: notifier, Push: pusher, Follow: followSvc,
 		DryRun: dryRun, Demo: demoMode, ConfigDir: t.TempDir(), ImageBaseURL: im.URL,
 	})
 	app := httptest.NewServer(h)

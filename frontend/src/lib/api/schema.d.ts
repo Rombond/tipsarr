@@ -1100,6 +1100,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/follows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Requests followed from this app
+         * @description Lets the app match its Live Activities or notifications with the server at launch.
+         */
+        get: operations["listFollows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/history-sources": {
         parameters: {
             query?: never;
@@ -1412,6 +1432,30 @@ export interface paths {
         /** Decline a request (admin) */
         post: operations["declineRequest"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests/{id}/follow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Follow a request from this app
+         * @description Pushes the request's stage and download progress to a Live Activity (iOS) or an ongoing notification (Android) until it is available, declined or failed. Call it again whenever the token changes. Answers the current state.
+         */
+        put: operations["followRequest"];
+        post?: never;
+        /**
+         * Stop following a request from this app
+         * @description Sends nothing: the app ends its Live Activity or notification itself.
+         */
+        delete: operations["unfollowRequest"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2082,6 +2126,19 @@ export interface components {
             blocklisted: boolean;
             watchlisted: boolean;
         };
+        FollowList: {
+            items: components["schemas"]["RequestFollow"][];
+        };
+        FollowRequestInputBody: {
+            /** @description iOS only: the ActivityKit activity id. A new one restarts the follow */
+            activityId?: string;
+            /** @description iOS: the Live Activity push token (hex). Android: the current FCM registration token */
+            pushToken: string;
+            /** @description iOS only: the token comes from a development build (APNs sandbox) */
+            sandbox?: boolean;
+            /** @description Host (and port) the app uses to reach this server */
+            server?: string;
+        };
         Genre: {
             /** Format: int64 */
             id: number;
@@ -2680,6 +2737,30 @@ export interface components {
             /** Format: int64 */
             pending: number;
         };
+        RequestFollow: {
+            /**
+             * Format: int64
+             * @description 0 = unknown
+             */
+            etaSeconds: number;
+            /**
+             * Format: int64
+             * @description Unix seconds the follow ends on its own
+             */
+            expiresAt: number;
+            /** Format: int64 */
+            percent: number;
+            /** @enum {string} */
+            platform: "ios" | "android";
+            requestId: string;
+            /** @enum {string} */
+            stage: "requested" | "approved" | "searching" | "downloading" | "available" | "declined" | "failed";
+            /**
+             * Format: int64
+             * @description Unix seconds the state was computed
+             */
+            updatedAt: number;
+        };
         RequestList: {
             items: components["schemas"]["View"][];
             /** Format: int64 */
@@ -3026,6 +3107,8 @@ export interface components {
             status: string;
         };
         StatusFeatures: {
+            /** @description Requests can be followed from the apps (Live Activity / ongoing notification). Absent on older servers */
+            liveFollow?: boolean;
             /** @description Push notifications are set up on this server */
             push: boolean;
             /** @description The Teasers feed is available: trailer files are on and the resolver answers. Apps hide the Teasers tab otherwise */
@@ -7841,6 +7924,44 @@ export interface operations {
             };
         };
     };
+    listFollows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowList"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     myHistorySources: {
         parameters: {
             query?: never;
@@ -9095,6 +9216,124 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    followRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowRequestInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestFollow"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    unfollowRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
