@@ -12,7 +12,11 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 )
 
-var activityIDRe = regexp.MustCompile(`^[A-Za-z0-9-]{1,64}$`)
+var (
+	activityIDRe = regexp.MustCompile(`^[A-Za-z0-9-]{1,64}$`)
+	// Live Activity push tokens are longer than device tokens (128 bytes in the simulator).
+	liveTokenRe = regexp.MustCompile(`^[0-9a-fA-F]{64,512}$`)
+)
 
 // requestFollow is a request followed from this app. The token is never returned.
 type requestFollow struct {
@@ -63,7 +67,7 @@ func registerFollows(api huma.API, d Deps) {
 		tok := strings.TrimSpace(in.Body.PushToken)
 		switch sess.Platform {
 		case "ios":
-			if !apnsTokenRe.MatchString(tok) {
+			if !liveTokenRe.MatchString(tok) {
 				return nil, fail(422, "invalid_push_token", "not a Live Activity push token")
 			}
 		case "android":

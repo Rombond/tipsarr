@@ -105,6 +105,12 @@ func TestThrottling(t *testing.T) {
 	if g := fs.take(); len(g) != 1 || g[0].High {
 		t.Fatalf("searching: %+v", g)
 	}
+	// downloading again right after: sent at once, high
+	*now = now.Add(time.Second)
+	run(s, event{kind: evProgress, id: "r1", stage: "downloading", percent: 9})
+	if g := fs.take(); len(g) != 1 || !g[0].High {
+		t.Fatalf("download restart: %+v", g)
+	}
 }
 
 func TestFinalEndsAndDeletes(t *testing.T) {

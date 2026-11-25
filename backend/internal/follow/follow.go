@@ -197,12 +197,10 @@ func (s *Service) handle(ctx context.Context, ev event) {
 func decide(f store.Follow, ev event, now time.Time) (high, ok bool) {
 	since := now.Sub(time.Unix(f.LastSentAt, 0))
 	if ev.stage != f.LastStage {
-		switch {
-		case ev.stage == stageDownload && f.LastStage == "searching", ev.stage == "searching" && f.LastStage == stageDownload:
-			return false, since >= minGap // flapping between searching and downloading
-		default:
-			return true, true // requested, approved, or the first time it downloads
+		if ev.stage == "searching" && f.LastStage == stageDownload {
+			return false, since >= minGap // a paused download: held a minute in case it resumes
 		}
+		return true, true // requested, approved, or a download that starts
 	}
 	if ev.stage != stageDownload || since < minGap {
 		return false, false
