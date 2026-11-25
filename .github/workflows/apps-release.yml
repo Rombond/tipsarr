@@ -1,0 +1,113 @@
+name: Apps release
+
+# Publishes the mobile apps from an app tag: `android-vX.Y.Z` (signed APK in a GitHub release, AAB to Play
+# internal testing) and `ios-vX.Y.Z` (archive and upload to TestFlight). Every job checks the tag matches the
+# app version. Store review and promotion stay manual.
+#
+# Server tags `vX.Y.Z` stay in release.yml (Docker images only). For a joint release, put the three tags on one commit.
+#
+# Secrets:
+#   Android: GOOGLE_SERVICES_JSON, ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS,
+#            ANDROID_KEY_PASSWORD, PLAY_SERVICE_ACCOUNT_JSON (Google Cloud service account linked to the Play Console)
+#   iOS:     none. The job runs on the self-hosted runner on the owner's Mac (labels self-hosted, macOS, xcode27)
+#            and signs and uploads with the Apple account signed in to Xcode there (no App Store Connect API key:
+#            the account is not an admin). The Mac must be on, signed in, with the runner service started.
+on:
+  push:
+    tags: ['android-v*', 'ios-v*']
+
+permissions:
+  contents: write # attach the APK to the GitHub release
+
+jobs:
+  android:
+    if: startsWith(github.ref, 'refs/tags/android-v')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - name: Tag matches the app version
+        run: |
+          tag="${GITHUB_REF_NAME#android-v}"
+          version=$(sed -n 's/^val appVersion = "\(.*\)"/\1/p' app/build.gradle.kts)
+          [ "$tag" = "$version" ] || { echo "tag $tag != appVersion $version"; exit 1; }
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - name: Secrets to files
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON" | base64 -d > app/google-services.json
+          echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.jks"
+          printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$RUNNER_TEMP/release.jks" "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > keystore.properties
+      - run: ./gradlew --no-daemon assembleRelease bundleRelease
+      - name: Rename
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk "tipsarr-$VERSION.apk"
+          cp app/build/outputs/bundle/release/app-release.aab "tipsarr-$VERSION.aab"
+      - name: GitHub release (APK, for Obtainium)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --title "Tipsarr Android $VERSION" --notes "Android $VERSION" --latest=false
+          gh release upload "$GITHUB_REF_NAME" "tipsarr-$VERSION.apk" --clobber
+      - name: Play internal testing
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          echo "$PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/play.json"
+          gem install fastlane --no-document
+          fastlane run upload_to_play_store package_name:com.brebond.tipsarr track:internal \
+            aab:"tipsarr-$VERSION.aab" json_key:"$RUNNER_TEMP/play.json" \
+            skip_upload_metadata:true skip_upload_images:true skip_upload_screenshots:true skip_upload_changelogs:true
+
+  ios:
+    if: startsWith(github.ref, 'refs/tags/ios-v')
+    runs-on: [self-hosted, macOS, xcode27]
+    env:
+      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Xcode
+        run: xcodebuild -version
+      - name: Tag matches the app version
+        run: |
+          tag="${GITHUB_REF_NAME#ios-v}"
+          version=$(sed -n 's/.*"MARKETING_VERSION" *: *"\([^"]*\)".*/\1/p' ios/Tipsarr/Tipsarr.xcodeproj/project.xcproj | sort -u)
+          [ "$version" = "$tag" ] || { echo "tag $tag != MARKETING_VERSION(s) $version (app and widget must match)"; exit 1; }
+      - name: Archive (automatic signing with the Xcode account)
+        run: |
+          xcodebuild archive \
+            -project ios/Tipsarr/Tipsarr.xcodeproj -scheme Tipsarr -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Tipsarr.xcarchive" \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            -allowProvisioningUpdates -skipPackagePluginValidation -skipMacroValidation
+      - name: Upload to TestFlight (review stays manual)
+        run: |
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Tipsarr.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates
+      - name: Clean up
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/Tipsarr.xcarchive" "$RUNNER_TEMP/export" "$RUNNER_TEMP/dd"
