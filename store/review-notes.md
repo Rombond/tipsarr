@@ -19,5 +19,7 @@ The demo never downloads anything (dry-run mode): requests are recorded but noth
 
 Push notifications are not available on the demo server: on a real server, an administrator must first turn on the push relay in the server settings. Face ID sign-in (iOS) is optional and only keeps the password in the device Keychain.
 
+Following a request (new in 1.1): swiping a request and tapping Follow shows its progress as a Live Activity on the lock screen and in the Dynamic Island. It is driven by push notifications from the server, so like push it is not available on the demo server, and the Follow action is hidden there. A screen recording of the feature on a real server is attached.
+
 Source code and privacy policy: https://github.com/Rombond/tipsarr
 ```
