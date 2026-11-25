@@ -24,7 +24,6 @@ object LiveFollowNotification {
     private fun tag(id: String) = "live:$id"
 
     fun createChannel(context: Context) {
-        if (Build.VERSION.SDK_INT < 26) return
         val channel = NotificationChannel(CHANNEL, context.getString(R.string.m_follow_channel), NotificationManager.IMPORTANCE_DEFAULT).apply {
             setSound(null, null)
             enableVibration(false)
@@ -78,7 +77,15 @@ object LiveFollowNotification {
     }
 
     private fun stageLabel(context: Context, stage: String): String {
-        val id = context.resources.getIdentifier("state_$stage", "string", context.packageName)
-        return if (id == 0) stage else context.getString(id)
+        val id = when (stage) {
+            "approved" -> R.string.state_approved
+            "searching" -> R.string.state_searching
+            "downloading" -> R.string.state_downloading
+            "available" -> R.string.state_available
+            "declined" -> R.string.state_declined
+            "failed" -> R.string.state_failed
+            else -> R.string.state_requested
+        }
+        return context.getString(id)
     }
 }

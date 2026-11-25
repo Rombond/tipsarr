@@ -66,6 +66,11 @@ object LiveFollow {
     var available by mutableStateOf(false)
         private set
 
+    private var account: Account? = null
+
+    /** Follow and unfollow are offered: the server supports it and the setting is on. */
+    val offered: Boolean get() = available && enabled
+
     fun init(application: Application) {
         app = application
         enabled = application.getSharedPreferences(SETTINGS, Context.MODE_PRIVATE).getBoolean(ENABLED, true)
@@ -98,6 +103,7 @@ object LiveFollow {
 
     /** An account is ready: reconcile the local follows with the server's (`GET /me/follows`). */
     suspend fun attach(account: Account, liveFollow: Boolean) {
+        this.account = account
         available = liveFollow
         val local = entries(app).filterValues { it.accountId == account.id }
         if (!liveFollow) { local.keys.forEach { end(app, it) }; return }
@@ -156,6 +162,11 @@ object LiveFollow {
         show(app, id, entry, state)
         return Result.Started
     }
+
+    /** Follows with the attached account; null when no account is attached. */
+    suspend fun follow(id: String, title: String, mediaType: String): Result? = account?.let { follow(it, id, title, mediaType) }
+
+    suspend fun unfollow(id: String) { account?.let { unfollow(it, id) } ?: end(app, id) }
 
     suspend fun unfollow(account: Account, id: String) {
         end(app, id)
